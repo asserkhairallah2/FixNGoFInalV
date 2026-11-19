@@ -1,0 +1,290 @@
+[
+  {
+    "code": "AD01",
+    "role": "admin",
+    "hash": "#/AD01",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD01.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 504
+    },
+    "console": []
+  },
+  {
+    "code": "AD02",
+    "role": "admin",
+    "hash": "#/AD02",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD02.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 447
+    },
+    "console": []
+  },
+  {
+    "code": "AD03",
+    "role": "admin",
+    "hash": "#/AD03?id=38f40e70-d1e8-415f-8b18-fba5c5b37191",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD03.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 445
+    },
+    "console": []
+  },
+  {
+    "code": "AD04",
+    "role": "admin",
+    "hash": "#/AD04",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD04.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 714
+    },
+    "console": []
+  },
+  {
+    "code": "AD05",
+    "role": "admin",
+    "hash": "#/AD05",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD05.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 489
+    },
+    "console": []
+  },
+  {
+    "code": "AD06",
+    "role": "admin",
+    "hash": "#/AD06",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD06.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 441
+    },
+    "console": []
+  },
+  {
+    "code": "AD07",
+    "role": "admin",
+    "hash": "#/AD07",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD07.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 451
+    },
+    "console": []
+  },
+  {
+    "code": "AD08",
+    "role": "admin",
+    "hash": "#/AD08?id=9b203d07-27d0-4f31-8ae4-a596035f87ed",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD08.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 484
+    },
+    "console": []
+  },
+  {
+    "code": "AD09",
+    "role": "admin",
+    "hash": "#/AD09",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD09.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 455
+    },
+    "console": []
+  },
+  {
+    "code": "AD10",
+    "role": "admin",
+    "hash": "#/AD10?id=cd50584b-2b38-42e7-8db2-7e1ec4ddc9a9",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD10.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 494
+    },
+    "console": []
+  },
+  {
+    "code": "AD11",
+    "role": "admin",
+    "hash": "#/AD11?id=ce40087e-9c1c-474b-b6bd-3e656f7904d9",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 498
+    },
+    "console": []
+  },
+  {
+    "code": "AD12",
+    "role": "admin",
+    "hash": "#/AD12",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD12.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 501
+    },
+    "console": []
+  },
+  {
+    "code": "AD13",
+    "role": "admin",
+    "hash": "#/AD13",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD13.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 466
+    },
+    "console": []
+  },
+  {
+    "code": "AD14",
+    "role": "admin",
+    "hash": "#/AD14",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 439
+    },
+    "console": []
+  },
+  {
+    "code": "AD15",
+    "role": "admin",
+    "hash": "#/AD15?id=38f40e70-d1e8-415f-8b18-fba5c5b37191",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 455
+    },
+    "console": []
+  },
+  {
+    "code": "AD16",
+    "role": "admin",
+    "hash": "#/AD16",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD16.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 419
+    },
+    "console": []
+  },
+  {
+    "code": "AD17",
+    "role": "admin",
+    "hash": "#/AD17",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD17.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 447
+    },
+    "console": []
+  },
+  {
+    "code": "AD18",
+    "role": "admin",
+    "hash": "#/AD18?id=3c8a2bfc-80b0-4045-8e1f-d82d4bbedf84",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD18.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 500
+    },
+    "console": []
+  }
+]

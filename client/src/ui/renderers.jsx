@@ -381,9 +381,15 @@ export function FormView({ view, id }) {
       }
       if (view.body) Object.assign(body, typeof view.body === 'function' ? view.body(values, id) : view.body);
       const path = view.path?.replace('{id}', id || '');
-      if (view.method === 'PUT') await put(path, body); else await post(path, body, { idempotencyKey: view.idempotent ? crypto.randomUUID() : undefined });
+      const result = view.method === 'PUT'
+        ? await put(path, body)
+        : await post(path, body, { idempotencyKey: view.idempotent ? crypto.randomUUID() : undefined });
       setDone(true);
-      if (view.next) setTimeout(() => go(view.next, { id }), 350);
+      // Follow the real created/edited entity id when the API returns one; only
+      // fall back to the route id for endpoints that return no entity. Never emit
+      // `id=undefined` in the URL when there is genuinely no id to carry forward.
+      const nextId = result && typeof result === 'object' && result.id ? result.id : id;
+      if (view.next) setTimeout(() => go(view.next, nextId ? { id: nextId } : {}), 350);
     } catch (err) { setError(err.message || t('Could not save', 'تعذر الحفظ')); }
     finally { setBusy(false); }
   }

@@ -127,12 +127,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 611,
+                  "duration": 580,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:56.107Z",
+                  "startTime": "2026-11-19T21:08:22.773Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -161,12 +161,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 516,
+                  "duration": 509,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:56.885Z",
+                  "startTime": "2026-11-19T21:08:23.511Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -195,12 +195,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 503,
+                  "duration": 504,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:57.424Z",
+                  "startTime": "2026-11-19T21:08:24.043Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -229,12 +229,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 479,
+                  "duration": 529,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:57.940Z",
+                  "startTime": "2026-11-19T21:08:24.563Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -263,12 +263,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 481,
+                  "duration": 535,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:58.437Z",
+                  "startTime": "2026-11-19T21:08:25.108Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -305,12 +305,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 468,
+                  "duration": 493,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:58.971Z",
+                  "startTime": "2026-11-19T21:08:25.699Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -320,7 +320,7 @@
           ],
           "id": "50593df043d465c1094d-61b7a971a25397d8028d",
           "file": "flows.spec.js",
-          "line": 25,
+          "line": 27,
           "column": 1
         },
         {
@@ -339,12 +339,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1067,
+                  "duration": 1111,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:20:59.451Z",
+                  "startTime": "2026-11-19T21:08:26.205Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -354,7 +354,7 @@
           ],
           "id": "50593df043d465c1094d-accb728a828dcec0eae6",
           "file": "flows.spec.js",
-          "line": 40,
+          "line": 42,
           "column": 1
         },
         {
@@ -373,12 +373,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 117,
+                  "duration": 128,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:21:00.530Z",
+                  "startTime": "2026-11-19T21:08:27.334Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -388,11 +388,11 @@
           ],
           "id": "50593df043d465c1094d-8c62fe36f9b8394fcbe8",
           "file": "flows.spec.js",
-          "line": 67,
+          "line": 69,
           "column": 1
         },
         {
-          "title": "F04 booking (API after capturing the C19 UI field mismatch)",
+          "title": "F04 booking via C19 UI form + center admin confirmation",
           "ok": true,
           "tags": [],
           "tests": [
@@ -407,12 +407,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 20641,
+                  "duration": 806,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:21:00.658Z",
+                  "startTime": "2026-11-19T21:08:27.474Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -420,13 +420,13 @@
               "status": "expected"
             }
           ],
-          "id": "50593df043d465c1094d-93c433b2f7efb96b9fa2",
+          "id": "50593df043d465c1094d-e6386e37c5c47bc679e4",
           "file": "flows.spec.js",
-          "line": 90,
+          "line": 92,
           "column": 1
         },
         {
-          "title": "F05 card payment with 4242 4242 4242 4242 (API; UI C33 field mismatch captured)",
+          "title": "F05 card add via C33 UI form + 4242 payment via API",
           "ok": true,
           "tags": [],
           "tests": [
@@ -441,12 +441,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 20567,
+                  "duration": 763,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:21:21.315Z",
+                  "startTime": "2026-11-19T21:08:28.292Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -454,9 +454,9 @@
               "status": "expected"
             }
           ],
-          "id": "50593df043d465c1094d-4c9a61dfaf1dbee5f563",
+          "id": "50593df043d465c1094d-223bd2b3b4b31596f135",
           "file": "flows.spec.js",
-          "line": 128,
+          "line": 126,
           "column": 1
         },
         {
@@ -475,12 +475,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 762,
+                  "duration": 867,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:21:41.906Z",
+                  "startTime": "2026-11-19T21:08:29.066Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -490,7 +490,7 @@
           ],
           "id": "50593df043d465c1094d-6026725667758b35ba32",
           "file": "flows.spec.js",
-          "line": 176,
+          "line": 173,
           "column": 1
         },
         {
@@ -509,12 +509,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 154,
+                  "duration": 173,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:21:42.692Z",
+                  "startTime": "2026-11-19T21:08:29.943Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -524,11 +524,11 @@
           ],
           "id": "50593df043d465c1094d-863ca169afd426eaebbc",
           "file": "flows.spec.js",
-          "line": 204,
+          "line": 201,
           "column": 1
         },
         {
-          "title": "F09 support ticket (API; UI SH08 field mismatch captured)",
+          "title": "F09 support ticket via SH08 UI form + admin reply API",
           "ok": true,
           "tags": [],
           "tests": [
@@ -543,12 +543,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 20523,
+                  "duration": 881,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:21:42.867Z",
+                  "startTime": "2026-11-19T21:08:30.126Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -556,9 +556,9 @@
               "status": "expected"
             }
           ],
-          "id": "50593df043d465c1094d-c3423413e3caa0602743",
+          "id": "50593df043d465c1094d-c8e415b2f1b8d75751ec",
           "file": "flows.spec.js",
-          "line": 226,
+          "line": 223,
           "column": 1
         },
         {
@@ -577,12 +577,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 538,
+                  "duration": 592,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:22:03.400Z",
+                  "startTime": "2026-11-19T21:08:31.018Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -592,7 +592,7 @@
           ],
           "id": "50593df043d465c1094d-a1476c83d00f6d0a24ba",
           "file": "flows.spec.js",
-          "line": 255,
+          "line": 261,
           "column": 1
         }
       ]
@@ -624,7 +624,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-19T20:23:23.709Z",
+                  "startTime": "2026-11-19T21:11:12.724Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -634,7 +634,7 @@
           ],
           "id": "4e58ca2a3cb798687116-7132cdef443b870a2b4c",
           "file": "screens.spec.js",
-          "line": 121,
+          "line": 123,
           "column": 1
         }
       ],
@@ -642,7 +642,7 @@
         {
           "title": "screen sweep light-en",
           "file": "screens.spec.js",
-          "line": 64,
+          "line": 66,
           "column": 8,
           "specs": [
             {
@@ -661,12 +661,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 19248,
+                      "duration": 19859,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:22:03.987Z",
+                      "startTime": "2026-11-19T21:08:31.645Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -676,7 +676,7 @@
               ],
               "id": "4e58ca2a3cb798687116-f1a24404b54809416c18",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -695,12 +695,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6240,
+                      "duration": 6558,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:22:23.246Z",
+                      "startTime": "2026-11-19T21:08:51.514Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -710,7 +710,7 @@
               ],
               "id": "4e58ca2a3cb798687116-5dead6978ef1e5f9f9ba",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -729,12 +729,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4376,
+                      "duration": 4631,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:22:29.497Z",
+                      "startTime": "2026-11-19T21:08:58.083Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -744,7 +744,7 @@
               ],
               "id": "4e58ca2a3cb798687116-2b7c67d63947dd9ad6e6",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -763,12 +763,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4887,
+                      "duration": 5163,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:22:33.883Z",
+                      "startTime": "2026-11-19T21:09:02.726Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -778,7 +778,7 @@
               ],
               "id": "4e58ca2a3cb798687116-29758642446654ab97f5",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -797,12 +797,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5308,
+                      "duration": 5255,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:22:38.780Z",
+                      "startTime": "2026-11-19T21:09:07.900Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -812,7 +812,363 @@
               ],
               "id": "4e58ca2a3cb798687116-5ea878ba47fcb6e9bcaf",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "screen sweep dark-en",
+          "file": "screens.spec.js",
+          "line": 66,
+          "column": 8,
+          "specs": [
+            {
+              "title": "dark-en: owner — 71 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 18950,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:09:13.182Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-97e6ba57985d8990d0d5",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "dark-en: mechanic — 22 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6245,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:09:32.142Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-5565850df3e6b5b7cda8",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "dark-en: captain — 15 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4308,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:09:38.397Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-3b2317ff9619d07cf6f0",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "dark-en: center — 17 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4753,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:09:42.716Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-0ccbc4faacfb701aadbc",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "dark-en: admin — 18 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5093,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:09:47.478Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-056e8aff81ac6c6af859",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "screen sweep light-ar",
+          "file": "screens.spec.js",
+          "line": 66,
+          "column": 8,
+          "specs": [
+            {
+              "title": "light-ar: owner — 71 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 19095,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:09:52.592Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-871b0630ce48bdef030d",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "light-ar: mechanic — 22 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6349,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:10:11.695Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-20b50c1778ef27a842e9",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "light-ar: captain — 15 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4749,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:10:18.058Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-0eeb92fcb7bdf286959a",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "light-ar: center — 17 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4907,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:10:22.830Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-d60a3a717c8edf87b96a",
+              "file": "screens.spec.js",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "light-ar: admin — 18 screens",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 180000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5222,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-19T21:10:27.747Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "4e58ca2a3cb798687116-f4f86c5d4977bd7c4c13",
+              "file": "screens.spec.js",
+              "line": 72,
               "column": 7
             }
           ]
@@ -820,7 +1176,7 @@
         {
           "title": "screen sweep dark-ar",
           "file": "screens.spec.js",
-          "line": 64,
+          "line": 66,
           "column": 8,
           "specs": [
             {
@@ -839,12 +1195,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 19020,
+                      "duration": 19129,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:22:44.110Z",
+                      "startTime": "2026-11-19T21:10:32.990Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -854,7 +1210,7 @@
               ],
               "id": "4e58ca2a3cb798687116-fc186794bfdb50c1bbbd",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -873,12 +1229,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6208,
+                      "duration": 6171,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:23:03.141Z",
+                      "startTime": "2026-11-19T21:10:52.129Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -888,7 +1244,7 @@
               ],
               "id": "4e58ca2a3cb798687116-d51f20a7c5488429b998",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -907,12 +1263,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4378,
+                      "duration": 4408,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:23:09.360Z",
+                      "startTime": "2026-11-19T21:10:58.310Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -922,7 +1278,7 @@
               ],
               "id": "4e58ca2a3cb798687116-3a0a450fe70eab3099c1",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -941,12 +1297,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4788,
+                      "duration": 4821,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:23:13.746Z",
+                      "startTime": "2026-11-19T21:11:02.728Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -956,7 +1312,7 @@
               ],
               "id": "4e58ca2a3cb798687116-8aa29bc1c99459e817bf",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             },
             {
@@ -975,12 +1331,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5143,
+                      "duration": 5141,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-19T20:23:18.544Z",
+                      "startTime": "2026-11-19T21:11:07.560Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -990,7 +1346,7 @@
               ],
               "id": "4e58ca2a3cb798687116-8c8db19e254d0a4237ee",
               "file": "screens.spec.js",
-              "line": 70,
+              "line": 72,
               "column": 7
             }
           ]
@@ -1000,9 +1356,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-19T20:20:31.667Z",
-    "duration": 172406.582,
-    "expected": 25,
+    "startTime": "2026-11-19T21:07:56.364Z",
+    "duration": 196797.786,
+    "expected": 35,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -1,0 +1,354 @@
+[
+  {
+    "code": "A11",
+    "role": "mechanic",
+    "hash": "#/A11",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\A11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 269
+    },
+    "console": []
+  },
+  {
+    "code": "M01",
+    "role": "mechanic",
+    "hash": "#/M01",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M01.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 275
+    },
+    "console": []
+  },
+  {
+    "code": "M02",
+    "role": "mechanic",
+    "hash": "#/M02",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M02.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 249
+    },
+    "console": []
+  },
+  {
+    "code": "M03",
+    "role": "mechanic",
+    "hash": "#/M03?id=97b4974f-2498-4e11-8922-3768f04e0ac1",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M03.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 287
+    },
+    "console": []
+  },
+  {
+    "code": "M04",
+    "role": "mechanic",
+    "hash": "#/M04?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M04.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 334
+    },
+    "console": []
+  },
+  {
+    "code": "M05",
+    "role": "mechanic",
+    "hash": "#/M05?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M05.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 328
+    },
+    "console": []
+  },
+  {
+    "code": "M06",
+    "role": "mechanic",
+    "hash": "#/M06?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M06.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 289
+    },
+    "console": []
+  },
+  {
+    "code": "M07",
+    "role": "mechanic",
+    "hash": "#/M07",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M07.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 274
+    },
+    "console": []
+  },
+  {
+    "code": "M08",
+    "role": "mechanic",
+    "hash": "#/M08",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M08.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 270
+    },
+    "console": []
+  },
+  {
+    "code": "M09",
+    "role": "mechanic",
+    "hash": "#/M09",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M09.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 282
+    },
+    "console": []
+  },
+  {
+    "code": "M10",
+    "role": "mechanic",
+    "hash": "#/M10",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M10.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 261
+    },
+    "console": []
+  },
+  {
+    "code": "M11",
+    "role": "mechanic",
+    "hash": "#/M11?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 286
+    },
+    "console": []
+  },
+  {
+    "code": "M12",
+    "role": "mechanic",
+    "hash": "#/M12?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M12.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 255
+    },
+    "console": []
+  },
+  {
+    "code": "M13",
+    "role": "mechanic",
+    "hash": "#/M13?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M13.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 293
+    },
+    "console": []
+  },
+  {
+    "code": "M14",
+    "role": "mechanic",
+    "hash": "#/M14",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 308
+    },
+    "console": []
+  },
+  {
+    "code": "M15",
+    "role": "mechanic",
+    "hash": "#/M15",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 299
+    },
+    "console": []
+  },
+  {
+    "code": "SH14",
+    "role": "mechanic",
+    "hash": "#/SH14",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\SH14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 291
+    },
+    "console": []
+  },
+  {
+    "code": "SH15",
+    "role": "mechanic",
+    "hash": "#/SH15",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\SH15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 256
+    },
+    "console": []
+  },
+  {
+    "code": "SH16",
+    "role": "mechanic",
+    "hash": "#/SH16",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\SH16.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 319
+    },
+    "console": []
+  },
+  {
+    "code": "SH17",
+    "role": "mechanic",
+    "hash": "#/SH17",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\SH17.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 250
+    },
+    "console": []
+  },
+  {
+    "code": "SH18",
+    "role": "mechanic",
+    "hash": "#/SH18",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\SH18.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 304
+    },
+    "console": []
+  },
+  {
+    "code": "SH20",
+    "role": "mechanic",
+    "hash": "#/SH20",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\SH20.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 365
+    },
+    "console": []
+  }
+]

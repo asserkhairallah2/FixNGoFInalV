@@ -1,13 +1,3 @@
-{"at":"2026-11-19T20:20:59.352Z","name":"F01 login->C02","status":"PASS","hash":"#/C02","console":[]}
-{"at":"2026-11-19T20:21:00.469Z","name":"F02 request creation (UI)","status":"PASS","before":5,"after":6,"hash":"#/C08?id=undefined"}
-{"at":"2026-11-19T20:21:00.650Z","name":"F03 offer accept (API)","status":"PASS","requestId":"e9ac0bf5-cece-40ac-9e15-4ffe7df46054","offerId":"87deefd1-4655-41ec-8018-4f045e6eaa80","offerStatus":"Accepted"}
-{"at":"2026-11-19T20:21:21.308Z","name":"F04 booking (API; UI C19 broken)","status":"Confirmed","bookingId":"6fe0bb0a-90d5-465a-8ee2-b43f73649ba5","uiDefect":{"screen":"C19","symptom":"Form sends startAt but API expects slotStart","alert":"UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-startAt\"]')\u001b[22m\n"}}
-{"at":"2026-11-19T20:21:41.896Z","name":"F05 payment 4242…4242 (API; UI C33 broken)","status":"PASS","cardLast4":"4242","invoiceId":"1d0cf538-ac6c-4953-9890-a66de73d49eb","paymentId":"c0a6e623-0497-4929-8432-3abe2a9ffc76","paymentStatus":"Succeeded","uiDefect":{"screen":"C33","symptom":"Form sends expiry/cvv/holder; API requires expMonth/expYear/label","alert":"UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-number\"]')\u001b[22m\n"}}
-{"at":"2026-11-19T20:21:42.613Z","name":"F06 chat send (UI)","status":"PASS","threadId":"d99ca87a-1840-44f8-a1b7-9c4d84cc0e2b","console":[]}
-{"at":"2026-11-19T20:21:42.855Z","name":"F07 KYC submission (API)","status":"Submitted","applicationId":"201c10ac-07ba-4f61-ac52-68de6b1345f0"}
-{"at":"2026-11-19T20:21:42.858Z","name":"F08 admin review (API)","status":"Approved","applicationId":"201c10ac-07ba-4f61-ac52-68de6b1345f0"}
-{"at":"2026-11-19T20:22:03.391Z","name":"F09 support ticket (API; UI SH08 broken)","status":"PASS","ticketId":"75fb2ff9-6209-4cba-92f6-afe2829b38f3","uiDefect":{"screen":"SH08","symptom":"Form sends body but API requires description and category","alert":"UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-subject\"]')\u001b[22m\n"}}
-{"at":"2026-11-19T20:22:03.891Z","name":"F10 SOS (API + UI SH19)","status":"PASS","sosId":"c59f4fc5-199b-43bc-be3f-ee21a11473bb","telLinks":2,"console":[]}
 {"at":"2026-11-19T20:24:02.347Z","name":"F01 login->C02","status":"PASS","hash":"#/C02","console":[]}
 {"at":"2026-11-19T20:24:03.530Z","name":"F02 request creation (UI)","status":"PASS","before":5,"after":6,"hash":"#/C08?id=undefined"}
 {"at":"2026-11-19T20:24:03.719Z","name":"F03 offer accept (API)","status":"PASS","requestId":"717baee1-9605-4310-a988-e1bc3b566f95","offerId":"38804f05-e5db-48a9-a516-ed72c684d7a2","offerStatus":"Accepted"}
@@ -16,3 +6,41 @@
 {"at":"2026-11-19T20:24:45.717Z","name":"F06 chat send (UI)","status":"PASS","threadId":"c80c094b-d0f2-4a8d-ad0a-e11330c041b5","console":[]}
 {"at":"2026-11-19T20:24:45.926Z","name":"F07 KYC submission (API)","status":"Submitted","applicationId":"97bbd87d-21fe-4bbc-ba85-d9e0c4e38eef"}
 {"at":"2026-11-19T20:24:45.929Z","name":"F08 admin review (API)","status":"Approved","applicationId":"97bbd87d-21fe-4bbc-ba85-d9e0c4e38eef"}
+{"at":"2026-11-19T20:25:06.475Z","name":"F09 support ticket (API; UI SH08 broken)","status":"PASS","ticketId":"0d77b90d-3418-4fa8-be8e-f34f80576aeb","uiDefect":{"screen":"SH08","symptom":"Form sends body but API requires description and category","alert":"UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-subject\"]')\u001b[22m\n"}}
+{"at":"2026-11-19T20:25:07.026Z","name":"F10 SOS (API + UI SH19)","status":"PASS","sosId":"bc7ecaef-679c-4bba-be1a-4fdb5e6c8872","telLinks":2,"console":[]}
+{"at":"2026-11-19T20:46:07.593Z","name":"F01 login->C02","status":"PASS","hash":"#/C02","console":[]}
+{"at":"2026-11-19T20:46:08.679Z","name":"F02 request creation (UI)","status":"PASS","before":5,"after":6,"hash":"#/C08?id=f5e619f0-943f-48c0-a293-c1a8045f4ba8"}
+{"at":"2026-11-19T20:46:08.876Z","name":"F03 offer accept (API)","status":"PASS","requestId":"f5bc3f37-0a3e-4544-b117-9475182c7f52","offerId":"bc1908a7-28ff-40e2-ba78-058d3e20e923","offerStatus":"Accepted"}
+{"at":"2026-11-19T20:46:09.550Z","name":"F04 booking (UI form + admin confirm API)","status":"PASS","bookingId":"b393028f-c7a8-4d92-9198-2f5691c7d874","console":[]}
+{"at":"2026-11-19T20:46:10.265Z","name":"F05 card add (UI C33 form)","status":"PASS","last4":"4444","console":[]}
+{"at":"2026-11-19T20:46:10.437Z","name":"F05 payment 4242…4242 (API)","status":"PASS","cardLast4":"4242","invoiceId":"ecc6a167-c0e0-4c95-97ad-d21ac2830dc7","paymentId":"693b2840-030f-4bc7-b070-b2da854df7f7","paymentStatus":"Succeeded"}
+{"at":"2026-11-19T20:46:11.159Z","name":"F06 chat send (UI)","status":"PASS","threadId":"10375fc2-014a-4181-b8d6-f79de41aba9a","console":[]}
+{"at":"2026-11-19T20:46:11.376Z","name":"F07 KYC submission (API)","status":"Submitted","applicationId":"66dae18d-29c8-4932-a2c7-0b62ed5fd2f2"}
+{"at":"2026-11-19T20:46:11.379Z","name":"F08 admin review (API)","status":"Approved","applicationId":"66dae18d-29c8-4932-a2c7-0b62ed5fd2f2"}
+{"at":"2026-11-19T20:46:11.946Z","name":"F09 support ticket (UI SH08 form)","status":"PASS","subject":"E2E UI ticket 1795121171808","console":[]}
+{"at":"2026-11-19T20:46:12.100Z","name":"F09 support ticket (verify + admin reply API)","status":"PASS","ticketId":"da0ac5b5-8a67-4f9b-96a6-e37fd52ce5dd","subject":"E2E UI ticket 1795121171808"}
+{"at":"2026-11-19T20:46:12.588Z","name":"F10 SOS (API + UI SH19)","status":"PASS","sosId":"af05ff3d-b526-4dff-a273-c9829e0a4dd1","telLinks":2,"console":[]}
+{"at":"2026-11-19T20:58:11.927Z","name":"F01 login->C02","status":"PASS","hash":"#/C02","console":[]}
+{"at":"2026-11-19T20:58:13.006Z","name":"F02 request creation (UI)","status":"PASS","before":5,"after":6,"hash":"#/C08?id=f3db3790-fc05-4f97-87a3-55c79c645686"}
+{"at":"2026-11-19T20:58:13.281Z","name":"F03 offer accept (API)","status":"PASS","requestId":"74038d86-4731-4590-a7e3-4e4cd9e5ec2f","offerId":"938613b4-8329-460f-bc44-8ea5058fa701","offerStatus":"Accepted"}
+{"at":"2026-11-19T20:58:14.329Z","name":"F04 booking (UI form + admin confirm API)","status":"PASS","bookingId":"85bf235d-652f-47d2-b3ca-b93be4f28a1f","console":[]}
+{"at":"2026-11-19T20:58:15.202Z","name":"F05 card add (UI C33 form)","status":"PASS","last4":"4444","console":[]}
+{"at":"2026-11-19T20:58:15.360Z","name":"F05 payment 4242…4242 (API)","status":"PASS","cardLast4":"4242","invoiceId":"1a60ae23-827c-4f3b-989a-e772d8cfb8cd","paymentId":"516e6b8f-5e76-4110-b103-d175fb9168a9","paymentStatus":"Succeeded"}
+{"at":"2026-11-19T20:58:16.070Z","name":"F06 chat send (UI)","status":"PASS","threadId":"34726fba-76c7-4571-9dc3-a0ccecfedfd9","console":[]}
+{"at":"2026-11-19T20:58:16.290Z","name":"F07 KYC submission (API)","status":"Submitted","applicationId":"55ef4348-a9d7-4cb1-aad1-86e92b3cd106"}
+{"at":"2026-11-19T20:58:16.293Z","name":"F08 admin review (API)","status":"Approved","applicationId":"55ef4348-a9d7-4cb1-aad1-86e92b3cd106"}
+{"at":"2026-11-19T20:58:16.868Z","name":"F09 support ticket (UI SH08 form)","status":"PASS","subject":"E2E UI ticket 1795121896711","console":[]}
+{"at":"2026-11-19T20:58:17.023Z","name":"F09 support ticket (verify + admin reply API)","status":"PASS","ticketId":"9e01006d-4b95-4502-8921-021295d485a6","subject":"E2E UI ticket 1795121896711"}
+{"at":"2026-11-19T20:58:17.507Z","name":"F10 SOS (API + UI SH19)","status":"PASS","sosId":"d6b68287-cd89-4755-a677-64130f849d64","telLinks":2,"console":[]}
+{"at":"2026-11-19T21:08:26.131Z","name":"F01 login->C02","status":"PASS","hash":"#/C02","console":[]}
+{"at":"2026-11-19T21:08:27.271Z","name":"F02 request creation (UI)","status":"PASS","before":5,"after":6,"hash":"#/C08?id=6d9156ce-11d7-4325-bf95-7126df10afd5"}
+{"at":"2026-11-19T21:08:27.466Z","name":"F03 offer accept (API)","status":"PASS","requestId":"09eec053-1828-41b7-9d27-079fe32fe5a2","offerId":"0914ec51-4457-44ee-b1a1-c29eff088194","offerStatus":"Accepted"}
+{"at":"2026-11-19T21:08:28.152Z","name":"F04 booking (UI form + admin confirm API)","status":"PASS","bookingId":"857017a7-8861-4408-a0f9-db841df2bee4","console":[]}
+{"at":"2026-11-19T21:08:28.879Z","name":"F05 card add (UI C33 form)","status":"PASS","last4":"4444","console":[]}
+{"at":"2026-11-19T21:08:29.057Z","name":"F05 payment 4242…4242 (API)","status":"PASS","cardLast4":"4242","invoiceId":"33e531bc-eea7-4604-bf9d-1273d2f1cb60","paymentId":"33acd4f8-85ab-4de7-98a5-548f6def1a51","paymentStatus":"Succeeded"}
+{"at":"2026-11-19T21:08:29.868Z","name":"F06 chat send (UI)","status":"PASS","threadId":"c8e6d462-e147-407d-af43-819ff91547d0","console":[]}
+{"at":"2026-11-19T21:08:30.114Z","name":"F07 KYC submission (API)","status":"Submitted","applicationId":"423b062d-864f-40f7-bd62-e4a9ba5d31ba"}
+{"at":"2026-11-19T21:08:30.117Z","name":"F08 admin review (API)","status":"Approved","applicationId":"423b062d-864f-40f7-bd62-e4a9ba5d31ba"}
+{"at":"2026-11-19T21:08:30.834Z","name":"F09 support ticket (UI SH08 form)","status":"PASS","subject":"E2E UI ticket 1795122510606","console":[]}
+{"at":"2026-11-19T21:08:31.012Z","name":"F09 support ticket (verify + admin reply API)","status":"PASS","ticketId":"60356158-40b8-4373-9414-5fb50fcbc789","subject":"E2E UI ticket 1795122510606"}
+{"at":"2026-11-19T21:08:31.553Z","name":"F10 SOS (API + UI SH19)","status":"PASS","sosId":"8484d9a3-5074-4669-89da-0abb73bfc59d","telLinks":2,"console":[]}

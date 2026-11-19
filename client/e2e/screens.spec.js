@@ -15,6 +15,8 @@ const codes = screenCodes();
 const seeded = readSeeded();
 const variants = [
   { dir: 'light-en', theme: 'light', lang: 'en' },
+  { dir: 'dark-en', theme: 'dark', lang: 'en' },
+  { dir: 'light-ar', theme: 'light', lang: 'ar' },
   { dir: 'dark-ar', theme: 'dark', lang: 'ar' }
 ];
 const byRole = { owner: [], mechanic: [], captain: [], center: [], admin: [] };

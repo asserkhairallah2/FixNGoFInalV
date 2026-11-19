@@ -1,14 +1,14 @@
 ﻿=== S7 : remove-db.bat typed RESET -> first run + safety snapshot + start.bat triggers setup again ===
-Timestamp: 2026-11-19T20:19:24.9181783+00:00
+Timestamp: 2026-11-19T21:06:46.4829391+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c
-Private port: 5703
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-f136dd85
+Private port: 5555
 [PASS] CLI setup created the original admin (value=0)
 remove-db.bat wrong confirmation exit=1
 [PASS] wrong typed confirmation aborts with exit 1 (value=1)
 [PASS] abort message is clear
-[PASS] database unchanged after abort (value=C897E3B3C338E64150045E484E426633FDBC62A70FCFCC28C6A414408C289513)
+[PASS] database unchanged after abort (value=3376D2A292FB38CD82D5E19369A8B154AC96CC47996400EE3D2F87467FE126C1)
 [PASS] user count unchanged after abort (value=1)
 remove-db.bat RESET exit=0
 ===================================================
@@ -18,7 +18,7 @@ remove-db.bat RESET exit=0
 [WARN] A safety snapshot is created in data\backups\ first.
 [WARN] Type RESET to confirm (nothing is deleted on any other input).
 Type RESET to confirm: [INFO] No server.pid found.
-[OK] Safety snapshot: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c\backups\pre-reset-20261119-201931
+[OK] Safety snapshot: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-f136dd85\backups\pre-reset-20261119-210653
 [OK] System reset. Run start.bat to begin first-time setup.
 [OK] System reset. Run start.bat to begin first-time setup.
 [PASS] typed RESET resets the system (value=0)

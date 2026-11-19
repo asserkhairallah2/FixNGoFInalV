@@ -1,72 +1,58 @@
-# FixNGo — Project State File (`STATE.md`)
-> **الغرض من الملف:** تسجيل الحالة اللحظية للمشروع (أين يقف المشروع الآن، ما تم إنجازه، القرارات الهندسية، والخطوات القادمة) لضمان استمرارية العمل مع الـ AI بدون فقدان السياق وتوفيراً للـ Tokens بين الجلسات.
-> **تاريخ آخر تحديث:** 2026-11-13  
-> **حالة المشروع الإجمالية:** Phase 1 Complete — 0 Build Errors — Fully Tested
+# FixNGo — Project State (`STATE.md`)
+
+> **Purpose:** live, honest snapshot of where the project stands. This file was rewritten in Phase 7 in English to reflect the system that was actually delivered. The previous Arabic Phase-1 content was stale and is intentionally replaced. Stable architecture/conventions live in `AGENT.md`; the full hand-off report is `docs/FINAL_REPORT.md`.
+>
+> **Last updated:** 2026-11-19 · **Overall status:** Complete — Phase 7 hand-off done; all gates green and final commit created.
 
 ---
 
-## 1. أين يقف المشروع الآن؟ (Current Milestone & Health)
-* **المرحلة الحالية:** تسليم متطلبات الدورة الأساسية (Core Business Cycle) والمواصفات الإلزامية والبونص.
-* **حالة الـ Build:** ناجح بنسبة 100% (`dotnet build FixNGo.sln` -> 0 Errors, 0 Warnings).
-* **حالة قاعدة البيانات:** مُهيأة عبر Migrations منفصلة مع بيانات تجريبية متكاملة (`DbInitializer.cs`).
-* **التزامن مع المستودع (GitHub Sync):** تم عمل Commit و Push لجميع ملفات الـ Features والـ Controllers والـ ViewModels والوثائق.
+## 1. Current milestone and health
+
+* **Phase:** 0-7 complete with gate evidence; hostile self-review, final report and final commit done.
+* **Build:** `dotnet build FixNGo.sln -c Release` → 0 warnings, 0 errors; client production build → 0 errors.
+* **Authoritative gate:** `tools/verify-all.ps1` - 7/7 steps PASS (`OVERALL: PASS`) at 2026-11-19 21:11:13 on the final post-fix source (includes the `ExceptionMiddleware` cancellation fix, client P0/P2 fixes, provider fail-fast and E2E harness corrections). Transcript: `docs/evidence/test-output/verify-all.txt`.
+* **Tests:** .NET (Domain + Application + API), client Vitest, script scenarios S1–S10, mock-scan, and Playwright E2E (35 tests, 4 screen-sweep variants). Exact final counts are in `docs/TEST_REPORT.md` and `docs/E2E_REPORT.md`.
+* **Git:** branch `main`; phase commits `e90d3a4` → `a882b9a` plus the final Phase 7 commit (see `git log`); post-commit tree clean.
 
 ---
 
-## 2. آخر دورات تم الانتهاء منها (Completed Cycles)
+## 2. What was delivered
 
-### ✅ Cycle 1: دورة مقدم الخدمة (Provider Cycle)
-- **الميكانيكي (Mobile Mechanic):** شاشة تفعيل الحالة (Online/Offline)، استعراض طلبات الصيانة الطارئة القريبة، تحديث مراحل المهمة، وتعديل بيانات الورشة مع Validation كامل.
-- **ونش السحب (Tow Truck):** استقبال بلاغات الطوارئ، مراحل الـ Towing من القبول والتحرك حتى التحميل والإنهاء، وتعديل بيانات الشاحنة والحمولة (0.5 إلى 50 طن).
-- **مركز الصيانة (Service Center):** إدارة باقات الصيانة وأسعارها، تعديل بيانات المركز، استقبال الحجوزات وتأكيدها أو إنهائها.
-
-### ✅ Cycle 2: دورة العميل (Client / End User Cycle)
-- **استعراض المراكز:** صفحة `ServiceCenters/Index` متضمنة:
-  - **بحث (Search):** بالاسم أو الكلمة المفتاحية.
-  - **تصفية (Filter):** حسب المدينة (القاهرة، الجيزة، الإسكندرية).
-  - **ترتيب (Sort):** حسب الاسم، التقييم، أو عدد المراجعات.
-  - **ترقيم (Pagination):** تقسيم ديناميكي لعدد العناصر بالصفحة.
-- **حجز موعد:** اختيار المركز والخدمة وحجز موعد مع التحقق من عدم اختيار تواريخ ماضية.
-- **تتبع الحالة:** متابعة حالة الحجز وتحديثها اللحظي.
-
-### ✅ Cycle 3: دورة المدير والتنسيق (Admin Governance Cycle)
-- **لوحة التحكم (Admin Dashboard):** إحصائيات حية وشاملة للمستخدمين، مقدمي الخدمة، الحجوزات، والإيرادات.
-- **لوحة التنسيق (Dispatch Board):** مراقبة طلبات الطوارئ وإمكانية إعادة التعيين أو التدخل اليدوي.
-- **إدارة الحجوزات:** جدول مركزي لجميع المواعيد وتغيير حالاتها.
-- **طابور التوثيق (Verification Queue):** فحص رخص وسجلات المراكز والمزودين واعتمادهم.
-
-### ✅ Cycle 4: المتطلبات الهندسية الإلزامية (Bare Minimum)
-- **AutoMapper:** تهيئة ملفات الـ Mapping (`MappingProfile.cs`) والتحويل بين الكيانات والـ ViewModels/DTOs.
-- **Entity Configurations:** فصل إعدادات كل Entity في كلاس مستقل يرث `IEntityTypeConfiguration<T>` داخل طبقة الـ Infrastructure.
-- **Validation:** تطبيق Client-Side Validation باستخدام jQuery Unobtrusive و Server-Side Validation كامل.
-
-### ✅ Cycle 5: البونص والإضافات المتقدمة (Bonus Features)
-- **FluentValidation:** كتابة كلاسات تحقق متقدمة منفصلة للـ ViewModels وحقنها بالسيرفر.
-- **التفاعلية (AJAX & SignalR):** تحديث حالات الطلبات واستجابة سريعة للواجهات بدون Reload كامل.
+* **Backend:** ASP.NET Core 8, Clean Architecture (`Domain`, `Application`, `Infrastructure`, `Web`, `Cli`), EF Core 8 + SQLite, migrations, JWT + refresh tokens, RBAC policies, SignalR hub, hosted workers, FluentValidation, AutoMapper, Serilog. Full REST API under `/api/v1/` (generated reference in `docs/API.md`).
+* **Client:** `client/` — Vite 6 + React 18 + JSX + Tailwind. 143 registered screens (138 prototype + added gap screens) wired to the real API, EN/AR RTL, light/dark. No mocks, dev sidebar, role switchers, hard-coded personas/numbers/dates or remote image URLs (`tools/mock-scan.ps1` = 0 hits).
+* **Providers + Simulator Dock:** fake-but-functional OTP/SMS/email, payments, maps/geocoding/routing and push providers writing real SQLite rows; five-panel dock (Notifications/Payments/SMS/OTP/GPS). Configuration-switchable with fail-fast on `Real` without keys (`docs/PROVIDERS.md`, DEVIATIONS #13).
+* **Five root tools:** `setup.bat`, `start.bat`, `remove-db.bat`, `dummy-db.bat`, `restore-db.bat` — all logic in the C# CLI, wrappers call `dotnet <dll>`.
+* **Evidence:** unit/API/authz-matrix/offer-race/privacy tests, S1–S10 transcripts, client tests, Playwright flow + 572 screenshots (143 × 4 variants), reports under `docs/`.
 
 ---
 
-## 3. سجل القرارات الهندسية المتخذة (Decisions Log / ADR)
-1. **اعتماد الـ Clean Architecture:** فصل المشروع إلى 4 طبقات مستقلة لمنع تداخل المسؤوليات وتسهيل عمل الفريق واختبارات الوحدة.
-2. **عزل الـ DbContext عبر Interfaces:** حقن `IAppDbContext` في طبقة التطبيق لمنع ارتباط الـ Controllers المباشر بقاعدة البيانات.
-3. **حماية الحذف (DeleteBehavior.Restrict):** منع الـ Cascade Delete العشوائي على العلاقات الحيوية لحماية بيانات الرحلات والمراكز.
-4. **تأمين البيانات الحساسة:** استبعاد كلمات السر والـ Connection Strings ومفاتيح الـ API من الـ Git عبر `.gitignore` و `User Secrets`.
+## 3. Key decisions / deviations
+
+Recorded in `docs/DEVIATIONS.md` (rows 1–13). Most significant: REST + React SPA instead of Razor/MVC (#7); SQLite instead of SQL Server (#8); visual image inspection impossible for this model, replaced by automated DOM/screenshot assertions (#10); NU1903 suppressed for the mandated AutoMapper 12.0.1 (#11); `dotnet <dll>` wrappers due to user-local SDK (#12); provider fail-fast implementation (#13).
 
 ---
 
-## 4. آخر ما سُجل في هذا الملف (Last Recorded State)
-* اكتمال إعداد ومراجعة دليل أسئلة المتابعة والتقييم الشامل (`اسئلة_متابعة_مشروع_FixNGo_الشاملة.pdf` و `FixNGo_FollowUp_Questions.pdf`).
-* التحقق البصري الكامل عبر تحويل 20 صفحة إلى صور بدقة عالية وتنسيق هوامش وأعمدة الجداول بنسبة 100%.
+## 4. Known issues and unverified items
+
+See `docs/KNOWN_ISSUES.md` (all historical P0/P1 issues fixed; remaining items are deliberate dataset choices or P3 notes). Unverified: no human-style visual inspection of the 572 screenshots (model cannot view images); real external provider adapters are not bundled by design (fail-fast is the intended behaviour). See `docs/FINAL_REPORT.md`.
 
 ---
 
-## 5. المهام القادمة (Next Upcoming Tasks / Backlog)
-1. تفعيل بوابات الدفع الإلكتروني (Online Payment Gateway Integration - Paymob/Stripe).
-2. الخرائط التفاعلية وتتبع الـ GPS اللحظي لمواقع الأوناش عبر Leaflet / Google Maps APIs.
-3. تجهيز ملفات الـ Dockerfile وإعداد الـ CI/CD Pipeline للرفع على السحابة (Cloud Deployment).
+## 5. How to run / verify
+
+```bat
+setup.bat
+start.bat
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify-all.ps1
+```
+
+Server: `http://localhost:5080` (`FIXNGO_PORT` overrides). Automated runs isolate state via `FIXNGO_DATA_DIR`, `FIXNGO_LOG_DIR` and a private port; the real `data\` folder is never a test target.
 
 ---
 
-## 6. متى يتم تحديث هذا الملف؟ (Update Protocol)
-* **الموعد الدوري:** يتم تحديث هذا الملف في **نهاية كل جلسة عمل (Session)** أو بمجرد **اكتمال Cycle برمجية جديدة**.
-* **الهدف:** توفير استهلاك الـ Tokens، وإعطاء نموذج الـ AI في الجلسة القادمة ملخصاً دقيقاً عما تم إنجازه والمرحلة الحالية دون الحاجة لإعادة قراءة وتحليل المشروع بأكمله من البداية.
+## 6. Resume point
+
+For orientation, read: `README.md` → `docs/PROGRESS.md` (`RESUME HERE`) → `docs/AGENT_LOG.md` (latest rows) → `docs/FINAL_REPORT.md`. All work is complete: final `verify-all` green (21:11:13), final commit created, tree clean. Do not trust the old Arabic Phase-1 content that previously occupied this file.

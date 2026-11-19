@@ -4,14 +4,12 @@
 // temp copy of the published ASP.NET app with a freshly built client wwwroot.
 // The project's real data\ folder and source-owned files are never written to.
 //
-// NOTE: dotnet build is intentionally NOT run here. At the time of this suite
-// the checked-in source has a compile error in
-// src/FixNGo.Web/Controllers/AdminController.cs (CS0108: method User hides
-// ControllerBase.User). The last successful Release build in
-// src/FixNGo.Web/bin/Release/net8.0 is used instead (it contains all
-// controllers); the compiler output is retained as evidence in
-// docs/evidence/e2e/source-build.txt. app\web\FixNGo.Web.dll is an older
-// Auth-only build and is deliberately not used.
+// The ASP.NET server assembly is taken from the current Release build in
+// src/FixNGo.Web/bin/Release/net8.0 (verify-all step 01 builds the solution
+// first). dotnet build is intentionally NOT repeated here to avoid racing the
+// solution build. A fresh Release build check is still recorded as evidence in
+// docs/evidence/e2e/source-build.txt. app\web\FixNGo.Web.dll is the deployed
+// app helper target and is deliberately not used by the isolated E2E server.
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -81,31 +79,9 @@ if (built.status !== 0) {
   process.exit(built.status || 1);
 }
 
-// TEMP-ONLY workaround for a fatal source bug in BottomNav (App.jsx): when a
-// tab has no PREFERRED_TAB_SCREEN entry, the Map is filled with `undefined`,
-// then `unique.map(s => s.tab)` crashes and the whole authenticated shell is
-// replaced by the fatal fallback. The patch below edits ONLY the freshly built
-// bundle inside the temp web dir; no repository/source file is modified.
-// The bug is documented in docs/E2E_REPORT.md.
-const patchNotes = [];
-const assetsDir = path.join(webDir, 'wwwroot', 'assets');
-if (fs.existsSync(assetsDir)) {
-  for (const name of fs.readdirSync(assetsDir).filter((n) => n.endsWith('.js'))) {
-    const file = path.join(assetsDir, name);
-    const before = fs.readFileSync(file, 'utf8');
-    // Minified form: map.set(tab, code === preferred ? screen : existing)
-    // Change the fallback to (existing || screen) so no undefined enters the Map.
-    const re = /(\w+)\.set\((\w+)\.tab,(\w+)\.code===(\w+)\?\3:(\w+)\)/g;
-    const after = before.replace(re, (_m, map, key, screen, pref, existing) =>
-      `${map}.set(${key}.tab,${screen}.code===${pref}?${screen}:(${existing}||${screen}))`);
-    if (after !== before) {
-      fs.writeFileSync(file, after);
-      patchNotes.push(`${name}: patched ${(before.match(re) || []).length} BottomNav Map assignment(s)`);
-    }
-  }
-}
-fs.writeFileSync(path.join(evidenceDir, 'bundle-patch.txt'),
-  patchNotes.length ? patchNotes.join('\n') + '\n' : 'No temp bundle patch was needed.\n');
+// The freshly built client bundle is used verbatim. There is deliberately no
+// bundle patching: the BottomNav Map bug was fixed at source in App.jsx, so E2E
+// exercises exactly the code that ships. Historical patch evidence was removed.
 
 // 2. Non-interactive first-run setup in the TEMP data dir (env secrets only).
 const setupEnv = {

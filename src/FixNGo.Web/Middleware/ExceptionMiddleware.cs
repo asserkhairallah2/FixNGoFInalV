@@ -31,6 +31,19 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
             await WriteProblem(context, HttpStatusCode.BadRequest, "validation.failed", errors, "Validation failed.");
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The client disconnected or cancelled the request (e.g. a browser navigating
+            // away mid-fetch). This is not a server fault: do not write a ProblemDetails
+            // response or log an error, since there is nobody left to receive it.
+            logger.LogDebug("Request aborted by client: {Method} {Path}", context.Request.Method, context.Request.Path);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation without a client abort (e.g. an internal timeout). Still not a
+            // code defect; log at debug level and do not attempt a 500 response.
+            logger.LogDebug("Request cancelled: {Method} {Path}", context.Request.Method, context.Request.Path);
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception");

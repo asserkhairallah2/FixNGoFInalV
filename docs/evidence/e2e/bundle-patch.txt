@@ -1,1 +1,4 @@
-index-BiNpvZf9.js: patched 1 BottomNav Map assignment(s)
+none: the E2E harness no longer patches the built bundle.
+The historical P0 BottomNav defect and the post-create navigation P2 were fixed in source
+(client/src/App.jsx and client/src/ui/renderers.jsx); the final E2E run uses the clean source
+build recorded in docs/evidence/e2e/source-build.txt (0 warnings, 0 errors).

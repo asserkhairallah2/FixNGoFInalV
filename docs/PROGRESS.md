@@ -1,9 +1,8 @@
 # Progress
 
 ## RESUME HERE
-Phase: 3 (Client migration & wiring) — task: finish the declarative registry-driven client, fix audit findings, add render smoke tests, produce EN-light/AR-dark screenshots for every screen, then Gate 3.
-Last verified: Phase 3 checkpoint — client 9/9 Vitest PASS; client build PASS; backend Release build 0 warnings/errors; mock-scan 0 hits (86 files); 141 screens registered (138 legacy + AD16–AD18). Evidence: docs/evidence/test-output/vitest-gate3-prep.txt, client-build-gate3-prep.txt, dotnet-build-gate3-prep.txt, mock-scan.txt. Prior Gate 2 PASS — Release build 0 Warning(s) 0 Error(s); full suite 26/26 (1 domain + 9 app + 16 API); authz matrix, tow/mechanic/booking/payment/KYC flows, offer race, privacy and OpenAPI export all green; docs/API.md generated (161 lines); TEST_REPORT.md regenerated.
-Next command: `git add -A; git commit` Gate 2, then inspect `client/` current shell + a legacy module source and begin Phase 3 porting per `06_FRONTEND_MIGRATION.md`.
+Phase: **COMPLETE** — all phases 0-7 done, all gates green, final commit created, tree clean.
+Final authoritative gate: `tools/verify-all.ps1` = **7/7 PASS, OVERALL: PASS** at 2026-11-19 21:11:13 (Release build 0 warnings/0 errors; .NET tests green; client 9/9; mock-scan 99 files/33 literals/**0 hits**; S1–S10 152 assertions; Playwright E2E **35/35 PASS**, 4-variant sweep 143 screens each = 572 screenshots, zero console errors/warnings/failed requests/forbidden text/overflow). This run is post-fix: it includes the `ExceptionMiddleware` cancellation fix, the client P0/P2 fixes, provider fail-fast, and the E2E harness corrections. Transcript: `docs/evidence/test-output/verify-all.txt`. No `TaskCanceledException`/`/sim/push` 500 recurred in the final run. Final message to owner delivered.
 
 ## Gate summaries (newest first)
 Gate 2 — PASS (2026-11-19): Release build 0 warnings/errors; 26/26 tests (1 domain + 9 app + 16 API via WebApplicationFactory + temp SQLite); authz matrix 17 routes × 6 callers; flow tests tow/P0, mechanic quote/dispute, booking lifecycle, payments (card/cash/declined/retry/idempotent), KYC; offer race (2 captains → exactly 1 winner); privacy (pre-accept payloads hide phone/plate/exact coords); OpenAPI exported to docs/API.md. Evidence: docs/evidence/test-output/dotnet-test-gate2.txt, authz-matrix.md, docs/API.md, docs/TEST_REPORT.md. Root causes fixed: SQLite decimal ORDER BY, dispute JSON cycle, default-card test bug, Swagger global security export.
@@ -54,25 +53,25 @@ Gate 0 — PASS (2026-11-19): layout verified; 11 brief files + AGENT.md + SRS +
 - [x] Gate 2: all tests green, API.md, authz matrix, flow tests, offer race, privacy test
 
 ### Phase 3 Client
-- [ ] shell + shared UI kit (no dev sidebar/mocks)
-- [ ] auth A01–A13; car owner C01–C43; mechanic M01–M15; captain T01–T15; center SC01–SC17; admin AD01–AD18; shared SH01–SH21
-- [ ] gap screens (P0, photos, cash confirm, payment methods, report user/review, NotFound, offline)
-- [ ] Gate 3: all screens data-bound, mock-scan 0, client tests green
+- [x] shell + shared UI kit (no dev sidebar/mocks)
+- [x] auth A01–A13; car owner C01–C43; mechanic M01–M15; captain T01–T15; center SC01–SC17; admin AD01–AD18; shared SH01–SH21
+- [x] gap screens (P0, photos, cash confirm, payment methods, report user/review, NotFound, offline)
+- [x] Gate 3: all screens data-bound, mock-scan 0, client tests green
 
 ### Phase 4 Simulators
-- [ ] fake maps/SMS/email/OTP/payments/push providers + config switch to Real stubs
-- [ ] Simulator Dock: notifications, payments, SMS, OTP, GPS/Maps + drive simulation
-- [ ] Gate 4: acceptance list, sim 404 when disabled
+- [x] fake maps/SMS/email/OTP/payments/push providers + config switch to Real stubs (fail-fast; docs/PROVIDERS.md)
+- [x] Simulator Dock: notifications, payments, SMS, OTP, GPS/Maps + drive simulation
+- [x] Gate 4: acceptance list, sim 404 when disabled
 
 ### Phase 5 Tools
-- [ ] remove-db, dummy-db + generator + dummy-db.md, restore-db
-- [ ] S1–S10 scripts tests with transcripts
-- [ ] Gate 5: every generated credential logs in, byte-identical restore
+- [x] remove-db, dummy-db + generator + dummy-db.md, restore-db
+- [x] S1–S10 scripts tests with transcripts
+- [x] Gate 5: every generated credential logs in, byte-identical restore
 
 ### Phase 6 QA
-- [ ] E2E flows (12 storyboards), 4-variant screen sweep, a11y/security/perf, verify-all.ps1
-- [ ] Gate 6: verify-all exits 0, TEST_REPORT 0 failures
+- [x] E2E flows (12 storyboards), 4-variant screen sweep, a11y/security/perf, verify-all.ps1
+- [x] Gate 6: verify-all exits 0 (7/7 PASS), TEST_REPORT 0 failures
 
 ### Phase 7 Hand-off
-- [ ] FR/NFR/UC audit, README/STATE/AGENT updates, FINAL_REPORT, hostile self-review
-- [ ] Gate 7 = Definition of Done
+- [x] FR/NFR/UC audit, README/STATE/AGENT updates, FINAL_REPORT, hostile self-review
+- [x] Gate 7 = Definition of Done (final verify-all 21:11:13 7/7 PASS; final commit created; tree clean)

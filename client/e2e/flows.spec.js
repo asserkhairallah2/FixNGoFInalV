@@ -1,7 +1,7 @@
-// (e) Key business flows. Where the shipped client exposes a working control
-// we drive the real UI; where it does not (no selection/accept controls, and
-// form/API field mismatches) we exercise the same flow through the real API
-// and record the UI defect as exact evidence. Nothing is skipped silently.
+// (e) Key business flows. Every UI form is driven with the field names the
+// source actually renders (they match the API DTOs). Steps that have no real
+// UI control (offer accept/admin review) use the real API and are labelled as
+// such. Nothing is skipped silently and no false "defect" is recorded.
 import { test, expect } from '@playwright/test';
 import {
   api, loginApi, loginUI, attachConsoleWatch, CREDENTIALS, KYCTEST_EMAIL,
@@ -19,8 +19,10 @@ async function apiLogin(key) {
   return { token: a.accessToken, user: a.user };
 }
 
-let uiDefects = [];
-test.afterAll(() => writeEvidence('ui-defects.json', JSON.stringify(uiDefects, null, 2)));
+// No false "UI defect" records: forms are driven with the exact fields the
+// screen registry renders, which match the API DTOs. An empty evidence file is
+// still emitted so downstream reports have a stable path.
+test.afterAll(() => writeEvidence('ui-defects.json', JSON.stringify([], null, 2)));
 
 test('F01 login -> C02 (owner home)', async ({ browser }) => {
   const context = await browser.newContext();
@@ -87,74 +89,69 @@ test('F03 offer accept (real API; UI has no provider-selection/accept controls)'
 });
 let requestFlowOffer;
 
-test('F04 booking (API after capturing the C19 UI field mismatch)', async ({ browser }) => {
+test('F04 booking via C19 UI form + center admin confirmation', async ({ browser }) => {
   const seeded = readSeeded();
-  // Capture the shipped UI behaviour first.
   const context = await browser.newContext();
   const page = await context.newPage();
-  let uiAlert = null;
+  const logs = attachConsoleWatch(page);
+  let booking;
   try {
     await loginUI(page, 'owner');
     await page.goto(`${await page.evaluate(() => location.origin)}/#/C19`);
-    await page.locator('[data-testid="field-centerId"]').selectOption({ index: 1 }).catch(() => {});
-    await page.locator('[data-testid="field-serviceId"]').fill(seeded.ids.centerServiceId || '');
-    await page.locator('[data-testid="field-vehicleId"]').selectOption({ index: 1 }).catch(() => {});
-    await page.locator('[data-testid="field-startAt"]').fill('2030-01-01T10:00');
+    // Field names are exactly those rendered by the C19 registry entry and bound
+    // case-insensitively to CreateBookingRequest (CenterId/ServiceId/VehicleId/SlotStart).
+    await page.locator('[data-testid="field-centerId"]').selectOption(seeded.ids.centerId);
+    await page.locator('[data-testid="field-serviceId"]').fill(seeded.ids.centerServiceId);
+    await page.locator('[data-testid="field-vehicleId"]').selectOption(seeded.ids.vehicleId);
+    await page.locator('[data-testid="field-SlotStart"]').fill('2030-01-01T10:00');
     await page.locator('[data-testid="screen-primary"]').click();
-    uiAlert = await page.locator('[role="alert"]').first().textContent({ timeout: 8000 }).catch(() => null);
-  } catch (err) { uiAlert = `UI interaction error: ${err.message}`; }
-  finally { await context.close(); }
-
-  const defect = { screen: 'C19', symptom: 'Form sends startAt but API expects slotStart', alert: uiAlert };
-  uiDefects.push(defect);
-
-  try {
+    await expect(page.getByText('Saved successfully')).toBeVisible({ timeout: 15_000 });
     const owner = await apiLogin('owner');
-    const center = await apiLogin('center');
-    const slot = new Date(Date.now() + 72 * 3600 * 1000); slot.setUTCMinutes(0, 0, 0);
-    const booking = ok(await api('/centers/bookings', { method: 'POST', token: owner.token, body: {
-      centerId: seeded.ids.centerId, serviceId: seeded.ids.centerServiceId,
-      slotStart: slot.toISOString(), vehicleId: seeded.ids.vehicleId, note: 'E2E booking flow'
-    }}), 'create booking');
-    const confirmed = ok(await api(`/center-admin/bookings/${booking.id}/confirm`, { method: 'POST', token: center.token }), 'confirm booking');
-    recordFlow('F04 booking (API; UI C19 broken)', 'PASS', { bookingId: booking.id, status: confirmed.status || 'Confirmed', uiDefect: defect });
-    expect(booking.id).toBeTruthy();
+    const bookings = ok(await api('/centers/bookings', { token: owner.token }), 'list bookings');
+    booking = (Array.isArray(bookings) ? bookings : bookings.items || [])
+      .find((b) => String(b.slotStart || '').includes('2030-01-01'));
+    expect(booking).toBeTruthy();
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F04 booking (UI form + admin confirm API)', 'PASS', { bookingId: booking.id, console: clean });
   } catch (err) {
-    recordFlow('F04 booking (API; UI C19 broken)', 'FAIL', { error: err.message, uiDefect: defect });
+    recordFlow('F04 booking (UI form + admin confirm API)', 'FAIL', { error: err.message });
     throw err;
-  }
+  } finally { await context.close(); }
+  const center = await apiLogin('center');
+  const confirmed = ok(await api(`/center-admin/bookings/${booking.id}/confirm`, { method: 'POST', token: center.token }), 'confirm booking');
+  expect(confirmed.status).toBeTruthy();
 });
 
-test('F05 card payment with 4242 4242 4242 4242 (API; UI C33 field mismatch captured)', async ({ browser }) => {
+test('F05 card add via C33 UI form + 4242 payment via API', async ({ browser }) => {
   const seeded = readSeeded();
   const context = await browser.newContext();
   const page = await context.newPage();
-  let uiAlert = null;
+  const logs = attachConsoleWatch(page);
   try {
     await loginUI(page, 'owner');
     await page.goto(`${await page.evaluate(() => location.origin)}/#/C33`);
-    await page.locator('[data-testid="field-number"]').fill('4242 4242 4242 4242');
-    await page.locator('[data-testid="field-expiry"]').fill('12/30');
-    await page.locator('[data-testid="field-cvv"]').fill('123');
-    await page.locator('[data-testid="field-holder"]').fill('E2E Tester');
+    // C33 renders Number/ExpMonth/ExpYear/Label, bound to AddCardRequest. Use a
+    // distinct Luhn-valid card because global setup already stored 4242…4242.
+    await page.locator('[data-testid="field-Number"]').fill('5555 5555 5555 4444');
+    await page.locator('[data-testid="field-ExpMonth"]').fill('12');
+    await page.locator('[data-testid="field-ExpYear"]').fill('2030');
+    await page.locator('[data-testid="field-Label"]').fill('E2E UI Visa');
     await page.locator('[data-testid="screen-primary"]').click();
-    uiAlert = await page.locator('[role="alert"]').first().textContent({ timeout: 8000 }).catch(() => null);
-  } catch (err) { uiAlert = `UI interaction error: ${err.message}`; }
-  finally { await context.close(); }
-  const defect = { screen: 'C33', symptom: 'Form sends expiry/cvv/holder; API requires expMonth/expYear/label', alert: uiAlert };
-  uiDefects.push(defect);
+    await expect(page.getByText('Saved successfully')).toBeVisible({ timeout: 15_000 });
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F05 card add (UI C33 form)', 'PASS', { last4: '4444', console: clean });
+  } catch (err) {
+    recordFlow('F05 card add (UI C33 form)', 'FAIL', { error: err.message });
+    throw err;
+  } finally { await context.close(); }
 
   try {
     const owner = await apiLogin('owner');
-    // Global setup already stored the 4242 card in this throwaway DB; reuse it
-    // (the API rejects duplicate card numbers with payment.card_exists).
     const methods = ok(await api('/payments/methods', { token: owner.token }), 'list cards');
-    let card = (Array.isArray(methods) ? methods : methods.items || []).find((m) => m.last4 === '4242');
-    if (!card) {
-      card = ok(await api('/payments/methods/card', { method: 'POST', token: owner.token, body: {
-        number: '4242424242424242', expMonth: 12, expYear: 2030, label: 'E2E Visa flow', isDefault: true
-      }}), 'add fake card');
-    }
+    const list = Array.isArray(methods) ? methods : methods.items || [];
+    const card = list.find((m) => m.last4 === '4242') || list.find((m) => m.last4 === '4444');
     const req = ok(await api('/requests', { method: 'POST', token: owner.token, body: {
       vehicleId: seeded.ids.vehicleId, serviceTypeId: seeded.ids.serviceTypeId,
       pickupLatitude: 30.0444, pickupLongitude: 31.2357, pickupAddress: 'E2E payment flow',
@@ -164,11 +161,11 @@ test('F05 card payment with 4242 4242 4242 4242 (API; UI C33 field mismatch capt
     const payment = ok(await api(`/payments/invoices/${invoice.id}/pay`, { method: 'POST', token: owner.token, body: {
       method: 'Card', paymentMethodId: card.id, idempotencyKey: `e2e-pay-${invoice.id}`
     }}), 'pay invoice');
-    recordFlow('F05 payment 4242…4242 (API; UI C33 broken)', 'PASS',
-      { cardLast4: card.last4, invoiceId: invoice.id, paymentId: payment.id, paymentStatus: payment.status, uiDefect: defect });
+    recordFlow('F05 payment 4242…4242 (API)', 'PASS',
+      { cardLast4: card.last4, invoiceId: invoice.id, paymentId: payment.id, paymentStatus: payment.status });
     expect(payment.status).toBe('Succeeded');
   } catch (err) {
-    recordFlow('F05 payment 4242…4242 (API; UI C33 broken)', 'FAIL', { error: err.message, uiDefect: defect });
+    recordFlow('F05 payment 4242…4242 (API)', 'FAIL', { error: err.message });
     throw err;
   }
 });
@@ -223,31 +220,40 @@ test('F07 KYC submission + F08 admin review (real API)', async () => {
   }
 });
 
-test('F09 support ticket (API; UI SH08 field mismatch captured)', async ({ browser }) => {
+test('F09 support ticket via SH08 UI form + admin reply API', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  let uiAlert = null;
+  const logs = attachConsoleWatch(page);
+  let subject;
   try {
     await loginUI(page, 'owner');
     await page.goto(`${await page.evaluate(() => location.origin)}/#/SH08`);
-    await page.locator('[data-testid="field-subject"]').fill('E2E UI ticket');
-    await page.locator('[data-testid="field-body"]').fill('E2E UI ticket body');
+    // SH08 renders Category/Subject/Description, bound to CreateTicketRequest.
+    subject = `E2E UI ticket ${Date.now()}`;
+    await page.locator('[data-testid="field-Category"]').fill('General');
+    await page.locator('[data-testid="field-Subject"]').fill(subject);
+    await page.locator('[data-testid="field-Description"]').fill('Created by the E2E UI flow test');
     await page.locator('[data-testid="screen-primary"]').click();
-    uiAlert = await page.locator('[role="alert"]').first().textContent({ timeout: 8000 }).catch(() => null);
-  } catch (err) { uiAlert = `UI interaction error: ${err.message}`; }
-  finally { await context.close(); }
-  const defect = { screen: 'SH08', symptom: 'Form sends body but API requires description and category', alert: uiAlert };
-  uiDefects.push(defect);
+    await expect(page.getByText('Saved successfully')).toBeVisible({ timeout: 15_000 });
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F09 support ticket (UI SH08 form)', 'PASS', { subject, console: clean });
+  } catch (err) {
+    recordFlow('F09 support ticket (UI SH08 form)', 'FAIL', { error: err.message });
+    throw err;
+  } finally { await context.close(); }
+
   try {
     const owner = await apiLogin('owner');
     const admin = await apiLogin('admin');
-    const ticket = ok(await api('/support/tickets', { method: 'POST', token: owner.token, body: {
-      category: 'General', subject: 'E2E ticket flow', description: 'Created by E2E flow test'
-    }}), 'create ticket');
+    const tickets = ok(await api('/support/tickets', { token: owner.token }), 'list tickets');
+    const list = Array.isArray(tickets) ? tickets : tickets.items || [];
+    const ticket = list.find((t) => t.subject === subject);
+    expect(ticket).toBeTruthy();
     ok(await api(`/admin/tickets/${ticket.id}/reply`, { method: 'POST', token: admin.token, body: { text: 'E2E admin reply' } }), 'admin reply');
-    recordFlow('F09 support ticket (API; UI SH08 broken)', 'PASS', { ticketId: ticket.id, uiDefect: defect });
+    recordFlow('F09 support ticket (verify + admin reply API)', 'PASS', { ticketId: ticket.id, subject });
   } catch (err) {
-    recordFlow('F09 support ticket (API; UI SH08 broken)', 'FAIL', { error: err.message, uiDefect: defect });
+    recordFlow('F09 support ticket (verify + admin reply API)', 'FAIL', { error: err.message });
     throw err;
   }
 });

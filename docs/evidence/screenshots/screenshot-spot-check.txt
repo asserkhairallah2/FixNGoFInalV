@@ -1,0 +1,27 @@
+Deterministic screenshot spot-check (seed 20261119) - Phase 7 hostile review
+Generated (UTC): 2026-11-19T21:07:45.8366876Z
+Population: 572 PNG screenshots across 4 variants
+
+docs\evidence\screenshots\light-en\SC17.png | 15965 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-en\C24.png | 15118 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-ar\C40.png | 14275 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\SC10.png | 17948 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-ar\A04.png | 19129 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\A08.png | 16196 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-ar\T01.png | 16208 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-ar\C14.png | 18233 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-ar\A10.png | 15800 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\M09.png | 17869 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\SH02.png | 16610 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-ar\T13.png | 14686 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-en\C23.png | 18691 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-en\M07.png | 18373 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-en\A01.png | 22751 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\T03.png | 15517 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\A04.png | 19332 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-en\M07.png | 18140 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\dark-ar\T13.png | 14900 bytes | 394x852 | png-signature=True | VALID
+docs\evidence\screenshots\light-ar\A09.png | 15816 bytes | 394x852 | png-signature=True | VALID
+
+Result: 20/20 valid PNG files
+NOTE: This is a file-level/integrity check. This model cannot visually inspect image content; see docs/FINAL_REPORT.md disclosure.

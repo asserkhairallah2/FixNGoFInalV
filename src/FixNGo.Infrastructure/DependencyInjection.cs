@@ -8,8 +8,9 @@ namespace FixNGo.Infrastructure;
 /// <summary>Registers infrastructure services and the EF Core context.</summary>
 public static class DependencyInjection
 {
-    public static IServiceCollection AddFixNGoInfrastructure(this IServiceCollection services, RuntimePaths paths, string connectionString)
+    public static IServiceCollection AddFixNGoInfrastructure(this IServiceCollection services, RuntimePaths paths, string connectionString, ProviderOptions? providers = null)
     {
+        providers ??= ProviderOptions.Fake;
         services.AddDbContext<AppDbContext>(options =>
         {
             options.UseSqlite(connectionString, o => o.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
@@ -17,8 +18,17 @@ public static class DependencyInjection
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPasswordHasher, PasswordHasherService>();
-        services.AddSingleton<IOtpSender, FakeOtpSender>();
-        services.AddScoped<IPaymentGateway, FakePaymentGateway>();
+        // Provider selection is configuration-driven. A Real selection fails fast in
+        // ProviderOptions.FromValues at startup; if constructed directly for tests, the
+        // Real stubs throw ProviderNotConfiguredException on first use (never a silent fake).
+        services.AddSingleton<FakeOtpSender>();
+        services.AddScoped<FakePaymentGateway>();
+        services.AddSingleton<IOtpSender>(sp => providers.Otp == ProviderMode.Real
+            ? new RealOtpSender()
+            : sp.GetRequiredService<FakeOtpSender>());
+        services.AddScoped<IPaymentGateway>(sp => providers.Payments == ProviderMode.Real
+            ? new RealPaymentGateway()
+            : sp.GetRequiredService<FakePaymentGateway>());
         services.AddSingleton(paths);
         return services;
     }

@@ -50,7 +50,7 @@
   {
     "code": "M03",
     "role": "mechanic",
-    "hash": "#/M03?id=0eb92647-bf45-4b1a-8bc4-7c15197f0fba",
+    "hash": "#/M03?id=97b4974f-2498-4e11-8922-3768f04e0ac1",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M03.png",
     "diagnostics": {
       "bad": [],
@@ -66,7 +66,7 @@
   {
     "code": "M04",
     "role": "mechanic",
-    "hash": "#/M04?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+    "hash": "#/M04?id=300a0b10-3806-464b-ad40-1b4974d610e8",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M04.png",
     "diagnostics": {
       "bad": [],
@@ -82,7 +82,7 @@
   {
     "code": "M05",
     "role": "mechanic",
-    "hash": "#/M05?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+    "hash": "#/M05?id=300a0b10-3806-464b-ad40-1b4974d610e8",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M05.png",
     "diagnostics": {
       "bad": [],
@@ -98,7 +98,7 @@
   {
     "code": "M06",
     "role": "mechanic",
-    "hash": "#/M06?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+    "hash": "#/M06?id=300a0b10-3806-464b-ad40-1b4974d610e8",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M06.png",
     "diagnostics": {
       "bad": [],
@@ -178,7 +178,7 @@
   {
     "code": "M11",
     "role": "mechanic",
-    "hash": "#/M11?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+    "hash": "#/M11?id=300a0b10-3806-464b-ad40-1b4974d610e8",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M11.png",
     "diagnostics": {
       "bad": [],
@@ -194,7 +194,7 @@
   {
     "code": "M12",
     "role": "mechanic",
-    "hash": "#/M12?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+    "hash": "#/M12?id=300a0b10-3806-464b-ad40-1b4974d610e8",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M12.png",
     "diagnostics": {
       "bad": [],
@@ -210,7 +210,7 @@
   {
     "code": "M13",
     "role": "mechanic",
-    "hash": "#/M13?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+    "hash": "#/M13?id=300a0b10-3806-464b-ad40-1b4974d610e8",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M13.png",
     "diagnostics": {
       "bad": [],

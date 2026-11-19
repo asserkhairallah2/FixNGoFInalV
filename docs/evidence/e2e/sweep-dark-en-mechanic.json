@@ -1,0 +1,354 @@
+[
+  {
+    "code": "A11",
+    "role": "mechanic",
+    "hash": "#/A11",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\A11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 277
+    },
+    "console": []
+  },
+  {
+    "code": "M01",
+    "role": "mechanic",
+    "hash": "#/M01",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M01.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 264
+    },
+    "console": []
+  },
+  {
+    "code": "M02",
+    "role": "mechanic",
+    "hash": "#/M02",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M02.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 250
+    },
+    "console": []
+  },
+  {
+    "code": "M03",
+    "role": "mechanic",
+    "hash": "#/M03?id=97b4974f-2498-4e11-8922-3768f04e0ac1",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M03.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 286
+    },
+    "console": []
+  },
+  {
+    "code": "M04",
+    "role": "mechanic",
+    "hash": "#/M04?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M04.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 319
+    },
+    "console": []
+  },
+  {
+    "code": "M05",
+    "role": "mechanic",
+    "hash": "#/M05?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M05.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 335
+    },
+    "console": []
+  },
+  {
+    "code": "M06",
+    "role": "mechanic",
+    "hash": "#/M06?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M06.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 287
+    },
+    "console": []
+  },
+  {
+    "code": "M07",
+    "role": "mechanic",
+    "hash": "#/M07",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M07.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 271
+    },
+    "console": []
+  },
+  {
+    "code": "M08",
+    "role": "mechanic",
+    "hash": "#/M08",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M08.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 268
+    },
+    "console": []
+  },
+  {
+    "code": "M09",
+    "role": "mechanic",
+    "hash": "#/M09",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M09.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 276
+    },
+    "console": []
+  },
+  {
+    "code": "M10",
+    "role": "mechanic",
+    "hash": "#/M10",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M10.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 251
+    },
+    "console": []
+  },
+  {
+    "code": "M11",
+    "role": "mechanic",
+    "hash": "#/M11?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 287
+    },
+    "console": []
+  },
+  {
+    "code": "M12",
+    "role": "mechanic",
+    "hash": "#/M12?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M12.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 245
+    },
+    "console": []
+  },
+  {
+    "code": "M13",
+    "role": "mechanic",
+    "hash": "#/M13?id=300a0b10-3806-464b-ad40-1b4974d610e8",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M13.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 281
+    },
+    "console": []
+  },
+  {
+    "code": "M14",
+    "role": "mechanic",
+    "hash": "#/M14",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 320
+    },
+    "console": []
+  },
+  {
+    "code": "M15",
+    "role": "mechanic",
+    "hash": "#/M15",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\M15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 292
+    },
+    "console": []
+  },
+  {
+    "code": "SH14",
+    "role": "mechanic",
+    "hash": "#/SH14",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SH14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 271
+    },
+    "console": []
+  },
+  {
+    "code": "SH15",
+    "role": "mechanic",
+    "hash": "#/SH15",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SH15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 260
+    },
+    "console": []
+  },
+  {
+    "code": "SH16",
+    "role": "mechanic",
+    "hash": "#/SH16",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SH16.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 335
+    },
+    "console": []
+  },
+  {
+    "code": "SH17",
+    "role": "mechanic",
+    "hash": "#/SH17",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SH17.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 243
+    },
+    "console": []
+  },
+  {
+    "code": "SH18",
+    "role": "mechanic",
+    "hash": "#/SH18",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SH18.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 340
+    },
+    "console": []
+  },
+  {
+    "code": "SH20",
+    "role": "mechanic",
+    "hash": "#/SH20",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SH20.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 334
+    },
+    "console": []
+  }
+]

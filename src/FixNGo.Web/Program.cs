@@ -43,6 +43,24 @@ var accessMinutes = builder.Configuration.GetValue("Auth:AccessMinutes", 15);
 var issuer = builder.Configuration["Auth:Issuer"] ?? "FixNGo";
 var audience = builder.Configuration["Auth:Audience"] ?? "FixNGo.Client";
 
+// External providers are configuration-switched. A 'Real' selection with no bundled
+// adapter/keys must fail fast at startup (never silently fall back to the fake).
+ProviderOptions providers;
+try
+{
+    providers = ProviderOptions.FromValues(
+        builder.Configuration["Providers:Otp"],
+        builder.Configuration["Providers:Payments"],
+        builder.Configuration["Providers:Maps"],
+        builder.Configuration["Providers:Push"]);
+}
+catch (ProviderNotConfiguredException ex)
+{
+    Log.Fatal(ex, "Provider configuration error: {Message}", ex.Message);
+    Log.CloseAndFlush();
+    throw;
+}
+
 var signingKey = DatabaseSetup.LoadOrCreateSigningKey(paths);
 var connection = DependencyInjection.ConnectionString(paths);
 
@@ -50,7 +68,7 @@ var connection = DependencyInjection.ConnectionString(paths);
 await DatabaseSetup.EnsureAsync(paths);
 
 // ---- DI ----
-builder.Services.AddFixNGoInfrastructure(paths, connection);
+builder.Services.AddFixNGoInfrastructure(paths, connection, providers);
 builder.Services.AddFixNGoTokenService(signingKey, issuer, audience, accessMinutes);
 builder.Services.AddSingleton(new AuthOptions
 {

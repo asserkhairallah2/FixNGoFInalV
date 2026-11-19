@@ -86,9 +86,11 @@ function BottomNav({ role, current }) {
   for (const s of candidates) {
     const preferred = PREFERRED_TAB_SCREEN[role]?.[s.tab];
     const existing = byTab.get(s.tab);
-    if (!existing || s.code === preferred) byTab.set(s.tab, s.code === preferred ? s : existing);
+    // Always store a real screen: when a tab has no preferred code the first
+    // candidate must win, otherwise `undefined` enters the Map and the nav crashes.
+    if (!existing || s.code === preferred) byTab.set(s.tab, s);
   }
-  const unique = Array.from(byTab.values());
+  const unique = Array.from(byTab.values()).filter(Boolean);
   return (
     <nav className={`shrink-0 border-t ${c.border} ${c.surface}`} style={{ gridTemplateColumns: `repeat(${Math.max(unique.length, 1)}, minmax(0,1fr))`, display: 'grid' }} aria-label="Main navigation">
       {unique.map((s) => {
