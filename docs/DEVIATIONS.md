@@ -14,3 +14,4 @@ Decisions taken autonomously (the owner must not be asked). Every deliberate dif
 | 8 | Platform | SQL Server (SRS/SDD) | SQLite by default (configurable provider), because the five DB tools swap a file | Brief 03 §1, 04 | This file |
 | 9 | Environment | Python available per brief §4 | Python is not on PATH on the machine; DB inspection uses .NET/Node instead | Verified with `python --version` | docs/evidence/phase0 (tool versions) |
 | 10 | Visual QA | Inspect screenshots visually | Agent model cannot view images; automated DOM/screenshot assertions used instead, explicitly reported | Model capability limitation | docs/FINAL_REPORT.md (pending) |
+| 11 | Build | Warnings as errors, NuGet audit | Suppressed NU1903 (audit advisory) for the brief-mandated AutoMapper 12.0.1 only | Brief 03 §1 pins 12.0.1 because v13+ is commercially licensed; the audit warning would otherwise break the mandated 0-warning gate | Directory.Build.props `NoWarn` |

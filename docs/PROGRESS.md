@@ -1,9 +1,9 @@
 # Progress
 
 ## RESUME HERE
-Phase: 0 (Bootstrap & understanding) — gate being closed.
-Last command: created `docs/evidence/phase0/legacy-prototype-check.md` and tracking templates.
-Next command: `git add -A && git commit -m "docs: phase 0 evidence, templates and implementation plan"` then start Phase 1 foundation (`dotnet new sln`, 5 projects).
+Phase: 1 (Foundation) — backend layers done, CLI + tools + client shell pending.
+Last command: Web project built cleanly (0 warnings/errors); logged to AGENT_LOG.md.
+Next command: `git add -A && git commit -m "feat(p1): backend foundation - domain, application, infrastructure, web"`, then implement FixNGo.Cli (check-setup/setup/selftest), tools/build.ps1, setup.bat, start.bat, and the React login shell.
 
 ## Gate summaries (newest first)
 Gate 0 — PASS (2026-11-19): layout verified; 11 brief files + AGENT.md + SRS + SDD read; git baseline commit `e90d3a4` exists; legacy prototype served HTTP 200 and 12 screens rendered in Chromium with 0 console errors. Evidence: `docs/evidence/phase0/legacy-prototype-check.md`.
