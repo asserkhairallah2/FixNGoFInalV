@@ -1,0 +1,16 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  FixNGo.Domain -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Domain\bin\Release\net8.0\FixNGo.Domain.dll
+  FixNGo.Domain.Tests -> C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Domain.Tests\bin\Release\net8.0\FixNGo.Domain.Tests.dll
+  FixNGo.Application -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Application\bin\Release\net8.0\FixNGo.Application.dll
+  FixNGo.Infrastructure -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Infrastructure\bin\Release\net8.0\FixNGo.Infrastructure.dll
+  FixNGo.Application.Tests -> C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Application.Tests\bin\Release\net8.0\FixNGo.Application.Tests.dll
+  FixNGo.Cli -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Cli\bin\Release\net8.0\FixNGo.Cli.dll
+  FixNGo.Web -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Web\bin\Release\net8.0\FixNGo.Web.dll
+  FixNGo.Api.Tests -> C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Api.Tests\bin\Release\net8.0\FixNGo.Api.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:18.65

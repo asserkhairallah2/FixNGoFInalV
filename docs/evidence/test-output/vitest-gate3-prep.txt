@@ -1,0 +1,22 @@
+
+> fixngo-client@1.0.0 test
+> vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/xprenspel/Desktop/FixNGoFinal/client[39m
+
+ [32mΓ£ô[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats money in EN and AR locales without hard-coded digits
+ [32mΓ£ô[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats numbers with locale-aware grouping
+ [32mΓ£ô[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats dates and times in the Cairo timezone
+ [32mΓ£ô[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats distance from raw kilometres
+ [32mΓ£ô[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mregisters all legacy screens plus the required AD16ΓÇôAD18 gap screens
+ [32mΓ£ô[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mgives every screen a bilingual label, roles, a view and a fallback back target
+ [32mΓ£ô[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mbinds every data screen to a real API path
+ [32mΓ£ô[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mmaps every role to a reachable main home screen
+ [32mΓ£ô[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mexposes the shared UI kit screens used by flows
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 19:27:56
+[2m   Duration [22m 4.26s[2m (transform 179ms, setup 717ms, collect 238ms, tests 74ms, environment 4.52s, prepare 851ms)[22m
+

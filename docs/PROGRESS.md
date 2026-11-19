@@ -1,8 +1,8 @@
 # Progress
 
 ## RESUME HERE
-Phase: 3 (Client migration & wiring) — next: port the 138 legacy prototype screens into `client/` wired to the real API, module by module (Auth → Owner → Mechanic/Captain → Center → Admin → Shared), remove mocks/dev sidebar, take EN-light + AR-dark screenshots, tick SCREEN_MATRIX.
-Last verified: Gate 2 PASS — Release build 0 Warning(s) 0 Error(s); full suite 26/26 (1 domain + 9 app + 16 API); authz matrix, tow/mechanic/booking/payment/KYC flows, offer race, privacy and OpenAPI export all green; docs/API.md generated (161 lines); TEST_REPORT.md regenerated.
+Phase: 3 (Client migration & wiring) — task: finish the declarative registry-driven client, fix audit findings, add render smoke tests, produce EN-light/AR-dark screenshots for every screen, then Gate 3.
+Last verified: Phase 3 checkpoint — client 9/9 Vitest PASS; client build PASS; backend Release build 0 warnings/errors; mock-scan 0 hits (86 files); 141 screens registered (138 legacy + AD16–AD18). Evidence: docs/evidence/test-output/vitest-gate3-prep.txt, client-build-gate3-prep.txt, dotnet-build-gate3-prep.txt, mock-scan.txt. Prior Gate 2 PASS — Release build 0 Warning(s) 0 Error(s); full suite 26/26 (1 domain + 9 app + 16 API); authz matrix, tow/mechanic/booking/payment/KYC flows, offer race, privacy and OpenAPI export all green; docs/API.md generated (161 lines); TEST_REPORT.md regenerated.
 Next command: `git add -A; git commit` Gate 2, then inspect `client/` current shell + a legacy module source and begin Phase 3 porting per `06_FRONTEND_MIGRATION.md`.
 
 ## Gate summaries (newest first)

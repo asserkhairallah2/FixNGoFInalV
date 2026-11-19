@@ -1,0 +1,294 @@
+// Shared UI kit — stable top-level components moved out of the legacy App().
+// Visual design kept 1:1; all content comes from props/context, never mock data.
+import React, { useState } from 'react';
+import {
+  ChevronLeft, ChevronRight, AlertTriangle, Phone, Navigation, Check,
+  MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck
+} from 'lucide-react';
+import { usePrefs, useNav, useNavigate } from '../app/stores.jsx';
+
+// ---- Brand ----
+export function ShieldLogo({ size = 40 }) {
+  return (
+    <div style={{ width: size, height: size }} className="relative flex items-center justify-center shrink-0 select-none" aria-label="FixNGo">
+      <svg viewBox="0 0 120 130" className="w-full h-full drop-shadow-sm">
+        <path d="M60 4 L112 24 C112 68 98 102 60 126 C22 102 8 68 8 24 L60 4 Z" fill="#141416" />
+        <path d="M60 13 L103 30 C103 66 91 95 60 116 C29 95 17 66 17 30 L60 13 Z" fill="#141416" stroke="#FF0000" strokeWidth="6.5" strokeLinejoin="round" />
+        <path d="M32 52 L39 36 C41 33 45 32 60 32 C75 32 79 33 81 36 L88 52 L93 54 C95 55 96 57 96 60 L96 69 C96 71 94 72 91 72 L83 72 C81 72 80 70 80 67 L78 65 L42 65 L40 67 C40 70 39 72 37 72 L29 72 C26 72 24 71 24 69 L24 60 C24 57 25 55 27 54 L32 52 Z" fill="#FFFFFF" />
+        <rect x="24" y="45" width="7" height="4.5" rx="2" fill="#FFFFFF" />
+        <rect x="89" y="45" width="7" height="4.5" rx="2" fill="#FFFFFF" />
+        <path d="M42 37 L37 49 L83 49 L78 37 C73 36 47 36 42 37 Z" fill="#141416" />
+        <path d="M28 55 L42 58 L39 62 L28 59 Z" fill="#141416" />
+        <path d="M92 55 L78 58 L81 62 L92 59 Z" fill="#141416" />
+        <path d="M45 59 L75 59 L71 63 L49 63 Z" fill="#141416" />
+        <path d="M54 89 L54 113 L66 113 L66 89 C73 86 77 79 75 71 C74 66 70 63 66 62 L66 74 C66 77 63 79 60 79 C57 79 54 77 54 74 L54 62 C50 63 46 66 45 71 C43 79 47 86 54 89 Z" fill="#FF0000" />
+      </svg>
+    </div>
+  );
+}
+
+export function BrandLockup({ iconSize = 30, textSize = 'text-base' }) {
+  const { isDark } = usePrefs();
+  return (
+    <span className="inline-flex items-center gap-2 select-none" dir="ltr">
+      <ShieldLogo size={iconSize} />
+      <span className={`font-black italic tracking-tight ${textSize} ${isDark ? 'text-white' : 'text-[#111318]'}`}>
+        Fix<span className="text-[#FF0000]">N</span>Go
+      </span>
+    </span>
+  );
+}
+
+// ---- Theme colours (identical values to the prototype) ----
+export function useColors() {
+  const { isDark } = usePrefs();
+  return isDark
+    ? { bg: 'bg-[#090A0D]', surface: 'bg-[#12141A]', elevated: 'bg-[#1A1D26]', border: 'border-[#262936]',
+        text: 'text-[#FFFFFF]', secondaryText: 'text-[#8E95A5]', inputBg: 'bg-[#14171F]' }
+    : { bg: 'bg-[#F8FAFC]', surface: 'bg-[#FFFFFF]', elevated: 'bg-[#F1F5F9]', border: 'border-[#E2E8F0]',
+        text: 'text-[#0F172A]', secondaryText: 'text-[#64748B]', inputBg: 'bg-[#F8FAFC]' };
+}
+
+export function AppTopBar({ showBack = false, onBack, title }) {
+  const c = useColors(); const { isAr } = usePrefs();
+  const nav = useNav();
+  return (
+    <div className={`w-full px-4 py-3 flex items-center justify-between border-b ${c.border} ${c.bg} sticky top-0 z-30`}>
+      <div className="flex items-center gap-2">
+        {showBack && (
+          <button onClick={onBack || (() => nav.back())} className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition`} title={isAr ? 'رجوع' : 'Back'} aria-label="Back">
+            {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        )}
+        <BrandLockup />
+      </div>
+      {title && <span className={`text-xs font-bold ${c.text}`}>{title}</span>}
+    </div>
+  );
+}
+
+export function PrimaryButton({ children, onClick, className = '', disabled, type = 'button', testId }) {
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} data-testid={testId}
+      className={`w-full min-h-[50px] rounded-2xl bg-[#E51C23] hover:bg-[#c9161d] active:scale-[0.99] disabled:opacity-55 text-white font-semibold text-xs tracking-wide transition flex items-center justify-center gap-2 shadow-md shadow-[#E51C23]/20 ${className}`}>
+      {children}
+    </button>
+  );
+}
+export function SecondaryButton({ children, onClick, className = '', disabled }) {
+  const c = useColors();
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className={`w-full min-h-[50px] rounded-2xl border ${c.border} ${c.surface} ${c.text} hover:opacity-90 disabled:opacity-55 font-semibold text-xs transition flex items-center justify-center gap-2 ${className}`}>
+      {children}
+    </button>
+  );
+}
+
+const BADGE_STYLES = {
+  Completed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Online: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Accepted: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Paid: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Approved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Verified: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  EnRoute: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  Arrived: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  Working: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+  Disputed: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+  Unpaid: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Rejected: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Suspended: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Failed: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Cancelled: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+};
+const AR_STATUS = {
+  Completed: 'مكتمل', Online: 'متصل', Accepted: 'مقبول', Paid: 'مدفوع', Approved: 'موافق عليه',
+  Verified: 'موثّق', Pending: 'قيد الانتظار', EnRoute: 'في الطريق', Arrived: 'وصل',
+  Working: 'جاري العمل', Disputed: 'متنازع عليه', Unpaid: 'غير مدفوع', Rejected: 'مرفوض',
+  Suspended: 'موقوف', Failed: 'فشل', Cancelled: 'ملغي'
+};
+export function StatusBadge({ status, text }) {
+  const { isAr } = usePrefs();
+  const key = String(status ?? 'Pending');
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${BADGE_STYLES[key] || BADGE_STYLES.Pending}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
+      {text || (isAr ? (AR_STATUS[key] || key) : key)}
+    </span>
+  );
+}
+
+// ---- Map (label/subtitle are data-driven; no baked distances/coordinates) ----
+export function MapView({ label, subtitle, mode = 'route' }) {
+  const c = useColors(); const { isDark } = usePrefs(); const { isAr } = usePrefs();
+  return (
+    <div className={`relative w-full h-36 rounded-2xl overflow-hidden border ${c.border} ${isDark ? 'bg-[#0D1017]' : 'bg-[#F1F5F9]'}`} data-testid="map-view">
+      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(to right, #64748B 1px, transparent 1px), linear-gradient(to bottom, #64748B 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
+      <div className="absolute inset-0 flex items-center justify-center"><div className="w-28 h-28 rounded-full border border-[#E51C23]/30 bg-[#E51C23]/5 animate-pulse" /></div>
+      {mode === 'route' && (
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 150" aria-hidden="true">
+          <path d="M 45 30 L 145 30 L 145 120 L 245 120" fill="none" stroke="#E51C23" strokeWidth="3.5" strokeLinecap="round" />
+        </svg>
+      )}
+      <div className="absolute top-4 left-8 w-6 h-6 rounded-full bg-[#E51C23] text-white flex items-center justify-center shadow-lg"><Navigation size={12} /></div>
+      {mode === 'arrived' ? (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-lg"><Check size={12} /> {isAr ? 'وصل مقدم الخدمة' : 'Provider at pickup'}</div>
+        </div>
+      ) : (
+        <div className="absolute bottom-4 right-9 w-6 h-6 rounded-full bg-white text-[#090A0D] border-2 border-[#090A0D] flex items-center justify-center shadow-lg"><MapPin size={12} /></div>
+      )}
+      {subtitle && <div className="absolute top-2 left-3 text-[9px] font-bold uppercase tracking-wider text-slate-400">{subtitle}</div>}
+      {label && <div className="absolute bottom-2 left-3 px-2 py-0.5 rounded-lg bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1"><Navigation size={10} className="text-[#E51C23]" />{label}</div>}
+    </div>
+  );
+}
+
+export function EmergencySOSBar({ onClick }) {
+  const c = useColors(); const { isAr } = usePrefs(); const nav = useNavigate();
+  return (
+    <div role="button" tabIndex={0} onClick={onClick || (() => nav('SH19'))}
+      className="w-full rounded-2xl p-3 border border-[#E51C23]/40 bg-[#E51C23]/10 flex items-center justify-between cursor-pointer">
+      <div className="space-y-1 w-full">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5"><AlertTriangle size={13} className="text-[#E51C23]" /><span className={`text-xs font-bold ${c.text}`}>{isAr ? 'طوارئ SOS' : 'Emergency SOS'}</span></div>
+          <span className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'خطر فوري؟' : 'Immediate danger?'}</span>
+        </div>
+        <div className="flex items-center justify-between pt-0.5 text-xs font-semibold">
+          <a href="tel:123" onClick={(e) => e.stopPropagation()} className="text-[#E51C23] flex items-center gap-1"><Phone size={11} /> {isAr ? '١٢٣ · الإسعاف' : '123 · Ambulance'}</a>
+          <a href="tel:122" onClick={(e) => e.stopPropagation()} className="text-amber-400 flex items-center gap-1">{isAr ? '١٢٢ · النجدة' : '122 · Police'} <Phone size={11} /></a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Field({ label, children, hint, error }) {
+  const c = useColors();
+  return (
+    <label className="block space-y-1">
+      {label && <span className={`text-[11px] font-medium ${c.secondaryText}`}>{label}</span>}
+      {children}
+      {hint && !error && <span className={`block text-[10px] ${c.secondaryText}`}>{hint}</span>}
+      {error && <span className="block text-[10px] text-rose-500">{error}</span>}
+    </label>
+  );
+}
+export function inputClass() { const c = useColors(); return `w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`; }
+
+export function Toggle({ checked, onChange, label }) {
+  return (
+    <button type="button" role="switch" aria-checked={!!checked} onClick={() => onChange(!checked)}
+      className={`w-11 h-6 rounded-full p-0.5 transition flex items-center ${checked ? 'bg-[#E51C23] justify-end' : 'bg-slate-300 justify-start'}`}>
+      <span className="w-5 h-5 rounded-full bg-white shadow" />{label && <span className="sr-only">{label}</span>}
+    </button>
+  );
+}
+
+export function Chip({ children, active, onClick }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition ${active ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300'}`}>
+      {children}
+    </button>
+  );
+}
+
+export function Card({ children, className = '' }) {
+  const c = useColors();
+  return <div className={`rounded-2xl border ${c.border} ${c.surface} p-4 ${className}`}>{children}</div>;
+}
+
+export function StarRating({ value = 0, size = 14 }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`${value} stars`}>
+      {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={size} className={n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-slate-400'} />)}
+    </span>
+  );
+}
+
+// ---- Async states ----
+export function Skeleton({ rows = 3 }) {
+  return (
+    <div className="space-y-3 p-4" data-testid="skeleton" aria-busy="true">
+      {Array.from({ length: rows }).map((_, i) => <div key={i} className="h-14 rounded-2xl bg-slate-200/70 dark:bg-slate-700/50 animate-pulse" />)}
+    </div>
+  );
+}
+export function EmptyState({ title, message, action }) {
+  const c = useColors(); const { isAr } = usePrefs();
+  return (
+    <div className="flex flex-col items-center justify-center text-center p-10 gap-3" data-testid="empty-state">
+      <ShieldCheck size={34} className="text-slate-400" />
+      <p className={`font-bold ${c.text}`}>{title || (isAr ? 'لا توجد بيانات بعد' : 'Nothing here yet')}</p>
+      {message && <p className={`text-xs ${c.secondaryText}`}>{message}</p>}
+      {action}
+    </div>
+  );
+}
+export function ErrorState({ error, retry }) {
+  const { isAr } = usePrefs();
+  return (
+    <div className="flex flex-col items-center justify-center text-center p-10 gap-3" data-testid="error-state" role="alert">
+      <AlertCircle size={30} className="text-rose-500" />
+      <p className="text-sm font-bold text-rose-500">{error?.message || (isAr ? 'حدث خطأ' : 'Something went wrong')}</p>
+      {retry && <button onClick={retry} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-400/40 text-rose-500 text-xs font-bold"><RefreshCw size={14} />{isAr ? 'إعادة المحاولة' : 'Retry'}</button>}
+    </div>
+  );
+}
+export function LoadingOrError({ query, children }) {
+  if (query.isLoading) return <Skeleton />;
+  if (query.isError) return <ErrorState error={query.error} retry={query.refetch} />;
+  return children;
+}
+
+export function Toast({ message, onClose, tone = 'ok' }) {
+  const [visible, setVisible] = useState(true);
+  if (!visible || !message) return null;
+  return (
+    <div role="status" className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-2xl shadow-lg text-xs font-bold flex items-center gap-2 ${tone === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}>
+      {tone === 'ok' && <Check size={15} />}<span>{message}</span>
+      <button onClick={() => { setVisible(false); onClose?.(); }} aria-label="Dismiss"><X size={14} /></button>
+    </div>
+  );
+}
+
+export function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, onCancel }) {
+  if (!open) return null;
+  const c = useColors();
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-6" role="dialog" aria-modal="true">
+      <div className={`w-full max-w-sm rounded-2xl border ${c.border} ${c.surface} p-5 space-y-4`}>
+        <p className={`font-bold ${c.text}`}>{title}</p>
+        <p className={`text-xs ${c.secondaryText}`}>{message}</p>
+        <div className="flex gap-2">
+          <SecondaryButton onClick={onCancel}>{confirmLabel ? 'Cancel' : 'إلغاء'}</SecondaryButton>
+          <PrimaryButton onClick={onConfirm}>{confirmLabel || 'تأكيد'}</PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function FilePicker({ accept = 'image/*', onFile, label }) {
+  const c = useColors(); const { isAr } = usePrefs();
+  return (
+    <label className={`w-full rounded-2xl border border-dashed ${c.border} ${c.surface} p-5 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80`}>
+      <Upload size={20} className="text-[#E51C23]" />
+      <span className={`text-xs font-semibold ${c.text}`}>{label || (isAr ? 'اختر ملفاً' : 'Choose a file')}</span>
+      <input type="file" accept={accept} className="sr-only" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
+    </label>
+  );
+}
+
+export function Page({ children, title, showBack = true }) {
+  const c = useColors();
+  return (
+    <div className={`min-h-[740px] flex flex-col ${c.bg}`} data-testid="screen">
+      <AppTopBar showBack={showBack} title={title} />
+      <div className="flex-1 overflow-y-auto">{children}</div>
+    </div>
+  );
+}
