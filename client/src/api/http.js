@@ -46,6 +46,12 @@ export async function api(path, options = {}) {
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
 
+  // Simulator-driven weak network: adds latency so offline/queue states can be exercised.
+  // Off by default and never enabled in tests, so it cannot affect normal operation.
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('fixngo.weakNetwork') === 'true') {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+  }
+
   let res;
   try {
     res = await fetch(path.startsWith('http') ? path : `/api/v1${path}`, {

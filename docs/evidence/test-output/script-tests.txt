@@ -1,0 +1,397 @@
+﻿FixNGo script tests S1-S10 (brief 04 section 7)
+Started: 2026-11-19T20:17:47.1346854+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: every scenario uses a temporary FIXNGO_DATA_DIR / FIXNGO_LOG_DIR and a private port.
+Safety: the real project data\ folder is never used as a test target.
+
+==================== S1 ====================
+=== S1 : start.bat on empty data dir -> first-run setup -> healthy server -> exactly 1 admin ===
+Timestamp: 2026-11-19T20:17:47.7196553+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s1-c307b624
+Private port: 5742
+check-setup before: exit=10 {"setupComplete":false,"firstRun":true,"userCount":0,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-c307b624\\fixngo.db","dbExists":false,"mode":"real"}
+[PASS] check-setup reports first run (exit 10) before start.bat (value=10)
+[PASS] server answers /health after start.bat triggered first-run setup
+check-setup after: exit=0 {"setupComplete":true,"firstRun":false,"userCount":1,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-c307b624\\fixngo.db","dbExists":true,"mode":"real"}
+[PASS] check-setup reports set up (exit 0) after start.bat (value=0)
+[PASS] exactly one user (the first admin) exists (value=1)
+[PASS] server.port written to the temp FIXNGO_DATA_DIR (not the real data folder)
+[PASS] server.port contains the private test port (value=5742)
+[PASS] server.pid written to the temp FIXNGO_DATA_DIR
+[PASS] start.log created in isolated log dir
+[PASS] start.log is non-empty
+[PASS] start.log contains no plaintext passwords
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+--- S1 result: PASS=13 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S1-start-first-run.txt
+---- S1: exit=0 pass=13 fail=0 ----
+
+==================== S2 ====================
+=== S2 : setup.bat when already set up -> exit 2, no changes ===
+Timestamp: 2026-11-19T20:18:01.4859660+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s2-d85e2fdf
+Private port: 5668
+setup.bat (first run) exit=0
+===================================================
+  FixNGo - First-time setup
+===================================================
+[INFO] First run detected. Proceeding with setup.
+=== FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Script Test Administrator
+Email: scriptadmin@fixngo.local
+Phone: +201000000042
+Password: ********
+Simulators: on
+[OK] Administrator created: scriptadmin@fixngo.local
+[OK] Setup complete - non-interactive. Start the system with start.bat.
+[PASS] first setup.bat succeeds (value=0)
+[PASS] one admin exists after first setup (value=1)
+setup.bat (second run) exit=2
+===================================================
+  FixNGo - First-time setup
+===================================================
+[WARN] System already has accounts. Use remove-db.bat to reset.
+[PASS] second setup.bat refuses with exit 2 (value=2)
+[PASS] refusal message is clear
+[PASS] database bytes unchanged by refused setup (value=67057BBDEA79EBB586A20A27956D8B687B7715422EA7944774D1E5993613DBCB)
+[PASS] user count unchanged by refused setup (value=1)
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+--- S2 result: PASS=9 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S2-setup-already-set-up.txt
+---- S2: exit=0 pass=9 fail=0 ----
+
+==================== S3 ====================
+=== S3 : admin login via API with setup credentials -> 200 Admin; wrong password -> 401 ===
+Timestamp: 2026-11-19T20:18:09.9970290+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s3-735d723f
+Private port: 5860
+CLI setup exit=0 === FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Script Test Administrator
+Email: scriptadmin@fixngo.local
+Phone: +201000000042
+Password: ********
+Simulators: on
+[OK] Administrator created: scriptadmin@fixngo.local
+[PASS] CLI setup created the admin (value=0)
+[PASS] server answers /health
+correct login: HTTP 200, role=Admin, tokenLen=459
+[PASS] correct credentials return HTTP 200 (value=200)
+[PASS] logged-in user has role Admin (value=Admin)
+[PASS] access token issued
+wrong-password login: HTTP 401
+[PASS] wrong password returns HTTP 401 (value=401)
+[PASS] Serilog server log created in temp FIXNGO_LOG_DIR
+--- S3 result: PASS=7 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S3-admin-login.txt
+---- S3: exit=0 pass=7 fail=0 ----
+
+==================== S4 ====================
+=== S4 : dummy-db.bat -> verified backup, >=200 users, all credentials log in, mode=dummy ===
+Timestamp: 2026-11-19T20:18:22.2613025+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-95d57a55
+Private port: 5643
+[PASS] CLI setup created the original admin (value=0)
+dummy-db.bat exit=0
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[INFO] No server.pid found.
+[OK] Dummy database created (201 users, seed 20261119).
+[OK] Credentials written to C:\Users\xprenspel\Desktop\FixNGoFinal\dummy-db.md
+[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-95d57a55\backups\real-20261119-201828
+[OK] Dummy database ready. See dummy-db.md for every credential.
+[PASS] dummy-db.bat succeeds with --yes (value=0)
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+[PASS] exactly one data\backups\real-* backup folder exists
+[PASS] backup contains manifest.json
+[PASS] backup contains the database copy
+[PASS] backup contains the uploads folder
+manifest: users=1 uploads=0 sha=0E19FEEA08F5F68E9811C84873DE417C2AEC7CE88523F057F1A1ED089A6108FF
+[PASS] backup db SHA-256 matches manifest (value=0E19FEEA08F5F68E9811C84873DE417C2AEC7CE88523F057F1A1ED089A6108FF)
+[PASS] manifest records the pre-dummy user count
+[PASS] manifest records hadRealData=true
+[PASS] manifest records appVersion
+dummy DB user count: 201
+[PASS] dummy database has at least 200 users
+[PASS] dummy-db.md generated at project root
+[PASS] dummy-db.md lists every user exactly once (value=201)
+[PASS] every listed account has a password
+[PASS] dummy server answers /health
+system status: mode=dummy setupComplete=True
+[PASS] /system/status reports mode=dummy (DUMMY DATA ribbon) (value=dummy)
+Login sweep: 201 credentials; per-role successes: Admin=2, CarOwner=120, Mechanic=40, ServiceCenter=14, TowCaptain=25
+[PASS] dummy-db.md lists at least 200 credentials
+[PASS] every listed dummy credential logged in (201/201)
+[PASS] all five roles are represented in the credential login sweep
+--- S4 result: PASS=22 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S4-dummy-db.txt
+---- S4: exit=0 pass=22 fail=0 ----
+
+==================== S5 ====================
+=== S5 : dummy-db.bat twice -> second run refused (exit 2) ===
+Timestamp: 2026-11-19T20:18:48.2109315+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s5-7b946dc3
+Private port: 5271
+[PASS] CLI setup created the original admin (value=0)
+dummy-db.bat (first) exit=0
+[PASS] first dummy-db.bat succeeds (value=0)
+dummy-db.bat (second) exit=2
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[WARN] Already in dummy mode — run restore-db.bat to go back.
+[ERR] Dummy database failed with exit code 2.
+[PASS] second dummy-db.bat refuses with exit 2 (value=2)
+[PASS] refusal explains that restore-db.bat is needed
+[PASS] database bytes unchanged by refused second run (value=56EC1B4E9357B4440D90D97364E8017A14F30E737A51C9242A90FE0F361BE867)
+[PASS] user count unchanged by refused second run (value=201)
+[PASS] no additional backup created by refused second run (value=1)
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+--- S5 result: PASS=10 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S5-dummy-twice.txt
+---- S5: exit=0 pass=10 fail=0 ----
+
+==================== S6 ====================
+=== S6 : restore-db.bat -> byte-identical restore, original admin login, backup archived ===
+Timestamp: 2026-11-19T20:19:03.5163695+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s6-858732e6
+Private port: 5945
+[PASS] CLI setup created the original admin (value=0)
+Original DB SHA-256: 326965247B72C0638F9940028DE65FEE710D8A183D158ECB52F212970498050D
+[PASS] dummy-db.bat created the sandbox (value=0)
+[PASS] dummy-db.md exists while in dummy mode
+restore-db.bat exit=0
+===================================================
+  FixNGo - Restore real database
+===================================================
+[WARN] Anything created while in dummy mode will be discarded.
+[INFO] No server.pid found.
+[OK] Real data restored (1 users).
+[OK] Real data restored. dummy-db.md removed.
+[PASS] restore-db.bat succeeds with --yes (value=0)
+[PASS] restore-db.log created in isolated log dir
+[PASS] restore-db.log is non-empty
+[PASS] restore-db.log contains no plaintext passwords
+[PASS] restored DB is byte-identical (SHA-256) to the pre-dummy DB (value=326965247B72C0638F9940028DE65FEE710D8A183D158ECB52F212970498050D)
+[PASS] restored user count equals the original (value=1)
+[PASS] dummy-db.md deleted by restore
+[PASS] state mode is real after restore (value=real)
+[PASS] used backup moved to backups\archive\restored-*
+[PASS] restored server answers /health
+original admin login: HTTP 200
+[PASS] original admin still logs in after restore (value=200)
+[PASS] /system/status reports mode=real after restore (value=real)
+--- S6 result: PASS=15 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S6-restore-db.txt
+---- S6: exit=0 pass=15 fail=0 ----
+
+==================== S7 ====================
+=== S7 : remove-db.bat typed RESET -> first run + safety snapshot + start.bat triggers setup again ===
+Timestamp: 2026-11-19T20:19:24.9181783+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c
+Private port: 5703
+[PASS] CLI setup created the original admin (value=0)
+remove-db.bat wrong confirmation exit=1
+[PASS] wrong typed confirmation aborts with exit 1 (value=1)
+[PASS] abort message is clear
+[PASS] database unchanged after abort (value=C897E3B3C338E64150045E484E426633FDBC62A70FCFCC28C6A414408C289513)
+[PASS] user count unchanged after abort (value=1)
+remove-db.bat RESET exit=0
+===================================================
+  FixNGo - Remove database (reset to first run)
+===================================================
+[WARN] This permanently deletes the live database, uploads, secrets and state.
+[WARN] A safety snapshot is created in data\backups\ first.
+[WARN] Type RESET to confirm (nothing is deleted on any other input).
+Type RESET to confirm: [INFO] No server.pid found.
+[OK] Safety snapshot: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c\backups\pre-reset-20261119-201931
+[OK] System reset. Run start.bat to begin first-time setup.
+[OK] System reset. Run start.bat to begin first-time setup.
+[PASS] typed RESET resets the system (value=0)
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+[PASS] safety snapshot data\backups\pre-reset-* created
+[PASS] safety snapshot contains a DB copy
+[PASS] safety snapshot contains manifest.json
+check-setup after reset: exit=10
+[PASS] check-setup reports first run (exit 10) after reset (value=10)
+[PASS] live DB deleted
+[PASS] state.json deleted
+[PASS] secrets.json deleted
+[PASS] data\backups preserved
+[PASS] start.bat after reset reaches /health (setup re-triggered)
+[PASS] exactly one admin exists after re-setup (value=1)
+[PASS] check-setup reports set up after re-setup (value=0)
+--- S7 result: PASS=20 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S7-remove-db-typed.txt
+---- S7: exit=0 pass=20 fail=0 ----
+
+==================== S8 ====================
+=== S8 : remove-db.bat in dummy mode -> refused without --force-dummy; real backup preserved ===
+Timestamp: 2026-11-19T20:19:42.7506259+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-6bdd9a89
+Private port: 5821
+[PASS] CLI setup created the original admin (value=0)
+[PASS] dummy mode enabled (value=0)
+[PASS] real-data backup exists before reset attempt
+remove-db.bat in dummy mode exit=2
+===================================================
+  FixNGo - Remove database (reset to first run)
+===================================================
+[WARN] This permanently deletes the live database, uploads, secrets and state.
+[WARN] A safety snapshot is created in data\backups\ first.
+[WARN] Type RESET to confirm (nothing is deleted on any other input).
+[WARN] Cannot reset while in dummy mode. Run restore-db.bat first; your real data backup is in C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-6bdd9a89\backups\real-20261119-201948.
+[ERR] Reset failed with exit code 2.
+[PASS] remove-db.bat refuses in dummy mode with exit 2 (value=2)
+[PASS] refusal gives restore-db.bat guidance
+[PASS] dummy DB unchanged after refusal (value=82773B90E1E2F37F25893165DB5E149006F0EEF2DDD4BEC66A5BDC331A5F0E08)
+[PASS] dummy users still present after refusal (value=201)
+[PASS] dummy-db.md still present after refusal
+[PASS] real backup directory still present after refusal
+[PASS] real backup bytes unchanged after refusal (value=233CF53C97E8CE73D9FFABE8FCD42FAD58840FEE4AEC4CF18F21002ABF610936)
+remove-db.bat --force-dummy exit=0
+[PASS] --force-dummy allows reset from dummy mode (value=0)
+[PASS] forced reset returns to first run (value=10)
+[PASS] dummy DB deleted by forced reset
+[PASS] orphaned dummy-db.md deleted by forced reset
+[PASS] forced reset preserves data\backups\real-*
+[PASS] preserved real backup bytes unchanged (value=233CF53C97E8CE73D9FFABE8FCD42FAD58840FEE4AEC4CF18F21002ABF610936)
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+--- S8 result: PASS=19 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S8-remove-dummy-mode.txt
+---- S8: exit=0 pass=19 fail=0 ----
+
+==================== S9 ====================
+=== S9 : dummy generation failure injection -> automatic rollback to real DB, exit 3 ===
+Timestamp: 2026-11-19T20:19:58.5694626+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s9-d4072d55
+Private port: 5905
+[PASS] CLI setup created the original admin (value=0)
+Original DB SHA-256: 4A2D76390D43F6E6E4682220EF6EFECEC551E8F0682FB194853B422C08D86A6E
+dummy-db.bat with injected failure exit=3
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[INFO] No server.pid found.
+[OK] Automatic rollback to real data completed.
+[ERR] Dummy database failed with exit code 3.
+[ERR] Dummy generation failed: Injected dummy generation failure (FIXNGO_DUMMY_FAIL=1).
+[PASS] injected failure returns exit code 3 (value=3)
+[PASS] failure is reported clearly
+[PASS] automatic rollback is reported
+[PASS] live DB rolled back byte-for-byte (SHA-256) (value=4A2D76390D43F6E6E4682220EF6EFECEC551E8F0682FB194853B422C08D86A6E)
+[PASS] original user count restored (value=1)
+[PASS] state mode remains real after rollback (value=real)
+[PASS] no dummy-db.md left behind by failed run
+[PASS] original admin account is still present (value=0)
+[PASS] rolled-back backup moved out of the active real-* set (value=0)
+[PASS] rolled-back backup retained under backups\archive
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+--- S9 result: PASS=14 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S9-dummy-failure-rollback.txt
+---- S9: exit=0 pass=14 fail=0 ----
+
+==================== S10 ====================
+=== S10 : paths with spaces / run from another cwd -> all tools work ===
+Timestamp: 2026-11-19T20:20:13.4435741+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces bd856a53
+Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces 90de466c
+Private port: 5212
+setup.bat from other cwd exit=0
+[PASS] setup.bat works from another cwd with spaces (value=0)
+[PASS] test data path actually contains spaces
+CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces bd856a53\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
+[PASS] CLI works from another cwd (value=0)
+[PASS] CLI reports the spaced temp data dir
+[PASS] one admin created in the spaced data dir (value=1)
+dummy-db.bat from other cwd exit=0
+[PASS] dummy-db.bat works from another cwd with spaces (value=0)
+restore-db.bat from other cwd exit=0
+[PASS] restore-db.bat works from another cwd with spaces (value=0)
+remove-db.bat from other cwd exit=0
+[PASS] remove-db.bat works from another cwd with spaces (value=0)
+[PASS] final state is first run (value=10)
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+[PASS] restore-db.log created in isolated log dir
+[PASS] restore-db.log is non-empty
+[PASS] restore-db.log contains no plaintext passwords
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+[PASS] real project data\ folder file list unchanged (value=C:\Users\xprenspel\Desktop\FixNGoFinal\data\server.port)
+[PASS] real project database hash unchanged (value=)
+--- S10 result: PASS=23 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S10-paths-with-spaces.txt
+---- S10: exit=0 pass=23 fail=0 ----
+
+==================== SUMMARY ====================
+| Scenario | Exit code | Asserts PASS | Asserts FAIL | Result |
+|---|---:|---:|---:|---|
+| S1 | 0 | 13 | 0 | PASS |
+| S2 | 0 | 9 | 0 | PASS |
+| S3 | 0 | 7 | 0 | PASS |
+| S4 | 0 | 22 | 0 | PASS |
+| S5 | 0 | 10 | 0 | PASS |
+| S6 | 0 | 15 | 0 | PASS |
+| S7 | 0 | 20 | 0 | PASS |
+| S8 | 0 | 19 | 0 | PASS |
+| S9 | 0 | 14 | 0 | PASS |
+| S10 | 0 | 23 | 0 | PASS |
+
+Scenarios: 10 passed=10 failed=0
+Assertions: pass=152 fail=0
+Finished: 2026-11-19T20:20:30.0005738+00:00
+Transcripts: docs/evidence/script-tests/
+OVERALL: PASS
+

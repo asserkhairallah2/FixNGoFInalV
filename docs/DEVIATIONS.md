@@ -6,7 +6,7 @@ Decisions taken autonomously (the owner must not be asked). Every deliberate dif
 |---|---|---|---|---|---|
 | 1 | Global | Login jumps to a role chosen in host state | Login derives role from the authenticated account; dev sidebar/role switchers removed | Security (FR-04/NFR-09); prototype behaviour was a demo artefact | docs/evidence/phase0/legacy-prototype-check.md (prototype role pills observed) |
 | 2 | A07 | New-password screen had a pre-filled "verification code" field | OTP is verified on A05 and A07 receives a one-time reset token; no code field | Remove duplicated/dead demo input (brief 02a A07) | Pending screenshot |
-| 3 | C03 | Role chooser demo screen | Removed from the real app | Explicit requirement in 02a/06 | mock-scan result (pending) |
+| 3 | C03 | "How will you use FixNGo?" role-demo chooser | Repurposed as a real, non-demo **service chooser** ("Choose your service" → C06) bound to the real service catalogue | The demo role switcher had to be removed; the useful first step of the request wizard is kept and now leads to real lookups | `client/src/app/screens.jsx` C03; mock-scan 0 hits |
 | 4 | C11/C12 | "Advance Trip Status" demo button | Removed; status driven by provider actions only | Brief 02a C11/C12 | Pending screenshot |
 | 5 | C34 | "Simulate Declined Payment" button | Removed; declining achieved with the documented fake PSP test card | Brief 02a C34, 05 §1 | Pending screenshot |
 | 6 | All screens | Remote Unsplash stock images | Bundled local SVG/illustrations or uploaded images only | Offline operation, no fake data (06 §1) | mock-scan (pending) |

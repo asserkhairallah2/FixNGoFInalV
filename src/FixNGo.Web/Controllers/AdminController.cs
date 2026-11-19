@@ -14,6 +14,11 @@ public sealed class AdminController(AdminService svc, ProviderService providers,
 {
     [HttpGet("dashboard")] public async Task<IActionResult> Dashboard(CancellationToken ct) => Ok(await svc.DashboardAsync(ct));
     [HttpGet("users")] public async Task<IActionResult> Users(CancellationToken ct) => Ok(await svc.UsersAsync(ct));
+    [HttpGet("users/{id:guid}")] public async Task<IActionResult> UserDetails(Guid id, CancellationToken ct)
+    {
+        var item = (await svc.UsersAsync(ct)).FirstOrDefault(x => x.Id == id);
+        return item is null ? NotFound() : Ok(item);
+    }
     [HttpPost("users/{id:guid}/suspend")] public async Task<IActionResult> Suspend(Guid id, [FromBody] SuspendRequest req, CancellationToken ct) => Ok(await svc.SuspendAsync(this.UserId(), id, req, ct));
     [HttpPost("users/{id:guid}/restore")] public async Task<IActionResult> Restore(Guid id, CancellationToken ct) => Ok(await svc.RestoreAsync(this.UserId(), id, ct));
     [HttpGet("users/{id:guid}/sessions")] public async Task<IActionResult> Sessions(Guid id, CancellationToken ct) => Ok(await svc.SessionsAsync(id, ct));
@@ -26,11 +31,21 @@ public sealed class AdminController(AdminService svc, ProviderService providers,
     [HttpPost("kyc/{id:guid}/review")] public async Task<IActionResult> ReviewKyc(Guid id, [FromBody] ReviewKycRequest req, CancellationToken ct) => Ok(await providers.ReviewKycAsync(this.UserId(), id, req, ct));
 
     [HttpGet("payment-reviews")] public async Task<IActionResult> PaymentReviews(CancellationToken ct) => Ok(await svc.PaymentReviewsAsync(ct));
+    [HttpGet("payment-reviews/{id:guid}")] public async Task<IActionResult> PaymentReview(Guid id, CancellationToken ct)
+    {
+        var item = (await svc.PaymentReviewsAsync(ct)).FirstOrDefault(x => x.Id == id);
+        return item is null ? NotFound() : Ok(item);
+    }
     [HttpPost("payment-reviews/{id:guid}/resolve")] public async Task<IActionResult> ResolvePaymentReview(Guid id, [FromBody] ResolvePaymentReviewRequest req, CancellationToken ct) => Ok(await svc.ResolvePaymentReviewAsync(this.UserId(), id, req, ct));
     [HttpGet("withdrawals")] public async Task<IActionResult> Withdrawals(CancellationToken ct) => Ok(await svc.WithdrawalsAsync(ct));
     [HttpPost("withdrawals/{id:guid}/process")] public async Task<IActionResult> ProcessWithdrawal(Guid id, [FromBody] WithdrawalProcessRequest req, CancellationToken ct) => Ok(await svc.ProcessWithdrawalAsync(this.UserId(), id, req, ct));
 
     [HttpGet("safety")] public async Task<IActionResult> Safety(CancellationToken ct) => Ok(await support.AllReportsAsync(ct));
+    [HttpGet("safety/{id:guid}")] public async Task<IActionResult> SafetyReport(Guid id, CancellationToken ct)
+    {
+        var item = (await support.AllReportsAsync(ct)).FirstOrDefault(x => x.Id == id);
+        return item is null ? NotFound() : Ok(item);
+    }
     [HttpPost("safety/{id:guid}/resolve")] public async Task<IActionResult> ResolveSafety(Guid id, [FromBody] ResolveSafetyRequest req, CancellationToken ct) => Ok(await support.ResolveReportAsync(this.UserId(), id, req, ct));
     [HttpGet("emergencies")] public async Task<IActionResult> Emergencies([FromQuery] bool openOnly = false, CancellationToken ct = default) => Ok(await svc.EmergenciesAsync(openOnly, ct));
     [HttpPost("emergencies/{id:guid}/resolve")] public async Task<IActionResult> ResolveEmergency(Guid id, CancellationToken ct) { await svc.ResolveEmergencyAsync(id, ct); return NoContent(); }

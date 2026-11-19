@@ -25,6 +25,8 @@ public static class Program
                 "selftest" => SelfTest(),
                 "db-status" => DbStatus(args),
                 "db-reset" => await DbResetAsync(args),
+                "db-dummy" => await DbDummyAsync(args),
+                "db-restore" => await DbRestoreAsync(args),
                 "stop-server" => StopServer(),
                 _ => Unknown(args[0])
             };
@@ -218,13 +220,129 @@ public static class Program
             Console.WriteLine("[WARN] db-reset requires --yes (remove-db.bat handles confirmation).");
             return 2;
         }
+        var state = new StateStore(Paths).Load();
+        var inDummy = state?.Mode == "dummy";
+        if (inDummy && !args.Contains("--force-dummy", StringComparer.OrdinalIgnoreCase))
+        {
+            var backup = state?.Dummy?.BackupDir ?? "(unknown)";
+            Console.WriteLine($"[WARN] Cannot reset while in dummy mode. Run restore-db.bat first; your real data backup is in {backup}.");
+            return 2;
+        }
+        StopServer();
+        if (!inDummy)
+        {
+            var snapshot = await BackupService.CreatePreResetSnapshotAsync(Paths);
+            Console.WriteLine($"[OK] Safety snapshot: {snapshot}");
+        }
+        else Console.WriteLine("[WARN] Dummy mode: safety snapshot skipped; real-data backups are preserved.");
+
         SqliteConnection.ClearAllPools();
         new StateStore(Paths).FirstRun();
         foreach (var f in new[] { Paths.DbPath, Paths.DbPath + "-wal", Paths.DbPath + "-shm", Paths.SecretsPath, Paths.PidPath, Paths.PortPath })
             if (File.Exists(f)) File.Delete(f);
+        var md = Path.Combine(Paths.Root, "dummy-db.md");
+        if (File.Exists(md)) File.Delete(md);
         if (Directory.Exists(Paths.UploadsDir)) Directory.Delete(Paths.UploadsDir, true);
-        await Task.CompletedTask;
-        Console.WriteLine("[OK] System reset to first run.");
+
+        if (CountUsers() != 0 || File.Exists(Paths.StatePath))
+        {
+            Console.Error.WriteLine("[ERR] Reset verification failed: first-run state not reached.");
+            return 3;
+        }
+        Console.WriteLine("[OK] System reset. Run start.bat to begin first-time setup.");
+        return 0;
+    }
+
+    private static async Task<int> DbDummyAsync(string[] args)
+    {
+        if (!args.Contains("--yes", StringComparer.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("[WARN] db-dummy requires --yes (dummy-db.bat handles confirmation).");
+            return 2;
+        }
+        var state = new StateStore(Paths).Load();
+        if (state?.Mode == "dummy")
+        {
+            Console.WriteLine("[WARN] Already in dummy mode — run restore-db.bat to go back.");
+            return 2;
+        }
+        StopServer();
+        string? backupDir = null;
+        try
+        {
+            backupDir = await BackupService.CreateRealBackupAsync(Paths);
+            var seedArg = Array.FindIndex(args, a => a.Equals("--seed", StringComparison.OrdinalIgnoreCase));
+            var seed = seedArg >= 0 && seedArg + 1 < args.Length && int.TryParse(args[seedArg + 1], out var parsed)
+                ? parsed : DummyGenerator.DefaultSeed;
+            var accounts = await DummyGenerator.GenerateAsync(Paths, seed);
+
+            var inject = Environment.GetEnvironmentVariable("FIXNGO_DUMMY_FAIL");
+            if (!string.IsNullOrWhiteSpace(inject) && inject != "0" && !inject.Equals("false", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Injected dummy generation failure (FIXNGO_DUMMY_FAIL={inject}).");
+
+            var md = DummyGenerator.WriteCredentialsMarkdown(Paths, accounts, seed);
+            new StateStore(Paths).Save(new StateData
+            {
+                SetupCompletedAt = DateTime.UtcNow,
+                Mode = "dummy",
+                PlatformEmail = state?.PlatformEmail,
+                AmbulanceNumber = state?.AmbulanceNumber,
+                PoliceNumber = state?.PoliceNumber,
+                SimulatorsEnabled = state?.SimulatorsEnabled ?? true,
+                Dummy = new DummyState
+                {
+                    Since = DateTime.UtcNow, BackupDir = backupDir,
+                    GeneratedUsers = accounts.Count, Seed = seed
+                }
+            });
+            Console.WriteLine($"[OK] Dummy database created ({accounts.Count} users, seed {seed}).");
+            Console.WriteLine($"[OK] Credentials written to {md}");
+            Console.WriteLine($"[OK] Real data backup: {backupDir}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[ERR] Dummy generation failed: {ex.Message}");
+            if (ex.InnerException is not null) Console.Error.WriteLine($"[ERR] Detail: {ex.InnerException.Message}");
+            if (backupDir is not null)
+            {
+                var r = await BackupService.RestoreAsync(Paths, backupDir);
+                Console.WriteLine(r.Ok
+                    ? "[OK] Automatic rollback to real data completed."
+                    : $"[ERR] Automatic rollback FAILED: {r.Message}. Manual recovery: copy {backupDir}\\fixngo.db over {Paths.DbPath}.");
+            }
+            return 3;
+        }
+    }
+
+    private static async Task<int> DbRestoreAsync(string[] args)
+    {
+        if (!args.Contains("--yes", StringComparer.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("[WARN] db-restore requires --yes (restore-db.bat handles confirmation).");
+            return 2;
+        }
+        var state = new StateStore(Paths).Load();
+        var dir = state?.Dummy?.BackupDir;
+        if (state?.Mode != "dummy" || string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+        {
+            Console.WriteLine("[WARN] Restore precondition failed: not in dummy mode or backup directory is missing.");
+            return 2;
+        }
+        if (!BackupService.Verify(dir, out var why))
+        {
+            Console.WriteLine($"[WARN] Backup verification failed: {why}. Nothing was changed.");
+            return 2;
+        }
+        StopServer();
+        var r = await BackupService.RestoreAsync(Paths, dir);
+        if (!r.Ok)
+        {
+            Console.Error.WriteLine($"[ERR] Restore failed: {r.Message}. Backup kept at {dir}.");
+            Console.Error.WriteLine($"Manual recovery: copy {dir}\\fixngo.db to {Paths.DbPath} and {dir}\\uploads to {Paths.UploadsDir}.");
+            return 3;
+        }
+        Console.WriteLine($"[OK] Real data restored ({r.UserCount} users).");
         return 0;
     }
 
@@ -331,7 +449,9 @@ public static class Program
         Console.WriteLine("  setup [--non-interactive]");
         Console.WriteLine("  selftest");
         Console.WriteLine("  db-status [--json]");
-        Console.WriteLine("  db-reset --yes");
+        Console.WriteLine("  db-reset --yes [--force-dummy]");
+        Console.WriteLine("  db-dummy --yes [--seed N]");
+        Console.WriteLine("  db-restore --yes");
         Console.WriteLine("  stop-server");
     }
 }

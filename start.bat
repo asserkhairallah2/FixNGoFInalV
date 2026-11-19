@@ -18,9 +18,10 @@ for %%A in (%*) do (
   if /I "%%A"=="--after-setup" set "AFTERSETUP=--after-setup"
 )
 
-if not exist "logs\scripts" mkdir "logs\scripts"
+if defined FIXNGO_LOG_DIR (set "LOGROOT=%FIXNGO_LOG_DIR%") else (set "LOGROOT=logs")
+if not exist "%LOGROOT%\scripts" mkdir "%LOGROOT%\scripts"
 for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "STAMP=%%I"
-set "LOGFILE=logs\scripts\start-%STAMP%.log"
+set "LOGFILE=%LOGROOT%\scripts\start-%STAMP%.log"
 
 echo ===================================================
 echo   FixNGo - Start
@@ -62,8 +63,9 @@ if defined FIXNGO_PORT (
 ) else (
   set "PORT=5080"
 )
-if not exist data mkdir data
-echo !PORT!> data\server.port
+if defined FIXNGO_DATA_DIR (set "DATADIR=%FIXNGO_DATA_DIR%") else (set "DATADIR=data")
+if not exist "%DATADIR%" mkdir "%DATADIR%"
+echo !PORT!> "%DATADIR%\server.port"
 call :log "selected port !PORT!"
 
 set "ASPNETCORE_URLS=http://localhost:!PORT!"
@@ -78,7 +80,7 @@ call :log "starting web on port !PORT!"
 %WEB%
 set "EXITCODE=%ERRORLEVEL%"
 
-if exist data\server.pid del data\server.pid
+if exist "%DATADIR%\server.pid" del "%DATADIR%\server.pid"
 call :log "web exited with code %EXITCODE%"
 exit /b %EXITCODE%
 

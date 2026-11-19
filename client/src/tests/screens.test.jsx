@@ -6,13 +6,14 @@ const EXPECTED = [];
 for (const [prefix, from, to] of [['A', 1, 13], ['C', 1, 43], ['M', 1, 15], ['T', 1, 15], ['SC', 1, 16], ['AD', 1, 18], ['SH', 1, 21]]) {
   for (let i = from; i <= to; i++) EXPECTED.push(`${prefix}${String(i).padStart(2, '0')}`);
 }
+EXPECTED.push('SC17', 'NF01');
 
 describe('screen registry', () => {
   beforeAll(() => expect(SCREEN_CODES.length).toBeGreaterThan(0));
 
   it('registers all legacy screens plus the required AD16–AD18 gap screens', () => {
     expect(SCREEN_CODES.slice().sort()).toEqual(EXPECTED.slice().sort());
-    expect(SCREEN_CODES.length).toBe(141);
+    expect(SCREEN_CODES.length).toBe(EXPECTED.length);
   });
 
   it('gives every screen a bilingual label, roles, a view and a fallback back target', () => {

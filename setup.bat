@@ -18,9 +18,10 @@ for %%A in (%*) do (
 )
 
 rem ---- Script event log (no secrets) ----
-if not exist "logs\scripts" mkdir "logs\scripts"
+if defined FIXNGO_LOG_DIR (set "LOGROOT=%FIXNGO_LOG_DIR%") else (set "LOGROOT=logs")
+if not exist "%LOGROOT%\scripts" mkdir "%LOGROOT%\scripts"
 for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "STAMP=%%I"
-set "LOGFILE=logs\scripts\setup-%STAMP%.log"
+set "LOGFILE=%LOGROOT%\scripts\setup-%STAMP%.log"
 
 echo ===================================================
 echo   FixNGo - First-time setup

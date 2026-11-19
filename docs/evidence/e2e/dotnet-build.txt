@@ -1,0 +1,9 @@
+C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Web\Controllers\AdminController.cs(17,67): error CS0108: 'AdminController.User(Guid, CancellationToken)' hides inherited member 'ControllerBase.User'. Use the new keyword if hiding was intended. [C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Web\FixNGo.Web.csproj]
+
+Build FAILED.
+
+C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Web\Controllers\AdminController.cs(17,67): error CS0108: 'AdminController.User(Guid, CancellationToken)' hides inherited member 'ControllerBase.User'. Use the new keyword if hiding was intended. [C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Web\FixNGo.Web.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:04.79

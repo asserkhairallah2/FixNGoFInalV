@@ -1,0 +1,274 @@
+[
+  {
+    "code": "SC01",
+    "role": "center",
+    "hash": "#/SC01",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC01.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 266
+    },
+    "console": []
+  },
+  {
+    "code": "SC02",
+    "role": "center",
+    "hash": "#/SC02",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC02.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 296
+    },
+    "console": []
+  },
+  {
+    "code": "SC03",
+    "role": "center",
+    "hash": "#/SC03?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC03.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 284
+    },
+    "console": []
+  },
+  {
+    "code": "SC04",
+    "role": "center",
+    "hash": "#/SC04",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC04.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 262
+    },
+    "console": []
+  },
+  {
+    "code": "SC05",
+    "role": "center",
+    "hash": "#/SC05",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC05.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 292
+    },
+    "console": []
+  },
+  {
+    "code": "SC06",
+    "role": "center",
+    "hash": "#/SC06",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC06.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 290
+    },
+    "console": []
+  },
+  {
+    "code": "SC07",
+    "role": "center",
+    "hash": "#/SC07?id=23d61626-f644-4063-a29c-8a3b2bb83d62",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC07.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 243
+    },
+    "console": []
+  },
+  {
+    "code": "SC08",
+    "role": "center",
+    "hash": "#/SC08",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC08.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 264
+    },
+    "console": []
+  },
+  {
+    "code": "SC09",
+    "role": "center",
+    "hash": "#/SC09",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC09.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 265
+    },
+    "console": []
+  },
+  {
+    "code": "SC10",
+    "role": "center",
+    "hash": "#/SC10",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC10.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 312
+    },
+    "console": []
+  },
+  {
+    "code": "SC11",
+    "role": "center",
+    "hash": "#/SC11?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 278
+    },
+    "console": []
+  },
+  {
+    "code": "SC12",
+    "role": "center",
+    "hash": "#/SC12?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC12.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 249
+    },
+    "console": []
+  },
+  {
+    "code": "SC13",
+    "role": "center",
+    "hash": "#/SC13?id=83a24949-9b08-4b07-ac4c-f5b053adaf58",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC13.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 271
+    },
+    "console": []
+  },
+  {
+    "code": "SC14",
+    "role": "center",
+    "hash": "#/SC14?id=83a24949-9b08-4b07-ac4c-f5b053adaf58",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 304
+    },
+    "console": []
+  },
+  {
+    "code": "SC15",
+    "role": "center",
+    "hash": "#/SC15",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 269
+    },
+    "console": []
+  },
+  {
+    "code": "SC16",
+    "role": "center",
+    "hash": "#/SC16",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC16.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 273
+    },
+    "console": []
+  },
+  {
+    "code": "SC17",
+    "role": "center",
+    "hash": "#/SC17",
+    "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC17.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 301
+    },
+    "console": []
+  }
+]

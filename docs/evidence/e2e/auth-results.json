@@ -1,0 +1,67 @@
+[
+  {
+    "role": "Admin",
+    "email": "admin@gate2.test",
+    "home": "AD01",
+    "status": "PASS",
+    "console": [],
+    "me": {
+      "id": "cccdcb2d-796a-48b6-a8e9-5d89c6f1b57b",
+      "email": "admin@gate2.test",
+      "role": "Admin"
+    },
+    "hash": "#/AD01"
+  },
+  {
+    "role": "CarOwner",
+    "email": "owner@gate2.test",
+    "home": "C02",
+    "status": "PASS",
+    "console": [],
+    "me": {
+      "id": "ac19ed30-3fbb-441b-8af5-7b45c31b1fe6",
+      "email": "owner@gate2.test",
+      "role": "CarOwner"
+    },
+    "hash": "#/C02"
+  },
+  {
+    "role": "Mechanic",
+    "email": "mechanic@gate2.test",
+    "home": "M01",
+    "status": "PASS",
+    "console": [],
+    "me": {
+      "id": "db05055b-05d3-45c8-91c5-845de84f424c",
+      "email": "mechanic@gate2.test",
+      "role": "Mechanic"
+    },
+    "hash": "#/M01"
+  },
+  {
+    "role": "TowCaptain",
+    "email": "captain@gate2.test",
+    "home": "T01",
+    "status": "PASS",
+    "console": [],
+    "me": {
+      "id": "db924c94-c8b5-40f2-9ae9-153d0000d594",
+      "email": "captain@gate2.test",
+      "role": "TowCaptain"
+    },
+    "hash": "#/T01"
+  },
+  {
+    "role": "ServiceCenter",
+    "email": "center@gate2.test",
+    "home": "SC01",
+    "status": "PASS",
+    "console": [],
+    "me": {
+      "id": "0fd98a62-84dc-4aab-a6ef-159f25c01fef",
+      "email": "center@gate2.test",
+      "role": "ServiceCenter"
+    },
+    "hash": "#/SC01"
+  }
+]

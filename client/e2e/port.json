@@ -1,0 +1,4 @@
+{
+  "port": 54173,
+  "note": "Random loopback port reserved for FixNGo E2E runs; override with FIXNGO_E2E_PORT."
+}

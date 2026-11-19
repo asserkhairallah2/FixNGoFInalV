@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Languages, Moon, Sun, Loader2, WifiOff, ShieldAlert, Home, Wrench, FileText, User, Bell, LayoutGrid } from 'lucide-react';
-import { PrefsProvider, usePrefs, SessionProvider, useSession, NavProvider, useNav, getScreen, allScreens } from './app/stores.jsx';
+import { Languages, Moon, Sun, Loader2, WifiOff, ShieldAlert, Home, Wrench, FileText, User, LayoutGrid } from 'lucide-react';
+import {
+  PrefsProvider, usePrefs, SessionProvider, useSession, NavProvider, useNav,
+  getScreen, allScreens, homeForUser, PROVIDER_ROLES
+} from './app/stores.jsx';
 import './app/screens.jsx';
 import { get } from './api/http.js';
 import { connectSignalR, disconnectSignalR } from './api/signalr.js';
 import { renderView } from './ui/renderers.jsx';
 import { useColors, PrimaryButton, ShieldLogo } from './ui/kit.jsx';
+import SimulatorDock from './sim/SimulatorDock.jsx';
 
-const ROLE_HOME = { CarOwner: 'C02', Mechanic: 'M02', TowCaptain: 'T02', ServiceCenter: 'SC01', Admin: 'AD01' };
-const ROLE_MODULE = { CarOwner: 'owner', Mechanic: 'mechanic', TowCaptain: 'captain', ServiceCenter: 'center', Admin: 'admin' };
+// Preferred landing screen for each bottom-nav tab (the first registered screen is
+// not always the right one: C01 is the empty garage, C02 is the real home, etc.).
+const PREFERRED_TAB_SCREEN = {
+  CarOwner: { home: 'C02' },
+  Mechanic: { console: 'M01' },
+  TowCaptain: { console: 'T01' },
+  ServiceCenter: { overview: 'SC01' },
+  Admin: { overview: 'AD01' }
+};
 const TAB_ICONS = { home: Home, garage: LayoutGrid, centers: Wrench, requests: FileText, profile: User, console: LayoutGrid, earnings: FileText, jobs: FileText, trips: FileText, overview: LayoutGrid, appointments: FileText, services: Wrench, reports: FileText, kyc: ShieldAlert, users: User, settings: Wrench };
 const TAB_LABEL = {
   home: ['Home', 'الرئيسية'], garage: ['Garage', 'جراجي'], centers: ['Centers', 'المراكز'], requests: ['Requests', 'الطلبات'],
@@ -44,13 +55,14 @@ function ThemeLangControls() {
 }
 
 function NotFound({ code }) {
-  const c = useColors(); const nav = useNav(); const { isAr } = usePrefs();
+  const c = useColors(); const nav = useNav(); const { isAr } = usePrefs(); const { user } = useSession();
+  const home = homeForUser(user);
   return (
     <div className={`h-full flex flex-col items-center justify-center gap-4 p-8 text-center ${c.bg}`} data-testid="not-found">
       <ShieldAlert size={44} className="text-amber-400" />
       <h1 className={`text-lg font-bold ${c.text}`}>{isAr ? 'الشاشة غير متاحة' : 'Screen not available'}</h1>
       <p className={`text-xs ${c.secondaryText}`}>{code}</p>
-      <PrimaryButton onClick={() => nav.replace(ROLE_HOME.CarOwner)} testId="screen-primary">{isAr ? 'العودة للرئيسية' : 'Back to home'}</PrimaryButton>
+      <PrimaryButton onClick={() => nav.replace(home)} testId="screen-primary">{isAr ? 'العودة للرئيسية' : 'Back to home'}</PrimaryButton>
     </div>
   );
 }
@@ -68,19 +80,24 @@ function SetupNeeded() {
 
 function BottomNav({ role, current }) {
   const { isAr } = usePrefs(); const nav = useNav(); const c = useColors();
-  const module = ROLE_MODULE[role];
-  const tabs = allScreens().filter((s) => s.module === module && s.main && s.tab && s.roles.includes(role));
-  const seen = new Set();
-  const unique = tabs.filter((s) => !seen.has(s.tab) && seen.add(s.tab));
+  const module = ({ CarOwner: 'owner', Mechanic: 'mechanic', TowCaptain: 'captain', ServiceCenter: 'center', Admin: 'admin' })[role];
+  const candidates = allScreens().filter((s) => s.module === module && s.main && s.tab && s.roles.includes(role));
+  const byTab = new Map();
+  for (const s of candidates) {
+    const preferred = PREFERRED_TAB_SCREEN[role]?.[s.tab];
+    const existing = byTab.get(s.tab);
+    if (!existing || s.code === preferred) byTab.set(s.tab, s.code === preferred ? s : existing);
+  }
+  const unique = Array.from(byTab.values());
   return (
-    <nav className={`shrink-0 border-t ${c.border} ${c.surface} grid grid-cols-${Math.min(unique.length, 6)}`} style={{ gridTemplateColumns: `repeat(${Math.max(unique.length, 1)}, minmax(0,1fr))` }} aria-label="Main navigation">
+    <nav className={`shrink-0 border-t ${c.border} ${c.surface}`} style={{ gridTemplateColumns: `repeat(${Math.max(unique.length, 1)}, minmax(0,1fr))`, display: 'grid' }} aria-label="Main navigation">
       {unique.map((s) => {
         const Icon = TAB_ICONS[s.tab] || Home;
         const label = TAB_LABEL[s.tab] || [s.tab, s.tab];
         const active = current === s.code;
         return (
           <button key={s.code} data-testid={`nav-${s.tab}`} onClick={() => nav.go(s.code)}
-            className={`py-2.5 flex flex-col items-center gap-1 text-[10px] font-semibold ${active ? 'text-[#E51C23]' : c.secondaryText}`}>
+            className={`py-2.5 flex flex-col items-center gap-1 text-[10px] font-semibold min-h-[50px] ${active ? 'text-[#E51C23]' : c.secondaryText}`}>
             <Icon size={18} /><span>{isAr ? label[1] : label[0]}</span>
           </button>
         );
@@ -98,9 +115,14 @@ function ScreenRouter({ user }) {
 }
 
 function AuthenticatedApp({ user }) {
-  const nav = useNav(); const { isAr } = usePrefs();
-  useEffect(() => { connectSignalR(); return () => disconnectSignalR(); }, []);
-  const current = nav.route.code;
+  const { isAr } = usePrefs();
+  useEffect(() => {
+    connectSignalR();
+    const onRevoked = () => { window.location.hash = '#/A03'; };
+    window.addEventListener('fixngo:session-revoked', onRevoked);
+    return () => { disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked); };
+  }, []);
+  const current = useNav().route.code;
   return (
     <div className="h-full flex flex-col relative">
       <div className="absolute top-2 end-3 z-40"><ThemeLangControls /></div>
@@ -146,27 +168,55 @@ function Shell() {
     <>
       <SystemRibbon status={status} />
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 bg-[#EEF2F6] dark:bg-[#090A0D]">
-        <div className="phone-frame">
-          {!online && <div data-testid="offline-banner" className="bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1"><WifiOff size={12} />Offline — requests will replay</div>}
-          <div className="h-full overflow-hidden">
-            {blocked ? <SetupNeeded /> : !ready ? (
-              <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
-            ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
+        <div className="flex items-start justify-center gap-4 w-full max-w-[1120px]">
+          <div className="phone-frame shrink-0">
+            {!online && <div data-testid="offline-banner" className="bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1"><WifiOff size={12} />Offline — requests will replay</div>}
+            <div className="h-full overflow-hidden">
+              {blocked ? <SetupNeeded /> : !ready ? (
+                <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
+              ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
+            </div>
           </div>
+          {status?.simulatorsEnabled && user && <SimulatorDock />}
         </div>
       </div>
     </>
   );
 }
 
+// Hook-free fatal fallback: ErrorBoundary sits ABOVE all context providers, so the
+// fallback must not call usePrefs()/useNav() (they would return null and crash again).
+function FatalFallback() {
+  return (
+    <div data-testid="not-found" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32, textAlign: 'center', background: '#F8FAFC', color: '#0F172A' }}>
+      <ShieldAlert size={44} color="#E51C23" />
+      <strong>Screen not available</strong>
+      <a href="#/A02" style={{ color: '#E51C23', fontSize: 12 }}>Back to start</a>
+    </div>
+  );
+}
+
+// Keeps an unexpected render error inside the phone frame and offers a safe exit.
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { failed: false }; }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error) { console.error('Screen render failed', error); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return <FatalFallback />;
+  }
+}
+
 export default function App() {
   return (
-    <PrefsProvider>
-      <SessionProvider>
-        <NavProvider>
-          <Shell />
-        </NavProvider>
-      </SessionProvider>
-    </PrefsProvider>
+    <ErrorBoundary>
+      <PrefsProvider>
+        <SessionProvider>
+          <NavProvider>
+            <Shell />
+          </NavProvider>
+        </SessionProvider>
+      </PrefsProvider>
+    </ErrorBoundary>
   );
 }

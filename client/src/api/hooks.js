@@ -126,7 +126,7 @@ export const useTechnicians = () => q(['center-admin', 'technicians'], '/center-
 export const useWorkOrders = () => q(['center-admin', 'work-orders'], '/center-admin/work-orders');
 export function useCreateBooking() {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (b) => post('/bookings', b), onSuccess: () => c.invalidateQueries({ queryKey: k.bookings }) });
+  return useMutation({ mutationFn: (b) => post('/centers/bookings', b), onSuccess: () => c.invalidateQueries({ queryKey: k.bookings }) });
 }
 export function useManageBooking() {
   const c = useQueryClient();

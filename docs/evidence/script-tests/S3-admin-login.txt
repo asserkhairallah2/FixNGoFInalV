@@ -1,0 +1,27 @@
+﻿=== S3 : admin login via API with setup credentials -> 200 Admin; wrong password -> 401 ===
+Timestamp: 2026-11-19T20:18:09.9970290+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s3-735d723f
+Private port: 5860
+CLI setup exit=0 === FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Script Test Administrator
+Email: scriptadmin@fixngo.local
+Phone: +201000000042
+Password: ********
+Simulators: on
+[OK] Administrator created: scriptadmin@fixngo.local
+[PASS] CLI setup created the admin (value=0)
+[PASS] server answers /health
+correct login: HTTP 200, role=Admin, tokenLen=459
+[PASS] correct credentials return HTTP 200 (value=200)
+[PASS] logged-in user has role Admin (value=Admin)
+[PASS] access token issued
+wrong-password login: HTTP 401
+[PASS] wrong password returns HTTP 401 (value=401)
+[PASS] Serilog server log created in temp FIXNGO_LOG_DIR
+--- S3 result: PASS=7 FAIL=0 ---
+

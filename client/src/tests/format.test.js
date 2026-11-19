@@ -12,8 +12,8 @@ describe('Intl format helpers', () => {
   });
 
   it('formats numbers with locale-aware grouping', () => {
-    expect(fmtNumber(12482, 'en')).toBe('12,482');
-    expect(fmtNumber(12482, 'ar')).toContain('١٢٬٤٨٢');
+    expect(fmtNumber(98765, 'en')).toBe('98,765');
+    expect(fmtNumber(98765, 'ar')).toContain('٩٨٬٧٦٥');
   });
 
   it('formats dates and times in the Cairo timezone', () => {

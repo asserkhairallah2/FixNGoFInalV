@@ -1,0 +1,242 @@
+[
+  {
+    "code": "T01",
+    "role": "captain",
+    "hash": "#/T01",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T01.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 462
+    },
+    "console": []
+  },
+  {
+    "code": "T02",
+    "role": "captain",
+    "hash": "#/T02",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T02.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 445
+    },
+    "console": []
+  },
+  {
+    "code": "T03",
+    "role": "captain",
+    "hash": "#/T03?id=c667aab9-e5dc-45c2-9170-2c5f3a0114d6",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T03.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 476
+    },
+    "console": []
+  },
+  {
+    "code": "T04",
+    "role": "captain",
+    "hash": "#/T04?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T04.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 526
+    },
+    "console": []
+  },
+  {
+    "code": "T05",
+    "role": "captain",
+    "hash": "#/T05?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T05.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 536
+    },
+    "console": []
+  },
+  {
+    "code": "T06",
+    "role": "captain",
+    "hash": "#/T06",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T06.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 509
+    },
+    "console": []
+  },
+  {
+    "code": "T07",
+    "role": "captain",
+    "hash": "#/T07?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T07.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 483
+    },
+    "console": []
+  },
+  {
+    "code": "T08",
+    "role": "captain",
+    "hash": "#/T08",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T08.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 483
+    },
+    "console": []
+  },
+  {
+    "code": "T09",
+    "role": "captain",
+    "hash": "#/T09",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T09.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 468
+    },
+    "console": []
+  },
+  {
+    "code": "T10",
+    "role": "captain",
+    "hash": "#/T10",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T10.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 464
+    },
+    "console": []
+  },
+  {
+    "code": "T11",
+    "role": "captain",
+    "hash": "#/T11",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T11.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 457
+    },
+    "console": []
+  },
+  {
+    "code": "T12",
+    "role": "captain",
+    "hash": "#/T12",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T12.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 503
+    },
+    "console": []
+  },
+  {
+    "code": "T13",
+    "role": "captain",
+    "hash": "#/T13?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T13.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 495
+    },
+    "console": []
+  },
+  {
+    "code": "T14",
+    "role": "captain",
+    "hash": "#/T14?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T14.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 447
+    },
+    "console": []
+  },
+  {
+    "code": "T15",
+    "role": "captain",
+    "hash": "#/T15",
+    "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\T15.png",
+    "diagnostics": {
+      "bad": [],
+      "overflow": {
+        "document": 0,
+        "frame": 0
+      },
+      "hasContent": true,
+      "chars": 501
+    },
+    "console": []
+  }
+]

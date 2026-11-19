@@ -1,0 +1,37 @@
+﻿=== S10 : paths with spaces / run from another cwd -> all tools work ===
+Timestamp: 2026-11-19T20:20:13.4435741+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces bd856a53
+Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces 90de466c
+Private port: 5212
+setup.bat from other cwd exit=0
+[PASS] setup.bat works from another cwd with spaces (value=0)
+[PASS] test data path actually contains spaces
+CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces bd856a53\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
+[PASS] CLI works from another cwd (value=0)
+[PASS] CLI reports the spaced temp data dir
+[PASS] one admin created in the spaced data dir (value=1)
+dummy-db.bat from other cwd exit=0
+[PASS] dummy-db.bat works from another cwd with spaces (value=0)
+restore-db.bat from other cwd exit=0
+[PASS] restore-db.bat works from another cwd with spaces (value=0)
+remove-db.bat from other cwd exit=0
+[PASS] remove-db.bat works from another cwd with spaces (value=0)
+[PASS] final state is first run (value=10)
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+[PASS] restore-db.log created in isolated log dir
+[PASS] restore-db.log is non-empty
+[PASS] restore-db.log contains no plaintext passwords
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+[PASS] real project data\ folder file list unchanged (value=C:\Users\xprenspel\Desktop\FixNGoFinal\data\server.port)
+[PASS] real project database hash unchanged (value=)
+--- S10 result: PASS=23 FAIL=0 ---
+

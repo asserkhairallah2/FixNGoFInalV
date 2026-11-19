@@ -1,0 +1,17 @@
+[
+  {
+    "screen": "C19",
+    "symptom": "Form sends startAt but API expects slotStart",
+    "alert": "UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-startAt\"]')\u001b[22m\n"
+  },
+  {
+    "screen": "C33",
+    "symptom": "Form sends expiry/cvv/holder; API requires expMonth/expYear/label",
+    "alert": "UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-number\"]')\u001b[22m\n"
+  },
+  {
+    "screen": "SH08",
+    "symptom": "Form sends body but API requires description and category",
+    "alert": "UI interaction error: locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"field-subject\"]')\u001b[22m\n"
+  }
+]

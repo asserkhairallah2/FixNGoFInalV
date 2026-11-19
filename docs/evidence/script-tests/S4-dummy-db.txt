@@ -1,0 +1,45 @@
+﻿=== S4 : dummy-db.bat -> verified backup, >=200 users, all credentials log in, mode=dummy ===
+Timestamp: 2026-11-19T20:18:22.2613025+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-95d57a55
+Private port: 5643
+[PASS] CLI setup created the original admin (value=0)
+dummy-db.bat exit=0
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[INFO] No server.pid found.
+[OK] Dummy database created (201 users, seed 20261119).
+[OK] Credentials written to C:\Users\xprenspel\Desktop\FixNGoFinal\dummy-db.md
+[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-95d57a55\backups\real-20261119-201828
+[OK] Dummy database ready. See dummy-db.md for every credential.
+[PASS] dummy-db.bat succeeds with --yes (value=0)
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+[PASS] exactly one data\backups\real-* backup folder exists
+[PASS] backup contains manifest.json
+[PASS] backup contains the database copy
+[PASS] backup contains the uploads folder
+manifest: users=1 uploads=0 sha=0E19FEEA08F5F68E9811C84873DE417C2AEC7CE88523F057F1A1ED089A6108FF
+[PASS] backup db SHA-256 matches manifest (value=0E19FEEA08F5F68E9811C84873DE417C2AEC7CE88523F057F1A1ED089A6108FF)
+[PASS] manifest records the pre-dummy user count
+[PASS] manifest records hadRealData=true
+[PASS] manifest records appVersion
+dummy DB user count: 201
+[PASS] dummy database has at least 200 users
+[PASS] dummy-db.md generated at project root
+[PASS] dummy-db.md lists every user exactly once (value=201)
+[PASS] every listed account has a password
+[PASS] dummy server answers /health
+system status: mode=dummy setupComplete=True
+[PASS] /system/status reports mode=dummy (DUMMY DATA ribbon) (value=dummy)
+Login sweep: 201 credentials; per-role successes: Admin=2, CarOwner=120, Mechanic=40, ServiceCenter=14, TowCaptain=25
+[PASS] dummy-db.md lists at least 200 credentials
+[PASS] every listed dummy credential logged in (201/201)
+[PASS] all five roles are represented in the credential login sweep
+--- S4 result: PASS=22 FAIL=0 ---
+

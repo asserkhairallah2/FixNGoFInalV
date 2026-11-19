@@ -1,0 +1,2302 @@
+{
+  "variant": "light-en",
+  "screens": 143,
+  "screenshots": 143,
+  "withScreenState": 143,
+  "consoleErrors": 0,
+  "consoleWarnings": 0,
+  "failedRequests": 0,
+  "forbiddenText": [],
+  "horizontalOverflow": [],
+  "noVisibleState": [],
+  "rows": [
+    {
+      "code": "A01",
+      "role": "owner",
+      "hash": "#/A01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 669
+      },
+      "console": []
+    },
+    {
+      "code": "A02",
+      "role": "owner",
+      "hash": "#/A02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 775
+      },
+      "console": []
+    },
+    {
+      "code": "A03",
+      "role": "owner",
+      "hash": "#/A03",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 717
+      },
+      "console": []
+    },
+    {
+      "code": "A04",
+      "role": "owner",
+      "hash": "#/A04",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 783
+      },
+      "console": []
+    },
+    {
+      "code": "A05",
+      "role": "owner",
+      "hash": "#/A05",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 666
+      },
+      "console": []
+    },
+    {
+      "code": "A06",
+      "role": "owner",
+      "hash": "#/A06",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 716
+      },
+      "console": []
+    },
+    {
+      "code": "A07",
+      "role": "owner",
+      "hash": "#/A07",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 692
+      },
+      "console": []
+    },
+    {
+      "code": "A08",
+      "role": "owner",
+      "hash": "#/A08",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 797
+      },
+      "console": []
+    },
+    {
+      "code": "A09",
+      "role": "owner",
+      "hash": "#/A09",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 784
+      },
+      "console": []
+    },
+    {
+      "code": "A10",
+      "role": "owner",
+      "hash": "#/A10",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 775
+      },
+      "console": []
+    },
+    {
+      "code": "A12",
+      "role": "owner",
+      "hash": "#/A12",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 752
+      },
+      "console": []
+    },
+    {
+      "code": "A13",
+      "role": "owner",
+      "hash": "#/A13",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 731
+      },
+      "console": []
+    },
+    {
+      "code": "C01",
+      "role": "owner",
+      "hash": "#/C01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 693
+      },
+      "console": []
+    },
+    {
+      "code": "C02",
+      "role": "owner",
+      "hash": "#/C02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 706
+      },
+      "console": []
+    },
+    {
+      "code": "C03",
+      "role": "owner",
+      "hash": "#/C03",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 744
+      },
+      "console": []
+    },
+    {
+      "code": "C04",
+      "role": "owner",
+      "hash": "#/C04",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 682
+      },
+      "console": []
+    },
+    {
+      "code": "C05",
+      "role": "owner",
+      "hash": "#/C05",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 727
+      },
+      "console": []
+    },
+    {
+      "code": "C06",
+      "role": "owner",
+      "hash": "#/C06",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 789
+      },
+      "console": []
+    },
+    {
+      "code": "C07",
+      "role": "owner",
+      "hash": "#/C07",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 844
+      },
+      "console": []
+    },
+    {
+      "code": "C08",
+      "role": "owner",
+      "hash": "#/C08",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 736
+      },
+      "console": []
+    },
+    {
+      "code": "C09",
+      "role": "owner",
+      "hash": "#/C09",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 695
+      },
+      "console": []
+    },
+    {
+      "code": "C10",
+      "role": "owner",
+      "hash": "#/C10",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 685
+      },
+      "console": []
+    },
+    {
+      "code": "C11",
+      "role": "owner",
+      "hash": "#/C11?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 759
+      },
+      "console": []
+    },
+    {
+      "code": "C12",
+      "role": "owner",
+      "hash": "#/C12?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 727
+      },
+      "console": []
+    },
+    {
+      "code": "C13",
+      "role": "owner",
+      "hash": "#/C13?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 702
+      },
+      "console": []
+    },
+    {
+      "code": "C14",
+      "role": "owner",
+      "hash": "#/C14",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C14.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 678
+      },
+      "console": []
+    },
+    {
+      "code": "C15",
+      "role": "owner",
+      "hash": "#/C15?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C15.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 695
+      },
+      "console": []
+    },
+    {
+      "code": "C16",
+      "role": "owner",
+      "hash": "#/C16?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C16.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 738
+      },
+      "console": []
+    },
+    {
+      "code": "C17",
+      "role": "owner",
+      "hash": "#/C17",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C17.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 682
+      },
+      "console": []
+    },
+    {
+      "code": "C18",
+      "role": "owner",
+      "hash": "#/C18?id=23d61626-f644-4063-a29c-8a3b2bb83d62",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C18.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 688
+      },
+      "console": []
+    },
+    {
+      "code": "C19",
+      "role": "owner",
+      "hash": "#/C19",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C19.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 727
+      },
+      "console": []
+    },
+    {
+      "code": "C20",
+      "role": "owner",
+      "hash": "#/C20",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C20.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 900
+      },
+      "console": []
+    },
+    {
+      "code": "C21",
+      "role": "owner",
+      "hash": "#/C21?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C21.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 797
+      },
+      "console": []
+    },
+    {
+      "code": "C22",
+      "role": "owner",
+      "hash": "#/C22",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C22.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 1108
+      },
+      "console": []
+    },
+    {
+      "code": "C23",
+      "role": "owner",
+      "hash": "#/C23",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C23.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 696
+      },
+      "console": []
+    },
+    {
+      "code": "C24",
+      "role": "owner",
+      "hash": "#/C24?id=4373f966-1da8-498a-8a13-efc637268473",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C24.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 715
+      },
+      "console": []
+    },
+    {
+      "code": "C25",
+      "role": "owner",
+      "hash": "#/C25",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C25.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 689
+      },
+      "console": []
+    },
+    {
+      "code": "C26",
+      "role": "owner",
+      "hash": "#/C26",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C26.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 748
+      },
+      "console": []
+    },
+    {
+      "code": "C27",
+      "role": "owner",
+      "hash": "#/C27?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C27.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 685
+      },
+      "console": []
+    },
+    {
+      "code": "C28",
+      "role": "owner",
+      "hash": "#/C28",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C28.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 778
+      },
+      "console": []
+    },
+    {
+      "code": "C29",
+      "role": "owner",
+      "hash": "#/C29?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C29.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 736
+      },
+      "console": []
+    },
+    {
+      "code": "C30",
+      "role": "owner",
+      "hash": "#/C30",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C30.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 731
+      },
+      "console": []
+    },
+    {
+      "code": "C31",
+      "role": "owner",
+      "hash": "#/C31?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C31.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 707
+      },
+      "console": []
+    },
+    {
+      "code": "C32",
+      "role": "owner",
+      "hash": "#/C32?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C32.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 681
+      },
+      "console": []
+    },
+    {
+      "code": "C33",
+      "role": "owner",
+      "hash": "#/C33",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C33.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 712
+      },
+      "console": []
+    },
+    {
+      "code": "C34",
+      "role": "owner",
+      "hash": "#/C34?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C34.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 672
+      },
+      "console": []
+    },
+    {
+      "code": "C35",
+      "role": "owner",
+      "hash": "#/C35",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C35.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 743
+      },
+      "console": []
+    },
+    {
+      "code": "C36",
+      "role": "owner",
+      "hash": "#/C36",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C36.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 753
+      },
+      "console": []
+    },
+    {
+      "code": "C37",
+      "role": "owner",
+      "hash": "#/C37",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C37.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 718
+      },
+      "console": []
+    },
+    {
+      "code": "C38",
+      "role": "owner",
+      "hash": "#/C38?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C38.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 704
+      },
+      "console": []
+    },
+    {
+      "code": "C39",
+      "role": "owner",
+      "hash": "#/C39?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C39.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 692
+      },
+      "console": []
+    },
+    {
+      "code": "C40",
+      "role": "owner",
+      "hash": "#/C40?id=23d61626-f644-4063-a29c-8a3b2bb83d62",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C40.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 673
+      },
+      "console": []
+    },
+    {
+      "code": "C41",
+      "role": "owner",
+      "hash": "#/C41",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C41.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 743
+      },
+      "console": []
+    },
+    {
+      "code": "C42",
+      "role": "owner",
+      "hash": "#/C42?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C42.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 823
+      },
+      "console": []
+    },
+    {
+      "code": "C43",
+      "role": "owner",
+      "hash": "#/C43?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\C43.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 689
+      },
+      "console": []
+    },
+    {
+      "code": "SH01",
+      "role": "owner",
+      "hash": "#/SH01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 644
+      },
+      "console": []
+    },
+    {
+      "code": "SH02",
+      "role": "owner",
+      "hash": "#/SH02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 703
+      },
+      "console": []
+    },
+    {
+      "code": "SH03",
+      "role": "owner",
+      "hash": "#/SH03",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 819
+      },
+      "console": []
+    },
+    {
+      "code": "SH04",
+      "role": "owner",
+      "hash": "#/SH04",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 890
+      },
+      "console": []
+    },
+    {
+      "code": "SH05",
+      "role": "owner",
+      "hash": "#/SH05",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 745
+      },
+      "console": []
+    },
+    {
+      "code": "SH06",
+      "role": "owner",
+      "hash": "#/SH06",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 755
+      },
+      "console": []
+    },
+    {
+      "code": "SH07",
+      "role": "owner",
+      "hash": "#/SH07",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 684
+      },
+      "console": []
+    },
+    {
+      "code": "SH08",
+      "role": "owner",
+      "hash": "#/SH08",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 702
+      },
+      "console": []
+    },
+    {
+      "code": "SH09",
+      "role": "owner",
+      "hash": "#/SH09?id=deb18d3b-c39e-44a2-9470-b9faeac3ae29",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 670
+      },
+      "console": []
+    },
+    {
+      "code": "SH10",
+      "role": "owner",
+      "hash": "#/SH10",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 770
+      },
+      "console": []
+    },
+    {
+      "code": "SH11",
+      "role": "owner",
+      "hash": "#/SH11",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 760
+      },
+      "console": []
+    },
+    {
+      "code": "SH12",
+      "role": "owner",
+      "hash": "#/SH12",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 696
+      },
+      "console": []
+    },
+    {
+      "code": "SH13",
+      "role": "owner",
+      "hash": "#/A02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 186
+      },
+      "console": []
+    },
+    {
+      "code": "SH19",
+      "role": "owner",
+      "hash": "#/SH19",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH19.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 69
+      },
+      "console": []
+    },
+    {
+      "code": "SH21",
+      "role": "owner",
+      "hash": "#/SH21",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH21.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 69
+      },
+      "console": []
+    },
+    {
+      "code": "NF01",
+      "role": "owner",
+      "hash": "#/NF01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\NF01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 62
+      },
+      "console": []
+    },
+    {
+      "code": "A11",
+      "role": "mechanic",
+      "hash": "#/A11",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\A11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 277
+      },
+      "console": []
+    },
+    {
+      "code": "M01",
+      "role": "mechanic",
+      "hash": "#/M01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 264
+      },
+      "console": []
+    },
+    {
+      "code": "M02",
+      "role": "mechanic",
+      "hash": "#/M02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 250
+      },
+      "console": []
+    },
+    {
+      "code": "M03",
+      "role": "mechanic",
+      "hash": "#/M03?id=0eb92647-bf45-4b1a-8bc4-7c15197f0fba",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 286
+      },
+      "console": []
+    },
+    {
+      "code": "M04",
+      "role": "mechanic",
+      "hash": "#/M04?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 319
+      },
+      "console": []
+    },
+    {
+      "code": "M05",
+      "role": "mechanic",
+      "hash": "#/M05?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 335
+      },
+      "console": []
+    },
+    {
+      "code": "M06",
+      "role": "mechanic",
+      "hash": "#/M06?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 287
+      },
+      "console": []
+    },
+    {
+      "code": "M07",
+      "role": "mechanic",
+      "hash": "#/M07",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 271
+      },
+      "console": []
+    },
+    {
+      "code": "M08",
+      "role": "mechanic",
+      "hash": "#/M08",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 268
+      },
+      "console": []
+    },
+    {
+      "code": "M09",
+      "role": "mechanic",
+      "hash": "#/M09",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 276
+      },
+      "console": []
+    },
+    {
+      "code": "M10",
+      "role": "mechanic",
+      "hash": "#/M10",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 251
+      },
+      "console": []
+    },
+    {
+      "code": "M11",
+      "role": "mechanic",
+      "hash": "#/M11?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 287
+      },
+      "console": []
+    },
+    {
+      "code": "M12",
+      "role": "mechanic",
+      "hash": "#/M12?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 245
+      },
+      "console": []
+    },
+    {
+      "code": "M13",
+      "role": "mechanic",
+      "hash": "#/M13?id=8c82a514-9d42-47c0-8fe8-91824a11e36a",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 281
+      },
+      "console": []
+    },
+    {
+      "code": "M14",
+      "role": "mechanic",
+      "hash": "#/M14",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M14.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 320
+      },
+      "console": []
+    },
+    {
+      "code": "M15",
+      "role": "mechanic",
+      "hash": "#/M15",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\M15.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 292
+      },
+      "console": []
+    },
+    {
+      "code": "SH14",
+      "role": "mechanic",
+      "hash": "#/SH14",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH14.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 271
+      },
+      "console": []
+    },
+    {
+      "code": "SH15",
+      "role": "mechanic",
+      "hash": "#/SH15",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH15.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 260
+      },
+      "console": []
+    },
+    {
+      "code": "SH16",
+      "role": "mechanic",
+      "hash": "#/SH16",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH16.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 335
+      },
+      "console": []
+    },
+    {
+      "code": "SH17",
+      "role": "mechanic",
+      "hash": "#/SH17",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH17.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 243
+      },
+      "console": []
+    },
+    {
+      "code": "SH18",
+      "role": "mechanic",
+      "hash": "#/SH18",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH18.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 340
+      },
+      "console": []
+    },
+    {
+      "code": "SH20",
+      "role": "mechanic",
+      "hash": "#/SH20",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SH20.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 334
+      },
+      "console": []
+    },
+    {
+      "code": "T01",
+      "role": "captain",
+      "hash": "#/T01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 461
+      },
+      "console": []
+    },
+    {
+      "code": "T02",
+      "role": "captain",
+      "hash": "#/T02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 430
+      },
+      "console": []
+    },
+    {
+      "code": "T03",
+      "role": "captain",
+      "hash": "#/T03?id=c667aab9-e5dc-45c2-9170-2c5f3a0114d6",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 474
+      },
+      "console": []
+    },
+    {
+      "code": "T04",
+      "role": "captain",
+      "hash": "#/T04?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 513
+      },
+      "console": []
+    },
+    {
+      "code": "T05",
+      "role": "captain",
+      "hash": "#/T05?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 541
+      },
+      "console": []
+    },
+    {
+      "code": "T06",
+      "role": "captain",
+      "hash": "#/T06",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 522
+      },
+      "console": []
+    },
+    {
+      "code": "T07",
+      "role": "captain",
+      "hash": "#/T07?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 474
+      },
+      "console": []
+    },
+    {
+      "code": "T08",
+      "role": "captain",
+      "hash": "#/T08",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 505
+      },
+      "console": []
+    },
+    {
+      "code": "T09",
+      "role": "captain",
+      "hash": "#/T09",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 465
+      },
+      "console": []
+    },
+    {
+      "code": "T10",
+      "role": "captain",
+      "hash": "#/T10",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 459
+      },
+      "console": []
+    },
+    {
+      "code": "T11",
+      "role": "captain",
+      "hash": "#/T11",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 447
+      },
+      "console": []
+    },
+    {
+      "code": "T12",
+      "role": "captain",
+      "hash": "#/T12",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 495
+      },
+      "console": []
+    },
+    {
+      "code": "T13",
+      "role": "captain",
+      "hash": "#/T13?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 481
+      },
+      "console": []
+    },
+    {
+      "code": "T14",
+      "role": "captain",
+      "hash": "#/T14?id=8c4dd4da-c93f-4e28-b01f-e4bf432573cb",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T14.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 434
+      },
+      "console": []
+    },
+    {
+      "code": "T15",
+      "role": "captain",
+      "hash": "#/T15",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\T15.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 502
+      },
+      "console": []
+    },
+    {
+      "code": "SC01",
+      "role": "center",
+      "hash": "#/SC01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 266
+      },
+      "console": []
+    },
+    {
+      "code": "SC02",
+      "role": "center",
+      "hash": "#/SC02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 296
+      },
+      "console": []
+    },
+    {
+      "code": "SC03",
+      "role": "center",
+      "hash": "#/SC03?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 284
+      },
+      "console": []
+    },
+    {
+      "code": "SC04",
+      "role": "center",
+      "hash": "#/SC04",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 262
+      },
+      "console": []
+    },
+    {
+      "code": "SC05",
+      "role": "center",
+      "hash": "#/SC05",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 292
+      },
+      "console": []
+    },
+    {
+      "code": "SC06",
+      "role": "center",
+      "hash": "#/SC06",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 290
+      },
+      "console": []
+    },
+    {
+      "code": "SC07",
+      "role": "center",
+      "hash": "#/SC07?id=23d61626-f644-4063-a29c-8a3b2bb83d62",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 243
+      },
+      "console": []
+    },
+    {
+      "code": "SC08",
+      "role": "center",
+      "hash": "#/SC08",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 264
+      },
+      "console": []
+    },
+    {
+      "code": "SC09",
+      "role": "center",
+      "hash": "#/SC09",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 265
+      },
+      "console": []
+    },
+    {
+      "code": "SC10",
+      "role": "center",
+      "hash": "#/SC10",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 312
+      },
+      "console": []
+    },
+    {
+      "code": "SC11",
+      "role": "center",
+      "hash": "#/SC11?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 278
+      },
+      "console": []
+    },
+    {
+      "code": "SC12",
+      "role": "center",
+      "hash": "#/SC12?id=0360b80e-6f40-46d7-994d-9636d726e5b1",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 249
+      },
+      "console": []
+    },
+    {
+      "code": "SC13",
+      "role": "center",
+      "hash": "#/SC13?id=83a24949-9b08-4b07-ac4c-f5b053adaf58",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 271
+      },
+      "console": []
+    },
+    {
+      "code": "SC14",
+      "role": "center",
+      "hash": "#/SC14?id=83a24949-9b08-4b07-ac4c-f5b053adaf58",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC14.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 304
+      },
+      "console": []
+    },
+    {
+      "code": "SC15",
+      "role": "center",
+      "hash": "#/SC15",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC15.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 269
+      },
+      "console": []
+    },
+    {
+      "code": "SC16",
+      "role": "center",
+      "hash": "#/SC16",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC16.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 273
+      },
+      "console": []
+    },
+    {
+      "code": "SC17",
+      "role": "center",
+      "hash": "#/SC17",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\SC17.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 301
+      },
+      "console": []
+    },
+    {
+      "code": "AD01",
+      "role": "admin",
+      "hash": "#/AD01",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD01.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 507
+      },
+      "console": []
+    },
+    {
+      "code": "AD02",
+      "role": "admin",
+      "hash": "#/AD02",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD02.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 442
+      },
+      "console": []
+    },
+    {
+      "code": "AD03",
+      "role": "admin",
+      "hash": "#/AD03?id=f0ae374a-2d74-4527-96e4-ba1975e605cf",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD03.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 442
+      },
+      "console": []
+    },
+    {
+      "code": "AD04",
+      "role": "admin",
+      "hash": "#/AD04",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD04.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 697
+      },
+      "console": []
+    },
+    {
+      "code": "AD05",
+      "role": "admin",
+      "hash": "#/AD05",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD05.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 470
+      },
+      "console": []
+    },
+    {
+      "code": "AD06",
+      "role": "admin",
+      "hash": "#/AD06",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD06.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 431
+      },
+      "console": []
+    },
+    {
+      "code": "AD07",
+      "role": "admin",
+      "hash": "#/AD07",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD07.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 429
+      },
+      "console": []
+    },
+    {
+      "code": "AD08",
+      "role": "admin",
+      "hash": "#/AD08?id=c521376b-95ab-4be2-859c-42cc90a9844e",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD08.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 468
+      },
+      "console": []
+    },
+    {
+      "code": "AD09",
+      "role": "admin",
+      "hash": "#/AD09",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD09.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 442
+      },
+      "console": []
+    },
+    {
+      "code": "AD10",
+      "role": "admin",
+      "hash": "#/AD10?id=36f2300f-af6c-4a33-b52f-c8387a6fc35b",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD10.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 482
+      },
+      "console": []
+    },
+    {
+      "code": "AD11",
+      "role": "admin",
+      "hash": "#/AD11?id=5fee87a6-c9a7-4e57-bc26-7111bd7cd9fc",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD11.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 479
+      },
+      "console": []
+    },
+    {
+      "code": "AD12",
+      "role": "admin",
+      "hash": "#/AD12",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD12.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 500
+      },
+      "console": []
+    },
+    {
+      "code": "AD13",
+      "role": "admin",
+      "hash": "#/AD13",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD13.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 446
+      },
+      "console": []
+    },
+    {
+      "code": "AD14",
+      "role": "admin",
+      "hash": "#/AD14",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD14.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 424
+      },
+      "console": []
+    },
+    {
+      "code": "AD15",
+      "role": "admin",
+      "hash": "#/AD15?id=f0ae374a-2d74-4527-96e4-ba1975e605cf",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD15.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 465
+      },
+      "console": []
+    },
+    {
+      "code": "AD16",
+      "role": "admin",
+      "hash": "#/AD16",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD16.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 402
+      },
+      "console": []
+    },
+    {
+      "code": "AD17",
+      "role": "admin",
+      "hash": "#/AD17",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD17.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 434
+      },
+      "console": []
+    },
+    {
+      "code": "AD18",
+      "role": "admin",
+      "hash": "#/AD18?id=deb18d3b-c39e-44a2-9470-b9faeac3ae29",
+      "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD18.png",
+      "diagnostics": {
+        "bad": [],
+        "overflow": {
+          "document": 0,
+          "frame": 0
+        },
+        "hasContent": true,
+        "chars": 477
+      },
+      "console": []
+    }
+  ]
+}

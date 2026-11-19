@@ -1,0 +1,1162 @@
+﻿FixNGo verify-all
+Started: 2026-11-19T20:17:08.7646808+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+PowerShell: 5.1.26100.33822
+
+==================== STEP: 01 dotnet build (Release) ====================
+Command: dotnet build "C:\Users\xprenspel\Desktop\FixNGoFinal\FixNGo.sln" -c Release --nologo
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  FixNGo.Domain -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Domain\bin\Release\net8.0\FixNGo.Domain.dll
+  FixNGo.Application -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Application\bin\Release\net8.0\FixNGo.Application.dll
+  FixNGo.Infrastructure -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Infrastructure\bin\Release\net8.0\FixNGo.Infrastructure.dll
+  FixNGo.Domain.Tests -> C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Domain.Tests\bin\Release\net8.0\FixNGo.Domain.Tests.dll
+  FixNGo.Cli -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Cli\bin\Release\net8.0\FixNGo.Cli.dll
+  FixNGo.Application.Tests -> C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Application.Tests\bin\Release\net8.0\FixNGo.Application.Tests.dll
+  FixNGo.Web -> C:\Users\xprenspel\Desktop\FixNGoFinal\src\FixNGo.Web\bin\Release\net8.0\FixNGo.Web.dll
+  FixNGo.Api.Tests -> C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Api.Tests\bin\Release\net8.0\FixNGo.Api.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:04.36
+---- 01 dotnet build (Release): PASS (exit 0, 4.9s) ----
+
+==================== STEP: 02 dotnet test (Release) ====================
+Command: dotnet test "C:\Users\xprenspel\Desktop\FixNGoFinal\FixNGo.sln" -c Release --no-build --nologo
+Test run for C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Domain.Tests\bin\Release\net8.0\FixNGo.Domain.Tests.dll (.NETCoreApp,Version=v8.0)
+Test run for C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Application.Tests\bin\Release\net8.0\FixNGo.Application.Tests.dll (.NETCoreApp,Version=v8.0)
+Test run for C:\Users\xprenspel\Desktop\FixNGoFinal\tests\FixNGo.Api.Tests\bin\Release\net8.0\FixNGo.Api.Tests.dll (.NETCoreApp,Version=v8.0)
+A total of 1 test files matched the specified pattern.
+A total of 1 test files matched the specified pattern.
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: < 1 ms - FixNGo.Domain.Tests.dll (net8.0)
+
+Passed!  - Failed:     0, Passed:     9, Skipped:     0, Total:     9, Duration: 4 s - FixNGo.Application.Tests.dll (net8.0)
+
+Passed!  - Failed:     0, Passed:    24, Skipped:     0, Total:    24, Duration: 13 s - FixNGo.Api.Tests.dll (net8.0)
+---- 02 dotnet test (Release): PASS (exit 0, 18.4s) ----
+
+==================== STEP: 03 npm test (client) ====================
+Command: cmd.exe /d /s /c "npm.cmd test"
+
+> fixngo-client@1.0.0 test
+> vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mC:/Users/xprenspel/Desktop/FixNGoFinal/client[39m
+
+ [32m✓[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats money in EN and AR locales without hard-coded digits
+ [32m✓[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats numbers with locale-aware grouping
+ [32m✓[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats dates and times in the Cairo timezone
+ [32m✓[39m src/tests/format.test.js[2m > [22mIntl format helpers[2m > [22mformats distance from raw kilometres
+ [32m✓[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mregisters all legacy screens plus the required AD16–AD18 gap screens
+ [32m✓[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mgives every screen a bilingual label, roles, a view and a fallback back target
+ [32m✓[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mbinds every data screen to a real API path
+ [32m✓[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mmaps every role to a reachable main home screen
+ [32m✓[39m src/tests/screens.test.jsx[2m > [22mscreen registry[2m > [22mexposes the shared UI kit screens used by flows
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 20:17:33
+[2m   Duration [22m 2.89s[2m (transform 151ms, setup 736ms, collect 230ms, tests 69ms, environment 3.51s, prepare 389ms)[22m
+---- 03 npm test (client): PASS (exit 0, 5.9s) ----
+
+==================== STEP: 04 npm run build (client) ====================
+Command: cmd.exe /d /s /c "npm.cmd run build"
+
+> fixngo-client@1.0.0 build
+> vite build --outDir ../src/FixNGo.Web/wwwroot --emptyOutDir
+
+[36mvite v6.4.6 [32mbuilding for production...[36m[39m
+transforming...
+[33mnode_modules/@microsoft/signalr/dist/esm/Utils.js (189:0): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/@microsoft/signalr/dist/esm/Utils.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.[39m
+[33mnode_modules/@microsoft/signalr/dist/esm/Utils.js (207:0): A comment
+
+"/*#__PURE__*/"
+
+in "node_modules/@microsoft/signalr/dist/esm/Utils.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.[39m
+[32m✓[39m 1657 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m../src/FixNGo.Web/wwwroot/[22m[32mindex.html                 [39m[1m[2m  0.90 kB[22m[1m[22m[2m │ gzip:   0.48 kB[22m
+[2m../src/FixNGo.Web/wwwroot/[22m[35massets/index-D7RZrEI-.css  [39m[1m[2m 22.52 kB[22m[1m[22m[2m │ gzip:   5.37 kB[22m
+[2m../src/FixNGo.Web/wwwroot/[22m[36massets/index-BiNpvZf9.js   [39m[1m[2m374.28 kB[22m[1m[22m[2m │ gzip: 107.89 kB[22m
+[32m✓ built in 5.67s[39m
+---- 04 npm run build (client): PASS (exit 0, 7.1s) ----
+
+==================== STEP: 05 mock-scan.ps1 ====================
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\xprenspel\Desktop\FixNGoFinal\tools\mock-scan.ps1"
+Mock scan - 2026-11-19T20:17:46.5185060+00:00
+Files scanned: 98
+DomDump: (not supplied)
+Forbidden literals checked: 33
+Hits: 0
+
+
+[OK] Mock scan clean (0 hits). Report: docs/evidence/test-output/mock-scan.txt
+---- 05 mock-scan.ps1: PASS (exit 0, 1.3s) ----
+
+==================== STEP: 06 script tests S1-S10 ====================
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\xprenspel\Desktop\FixNGoFinal\tests\scripts\run-all.ps1"
+FixNGo script tests S1-S10 (brief 04 section 7)
+Started: 2026-11-19T20:17:47.1346854+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: every scenario uses a temporary FIXNGO_DATA_DIR / FIXNGO_LOG_DIR and a private port.
+Safety: the real project data\ folder is never used as a test target.
+
+==================== S1 ====================
+=== S1 : start.bat on empty data dir -> first-run setup -> healthy server -> exactly 1 admin ===
+Timestamp: 2026-11-19T20:17:47.7196553+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s1-c307b624
+Private port: 5742
+check-setup before: exit=10 {"setupComplete":false,"firstRun":true,"userCount":0,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-c307b624\\fixngo.db","dbExists":false,"mode":"real"}
+[PASS] check-setup reports first run (exit 10) before start.bat (value=10)
+[PASS] server answers /health after start.bat triggered first-run setup
+check-setup after: exit=0 {"setupComplete":true,"firstRun":false,"userCount":1,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-c307b624\\fixngo.db","dbExists":true,"mode":"real"}
+[PASS] check-setup reports set up (exit 0) after start.bat (value=0)
+[PASS] exactly one user (the first admin) exists (value=1)
+[PASS] server.port written to the temp FIXNGO_DATA_DIR (not the real data folder)
+[PASS] server.port contains the private test port (value=5742)
+[PASS] server.pid written to the temp FIXNGO_DATA_DIR
+[PASS] start.log created in isolated log dir
+[PASS] start.log is non-empty
+[PASS] start.log contains no plaintext passwords
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+--- S1 result: PASS=13 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S1-start-first-run.txt
+---- S1: exit=0 pass=13 fail=0 ----
+
+==================== S2 ====================
+=== S2 : setup.bat when already set up -> exit 2, no changes ===
+Timestamp: 2026-11-19T20:18:01.4859660+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s2-d85e2fdf
+Private port: 5668
+setup.bat (first run) exit=0
+===================================================
+  FixNGo - First-time setup
+===================================================
+[INFO] First run detected. Proceeding with setup.
+=== FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Script Test Administrator
+Email: scriptadmin@fixngo.local
+Phone: +201000000042
+Password: ********
+Simulators: on
+[OK] Administrator created: scriptadmin@fixngo.local
+[OK] Setup complete - non-interactive. Start the system with start.bat.
+[PASS] first setup.bat succeeds (value=0)
+[PASS] one admin exists after first setup (value=1)
+setup.bat (second run) exit=2
+===================================================
+  FixNGo - First-time setup
+===================================================
+[WARN] System already has accounts. Use remove-db.bat to reset.
+[PASS] second setup.bat refuses with exit 2 (value=2)
+[PASS] refusal message is clear
+[PASS] database bytes unchanged by refused setup (value=67057BBDEA79EBB586A20A27956D8B687B7715422EA7944774D1E5993613DBCB)
+[PASS] user count unchanged by refused setup (value=1)
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+--- S2 result: PASS=9 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S2-setup-already-set-up.txt
+---- S2: exit=0 pass=9 fail=0 ----
+
+==================== S3 ====================
+=== S3 : admin login via API with setup credentials -> 200 Admin; wrong password -> 401 ===
+Timestamp: 2026-11-19T20:18:09.9970290+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s3-735d723f
+Private port: 5860
+CLI setup exit=0 === FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Script Test Administrator
+Email: scriptadmin@fixngo.local
+Phone: +201000000042
+Password: ********
+Simulators: on
+[OK] Administrator created: scriptadmin@fixngo.local
+[PASS] CLI setup created the admin (value=0)
+[PASS] server answers /health
+correct login: HTTP 200, role=Admin, tokenLen=459
+[PASS] correct credentials return HTTP 200 (value=200)
+[PASS] logged-in user has role Admin (value=Admin)
+[PASS] access token issued
+wrong-password login: HTTP 401
+[PASS] wrong password returns HTTP 401 (value=401)
+[PASS] Serilog server log created in temp FIXNGO_LOG_DIR
+--- S3 result: PASS=7 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S3-admin-login.txt
+---- S3: exit=0 pass=7 fail=0 ----
+
+==================== S4 ====================
+=== S4 : dummy-db.bat -> verified backup, >=200 users, all credentials log in, mode=dummy ===
+Timestamp: 2026-11-19T20:18:22.2613025+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-95d57a55
+Private port: 5643
+[PASS] CLI setup created the original admin (value=0)
+dummy-db.bat exit=0
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[INFO] No server.pid found.
+[OK] Dummy database created (201 users, seed 20261119).
+[OK] Credentials written to C:\Users\xprenspel\Desktop\FixNGoFinal\dummy-db.md
+[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-95d57a55\backups\real-20261119-201828
+[OK] Dummy database ready. See dummy-db.md for every credential.
+[PASS] dummy-db.bat succeeds with --yes (value=0)
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+[PASS] exactly one data\backups\real-* backup folder exists
+[PASS] backup contains manifest.json
+[PASS] backup contains the database copy
+[PASS] backup contains the uploads folder
+manifest: users=1 uploads=0 sha=0E19FEEA08F5F68E9811C84873DE417C2AEC7CE88523F057F1A1ED089A6108FF
+[PASS] backup db SHA-256 matches manifest (value=0E19FEEA08F5F68E9811C84873DE417C2AEC7CE88523F057F1A1ED089A6108FF)
+[PASS] manifest records the pre-dummy user count
+[PASS] manifest records hadRealData=true
+[PASS] manifest records appVersion
+dummy DB user count: 201
+[PASS] dummy database has at least 200 users
+[PASS] dummy-db.md generated at project root
+[PASS] dummy-db.md lists every user exactly once (value=201)
+[PASS] every listed account has a password
+[PASS] dummy server answers /health
+system status: mode=dummy setupComplete=True
+[PASS] /system/status reports mode=dummy (DUMMY DATA ribbon) (value=dummy)
+Login sweep: 201 credentials; per-role successes: Admin=2, CarOwner=120, Mechanic=40, ServiceCenter=14, TowCaptain=25
+[PASS] dummy-db.md lists at least 200 credentials
+[PASS] every listed dummy credential logged in (201/201)
+[PASS] all five roles are represented in the credential login sweep
+--- S4 result: PASS=22 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S4-dummy-db.txt
+---- S4: exit=0 pass=22 fail=0 ----
+
+==================== S5 ====================
+=== S5 : dummy-db.bat twice -> second run refused (exit 2) ===
+Timestamp: 2026-11-19T20:18:48.2109315+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s5-7b946dc3
+Private port: 5271
+[PASS] CLI setup created the original admin (value=0)
+dummy-db.bat (first) exit=0
+[PASS] first dummy-db.bat succeeds (value=0)
+dummy-db.bat (second) exit=2
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[WARN] Already in dummy mode - run restore-db.bat to go back.
+[ERR] Dummy database failed with exit code 2.
+[PASS] second dummy-db.bat refuses with exit 2 (value=2)
+[PASS] refusal explains that restore-db.bat is needed
+[PASS] database bytes unchanged by refused second run (value=56EC1B4E9357B4440D90D97364E8017A14F30E737A51C9242A90FE0F361BE867)
+[PASS] user count unchanged by refused second run (value=201)
+[PASS] no additional backup created by refused second run (value=1)
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+--- S5 result: PASS=10 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S5-dummy-twice.txt
+---- S5: exit=0 pass=10 fail=0 ----
+
+==================== S6 ====================
+=== S6 : restore-db.bat -> byte-identical restore, original admin login, backup archived ===
+Timestamp: 2026-11-19T20:19:03.5163695+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s6-858732e6
+Private port: 5945
+[PASS] CLI setup created the original admin (value=0)
+Original DB SHA-256: 326965247B72C0638F9940028DE65FEE710D8A183D158ECB52F212970498050D
+[PASS] dummy-db.bat created the sandbox (value=0)
+[PASS] dummy-db.md exists while in dummy mode
+restore-db.bat exit=0
+===================================================
+  FixNGo - Restore real database
+===================================================
+[WARN] Anything created while in dummy mode will be discarded.
+[INFO] No server.pid found.
+[OK] Real data restored (1 users).
+[OK] Real data restored. dummy-db.md removed.
+[PASS] restore-db.bat succeeds with --yes (value=0)
+[PASS] restore-db.log created in isolated log dir
+[PASS] restore-db.log is non-empty
+[PASS] restore-db.log contains no plaintext passwords
+[PASS] restored DB is byte-identical (SHA-256) to the pre-dummy DB (value=326965247B72C0638F9940028DE65FEE710D8A183D158ECB52F212970498050D)
+[PASS] restored user count equals the original (value=1)
+[PASS] dummy-db.md deleted by restore
+[PASS] state mode is real after restore (value=real)
+[PASS] used backup moved to backups\archive\restored-*
+[PASS] restored server answers /health
+original admin login: HTTP 200
+[PASS] original admin still logs in after restore (value=200)
+[PASS] /system/status reports mode=real after restore (value=real)
+--- S6 result: PASS=15 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S6-restore-db.txt
+---- S6: exit=0 pass=15 fail=0 ----
+
+==================== S7 ====================
+=== S7 : remove-db.bat typed RESET -> first run + safety snapshot + start.bat triggers setup again ===
+Timestamp: 2026-11-19T20:19:24.9181783+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c
+Private port: 5703
+[PASS] CLI setup created the original admin (value=0)
+remove-db.bat wrong confirmation exit=1
+[PASS] wrong typed confirmation aborts with exit 1 (value=1)
+[PASS] abort message is clear
+[PASS] database unchanged after abort (value=C897E3B3C338E64150045E484E426633FDBC62A70FCFCC28C6A414408C289513)
+[PASS] user count unchanged after abort (value=1)
+remove-db.bat RESET exit=0
+===================================================
+  FixNGo - Remove database (reset to first run)
+===================================================
+[WARN] This permanently deletes the live database, uploads, secrets and state.
+[WARN] A safety snapshot is created in data\backups\ first.
+[WARN] Type RESET to confirm (nothing is deleted on any other input).
+Type RESET to confirm: [INFO] No server.pid found.
+[OK] Safety snapshot: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c\backups\pre-reset-20261119-201931
+[OK] System reset. Run start.bat to begin first-time setup.
+[OK] System reset. Run start.bat to begin first-time setup.
+[PASS] typed RESET resets the system (value=0)
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+[PASS] safety snapshot data\backups\pre-reset-* created
+[PASS] safety snapshot contains a DB copy
+[PASS] safety snapshot contains manifest.json
+check-setup after reset: exit=10
+[PASS] check-setup reports first run (exit 10) after reset (value=10)
+[PASS] live DB deleted
+[PASS] state.json deleted
+[PASS] secrets.json deleted
+[PASS] data\backups preserved
+[PASS] start.bat after reset reaches /health (setup re-triggered)
+[PASS] exactly one admin exists after re-setup (value=1)
+[PASS] check-setup reports set up after re-setup (value=0)
+--- S7 result: PASS=20 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S7-remove-db-typed.txt
+---- S7: exit=0 pass=20 fail=0 ----
+
+==================== S8 ====================
+=== S8 : remove-db.bat in dummy mode -> refused without --force-dummy; real backup preserved ===
+Timestamp: 2026-11-19T20:19:42.7506259+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-6bdd9a89
+Private port: 5821
+[PASS] CLI setup created the original admin (value=0)
+[PASS] dummy mode enabled (value=0)
+[PASS] real-data backup exists before reset attempt
+remove-db.bat in dummy mode exit=2
+===================================================
+  FixNGo - Remove database (reset to first run)
+===================================================
+[WARN] This permanently deletes the live database, uploads, secrets and state.
+[WARN] A safety snapshot is created in data\backups\ first.
+[WARN] Type RESET to confirm (nothing is deleted on any other input).
+[WARN] Cannot reset while in dummy mode. Run restore-db.bat first; your real data backup is in C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-6bdd9a89\backups\real-20261119-201948.
+[ERR] Reset failed with exit code 2.
+[PASS] remove-db.bat refuses in dummy mode with exit 2 (value=2)
+[PASS] refusal gives restore-db.bat guidance
+[PASS] dummy DB unchanged after refusal (value=82773B90E1E2F37F25893165DB5E149006F0EEF2DDD4BEC66A5BDC331A5F0E08)
+[PASS] dummy users still present after refusal (value=201)
+[PASS] dummy-db.md still present after refusal
+[PASS] real backup directory still present after refusal
+[PASS] real backup bytes unchanged after refusal (value=233CF53C97E8CE73D9FFABE8FCD42FAD58840FEE4AEC4CF18F21002ABF610936)
+remove-db.bat --force-dummy exit=0
+[PASS] --force-dummy allows reset from dummy mode (value=0)
+[PASS] forced reset returns to first run (value=10)
+[PASS] dummy DB deleted by forced reset
+[PASS] orphaned dummy-db.md deleted by forced reset
+[PASS] forced reset preserves data\backups\real-*
+[PASS] preserved real backup bytes unchanged (value=233CF53C97E8CE73D9FFABE8FCD42FAD58840FEE4AEC4CF18F21002ABF610936)
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+--- S8 result: PASS=19 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S8-remove-dummy-mode.txt
+---- S8: exit=0 pass=19 fail=0 ----
+
+==================== S9 ====================
+=== S9 : dummy generation failure injection -> automatic rollback to real DB, exit 3 ===
+Timestamp: 2026-11-19T20:19:58.5694626+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s9-d4072d55
+Private port: 5905
+[PASS] CLI setup created the original admin (value=0)
+Original DB SHA-256: 4A2D76390D43F6E6E4682220EF6EFECEC551E8F0682FB194853B422C08D86A6E
+dummy-db.bat with injected failure exit=3
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[INFO] No server.pid found.
+[OK] Automatic rollback to real data completed.
+[ERR] Dummy database failed with exit code 3.
+[ERR] Dummy generation failed: Injected dummy generation failure (FIXNGO_DUMMY_FAIL=1).
+[PASS] injected failure returns exit code 3 (value=3)
+[PASS] failure is reported clearly
+[PASS] automatic rollback is reported
+[PASS] live DB rolled back byte-for-byte (SHA-256) (value=4A2D76390D43F6E6E4682220EF6EFECEC551E8F0682FB194853B422C08D86A6E)
+[PASS] original user count restored (value=1)
+[PASS] state mode remains real after rollback (value=real)
+[PASS] no dummy-db.md left behind by failed run
+[PASS] original admin account is still present (value=0)
+[PASS] rolled-back backup moved out of the active real-* set (value=0)
+[PASS] rolled-back backup retained under backups\archive
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+--- S9 result: PASS=14 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S9-dummy-failure-rollback.txt
+---- S9: exit=0 pass=14 fail=0 ----
+
+==================== S10 ====================
+=== S10 : paths with spaces / run from another cwd -> all tools work ===
+Timestamp: 2026-11-19T20:20:13.4435741+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces bd856a53
+Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces 90de466c
+Private port: 5212
+setup.bat from other cwd exit=0
+[PASS] setup.bat works from another cwd with spaces (value=0)
+[PASS] test data path actually contains spaces
+CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces bd856a53\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
+[PASS] CLI works from another cwd (value=0)
+[PASS] CLI reports the spaced temp data dir
+[PASS] one admin created in the spaced data dir (value=1)
+dummy-db.bat from other cwd exit=0
+[PASS] dummy-db.bat works from another cwd with spaces (value=0)
+restore-db.bat from other cwd exit=0
+[PASS] restore-db.bat works from another cwd with spaces (value=0)
+remove-db.bat from other cwd exit=0
+[PASS] remove-db.bat works from another cwd with spaces (value=0)
+[PASS] final state is first run (value=10)
+[PASS] setup.log created in isolated log dir
+[PASS] setup.log is non-empty
+[PASS] setup.log contains no plaintext passwords
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+[PASS] restore-db.log created in isolated log dir
+[PASS] restore-db.log is non-empty
+[PASS] restore-db.log contains no plaintext passwords
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+[PASS] real project data\ folder file list unchanged (value=C:\Users\xprenspel\Desktop\FixNGoFinal\data\server.port)
+[PASS] real project database hash unchanged (value=)
+--- S10 result: PASS=23 FAIL=0 ---
+[SAVED] docs/evidence/script-tests/S10-paths-with-spaces.txt
+---- S10: exit=0 pass=23 fail=0 ----
+
+==================== SUMMARY ====================
+| Scenario | Exit code | Asserts PASS | Asserts FAIL | Result |
+|---|---:|---:|---:|---|
+| S1 | 0 | 13 | 0 | PASS |
+| S2 | 0 | 9 | 0 | PASS |
+| S3 | 0 | 7 | 0 | PASS |
+| S4 | 0 | 22 | 0 | PASS |
+| S5 | 0 | 10 | 0 | PASS |
+| S6 | 0 | 15 | 0 | PASS |
+| S7 | 0 | 20 | 0 | PASS |
+| S8 | 0 | 19 | 0 | PASS |
+| S9 | 0 | 14 | 0 | PASS |
+| S10 | 0 | 23 | 0 | PASS |
+
+Scenarios: 10 passed=10 failed=0
+Assertions: pass=152 fail=0
+Finished: 2026-11-19T20:20:30.0005738+00:00
+Transcripts: docs/evidence/script-tests/
+OVERALL: PASS
+---- 06 script tests S1-S10: PASS (exit 0, 163.4s) ----
+
+==================== STEP: 07 Playwright E2E ====================
+Command: cmd.exe /d /s /c "npm.cmd run test:e2e"
+
+> fixngo-client@1.0.0 test:e2e
+> playwright test
+
+[WebServer] [e2e-server] starting http://127.0.0.1:54173 (data=C:\Users\XPRENS~1\AppData\Local\Temp\2\fixngo-e2e-data-o843M8, logs=C:\Users\XPRENS~1\AppData\Local\Temp\2\fixngo-e2e-logs-kvrdjI, web=C:\Users\XPRENS~1\AppData\Local\Temp\2\fixngo-e2e-web-YzLTI5)
+[WebServer] (node:15612) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+[WebServer] [20:20:50 INF] FixNGo API starting. Simulators=True DataDir=C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-e2e-data-o843M8
+[WebServer] [20:20:50 INF] HTTP GET /health responded 200 in 89.3620 ms
+[WebServer] [20:20:50 INF] HTTP GET /health responded 200 in 3.4486 ms
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 200 in 1151.2444 ms
+[WebServer] [20:20:52 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 401 in 65.8727 ms
+[WebServer] [20:20:52 INF] Fake Email message queued for owner@gate2.test
+[WebServer] [20:20:52 INF] Signup created user 6e5ab018-3bd5-4655-a83a-e8ba9ec61bab with role CarOwner
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/signup responded 200 in 202.6144 ms
+[WebServer] [20:20:52 INF] OTP verified for user 6e5ab018-3bd5-4655-a83a-e8ba9ec61bab
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 47.0645 ms
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 200 in 21.9620 ms
+[WebServer] [20:20:52 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 401 in 3.8178 ms
+[WebServer] [20:20:52 INF] Fake Email message queued for mechanic@gate2.test
+[WebServer] [20:20:52 INF] Signup created user 5fee87a6-c9a7-4e57-bc26-7111bd7cd9fc with role Mechanic
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/signup responded 200 in 91.2598 ms
+[WebServer] [20:20:52 INF] OTP verified for user 5fee87a6-c9a7-4e57-bc26-7111bd7cd9fc
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 8.2630 ms
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 200 in 22.7386 ms
+[WebServer] [20:20:52 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 401 in 3.1717 ms
+[WebServer] [20:20:52 INF] Fake Email message queued for captain@gate2.test
+[WebServer] [20:20:52 INF] Signup created user ccc73978-e011-48f6-bf3d-0c498007e04f with role TowCaptain
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/signup responded 200 in 30.9574 ms
+[WebServer] [20:20:52 INF] OTP verified for user ccc73978-e011-48f6-bf3d-0c498007e04f
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 8.1479 ms
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 200 in 21.6017 ms
+[WebServer] [20:20:52 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 401 in 3.4849 ms
+[WebServer] [20:20:52 INF] Fake Email message queued for center@gate2.test
+[WebServer] [20:20:52 INF] Signup created user 32254e3d-69ec-4a8b-9b34-40fb66937e81 with role ServiceCenter
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/signup responded 200 in 80.7354 ms
+[WebServer] [20:20:52 INF] OTP verified for user 32254e3d-69ec-4a8b-9b34-40fb66937e81
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 8.2087 ms
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 200 in 23.8176 ms
+[WebServer] [20:20:52 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 401 in 3.4468 ms
+[WebServer] [20:20:52 INF] Fake Email message queued for kyctest@gate2.test
+[WebServer] [20:20:52 INF] Signup created user 3938a5e7-6efc-4440-8f59-358e0b346b39 with role Mechanic
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/signup responded 200 in 28.9556 ms
+[WebServer] [20:20:52 INF] OTP verified for user 3938a5e7-6efc-4440-8f59-358e0b346b39
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 9.0783 ms
+[WebServer] [20:20:52 INF] HTTP POST /api/v1/auth/login responded 200 in 21.8297 ms
+[WebServer] [20:20:53 INF] HTTP POST /api/v1/providers/kyc responded 200 in 245.5629 ms
+[WebServer] [20:20:53 INF] HTTP POST /api/v1/providers/online responded 200 in 53.8558 ms
+[WebServer] [20:20:53 INF] HTTP POST /api/v1/providers/online responded 200 in 14.6105 ms
+[WebServer] [20:20:53 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 167.7459 ms
+[WebServer] [20:20:53 INF] HTTP POST /api/v1/vehicles responded 200 in 73.5682 ms
+[WebServer] [20:20:53 INF] HTTP POST /api/v1/requests responded 200 in 258.7098 ms
+[WebServer] [20:20:53 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/candidates responded 200 in 49.1582 ms
+[WebServer] [20:20:53 INF] HTTP POST /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/offers responded 200 in 101.3247 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/offers/c5066a00-edc4-4d91-a65e-20220ef4eb6b/accept responded 200 in 69.0937 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests responded 200 in 14.4238 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a/offers responded 200 in 15.6752 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/offers/46884712-71ed-4058-b779-df4cfa4ad9e8/accept responded 200 in 13.9569 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests responded 200 in 14.9723 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests/609bbd31-1a59-4820-b62a-1fe7fd1a8ac6/offers responded 200 in 14.5348 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests responded 200 in 13.5165 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests/6cb720aa-7c8e-4aad-8766-0f0504e1071e/offers responded 200 in 16.7909 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/quotes responded 200 in 89.1912 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/quotes/6de5c3f9-a1cc-4888-90d1-27b53db26081/approve responded 200 in 35.8451 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/center-admin/services responded 200 in 45.6242 ms
+[WebServer] [20:20:54 INF] HTTP GET /api/v1/center-admin/profile responded 200 in 8.7799 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/centers/bookings responded 200 in 123.7754 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/center-admin/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1/confirm responded 200 in 88.3221 ms
+[WebServer] [20:20:54 INF] HTTP GET /api/v1/center-admin/work-orders responded 200 in 30.5251 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/payments/methods/card responded 200 in 70.0621 ms
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/payments/invoices/request/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/ensure responded 200 in 77.3205 ms
+[WebServer] [20:20:54 INF] Fake payment e2e-seed-8c4dd4da-c93f-4e28-b01f-e4bf432573cb Succeeded
+[WebServer] [20:20:54 INF] HTTP POST /api/v1/payments/invoices/6b0cedb3-2972-45c0-9b8e-b9ea09a795f3/pay responded 200 in 177.4165 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/requests responded 200 in 14.9173 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/payments/invoices/request/97abe4b8-2f57-4830-b8fb-4a2657686e2b/ensure responded 200 in 13.4726 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/payments/invoices/d4f8a896-cbda-4d11-ab26-a6151417c065/pay responded 200 in 58.7620 ms
+[WebServer] [20:20:55 INF] HTTP GET /api/v1/admin/payment-reviews responded 200 in 23.9022 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/chat responded 200 in 68.8691 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/chat/threads/d99ca87a-1840-44f8-a1b7-9c4d84cc0e2b/messages responded 200 in 56.3094 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/support/tickets responded 200 in 87.7770 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/admin/tickets/deb18d3b-c39e-44a2-9470-b9faeac3ae29/reply responded 200 in 30.0127 ms
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/support/sos responded 200 in 47.4948 ms
+[e2e] seeded 5 roles, 23 entity ids
+[WebServer] [20:20:55 INF] HTTP POST /api/v1/support/safety responded 200 in 64.9310 ms
+
+Running 25 tests using 1 worker
+
+[WebServer] [20:20:56 INF] HTTP GET /index.html responded 200 in 15.7817 ms
+[WebServer] [20:20:56 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 5.0404 ms
+[WebServer] [20:20:56 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 14.0575 ms
+[WebServer] [20:20:56 INF] HTTP GET /api/v1/system/status responded 200 in 19.9629 ms
+[WebServer] [20:20:56 INF] HTTP POST /api/v1/auth/login responded 200 in 26.1486 ms
+[WebServer] [20:20:56 INF] HTTP POST /hubs/app/negotiate responded 200 in 7.8113 ms
+[WebServer] [20:20:56 INF] HTTP GET /api/v1/sim/messages responded 200 in 31.9498 ms
+[WebServer] [20:20:56 INF] HTTP GET /api/v1/sim/otps responded 200 in 36.6428 ms
+[WebServer] [20:20:56 INF] HTTP GET /api/v1/sim/push responded 200 in 49.7424 ms
+[WebServer] [20:20:56 INF] HTTP GET /api/v1/admin/dashboard responded 200 in 46.6390 ms
+[WebServer] [20:20:56 INF] HTTP GET /api/v1/auth/me responded 200 in 4.7132 ms
+[WebServer] [20:20:56 INF] HTTP GET /hubs/app responded 101 in 127.8705 ms
+  ok  1 e2e\auth.spec.js:10:3 › login admin (Admin) -> AD01 with a clean console (611ms)
+[WebServer] [20:20:57 INF] HTTP GET /index.html responded 200 in 2.0308 ms
+[WebServer] [20:20:57 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.9965 ms
+[WebServer] [20:20:57 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 6.8200 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/system/status responded 200 in 2.8131 ms
+[WebServer] [20:20:57 INF] HTTP POST /api/v1/auth/login responded 200 in 27.0736 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/sim/push responded 200 in 5.6731 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/sim/messages responded 200 in 5.8066 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/sim/otps responded 200 in 5.9359 ms
+[WebServer] [20:20:57 INF] HTTP POST /hubs/app/negotiate responded 200 in 1.1865 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/vehicles responded 200 in 17.5958 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/auth/me responded 200 in 1.5416 ms
+[WebServer] [20:20:57 INF] HTTP GET /hubs/app responded 101 in 114.9165 ms
+  ok  2 e2e\auth.spec.js:10:3 › login owner (CarOwner) -> C02 with a clean console (516ms)
+[WebServer] [20:20:57 INF] HTTP GET /index.html responded 200 in 0.9840 ms
+[WebServer] [20:20:57 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.9932 ms
+[WebServer] [20:20:57 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 9.6422 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/system/status responded 200 in 2.2854 ms
+[WebServer] [20:20:57 INF] HTTP POST /api/v1/auth/login responded 200 in 26.3090 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.3522 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/sim/push responded 200 in 5.2716 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.3733 ms
+[WebServer] [20:20:57 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.9064 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/providers/me responded 200 in 8.9215 ms
+[WebServer] [20:20:57 INF] HTTP GET /api/v1/auth/me responded 200 in 1.4548 ms
+[WebServer] [20:20:57 INF] HTTP GET /hubs/app responded 101 in 110.2492 ms
+  ok  3 e2e\auth.spec.js:10:3 › login mechanic (Mechanic) -> M01 with a clean console (503ms)
+[WebServer] [20:20:58 INF] HTTP GET /index.html responded 200 in 1.0187 ms
+[WebServer] [20:20:58 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.2756 ms
+[WebServer] [20:20:58 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 4.0497 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/system/status responded 200 in 2.4746 ms
+[WebServer] [20:20:58 INF] HTTP POST /api/v1/auth/login responded 200 in 23.8837 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.5093 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/sim/push responded 200 in 6.0092 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.5312 ms
+[WebServer] [20:20:58 INF] HTTP POST /hubs/app/negotiate responded 200 in 1.1256 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/providers/me responded 200 in 3.7424 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/auth/me responded 200 in 1.3598 ms
+[WebServer] [20:20:58 INF] HTTP GET /hubs/app responded 101 in 103.4402 ms
+  ok  4 e2e\auth.spec.js:10:3 › login captain (TowCaptain) -> T01 with a clean console (479ms)
+[WebServer] [20:20:58 INF] HTTP GET /index.html responded 200 in 1.0720 ms
+[WebServer] [20:20:58 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.9558 ms
+[WebServer] [20:20:58 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 4.6914 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/system/status responded 200 in 2.8442 ms
+[WebServer] [20:20:58 INF] HTTP POST /api/v1/auth/login responded 200 in 23.8257 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.8960 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/sim/push responded 200 in 5.4533 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.1583 ms
+[WebServer] [20:20:58 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5014 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/center-admin/work-orders responded 200 in 3.7598 ms
+[WebServer] [20:20:58 INF] HTTP GET /api/v1/auth/me responded 200 in 1.4850 ms
+[WebServer] [20:20:58 INF] HTTP GET /hubs/app responded 101 in 104.7993 ms
+  ok  5 e2e\auth.spec.js:10:3 › login center (ServiceCenter) -> SC01 with a clean console (481ms)
+[WebServer] [20:20:59 INF] HTTP GET /index.html responded 200 in 1.0844 ms
+[WebServer] [20:20:59 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.0294 ms
+[WebServer] [20:20:59 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 4.1801 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/system/status responded 200 in 2.3621 ms
+[WebServer] [20:20:59 INF] HTTP POST /api/v1/auth/login responded 200 in 22.2603 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.0988 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/sim/push responded 200 in 4.0682 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.2048 ms
+[WebServer] [20:20:59 INF] HTTP POST /hubs/app/negotiate responded 200 in 1.1142 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/vehicles responded 200 in 4.4379 ms
+[WebServer] [20:20:59 INF] HTTP GET /hubs/app responded 101 in 93.4353 ms
+  ok  6 e2e\flows.spec.js:25:1 › F01 login -> C02 (owner home) (468ms)
+[WebServer] [20:20:59 INF] HTTP GET /index.html responded 200 in 0.9204 ms
+[WebServer] [20:20:59 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.7970 ms
+[WebServer] [20:20:59 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.4437 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/system/status responded 200 in 2.4151 ms
+[WebServer] [20:20:59 INF] HTTP POST /api/v1/auth/login responded 200 in 22.3485 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.9787 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/sim/push responded 200 in 4.2216 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.3754 ms
+[WebServer] [20:20:59 INF] HTTP POST /hubs/app/negotiate responded 200 in 1.0466 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/vehicles responded 200 in 3.5383 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/requests responded 200 in 20.5207 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/vehicles responded 200 in 3.6326 ms
+[WebServer] [20:20:59 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 10.5833 ms
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/requests responded 200 in 18.1466 ms
+[WebServer] [20:21:00 INF] HTTP GET /api/v1/requests responded 200 in 4.0127 ms
+[WebServer] [20:21:00 INF] HTTP GET /hubs/app responded 101 in 681.4527 ms
+  ok  7 e2e\flows.spec.js:40:1 › F02 request creation via UI (C07 form) (1.1s)
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/auth/login responded 200 in 20.9626 ms
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/auth/login responded 200 in 20.2562 ms
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/requests responded 200 in 12.3854 ms
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/requests/e9ac0bf5-cece-40ac-9e15-4ffe7df46054/offers responded 200 in 13.8870 ms
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/offers/87deefd1-4655-41ec-8018-4f045e6eaa80/accept responded 200 in 20.0610 ms
+  ok  8 e2e\flows.spec.js:67:1 › F03 offer accept (real API; UI has no provider-selection/accept controls) (117ms)
+[WebServer] [20:21:00 INF] HTTP GET /index.html responded 200 in 1.0053 ms
+[WebServer] [20:21:00 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.7796 ms
+[WebServer] [20:21:00 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.7097 ms
+[WebServer] [20:21:00 INF] HTTP GET /api/v1/system/status responded 200 in 2.6936 ms
+[WebServer] [20:21:00 INF] HTTP POST /api/v1/auth/login responded 200 in 23.2107 ms
+[WebServer] [20:21:00 INF] HTTP GET /api/v1/sim/push responded 200 in 3.6991 ms
+[WebServer] [20:21:00 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.9752 ms
+[WebServer] [20:21:00 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.5623 ms
+[WebServer] [20:21:00 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.7578 ms
+[WebServer] [20:21:01 INF] HTTP GET /api/v1/vehicles responded 200 in 3.0070 ms
+[WebServer] [20:21:01 INF] HTTP GET /api/v1/vehicles responded 200 in 2.8042 ms
+[WebServer] [20:21:01 INF] HTTP GET /api/v1/centers responded 200 in 16.2392 ms
+[WebServer] [20:21:04 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.8900 ms
+[WebServer] [20:21:05 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.8058 ms
+[WebServer] [20:21:05 INF] HTTP GET /api/v1/sim/push responded 200 in 4.7578 ms
+[WebServer] [20:21:07 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.3715 ms
+[WebServer] [20:21:09 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.2584 ms
+[WebServer] [20:21:09 INF] HTTP GET /api/v1/sim/push responded 200 in 3.5999 ms
+[WebServer] [20:21:10 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.3148 ms
+[WebServer] [20:21:13 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.1327 ms
+[WebServer] [20:21:13 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3781 ms
+[WebServer] [20:21:13 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.8084 ms
+[WebServer] [20:21:16 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.5172 ms
+[WebServer] [20:21:17 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9144 ms
+[WebServer] [20:21:17 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.3457 ms
+[WebServer] [20:21:19 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0261 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.9406 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/sim/push responded 200 in 3.1809 ms
+[WebServer] [20:21:21 INF] HTTP GET /hubs/app responded 101 in 20192.0985 ms
+[WebServer] [20:21:21 INF] HTTP POST /api/v1/auth/login responded 200 in 20.5939 ms
+[WebServer] [20:21:21 INF] HTTP POST /api/v1/auth/login responded 200 in 19.1266 ms
+[WebServer] [20:21:21 INF] HTTP POST /api/v1/centers/bookings responded 200 in 14.3105 ms
+[WebServer] [20:21:21 INF] HTTP POST /api/v1/center-admin/bookings/6fe0bb0a-90d5-465a-8ee2-b43f73649ba5/confirm responded 200 in 14.9584 ms
+  ok  9 e2e\flows.spec.js:90:1 › F04 booking (API after capturing the C19 UI field mismatch) (20.6s)
+[WebServer] [20:21:21 INF] HTTP GET /index.html responded 200 in 1.6527 ms
+[WebServer] [20:21:21 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.2247 ms
+[WebServer] [20:21:21 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.2001 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/system/status responded 200 in 1.3384 ms
+[WebServer] [20:21:21 INF] HTTP POST /api/v1/auth/login responded 200 in 22.5839 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.0198 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/sim/push responded 200 in 3.0186 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.6448 ms
+[WebServer] [20:21:21 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.7047 ms
+[WebServer] [20:21:21 INF] HTTP GET /api/v1/vehicles responded 200 in 2.4242 ms
+[WebServer] [20:21:24 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.6570 ms
+[WebServer] [20:21:25 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.7379 ms
+[WebServer] [20:21:25 INF] HTTP GET /api/v1/sim/push responded 200 in 3.0277 ms
+[WebServer] [20:21:27 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0711 ms
+[WebServer] [20:21:29 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.1020 ms
+[WebServer] [20:21:29 INF] HTTP GET /api/v1/sim/push responded 200 in 1.8695 ms
+[WebServer] [20:21:30 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9111 ms
+[WebServer] [20:21:33 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7811 ms
+[WebServer] [20:21:33 INF] HTTP GET /api/v1/sim/push responded 200 in 1.8073 ms
+[WebServer] [20:21:33 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0240 ms
+[WebServer] [20:21:36 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8811 ms
+[WebServer] [20:21:37 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5247 ms
+[WebServer] [20:21:37 INF] HTTP GET /api/v1/sim/push responded 200 in 2.6640 ms
+[WebServer] [20:21:39 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7242 ms
+[WebServer] [20:21:41 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4388 ms
+[WebServer] [20:21:41 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9036 ms
+[WebServer] [20:21:41 INF] HTTP GET /hubs/app responded 101 in 20100.4470 ms
+[WebServer] [20:21:41 INF] HTTP POST /api/v1/auth/login responded 200 in 20.7059 ms
+[WebServer] [20:21:41 INF] HTTP GET /api/v1/payments/methods responded 200 in 13.0775 ms
+[WebServer] [20:21:41 INF] HTTP POST /api/v1/requests responded 200 in 11.7997 ms
+[WebServer] [20:21:41 INF] HTTP POST /api/v1/payments/invoices/request/568e3534-cbb4-449a-9a35-02f896dc30b3/ensure responded 200 in 10.7825 ms
+[WebServer] [20:21:41 INF] Fake payment e2e-pay-1d0cf538-ac6c-4953-9890-a66de73d49eb Succeeded
+[WebServer] [20:21:41 INF] HTTP POST /api/v1/payments/invoices/1d0cf538-ac6c-4953-9890-a66de73d49eb/pay responded 200 in 12.4594 ms
+  ok 10 e2e\flows.spec.js:128:1 › F05 card payment with 4242 4242 4242 4242 (API; UI C33 field mismatch captured) (20.6s)
+[WebServer] [20:21:42 INF] HTTP GET /index.html responded 200 in 0.8457 ms
+[WebServer] [20:21:42 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.0343 ms
+[WebServer] [20:21:42 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.8774 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/system/status responded 200 in 1.6826 ms
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/auth/login responded 200 in 21.6952 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.1445 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3416 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8024 ms
+[WebServer] [20:21:42 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.4339 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/vehicles responded 200 in 1.2305 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/chat/threads responded 200 in 22.2938 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/chat/threads/d99ca87a-1840-44f8-a1b7-9c4d84cc0e2b responded 200 in 6.6489 ms
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/chat/threads/d99ca87a-1840-44f8-a1b7-9c4d84cc0e2b/messages responded 200 in 7.6735 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/chat/threads/d99ca87a-1840-44f8-a1b7-9c4d84cc0e2b responded 200 in 1.7702 ms
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/auth/login responded 200 in 19.7564 ms
+[WebServer] [20:21:42 INF] HTTP GET /api/v1/chat/threads/d99ca87a-1840-44f8-a1b7-9c4d84cc0e2b responded 200 in 1.6536 ms
+[WebServer] [20:21:42 INF] HTTP GET /hubs/app responded 101 in 384.8266 ms
+  ok 11 e2e\flows.spec.js:176:1 › F06 chat send via UI (SH01) (762ms)
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/auth/login responded 200 in 20.0352 ms
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/auth/login responded 200 in 19.9116 ms
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/providers/kyc responded 200 in 14.1622 ms
+[WebServer] [20:21:42 INF] HTTP POST /api/v1/admin/kyc/201c10ac-07ba-4f61-ac52-68de6b1345f0/review responded 200 in 57.3211 ms
+  ok 12 e2e\flows.spec.js:204:1 › F07 KYC submission + F08 admin review (real API) (154ms)
+[WebServer] [20:21:42 INF] HTTP GET /index.html responded 200 in 0.9672 ms
+[WebServer] [20:21:42 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.0486 ms
+[WebServer] [20:21:42 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.1621 ms
+[WebServer] [20:21:43 INF] HTTP GET /api/v1/system/status responded 200 in 1.6829 ms
+[WebServer] [20:21:43 INF] HTTP POST /api/v1/auth/login responded 200 in 21.5494 ms
+[WebServer] [20:21:43 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.1966 ms
+[WebServer] [20:21:43 INF] HTTP GET /api/v1/sim/push responded 200 in 2.2125 ms
+[WebServer] [20:21:43 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9566 ms
+[WebServer] [20:21:43 INF] HTTP GET /api/v1/vehicles responded 200 in 1.7597 ms
+[WebServer] [20:21:43 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5787 ms
+[WebServer] [20:21:46 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9381 ms
+[WebServer] [20:21:47 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4329 ms
+[WebServer] [20:21:47 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9649 ms
+[WebServer] [20:21:49 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.6430 ms
+[WebServer] [20:21:51 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.3380 ms
+[WebServer] [20:21:51 INF] HTTP GET /api/v1/sim/push responded 200 in 1.7592 ms
+[WebServer] [20:21:52 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.5623 ms
+[WebServer] [20:21:55 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.6127 ms
+[WebServer] [20:21:55 INF] HTTP GET /api/v1/sim/push responded 200 in 1.8031 ms
+[WebServer] [20:21:55 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7236 ms
+[WebServer] [20:21:58 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9072 ms
+[WebServer] [20:21:59 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.1724 ms
+[WebServer] [20:21:59 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9640 ms
+[WebServer] [20:22:01 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7639 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/sim/push responded 200 in 2.2949 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/sim/messages responded 200 in 4.0037 ms
+[WebServer] [20:22:03 INF] HTTP GET /hubs/app responded 101 in 20066.6098 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/auth/login responded 200 in 21.8938 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/auth/login responded 200 in 19.7282 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/support/tickets responded 200 in 7.5953 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/admin/tickets/75fb2ff9-6209-4cba-92f6-afe2829b38f3/reply responded 200 in 7.8269 ms
+  ok 13 e2e\flows.spec.js:226:1 › F09 support ticket (API; UI SH08 field mismatch captured) (20.5s)
+[WebServer] [20:22:03 INF] HTTP GET /index.html responded 200 in 0.8194 ms
+[WebServer] [20:22:03 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8949 ms
+[WebServer] [20:22:03 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.5143 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/system/status responded 200 in 1.3222 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/auth/login responded 200 in 20.2359 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.3875 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3767 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7170 ms
+[WebServer] [20:22:03 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.6266 ms
+[WebServer] [20:22:03 INF] HTTP GET /api/v1/vehicles responded 200 in 1.8122 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/auth/login responded 200 in 19.2862 ms
+[WebServer] [20:22:03 INF] HTTP POST /api/v1/support/sos responded 200 in 7.4677 ms
+[WebServer] [20:22:03 INF] HTTP GET /hubs/app responded 101 in 149.2383 ms
+  ok 14 e2e\flows.spec.js:255:1 › F10 SOS (API + SH19 UI renders SOS bar) (538ms)
+[WebServer] [20:22:04 INF] HTTP GET /index.html responded 200 in 0.6716 ms
+[WebServer] [20:22:04 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.5485 ms
+[WebServer] [20:22:04 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8579 ms
+[WebServer] [20:22:04 INF] HTTP GET /api/v1/system/status responded 200 in 1.4878 ms
+[WebServer] [20:22:04 INF] HTTP POST /api/v1/auth/login responded 200 in 21.7321 ms
+[WebServer] [20:22:04 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7440 ms
+[WebServer] [20:22:04 INF] HTTP GET /api/v1/sim/push responded 200 in 2.8122 ms
+[WebServer] [20:22:04 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0666 ms
+[WebServer] [20:22:04 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.8669 ms
+[WebServer] [20:22:04 INF] HTTP GET /api/v1/vehicles responded 200 in 2.0604 ms
+[WebServer] [20:22:07 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7223 ms
+[WebServer] [20:22:08 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4139 ms
+[WebServer] [20:22:08 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3770 ms
+[WebServer] [20:22:08 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 6.6265 ms
+[WebServer] [20:22:09 INF] HTTP GET /api/v1/vehicles responded 200 in 1.9247 ms
+[WebServer] [20:22:09 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 5.1108 ms
+[WebServer] [20:22:09 INF] HTTP GET /api/v1/requests responded 200 in 2.8410 ms
+[WebServer] [20:22:10 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 13.1481 ms
+[WebServer] [20:22:10 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.9295 ms
+[WebServer] [20:22:10 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.6048 ms
+[WebServer] [20:22:10 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/quotes responded 200 in 17.2754 ms
+[WebServer] [20:22:11 INF] HTTP GET /api/v1/payments/methods responded 200 in 1.3246 ms
+[WebServer] [20:22:11 INF] HTTP GET /api/v1/payments/invoices/request/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 7.1918 ms
+[WebServer] [20:22:11 INF] HTTP GET /api/v1/centers responded 200 in 1.5571 ms
+[WebServer] [20:22:12 INF] HTTP GET /api/v1/centers/23d61626-f644-4063-a29c-8a3b2bb83d62 responded 200 in 10.1915 ms
+[WebServer] [20:22:12 INF] HTTP GET /api/v1/centers responded 200 in 1.4420 ms
+[WebServer] [20:22:12 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4449 ms
+[WebServer] [20:22:12 INF] HTTP GET /api/v1/sim/push responded 200 in 2.4589 ms
+[WebServer] [20:22:12 INF] HTTP GET /api/v1/requests responded 200 in 2.7191 ms
+[WebServer] [20:22:12 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.5700 ms
+[WebServer] [20:22:13 INF] HTTP GET /api/v1/notifications responded 200 in 21.4673 ms
+[WebServer] [20:22:13 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8973 ms
+[WebServer] [20:22:13 INF] HTTP GET /api/v1/auth/me responded 200 in 0.8143 ms
+[WebServer] [20:22:13 INF] HTTP GET /api/v1/vehicles/4373f966-1da8-498a-8a13-efc637268473 responded 200 in 13.1915 ms
+[WebServer] [20:22:14 INF] HTTP GET /api/v1/requests responded 200 in 2.5321 ms
+[WebServer] [20:22:15 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.4988 ms
+[WebServer] [20:22:16 INF] HTTP GET /api/v1/payments/invoices/request/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.3874 ms
+[WebServer] [20:22:16 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5792 ms
+[WebServer] [20:22:16 INF] HTTP GET /api/v1/sim/push responded 200 in 2.0672 ms
+[WebServer] [20:22:16 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7832 ms
+[WebServer] [20:22:17 INF] HTTP GET /api/v1/centers/bookings responded 200 in 17.9402 ms
+[WebServer] [20:22:17 INF] HTTP GET /api/v1/centers/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1 responded 200 in 12.0959 ms
+[WebServer] [20:22:18 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/timeline responded 200 in 15.7872 ms
+[WebServer] [20:22:18 INF] HTTP GET /api/v1/chat/threads responded 200 in 1.9047 ms
+[WebServer] [20:22:19 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.6584 ms
+[WebServer] [20:22:20 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4455 ms
+[WebServer] [20:22:20 INF] HTTP GET /api/v1/sim/push responded 200 in 2.6243 ms
+[WebServer] [20:22:20 INF] HTTP GET /api/v1/support/faqs responded 200 in 7.2645 ms
+[WebServer] [20:22:21 INF] HTTP GET /api/v1/support/tickets/deb18d3b-c39e-44a2-9470-b9faeac3ae29 responded 200 in 16.9739 ms
+[WebServer] [20:22:22 INF] HTTP POST /api/v1/auth/logout responded 204 in 18.6119 ms
+[WebServer] [20:22:22 INF] HTTP GET /hubs/app responded 101 in 17734.2899 ms
+  ok 15 e2e\screens.spec.js:70:7 › screen sweep light-en › light-en: owner — 71 screens (19.2s)
+[WebServer] [20:22:23 INF] HTTP GET /index.html responded 200 in 1.0094 ms
+[WebServer] [20:22:23 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.5876 ms
+[WebServer] [20:22:23 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.2026 ms
+[WebServer] [20:22:23 INF] HTTP GET /api/v1/system/status responded 200 in 1.2058 ms
+[WebServer] [20:22:23 INF] HTTP POST /api/v1/auth/login responded 200 in 20.4575 ms
+[WebServer] [20:22:23 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9436 ms
+[WebServer] [20:22:23 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.6590 ms
+[WebServer] [20:22:23 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2798 ms
+[WebServer] [20:22:23 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5970 ms
+[WebServer] [20:22:23 INF] HTTP GET /api/v1/providers/me responded 200 in 2.5106 ms
+[WebServer] [20:22:23 INF] HTTP GET /api/v1/providers/kyc/me responded 200 in 13.8397 ms
+[WebServer] [20:22:24 INF] HTTP GET /api/v1/offers responded 200 in 11.6511 ms
+[WebServer] [20:22:24 INF] HTTP GET /api/v1/offers/0eb92647-bf45-4b1a-8bc4-7c15197f0fba responded 200 in 8.0019 ms
+[WebServer] [20:22:24 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.4219 ms
+[WebServer] [20:22:24 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.7650 ms
+[WebServer] [20:22:25 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.5920 ms
+[WebServer] [20:22:25 INF] HTTP GET /api/v1/payments/earnings responded 200 in 24.8592 ms
+[WebServer] [20:22:25 INF] HTTP GET /api/v1/providers/history responded 200 in 6.2248 ms
+[WebServer] [20:22:26 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.5810 ms
+[WebServer] [20:22:26 INF] HTTP GET /api/v1/payments/invoices responded 200 in 12.1595 ms
+[WebServer] [20:22:27 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.5829 ms
+[WebServer] [20:22:27 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5613 ms
+[WebServer] [20:22:27 INF] HTTP GET /api/v1/sim/push responded 200 in 2.9907 ms
+[WebServer] [20:22:27 INF] HTTP GET /api/v1/payments/banks responded 200 in 12.4839 ms
+[WebServer] [20:22:29 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 4.4246 ms
+[WebServer] [20:22:29 INF] HTTP GET /hubs/app responded 101 in 5879.8727 ms
+  ok 16 e2e\screens.spec.js:70:7 › screen sweep light-en › light-en: mechanic — 22 screens (6.2s)
+[WebServer] [20:22:29 INF] HTTP GET /index.html responded 200 in 0.9459 ms
+[WebServer] [20:22:29 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.7182 ms
+[WebServer] [20:22:29 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.9442 ms
+[WebServer] [20:22:29 INF] HTTP GET /api/v1/system/status responded 200 in 1.3976 ms
+[WebServer] [20:22:29 INF] HTTP POST /api/v1/auth/login responded 200 in 22.1708 ms
+[WebServer] [20:22:29 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7076 ms
+[WebServer] [20:22:29 INF] HTTP GET /api/v1/sim/push responded 200 in 3.0380 ms
+[WebServer] [20:22:29 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8062 ms
+[WebServer] [20:22:29 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.3378 ms
+[WebServer] [20:22:29 INF] HTTP GET /api/v1/providers/me responded 200 in 1.7801 ms
+[WebServer] [20:22:30 INF] HTTP GET /api/v1/offers responded 200 in 1.6457 ms
+[WebServer] [20:22:30 INF] HTTP GET /api/v1/offers/c667aab9-e5dc-45c2-9170-2c5f3a0114d6 responded 200 in 1.5007 ms
+[WebServer] [20:22:30 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 2.0745 ms
+[WebServer] [20:22:30 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.5486 ms
+[WebServer] [20:22:31 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.4726 ms
+[WebServer] [20:22:32 INF] HTTP GET /api/v1/payments/earnings responded 200 in 5.6476 ms
+[WebServer] [20:22:32 INF] HTTP GET /api/v1/providers/history responded 200 in 2.7626 ms
+[WebServer] [20:22:32 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9179 ms
+[WebServer] [20:22:33 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.3967 ms
+[WebServer] [20:22:33 INF] HTTP GET /api/v1/payments/invoices responded 200 in 1.2447 ms
+[WebServer] [20:22:33 INF] HTTP GET /hubs/app responded 101 in 3994.9094 ms
+  ok 17 e2e\screens.spec.js:70:7 › screen sweep light-en › light-en: captain — 15 screens (4.4s)
+[WebServer] [20:22:33 INF] HTTP GET /index.html responded 200 in 0.7142 ms
+[WebServer] [20:22:33 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.7243 ms
+[WebServer] [20:22:33 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.1836 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/system/status responded 200 in 1.1961 ms
+[WebServer] [20:22:34 INF] HTTP POST /api/v1/auth/login responded 200 in 20.4559 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5352 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/sim/push responded 200 in 2.6890 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0483 ms
+[WebServer] [20:22:34 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5740 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/center-admin/work-orders responded 200 in 2.1937 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/centers/bookings responded 200 in 8.7405 ms
+[WebServer] [20:22:34 INF] HTTP GET /api/v1/centers/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1 responded 200 in 1.9597 ms
+[WebServer] [20:22:35 INF] HTTP GET /api/v1/center-admin/services responded 200 in 13.3903 ms
+[WebServer] [20:22:36 INF] HTTP GET /api/v1/center-admin/reports responded 200 in 24.3058 ms
+[WebServer] [20:22:36 INF] HTTP GET /api/v1/center-admin/profile responded 200 in 1.2338 ms
+[WebServer] [20:22:36 INF] HTTP GET /api/v1/centers/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1 responded 200 in 2.3263 ms
+[WebServer] [20:22:37 INF] HTTP GET /api/v1/payments/invoices responded 200 in 1.3320 ms
+[WebServer] [20:22:37 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8179 ms
+[WebServer] [20:22:37 INF] HTTP GET /api/v1/center-admin/bays responded 200 in 14.6468 ms
+[WebServer] [20:22:37 INF] HTTP GET /api/v1/center-admin/technicians responded 200 in 15.3257 ms
+[WebServer] [20:22:38 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4229 ms
+[WebServer] [20:22:38 INF] HTTP GET /api/v1/sim/push responded 200 in 2.0667 ms
+[WebServer] [20:22:38 INF] HTTP GET /api/v1/center-admin/bays responded 200 in 2.3425 ms
+[WebServer] [20:22:38 INF] HTTP GET /api/v1/center-admin/technicians responded 200 in 2.1072 ms
+[WebServer] [20:22:38 INF] HTTP GET /hubs/app responded 101 in 4528.2087 ms
+  ok 18 e2e\screens.spec.js:70:7 › screen sweep light-en › light-en: center — 17 screens (4.9s)
+[WebServer] [20:22:38 INF] HTTP GET /index.html responded 200 in 0.6073 ms
+[WebServer] [20:22:38 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.4035 ms
+[WebServer] [20:22:38 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 5.4449 ms
+[WebServer] [20:22:38 INF] HTTP GET /api/v1/system/status responded 200 in 1.5196 ms
+[WebServer] [20:22:39 INF] HTTP POST /api/v1/auth/login responded 200 in 20.0866 ms
+[WebServer] [20:22:39 INF] HTTP GET /api/v1/sim/push responded 200 in 2.7429 ms
+[WebServer] [20:22:39 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.0192 ms
+[WebServer] [20:22:39 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8757 ms
+[WebServer] [20:22:39 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.7323 ms
+[WebServer] [20:22:39 INF] HTTP GET /api/v1/admin/dashboard responded 200 in 3.6927 ms
+[WebServer] [20:22:39 INF] HTTP GET /api/v1/admin/kyc/queue responded 200 in 17.6451 ms
+[WebServer] [20:22:39 INF] HTTP GET /api/v1/admin/users responded 200 in 15.5820 ms
+[WebServer] [20:22:40 INF] HTTP GET /api/v1/auth/me responded 200 in 0.6308 ms
+[WebServer] [20:22:40 INF] HTTP GET /api/v1/admin/payment-reviews responded 200 in 1.5284 ms
+[WebServer] [20:22:41 INF] HTTP GET /api/v1/admin/payment-reviews/c521376b-95ab-4be2-859c-42cc90a9844e responded 200 in 6.8855 ms
+[WebServer] [20:22:41 INF] HTTP GET /api/v1/admin/safety responded 200 in 12.8869 ms
+[WebServer] [20:22:41 INF] HTTP GET /api/v1/admin/safety/36f2300f-af6c-4a33-b52f-c8387a6fc35b responded 200 in 6.7506 ms
+[WebServer] [20:22:41 INF] HTTP GET /api/v1/admin/users/5fee87a6-c9a7-4e57-bc26-7111bd7cd9fc responded 200 in 6.3348 ms
+[WebServer] [20:22:42 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8409 ms
+[WebServer] [20:22:43 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5624 ms
+[WebServer] [20:22:43 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3111 ms
+[WebServer] [20:22:43 INF] HTTP GET /api/v1/admin/reports responded 200 in 41.7007 ms
+[WebServer] [20:22:43 INF] HTTP GET /api/v1/admin/reviews responded 200 in 15.7580 ms
+[WebServer] [20:22:43 INF] HTTP GET /api/v1/admin/tickets responded 200 in 18.5549 ms
+[WebServer] [20:22:44 INF] HTTP GET /hubs/app responded 101 in 4946.1138 ms
+  ok 19 e2e\screens.spec.js:70:7 › screen sweep light-en › light-en: admin — 18 screens (5.3s)
+[WebServer] [20:22:44 INF] HTTP GET /index.html responded 200 in 0.7423 ms
+[WebServer] [20:22:44 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.6478 ms
+[WebServer] [20:22:44 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.1974 ms
+[WebServer] [20:22:44 INF] HTTP GET /api/v1/system/status responded 200 in 1.2660 ms
+[WebServer] [20:22:44 INF] HTTP POST /api/v1/auth/login responded 200 in 19.5941 ms
+[WebServer] [20:22:44 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.3661 ms
+[WebServer] [20:22:44 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3177 ms
+[WebServer] [20:22:44 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8351 ms
+[WebServer] [20:22:44 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.3493 ms
+[WebServer] [20:22:44 INF] HTTP GET /api/v1/vehicles responded 200 in 1.6626 ms
+[WebServer] [20:22:47 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8886 ms
+[WebServer] [20:22:48 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.8108 ms
+[WebServer] [20:22:48 INF] HTTP GET /api/v1/sim/push responded 200 in 2.3676 ms
+[WebServer] [20:22:49 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 4.6633 ms
+[WebServer] [20:22:49 INF] HTTP GET /api/v1/vehicles responded 200 in 1.1283 ms
+[WebServer] [20:22:49 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 3.7706 ms
+[WebServer] [20:22:49 INF] HTTP GET /api/v1/requests responded 200 in 2.0308 ms
+[WebServer] [20:22:50 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 2.0843 ms
+[WebServer] [20:22:50 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7555 ms
+[WebServer] [20:22:50 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 2.0109 ms
+[WebServer] [20:22:50 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/quotes responded 200 in 2.0857 ms
+[WebServer] [20:22:51 INF] HTTP GET /api/v1/payments/methods responded 200 in 1.2368 ms
+[WebServer] [20:22:51 INF] HTTP GET /api/v1/payments/invoices/request/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.3741 ms
+[WebServer] [20:22:51 INF] HTTP GET /api/v1/centers responded 200 in 1.2540 ms
+[WebServer] [20:22:52 INF] HTTP GET /api/v1/centers/23d61626-f644-4063-a29c-8a3b2bb83d62 responded 200 in 1.3344 ms
+[WebServer] [20:22:52 INF] HTTP GET /api/v1/centers responded 200 in 1.3002 ms
+[WebServer] [20:22:52 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4147 ms
+[WebServer] [20:22:52 INF] HTTP GET /api/v1/sim/push responded 200 in 1.2168 ms
+[WebServer] [20:22:52 INF] HTTP GET /api/v1/requests responded 200 in 2.2857 ms
+[WebServer] [20:22:52 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.4349 ms
+[WebServer] [20:22:53 INF] HTTP GET /api/v1/notifications responded 200 in 2.1867 ms
+[WebServer] [20:22:53 INF] HTTP GET /api/v1/auth/me responded 200 in 0.6126 ms
+[WebServer] [20:22:53 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7717 ms
+[WebServer] [20:22:53 INF] HTTP GET /api/v1/vehicles/4373f966-1da8-498a-8a13-efc637268473 responded 200 in 1.3660 ms
+[WebServer] [20:22:54 INF] HTTP GET /api/v1/requests responded 200 in 1.6098 ms
+[WebServer] [20:22:55 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.9883 ms
+[WebServer] [20:22:56 INF] HTTP GET /api/v1/payments/invoices/request/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.3499 ms
+[WebServer] [20:22:56 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5314 ms
+[WebServer] [20:22:56 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9614 ms
+[WebServer] [20:22:56 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8021 ms
+[WebServer] [20:22:57 INF] HTTP GET /api/v1/centers/bookings responded 200 in 2.0628 ms
+[WebServer] [20:22:57 INF] HTTP GET /api/v1/centers/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1 responded 200 in 1.8273 ms
+[WebServer] [20:22:58 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb/timeline responded 200 in 1.9485 ms
+[WebServer] [20:22:58 INF] HTTP GET /api/v1/chat/threads responded 200 in 2.0150 ms
+[WebServer] [20:22:59 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8584 ms
+[WebServer] [20:23:00 INF] HTTP GET /api/v1/support/faqs responded 200 in 1.3303 ms
+[WebServer] [20:23:00 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5021 ms
+[WebServer] [20:23:00 INF] HTTP GET /api/v1/sim/push responded 200 in 2.1813 ms
+[WebServer] [20:23:01 INF] HTTP GET /api/v1/support/tickets/deb18d3b-c39e-44a2-9470-b9faeac3ae29 responded 200 in 1.7577 ms
+[WebServer] [20:23:02 INF] HTTP POST /api/v1/auth/logout responded 204 in 5.8278 ms
+[WebServer] [20:23:02 INF] HTTP GET /hubs/app responded 101 in 17520.5713 ms
+  ok 20 e2e\screens.spec.js:70:7 › screen sweep dark-ar › dark-ar: owner — 71 screens (19.0s)
+[WebServer] [20:23:03 INF] HTTP GET /index.html responded 200 in 0.7055 ms
+[WebServer] [20:23:03 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.6438 ms
+[WebServer] [20:23:03 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.7768 ms
+[WebServer] [20:23:03 INF] HTTP GET /api/v1/system/status responded 200 in 1.3457 ms
+[WebServer] [20:23:03 INF] HTTP POST /api/v1/auth/login responded 200 in 21.2231 ms
+[WebServer] [20:23:03 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4743 ms
+[WebServer] [20:23:03 INF] HTTP GET /api/v1/sim/push responded 200 in 2.7911 ms
+[WebServer] [20:23:03 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0948 ms
+[WebServer] [20:23:03 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.3346 ms
+[WebServer] [20:23:03 INF] HTTP GET /api/v1/providers/me responded 200 in 2.7515 ms
+[WebServer] [20:23:03 INF] HTTP GET /api/v1/providers/kyc/me responded 200 in 3.0314 ms
+[WebServer] [20:23:04 INF] HTTP GET /api/v1/offers responded 200 in 1.3535 ms
+[WebServer] [20:23:04 INF] HTTP GET /api/v1/offers/0eb92647-bf45-4b1a-8bc4-7c15197f0fba responded 200 in 1.2822 ms
+[WebServer] [20:23:04 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.3833 ms
+[WebServer] [20:23:04 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.5923 ms
+[WebServer] [20:23:05 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.5878 ms
+[WebServer] [20:23:05 INF] HTTP GET /api/v1/payments/earnings responded 200 in 1.8630 ms
+[WebServer] [20:23:05 INF] HTTP GET /api/v1/providers/history responded 200 in 1.5655 ms
+[WebServer] [20:23:06 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7158 ms
+[WebServer] [20:23:06 INF] HTTP GET /api/v1/payments/invoices responded 200 in 1.3772 ms
+[WebServer] [20:23:06 INF] HTTP GET /api/v1/requests/8c82a514-9d42-47c0-8fe8-91824a11e36a responded 200 in 1.7920 ms
+[WebServer] [20:23:07 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.5931 ms
+[WebServer] [20:23:07 INF] HTTP GET /api/v1/sim/push responded 200 in 1.8985 ms
+[WebServer] [20:23:07 INF] HTTP GET /api/v1/payments/banks responded 200 in 1.3676 ms
+[WebServer] [20:23:09 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 3.8447 ms
+[WebServer] [20:23:09 INF] HTTP GET /hubs/app responded 101 in 5801.1396 ms
+  ok 21 e2e\screens.spec.js:70:7 › screen sweep dark-ar › dark-ar: mechanic — 22 screens (6.2s)
+[WebServer] [20:23:09 INF] HTTP GET /index.html responded 200 in 0.7331 ms
+[WebServer] [20:23:09 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.5538 ms
+[WebServer] [20:23:09 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8596 ms
+[WebServer] [20:23:09 INF] HTTP GET /api/v1/system/status responded 200 in 1.2809 ms
+[WebServer] [20:23:09 INF] HTTP POST /api/v1/auth/login responded 200 in 20.6890 ms
+[WebServer] [20:23:09 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.8597 ms
+[WebServer] [20:23:09 INF] HTTP GET /api/v1/sim/push responded 200 in 3.1451 ms
+[WebServer] [20:23:09 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.5342 ms
+[WebServer] [20:23:09 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5284 ms
+[WebServer] [20:23:09 INF] HTTP GET /api/v1/providers/me responded 200 in 2.5958 ms
+[WebServer] [20:23:10 INF] HTTP GET /api/v1/offers responded 200 in 1.4902 ms
+[WebServer] [20:23:10 INF] HTTP GET /api/v1/offers/c667aab9-e5dc-45c2-9170-2c5f3a0114d6 responded 200 in 1.9353 ms
+[WebServer] [20:23:10 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.4724 ms
+[WebServer] [20:23:10 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.7560 ms
+[WebServer] [20:23:11 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.3977 ms
+[WebServer] [20:23:11 INF] HTTP GET /api/v1/payments/earnings responded 200 in 1.9931 ms
+[WebServer] [20:23:12 INF] HTTP GET /api/v1/providers/history responded 200 in 1.8165 ms
+[WebServer] [20:23:12 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0054 ms
+[WebServer] [20:23:12 INF] HTTP GET /api/v1/requests/8c4dd4da-c93f-4e28-b01f-e4bf432573cb responded 200 in 1.4247 ms
+[WebServer] [20:23:13 INF] HTTP GET /api/v1/payments/invoices responded 200 in 1.3418 ms
+[WebServer] [20:23:13 INF] HTTP GET /hubs/app responded 101 in 3981.1359 ms
+  ok 22 e2e\screens.spec.js:70:7 › screen sweep dark-ar › dark-ar: captain — 15 screens (4.4s)
+[WebServer] [20:23:13 INF] HTTP GET /index.html responded 200 in 0.9263 ms
+[WebServer] [20:23:13 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.6033 ms
+[WebServer] [20:23:13 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.7678 ms
+[WebServer] [20:23:13 INF] HTTP GET /api/v1/system/status responded 200 in 1.1623 ms
+[WebServer] [20:23:14 INF] HTTP POST /api/v1/auth/login responded 200 in 21.9948 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/sim/push responded 200 in 1.8460 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.3296 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8201 ms
+[WebServer] [20:23:14 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.4162 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/center-admin/work-orders responded 200 in 1.7437 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/centers/bookings responded 200 in 2.0238 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/centers/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1 responded 200 in 1.9187 ms
+[WebServer] [20:23:14 INF] HTTP GET /api/v1/center-admin/services responded 200 in 1.6812 ms
+[WebServer] [20:23:15 INF] HTTP GET /api/v1/center-admin/reports responded 200 in 2.1597 ms
+[WebServer] [20:23:16 INF] HTTP GET /api/v1/center-admin/profile responded 200 in 1.4102 ms
+[WebServer] [20:23:16 INF] HTTP GET /api/v1/centers/bookings/0360b80e-6f40-46d7-994d-9636d726e5b1 responded 200 in 1.7530 ms
+[WebServer] [20:23:16 INF] HTTP GET /api/v1/payments/invoices responded 200 in 1.3023 ms
+[WebServer] [20:23:17 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9685 ms
+[WebServer] [20:23:17 INF] HTTP GET /api/v1/center-admin/technicians responded 200 in 1.9771 ms
+[WebServer] [20:23:17 INF] HTTP GET /api/v1/center-admin/bays responded 200 in 1.8655 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4409 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/sim/push responded 200 in 1.9019 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/center-admin/bays responded 200 in 1.6144 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/center-admin/technicians responded 200 in 1.7067 ms
+[WebServer] [20:23:18 INF] HTTP GET /hubs/app responded 101 in 4400.1395 ms
+  ok 23 e2e\screens.spec.js:70:7 › screen sweep dark-ar › dark-ar: center — 17 screens (4.8s)
+[WebServer] [20:23:18 INF] HTTP GET /index.html responded 200 in 0.6292 ms
+[WebServer] [20:23:18 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.5995 ms
+[WebServer] [20:23:18 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.1375 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/system/status responded 200 in 1.1956 ms
+[WebServer] [20:23:18 INF] HTTP POST /api/v1/auth/login responded 200 in 20.1134 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.6139 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/sim/push responded 200 in 2.8921 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0512 ms
+[WebServer] [20:23:18 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.2920 ms
+[WebServer] [20:23:18 INF] HTTP GET /api/v1/admin/dashboard responded 200 in 3.6690 ms
+[WebServer] [20:23:19 INF] HTTP GET /api/v1/admin/kyc/queue responded 200 in 1.9012 ms
+[WebServer] [20:23:19 INF] HTTP GET /api/v1/admin/users responded 200 in 1.5962 ms
+[WebServer] [20:23:20 INF] HTTP GET /api/v1/auth/me responded 200 in 0.6211 ms
+[WebServer] [20:23:20 INF] HTTP GET /api/v1/admin/payment-reviews responded 200 in 1.3417 ms
+[WebServer] [20:23:20 INF] HTTP GET /api/v1/admin/payment-reviews/c521376b-95ab-4be2-859c-42cc90a9844e responded 200 in 1.2703 ms
+[WebServer] [20:23:21 INF] HTTP GET /api/v1/admin/safety responded 200 in 1.2575 ms
+[WebServer] [20:23:21 INF] HTTP GET /api/v1/admin/safety/36f2300f-af6c-4a33-b52f-c8387a6fc35b responded 200 in 1.2787 ms
+[WebServer] [20:23:21 INF] HTTP GET /api/v1/admin/users/5fee87a6-c9a7-4e57-bc26-7111bd7cd9fc responded 200 in 1.5450 ms
+[WebServer] [20:23:21 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8814 ms
+[WebServer] [20:23:22 INF] HTTP GET /api/v1/admin/reports responded 200 in 2.0812 ms
+[WebServer] [20:23:22 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4533 ms
+[WebServer] [20:23:22 INF] HTTP GET /api/v1/sim/push responded 200 in 1.4135 ms
+[WebServer] [20:23:23 INF] HTTP GET /api/v1/admin/reviews responded 200 in 1.4469 ms
+[WebServer] [20:23:23 INF] HTTP GET /api/v1/admin/tickets responded 200 in 1.4472 ms
+[WebServer] [20:23:23 INF] HTTP GET /hubs/app responded 101 in 4769.4732 ms
+  ok 24 e2e\screens.spec.js:70:7 › screen sweep dark-ar › dark-ar: admin — 18 screens (5.1s)
+  ok 25 e2e\screens.spec.js:121:1 › registry size is fully covered (143 codes) (2ms)
+
+  25 passed (2.9m)
+---- 07 Playwright E2E: PASS (exit 0, 174.0s) ----
+
+==================== SUMMARY ====================
+| # | Step | Result | Exit | Duration | Detail |
+|---:|---|---|---:|---:|---|
+| 1 | 01 dotnet build (Release) | PASS | 0 | 4.9s | exit 0 |
+| 2 | 02 dotnet test (Release) | PASS | 0 | 18.4s | exit 0 |
+| 3 | 03 npm test (client) | PASS | 0 | 5.9s | exit 0 |
+| 4 | 04 npm run build (client) | PASS | 0 | 7.1s | exit 0 |
+| 5 | 05 mock-scan.ps1 | PASS | 0 | 1.3s | exit 0 |
+| 6 | 06 script tests S1-S10 | PASS | 0 | 163.4s | exit 0 |
+| 7 | 07 Playwright E2E | PASS | 0 | 174.0s | exit 0 |
+
+Steps: PASS=7 FAIL=0 SKIP=0
+Finished: 2026-11-19T20:23:24.3109229+00:00
+OVERALL: PASS
+

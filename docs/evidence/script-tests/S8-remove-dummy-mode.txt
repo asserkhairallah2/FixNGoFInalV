@@ -1,0 +1,37 @@
+﻿=== S8 : remove-db.bat in dummy mode -> refused without --force-dummy; real backup preserved ===
+Timestamp: 2026-11-19T20:19:42.7506259+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-6bdd9a89
+Private port: 5821
+[PASS] CLI setup created the original admin (value=0)
+[PASS] dummy mode enabled (value=0)
+[PASS] real-data backup exists before reset attempt
+remove-db.bat in dummy mode exit=2
+===================================================
+  FixNGo - Remove database (reset to first run)
+===================================================
+[WARN] This permanently deletes the live database, uploads, secrets and state.
+[WARN] A safety snapshot is created in data\backups\ first.
+[WARN] Type RESET to confirm (nothing is deleted on any other input).
+[WARN] Cannot reset while in dummy mode. Run restore-db.bat first; your real data backup is in C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-6bdd9a89\backups\real-20261119-201948.
+[ERR] Reset failed with exit code 2.
+[PASS] remove-db.bat refuses in dummy mode with exit 2 (value=2)
+[PASS] refusal gives restore-db.bat guidance
+[PASS] dummy DB unchanged after refusal (value=82773B90E1E2F37F25893165DB5E149006F0EEF2DDD4BEC66A5BDC331A5F0E08)
+[PASS] dummy users still present after refusal (value=201)
+[PASS] dummy-db.md still present after refusal
+[PASS] real backup directory still present after refusal
+[PASS] real backup bytes unchanged after refusal (value=233CF53C97E8CE73D9FFABE8FCD42FAD58840FEE4AEC4CF18F21002ABF610936)
+remove-db.bat --force-dummy exit=0
+[PASS] --force-dummy allows reset from dummy mode (value=0)
+[PASS] forced reset returns to first run (value=10)
+[PASS] dummy DB deleted by forced reset
+[PASS] orphaned dummy-db.md deleted by forced reset
+[PASS] forced reset preserves data\backups\real-*
+[PASS] preserved real backup bytes unchanged (value=233CF53C97E8CE73D9FFABE8FCD42FAD58840FEE4AEC4CF18F21002ABF610936)
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+--- S8 result: PASS=19 FAIL=0 ---
+

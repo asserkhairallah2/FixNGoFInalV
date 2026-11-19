@@ -1,0 +1,33 @@
+﻿=== S9 : dummy generation failure injection -> automatic rollback to real DB, exit 3 ===
+Timestamp: 2026-11-19T20:19:58.5694626+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s9-d4072d55
+Private port: 5905
+[PASS] CLI setup created the original admin (value=0)
+Original DB SHA-256: 4A2D76390D43F6E6E4682220EF6EFECEC551E8F0682FB194853B422C08D86A6E
+dummy-db.bat with injected failure exit=3
+===================================================
+  FixNGo - Switch to dummy database
+===================================================
+[WARN] Your current data will be set aside in data\backups\real-*.
+[WARN] Run restore-db.bat to return to it.
+[INFO] No server.pid found.
+[OK] Automatic rollback to real data completed.
+[ERR] Dummy database failed with exit code 3.
+[ERR] Dummy generation failed: Injected dummy generation failure (FIXNGO_DUMMY_FAIL=1).
+[PASS] injected failure returns exit code 3 (value=3)
+[PASS] failure is reported clearly
+[PASS] automatic rollback is reported
+[PASS] live DB rolled back byte-for-byte (SHA-256) (value=4A2D76390D43F6E6E4682220EF6EFECEC551E8F0682FB194853B422C08D86A6E)
+[PASS] original user count restored (value=1)
+[PASS] state mode remains real after rollback (value=real)
+[PASS] no dummy-db.md left behind by failed run
+[PASS] original admin account is still present (value=0)
+[PASS] rolled-back backup moved out of the active real-* set (value=0)
+[PASS] rolled-back backup retained under backups\archive
+[PASS] dummy-db.log created in isolated log dir
+[PASS] dummy-db.log is non-empty
+[PASS] dummy-db.log contains no plaintext passwords
+--- S9 result: PASS=14 FAIL=0 ---
+

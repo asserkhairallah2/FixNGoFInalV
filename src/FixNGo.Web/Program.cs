@@ -74,6 +74,7 @@ builder.Services.AddScoped<ReviewService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<SupportService>();
 builder.Services.AddScoped<AdminService>();
+FixNGo.Web.Controllers.SimulatorApiRegistration.AddSimulatorApi(builder.Services, builder.Configuration);
 builder.Services.AddScoped<INotifier, SignalRNotifier>();
 builder.Services.AddScoped<IFileStore, LocalFileStore>();
 builder.Services.AddHostedService<OfferExpiryWorker>();

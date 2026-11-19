@@ -4,9 +4,10 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight, Check, Bell, CreditCard, Wrench, FileText, Car, Users, Building2,
-  Truck, Home, User, Send, MapPin, Navigation, Clock, ShieldCheck, LogOut, WifiOff
+  Truck, Home, User, Send, MapPin, Navigation, Clock, ShieldCheck, LogOut, WifiOff,
+  ShieldAlert, Loader2
 } from 'lucide-react';
-import { usePrefs, useNav, useNavigate, useSession } from '../app/stores.jsx';
+import { usePrefs, useNav, useNavigate, useSession, homeForUser } from '../app/stores.jsx';
 import { get, post, put } from '../api/http.js';
 import {
   Card, PrimaryButton, SecondaryButton, ShieldLogo, BrandLockup, StatusBadge, MapView,
@@ -126,7 +127,7 @@ export function InfoView({ view }) {
 
 // ---- Login / signup / OTP (real auth endpoints) ----
 export function LoginView({ view }) {
-  const { isAr } = usePrefs(); const { login } = useSession(); const { replace } = useNav(); const c = useColors();
+  const { isAr } = usePrefs(); const { login } = useSession(); const { replace } = useNav(); const goNav = useNavigate(); const c = useColors();
   const [email, setEmail] = React.useState(''); const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState(''); const [busy, setBusy] = React.useState(false);
   const t = (en, ar) => (isAr ? ar : en);
@@ -134,7 +135,7 @@ export function LoginView({ view }) {
     e.preventDefault(); setError(''); setBusy(true);
     try {
       const user = await login(email.trim(), password);
-      replace(homeFor(user.role));
+      replace(homeForUser(user));
     } catch (err) {
       setError(err.status === 401 ? t('Invalid email or password.', 'البريد أو كلمة المرور غير صحيحة.') : (err.message || t('Could not sign in.', 'تعذر تسجيل الدخول.')));
     } finally { setBusy(false); }
@@ -157,17 +158,12 @@ export function LoginView({ view }) {
         <button data-testid="login-submit" type="submit" disabled={busy} className="btn-primary mt-2 flex items-center justify-center gap-2">
           {busy && <Clock size={18} className="animate-spin" />}{t('Sign in', 'تسجيل الدخول')}
         </button>
-        <div className="text-center"><button type="button" onClick={() => go('A04')} className="text-xs text-[#E51C23] font-semibold">{t('Create an account', 'إنشاء حساب')}</button></div>
-        <div className="text-center"><button type="button" onClick={() => go('A06')} className={`text-xs ${c.secondaryText}`}>{t('Forgot password?', 'نسيت كلمة المرور؟')}</button></div>
+        <div className="text-center"><button type="button" onClick={() => goNav('A04')} className="text-xs text-[#E51C23] font-semibold">{t('Create an account', 'إنشاء حساب')}</button></div>
+        <div className="text-center"><button type="button" onClick={() => goNav('A06')} className={`text-xs ${c.secondaryText}`}>{t('Forgot password?', 'نسيت كلمة المرور؟')}</button></div>
       </form>
     </div>
   );
 }
-function go(code) { window.location.hash = `#/${code}`; }
-function homeFor(role) {
-  return ({ CarOwner: 'C02', Mechanic: 'M02', TowCaptain: 'T02', ServiceCenter: 'SC01', Admin: 'AD01' })[role] || 'C02';
-}
-
 export function SignupView({ view }) {
   const t = useT(); const go = useNavigate(); const c = useColors();
   const [form, setForm] = React.useState({ role: 'CarOwner' });
@@ -179,6 +175,7 @@ export function SignupView({ view }) {
       const data = await post('/auth/signup', form);
       sessionStorage.setItem('fixngo.otpTarget', data.target || form.email);
       sessionStorage.setItem('fixngo.otpPurpose', 'Signup');
+      sessionStorage.setItem('fixngo.otpRole', form.role);
       go('A05');
     } catch (err) { setError(err.message || '—'); } finally { setBusy(false); }
   }
@@ -215,16 +212,35 @@ export function SignupView({ view }) {
 
 export function OtpView({ view }) {
   const t = useT(); const go = useNavigate(); const c = useColors();
-  const [code, setCode] = React.useState(''); const [error, setError] = React.useState(''); const [busy, setBusy] = React.useState(false);
+  const [digits, setDigits] = React.useState(['', '', '', '', '', '']);
+  const [error, setError] = React.useState(''); const [busy, setBusy] = React.useState(false);
   const target = sessionStorage.getItem('fixngo.otpTarget') || '';
+  const boxes = React.useRef([]);
+  const code = digits.join('');
+  React.useEffect(() => {
+    const onFill = (e) => {
+      const chars = String(e.detail || '').replace(/\D/g, '').slice(0, 6).split('');
+      setDigits(Array.from({ length: 6 }, (_, i) => chars[i] || ''));
+    };
+    window.addEventListener('fixngo:otp-autofill', onFill);
+    return () => window.removeEventListener('fixngo:otp-autofill', onFill);
+  }, []);
+  const setDigit = (i, raw) => {
+    const ch = raw.replace(/\D/g, '').slice(-1);
+    setDigits((d) => { const next = [...d]; next[i] = ch; return next; });
+    if (ch && i < 5) boxes.current[i + 1]?.focus();
+  };
   async function submit(e) {
     e.preventDefault(); setError(''); setBusy(true);
     const purpose = sessionStorage.getItem('fixngo.otpPurpose') || 'Signup';
     try {
-      const endpoint = purpose === 'Forgot' ? '/auth/reset-otp' : '/auth/verify-otp';
+      const endpoint = purpose === 'Forgot' ? '/auth/reset-otp' : purpose === 'Login' ? '/auth/login/verify-otp' : '/auth/verify-otp';
       const data = await post(endpoint, { target, code, purpose });
       if (purpose === 'Forgot') { sessionStorage.setItem('fixngo.resetToken', typeof data === 'string' ? data : data.resetToken); go('A07'); }
-      else go('A08');
+      else if (purpose === 'Signup') {
+        const role = sessionStorage.getItem('fixngo.otpRole') || 'CarOwner';
+        go(role === 'Mechanic' ? 'A08' : role === 'TowCaptain' ? 'A09' : role === 'ServiceCenter' ? 'A10' : 'C02');
+      } else go('C02');
     } catch (err) { setError(err.message || '—'); } finally { setBusy(false); }
   }
   return (
@@ -232,7 +248,15 @@ export function OtpView({ view }) {
       <form onSubmit={submit} className="p-5 space-y-4">
         <h1 className={`text-xl font-bold ${c.text}`}>{t('Check your inbox', 'تحقق من بريدك')}</h1>
         <p className={`text-xs ${c.secondaryText}`}>{target}</p>
-        <input dir="ltr" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} className={`${inputClass()} text-center tracking-[0.5em] text-lg`} placeholder="000000" data-testid="otp-input" required />
+        <div className="flex justify-center gap-2" dir="ltr" data-testid="otp-boxes">
+          {digits.map((d, i) => (
+            <input key={i} ref={(el) => { boxes.current[i] = el; }} aria-label={`Digit ${i + 1}`}
+              inputMode="numeric" maxLength={1} value={d} onChange={(e) => setDigit(i, e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Backspace' && !digits[i] && i > 0) boxes.current[i - 1]?.focus(); }}
+              className={`w-11 h-12 text-center text-lg font-bold rounded-xl border ${c.border} ${c.inputBg || c.elevated} ${c.text}`}
+              data-testid={`otp-box-${i}`} required />
+          ))}
+        </div>
         {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
         <PrimaryButton type="submit" disabled={busy || code.length !== 6} testId="screen-primary">{t('Verify', 'تحقق')}</PrimaryButton>
       </form>
@@ -503,6 +527,63 @@ export function OfflineView({ view }) {
   );
 }
 
+// Two related collections on one screen (SC17 Bays & technicians).
+export function DualListView({ view }) {
+  const t = useT(); const c = useColors();
+  const left = useQuery({ queryKey: ['dual', view.leftPath], queryFn: () => get(view.leftPath), enabled: !!view.leftPath });
+  const right = useQuery({ queryKey: ['dual', view.rightPath], queryFn: () => get(view.rightPath), enabled: !!view.rightPath });
+  const rows = (data) => (Array.isArray(data) ? data : (data?.items || []));
+  const section = (title, query, field) => (
+    <div className="space-y-2">
+      <SectionTitle>{title}</SectionTitle>
+      <ScreenBody query={query} emptyTitle={t('Nothing here yet', 'لا توجد بيانات بعد')}>
+        {(data) => <div className="space-y-2">{rows(data).map((row, i) => (
+          <ListRow key={row.id || i} title={row[field] || row.name || row.code || '—'} subtitle={row.phone || row.status || ''} icon={ICONS[view.icon || 'wrench']} />
+        ))}</div>}
+      </ScreenBody>
+    </div>
+  );
+  return (
+    <Page title={t(view.titleEn, view.titleAr)}>
+      <div className="p-5 space-y-4">
+        <h1 className={`text-xl font-extrabold ${c.text}`}>{t(view.titleEn, view.titleAr)}</h1>
+        {section(t(view.leftTitleEn, view.leftTitleAr), left, view.leftField || 'name')}
+        {section(t(view.rightTitleEn, view.rightTitleAr), right, view.rightField || 'name')}
+      </div>
+    </Page>
+  );
+}
+
+// Safe destination for unknown or forbidden routes.
+export function NotFoundView({ view }) {
+  const { user } = useSession(); const { isAr } = usePrefs(); const c = useColors(); const { replace } = useNav(); const t = useT();
+  const home = homeForUser(user);
+  return (
+    <div className={`h-full flex flex-col items-center justify-center gap-4 p-8 text-center ${c.bg}`} data-testid="not-found">
+      <ShieldAlert size={44} className="text-amber-400" />
+      <h1 className={`text-lg font-bold ${c.text}`}>{t(view?.titleEn || 'Screen not available', view?.titleAr || 'الشاشة غير متاحة')}</h1>
+      <PrimaryButton onClick={() => replace(home)} testId="screen-primary">{isAr ? 'العودة للرئيسية' : 'Back to home'}</PrimaryButton>
+    </div>
+  );
+}
+
+// Log out really revokes the refresh token and clears the session.
+export function LogoutView({ view }) {
+  const { logout } = useSession(); const { replace } = useNav(); const c = useColors(); const t = useT();
+  const [busy, setBusy] = React.useState(false);
+  React.useEffect(() => {
+    let live = true;
+    (async () => { try { await logout(); } finally { if (live) replace('A02'); } })();
+    return () => { live = false; };
+  }, [logout, replace]);
+  return (
+    <div className={`h-full grid place-items-center ${c.bg}`} data-testid="view-logout">
+      <div className="flex flex-col items-center gap-3"><Loader2 className="animate-spin text-[#E51C23]" size={30} />
+        <p className={`text-xs ${c.secondaryText}`}>{t('Signing out…', 'جارٍ تسجيل الخروج…')}</p></div>
+    </div>
+  );
+}
+
 export function renderView(view, id, params) {
   switch (view.type) {
     case 'splash': return <SplashView view={view} />;
@@ -519,6 +600,9 @@ export function renderView(view, id, params) {
     case 'mapStatus': return <MapStatusView view={view} id={id} params={params} />;
     case 'chat': return <ChatView view={view} />;
     case 'offline': return <OfflineView view={view} />;
+    case 'dualList': return <DualListView view={view} />;
+    case 'notFound': return <NotFoundView view={view} />;
+    case 'logout': return <LogoutView view={view} />;
     default: return <InfoView view={view} />;
   }
 }

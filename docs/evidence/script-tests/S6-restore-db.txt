@@ -1,0 +1,33 @@
+﻿=== S6 : restore-db.bat -> byte-identical restore, original admin login, backup archived ===
+Timestamp: 2026-11-19T20:19:03.5163695+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s6-858732e6
+Private port: 5945
+[PASS] CLI setup created the original admin (value=0)
+Original DB SHA-256: 326965247B72C0638F9940028DE65FEE710D8A183D158ECB52F212970498050D
+[PASS] dummy-db.bat created the sandbox (value=0)
+[PASS] dummy-db.md exists while in dummy mode
+restore-db.bat exit=0
+===================================================
+  FixNGo - Restore real database
+===================================================
+[WARN] Anything created while in dummy mode will be discarded.
+[INFO] No server.pid found.
+[OK] Real data restored (1 users).
+[OK] Real data restored. dummy-db.md removed.
+[PASS] restore-db.bat succeeds with --yes (value=0)
+[PASS] restore-db.log created in isolated log dir
+[PASS] restore-db.log is non-empty
+[PASS] restore-db.log contains no plaintext passwords
+[PASS] restored DB is byte-identical (SHA-256) to the pre-dummy DB (value=326965247B72C0638F9940028DE65FEE710D8A183D158ECB52F212970498050D)
+[PASS] restored user count equals the original (value=1)
+[PASS] dummy-db.md deleted by restore
+[PASS] state mode is real after restore (value=real)
+[PASS] used backup moved to backups\archive\restored-*
+[PASS] restored server answers /health
+original admin login: HTTP 200
+[PASS] original admin still logs in after restore (value=200)
+[PASS] /system/status reports mode=real after restore (value=real)
+--- S6 result: PASS=15 FAIL=0 ---
+

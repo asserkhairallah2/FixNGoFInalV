@@ -1,5 +1,5 @@
-﻿Mock scan - 2026-11-19T19:25:08.1526131+00:00
-Files scanned: 86
+﻿Mock scan - 2026-11-19T20:17:46.5185060+00:00
+Files scanned: 98
 DomDump: (not supplied)
 Forbidden literals checked: 33
 Hits: 0

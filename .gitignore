@@ -30,6 +30,9 @@ playwright-report/
 blob-report/
 *.trx
 coverage/
+client/e2e/.artifacts/
+client/e2e/.runtime.json
+client/e2e/.seeded.json
 
 # Editors / OS
 .vs/

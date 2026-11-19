@@ -1,0 +1,41 @@
+﻿=== S7 : remove-db.bat typed RESET -> first run + safety snapshot + start.bat triggers setup again ===
+Timestamp: 2026-11-19T20:19:24.9181783+00:00
+Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
+Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c
+Private port: 5703
+[PASS] CLI setup created the original admin (value=0)
+remove-db.bat wrong confirmation exit=1
+[PASS] wrong typed confirmation aborts with exit 1 (value=1)
+[PASS] abort message is clear
+[PASS] database unchanged after abort (value=C897E3B3C338E64150045E484E426633FDBC62A70FCFCC28C6A414408C289513)
+[PASS] user count unchanged after abort (value=1)
+remove-db.bat RESET exit=0
+===================================================
+  FixNGo - Remove database (reset to first run)
+===================================================
+[WARN] This permanently deletes the live database, uploads, secrets and state.
+[WARN] A safety snapshot is created in data\backups\ first.
+[WARN] Type RESET to confirm (nothing is deleted on any other input).
+Type RESET to confirm: [INFO] No server.pid found.
+[OK] Safety snapshot: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s7-4078998c\backups\pre-reset-20261119-201931
+[OK] System reset. Run start.bat to begin first-time setup.
+[OK] System reset. Run start.bat to begin first-time setup.
+[PASS] typed RESET resets the system (value=0)
+[PASS] remove-db.log created in isolated log dir
+[PASS] remove-db.log is non-empty
+[PASS] remove-db.log contains no plaintext passwords
+[PASS] safety snapshot data\backups\pre-reset-* created
+[PASS] safety snapshot contains a DB copy
+[PASS] safety snapshot contains manifest.json
+check-setup after reset: exit=10
+[PASS] check-setup reports first run (exit 10) after reset (value=10)
+[PASS] live DB deleted
+[PASS] state.json deleted
+[PASS] secrets.json deleted
+[PASS] data\backups preserved
+[PASS] start.bat after reset reaches /health (setup re-triggered)
+[PASS] exactly one admin exists after re-setup (value=1)
+[PASS] check-setup reports set up after re-setup (value=0)
+--- S7 result: PASS=20 FAIL=0 ---
+

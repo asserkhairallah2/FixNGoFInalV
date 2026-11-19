@@ -1,0 +1,10 @@
+=== FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Gate Two Administrator
+Email: admin@gate2.test
+Phone: +201000000001
+Password: ********
+Simulators: on
+[OK] Administrator created: admin@gate2.test

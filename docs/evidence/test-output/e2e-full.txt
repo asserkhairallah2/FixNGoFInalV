@@ -1,0 +1,647 @@
+[WebServer] [e2e-server] starting http://127.0.0.1:54173 (data=C:\Users\XPRENS~1\AppData\Local\Temp\2\fixngo-e2e-data-1c5IYt, logs=C:\Users\XPRENS~1\AppData\Local\Temp\2\fixngo-e2e-logs-jBZJMy, web=C:\Users\XPRENS~1\AppData\Local\Temp\2\fixngo-e2e-web-Ky2EIK)
+[WebServer] (node:18168) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+[WebServer] [20:08:16 INF] FixNGo API starting. Simulators=True DataDir=C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-e2e-data-1c5IYt
+[WebServer] [20:08:17 INF] HTTP GET /health responded 200 in 86.6532 ms
+[WebServer] [20:08:17 INF] HTTP GET /health responded 200 in 4.2606 ms
+[WebServer] [20:08:18 INF] HTTP POST /api/v1/auth/login responded 200 in 1187.4308 ms
+[WebServer] [20:08:18 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:08:18 INF] HTTP POST /api/v1/auth/login responded 401 in 68.8170 ms
+[WebServer] [20:08:18 INF] Fake Email message queued for owner@gate2.test
+[WebServer] [20:08:18 INF] Signup created user a9fb6c66-3838-43b5-b20b-bc6977807fa3 with role CarOwner
+[WebServer] [20:08:18 INF] HTTP POST /api/v1/auth/signup responded 200 in 209.9809 ms
+[WebServer] [20:08:18 INF] OTP verified for user a9fb6c66-3838-43b5-b20b-bc6977807fa3
+[WebServer] [20:08:18 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 46.2689 ms
+[WebServer] [20:08:18 INF] HTTP POST /api/v1/auth/login responded 200 in 23.1723 ms
+[WebServer] [20:08:18 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:08:18 INF] HTTP POST /api/v1/auth/login responded 401 in 3.5167 ms
+[WebServer] [20:08:19 INF] Fake Email message queued for mechanic@gate2.test
+[WebServer] [20:08:19 INF] Signup created user 527a7fbc-3adb-4e39-98f5-e8fa4e37a0f6 with role Mechanic
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/signup responded 200 in 95.1495 ms
+[WebServer] [20:08:19 INF] OTP verified for user 527a7fbc-3adb-4e39-98f5-e8fa4e37a0f6
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 9.3597 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 200 in 21.9476 ms
+[WebServer] [20:08:19 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 401 in 3.8693 ms
+[WebServer] [20:08:19 INF] Fake Email message queued for captain@gate2.test
+[WebServer] [20:08:19 INF] Signup created user 3ec788de-3106-4431-9f97-ed370617a731 with role TowCaptain
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/signup responded 200 in 32.5636 ms
+[WebServer] [20:08:19 INF] OTP verified for user 3ec788de-3106-4431-9f97-ed370617a731
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 9.1751 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 200 in 22.6626 ms
+[WebServer] [20:08:19 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 401 in 3.8404 ms
+[WebServer] [20:08:19 INF] Fake Email message queued for center@gate2.test
+[WebServer] [20:08:19 INF] Signup created user abab9713-c3aa-4f1e-a6e6-a9aa1604e4a3 with role ServiceCenter
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/signup responded 200 in 83.2643 ms
+[WebServer] [20:08:19 INF] OTP verified for user abab9713-c3aa-4f1e-a6e6-a9aa1604e4a3
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 8.1125 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 200 in 21.6578 ms
+[WebServer] [20:08:19 WRN] Domain error auth.invalid_credentials: Invalid email or password.
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 401 in 3.4037 ms
+[WebServer] [20:08:19 INF] Fake Email message queued for kyctest@gate2.test
+[WebServer] [20:08:19 INF] Signup created user cd77a604-4432-41fd-87a7-c7bb84e61932 with role Mechanic
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/signup responded 200 in 31.5486 ms
+[WebServer] [20:08:19 INF] OTP verified for user cd77a604-4432-41fd-87a7-c7bb84e61932
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/verify-otp responded 200 in 7.9570 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/auth/login responded 200 in 22.0808 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/providers/online responded 200 in 114.4713 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/providers/online responded 200 in 10.1278 ms
+[WebServer] [20:08:19 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 179.2244 ms
+[WebServer] [20:08:19 INF] HTTP POST /api/v1/vehicles responded 200 in 64.6208 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/requests responded 200 in 274.3660 ms
+[WebServer] [20:08:20 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614/candidates responded 200 in 52.5603 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614/offers responded 200 in 125.0960 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/offers/c8566fd7-09e2-4615-a3ad-b2bf0843e7af/accept responded 200 in 70.9252 ms
+[WebServer] [20:08:20 WRN] Domain error quote.stage_invalid: A quote cannot be issued at this stage.
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614/quotes responded 409 in 16.8248 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/center-admin/services responded 200 in 51.2685 ms
+[WebServer] [20:08:20 INF] HTTP GET /api/v1/center-admin/profile responded 200 in 14.3408 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/centers/bookings responded 200 in 118.2088 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/center-admin/bookings/70e911b3-714e-47b5-b7c6-834de0f9cd7d/confirm responded 200 in 108.2696 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/payments/methods/card responded 200 in 76.4542 ms
+[WebServer] [20:08:20 INF] HTTP POST /api/v1/payments/invoices/request/c9ac616c-1ae6-4e14-9846-0d6601a2b614/ensure responded 200 in 80.4990 ms
+[WebServer] [20:08:20 INF] Fake payment e2e-seed-c9ac616c-1ae6-4e14-9846-0d6601a2b614 Succeeded
+[WebServer] [20:08:21 INF] HTTP POST /api/v1/payments/invoices/210b5437-5a22-4a21-9d7f-b00242aa7a1d/pay responded 200 in 177.3745 ms
+[WebServer] [20:08:21 INF] HTTP POST /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614/chat responded 200 in 66.7056 ms
+[WebServer] [20:08:21 INF] HTTP POST /api/v1/chat/threads/7b846468-26ef-49ff-becf-7f42760221f7/messages responded 200 in 55.1339 ms
+[WebServer] [20:08:21 INF] HTTP POST /api/v1/support/tickets responded 200 in 85.3103 ms
+[WebServer] [20:08:21 INF] HTTP POST /api/v1/admin/tickets/195ed162-905d-41a2-8f88-c7bf997c8875/reply responded 200 in 27.9082 ms
+[e2e] seeded 5 roles, 15 entity ids
+[WebServer] [20:08:21 INF] HTTP POST /api/v1/support/sos responded 200 in 53.5049 ms
+
+Running 25 tests using 1 worker
+
+[WebServer] [20:08:22 INF] HTTP GET /index.html responded 200 in 15.9761 ms
+[WebServer] [20:08:22 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 6.5054 ms
+[WebServer] [20:08:22 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 14.2136 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/system/status responded 200 in 16.1334 ms
+[WebServer] [20:08:22 INF] HTTP POST /api/v1/auth/login responded 200 in 25.0110 ms
+[WebServer] [20:08:22 INF] HTTP POST /hubs/app/negotiate responded 200 in 7.1533 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/sim/messages responded 200 in 26.8204 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/sim/otps responded 200 in 32.4336 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/sim/push responded 200 in 40.9869 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/admin/dashboard responded 200 in 53.2310 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/auth/me responded 200 in 4.7968 ms
+[WebServer] [20:08:22 INF] HTTP GET /hubs/app responded 101 in 146.3425 ms
+  ok  1 e2e\auth.spec.js:10:3 ΓÇ║ login admin (Admin) -> AD01 with a clean console (631ms)
+[WebServer] [20:08:22 INF] HTTP GET /index.html responded 200 in 1.2444 ms
+[WebServer] [20:08:22 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.0130 ms
+[WebServer] [20:08:22 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.0170 ms
+[WebServer] [20:08:22 INF] HTTP GET /api/v1/system/status responded 200 in 1.9930 ms
+[WebServer] [20:08:23 INF] HTTP POST /api/v1/auth/login responded 200 in 22.2242 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/sim/messages responded 200 in 5.8795 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/sim/otps responded 200 in 5.0665 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/sim/push responded 200 in 8.5316 ms
+[WebServer] [20:08:23 INF] HTTP POST /hubs/app/negotiate responded 200 in 1.1388 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/vehicles responded 200 in 17.0984 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/auth/me responded 200 in 1.3336 ms
+[WebServer] [20:08:23 INF] HTTP GET /hubs/app responded 101 in 97.5067 ms
+  ok  2 e2e\auth.spec.js:10:3 ΓÇ║ login owner (CarOwner) -> C02 with a clean console (486ms)
+[WebServer] [20:08:23 INF] HTTP GET /index.html responded 200 in 0.8152 ms
+[WebServer] [20:08:23 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8827 ms
+[WebServer] [20:08:23 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.5275 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/system/status responded 200 in 2.2995 ms
+[WebServer] [20:08:23 INF] HTTP POST /api/v1/auth/login responded 200 in 21.8707 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/sim/push responded 200 in 3.7896 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.6537 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.4219 ms
+[WebServer] [20:08:23 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5324 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/providers/me responded 200 in 9.3887 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/auth/me responded 200 in 2.1164 ms
+[WebServer] [20:08:23 INF] HTTP GET /hubs/app responded 101 in 86.3983 ms
+  ok  3 e2e\auth.spec.js:10:3 ΓÇ║ login mechanic (Mechanic) -> M01 with a clean console (468ms)
+[WebServer] [20:08:23 INF] HTTP GET /index.html responded 200 in 0.8738 ms
+[WebServer] [20:08:23 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.7411 ms
+[WebServer] [20:08:23 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 4.8518 ms
+[WebServer] [20:08:23 INF] HTTP GET /api/v1/system/status responded 200 in 2.7592 ms
+[WebServer] [20:08:24 INF] HTTP POST /api/v1/auth/login responded 200 in 23.0838 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.6174 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/sim/push responded 200 in 4.3743 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/sim/otps responded 200 in 6.1989 ms
+[WebServer] [20:08:24 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.7985 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/providers/me responded 200 in 4.0043 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/auth/me responded 200 in 1.4675 ms
+[WebServer] [20:08:24 INF] HTTP GET /hubs/app responded 101 in 106.2908 ms
+  ok  4 e2e\auth.spec.js:10:3 ΓÇ║ login captain (TowCaptain) -> T01 with a clean console (487ms)
+[WebServer] [20:08:24 INF] HTTP GET /index.html responded 200 in 1.0882 ms
+[WebServer] [20:08:24 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.1328 ms
+[WebServer] [20:08:24 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 8.1747 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/system/status responded 200 in 2.4541 ms
+[WebServer] [20:08:24 INF] HTTP POST /api/v1/auth/login responded 200 in 22.4746 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.2601 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/sim/push responded 200 in 3.8188 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.4783 ms
+[WebServer] [20:08:24 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.6042 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/center-admin/work-orders responded 200 in 36.0364 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/auth/me responded 200 in 1.2044 ms
+[WebServer] [20:08:24 INF] HTTP GET /hubs/app responded 101 in 98.5059 ms
+  ok  5 e2e\auth.spec.js:10:3 ΓÇ║ login center (ServiceCenter) -> SC01 with a clean console (484ms)
+[WebServer] [20:08:24 INF] HTTP GET /index.html responded 200 in 0.9420 ms
+[WebServer] [20:08:24 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8104 ms
+[WebServer] [20:08:24 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.0736 ms
+[WebServer] [20:08:24 INF] HTTP GET /api/v1/system/status responded 200 in 2.0715 ms
+[WebServer] [20:08:25 INF] HTTP POST /api/v1/auth/login responded 200 in 23.9334 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.1228 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/sim/push responded 200 in 5.5819 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/sim/otps responded 200 in 5.4506 ms
+[WebServer] [20:08:25 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.7980 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/vehicles responded 200 in 5.1440 ms
+[WebServer] [20:08:25 INF] HTTP GET /hubs/app responded 101 in 92.1787 ms
+  ok  6 e2e\flows.spec.js:25:1 ΓÇ║ F01 login -> C02 (owner home) (473ms)
+[WebServer] [20:08:25 INF] HTTP GET /index.html responded 200 in 0.8935 ms
+[WebServer] [20:08:25 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8186 ms
+[WebServer] [20:08:25 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.7000 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/system/status responded 200 in 2.8762 ms
+[WebServer] [20:08:25 INF] HTTP POST /api/v1/auth/login responded 200 in 24.0969 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.8211 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/sim/push responded 200 in 6.2586 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/sim/otps responded 200 in 5.1152 ms
+[WebServer] [20:08:25 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.7154 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/vehicles responded 200 in 3.8406 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/requests responded 200 in 17.2161 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/vehicles responded 200 in 2.5531 ms
+[WebServer] [20:08:25 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 7.8042 ms
+[WebServer] [20:08:25 INF] HTTP POST /api/v1/requests responded 200 in 16.2651 ms
+[WebServer] [20:08:26 INF] HTTP GET /api/v1/requests responded 200 in 3.2681 ms
+[WebServer] [20:08:26 INF] HTTP GET /hubs/app responded 101 in 720.6544 ms
+  ok  7 e2e\flows.spec.js:40:1 ΓÇ║ F02 request creation via UI (C07 form) (1.1s)
+[WebServer] [20:08:26 INF] HTTP POST /api/v1/auth/login responded 200 in 23.8655 ms
+[WebServer] [20:08:26 INF] HTTP POST /api/v1/auth/login responded 200 in 21.0121 ms
+[WebServer] [20:08:26 INF] HTTP POST /api/v1/requests responded 200 in 14.0802 ms
+[WebServer] [20:08:26 INF] HTTP POST /api/v1/requests/a6de589d-2409-4652-9d8d-be52787e44cd/offers responded 200 in 14.0814 ms
+[WebServer] [20:08:26 INF] HTTP POST /api/v1/offers/6368b11a-7017-4127-85ba-e744a21f8bc6/accept responded 200 in 13.4987 ms
+  ok  8 e2e\flows.spec.js:67:1 ΓÇ║ F03 offer accept (real API; UI has no provider-selection/accept controls) (122ms)
+[WebServer] [20:08:26 INF] HTTP GET /index.html responded 200 in 1.3887 ms
+[WebServer] [20:08:26 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8094 ms
+[WebServer] [20:08:26 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.5908 ms
+[WebServer] [20:08:26 INF] HTTP GET /api/v1/system/status responded 200 in 2.7806 ms
+[WebServer] [20:08:26 INF] HTTP POST /api/v1/auth/login responded 200 in 23.4351 ms
+[WebServer] [20:08:26 INF] HTTP GET /api/v1/sim/messages responded 200 in 3.3452 ms
+[WebServer] [20:08:26 INF] HTTP GET /api/v1/sim/push responded 200 in 5.3738 ms
+[WebServer] [20:08:26 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.5600 ms
+[WebServer] [20:08:26 INF] HTTP POST /hubs/app/negotiate responded 200 in 1.0394 ms
+[WebServer] [20:08:26 INF] HTTP GET /api/v1/vehicles responded 200 in 3.1891 ms
+[WebServer] [20:08:27 INF] HTTP GET /api/v1/vehicles responded 200 in 3.2361 ms
+[WebServer] [20:08:27 INF] HTTP GET /api/v1/centers responded 200 in 15.4430 ms
+[WebServer] [20:08:29 INF] HTTP GET /api/v1/sim/otps responded 200 in 4.1432 ms
+[WebServer] [20:08:30 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.3940 ms
+[WebServer] [20:08:30 INF] HTTP GET /api/v1/sim/push responded 200 in 3.3277 ms
+[WebServer] [20:08:32 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.5457 ms
+[WebServer] [20:08:34 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7462 ms
+[WebServer] [20:08:34 INF] HTTP GET /api/v1/sim/push responded 200 in 2.1119 ms
+[WebServer] [20:08:35 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.5134 ms
+[WebServer] [20:08:38 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.8906 ms
+[WebServer] [20:08:38 INF] HTTP GET /api/v1/sim/push responded 200 in 4.2887 ms
+[WebServer] [20:08:38 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.8984 ms
+[WebServer] [20:08:41 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.1708 ms
+[WebServer] [20:08:42 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7678 ms
+[WebServer] [20:08:42 INF] HTTP GET /api/v1/sim/push responded 200 in 2.9023 ms
+[WebServer] [20:08:45 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.1894 ms
+[WebServer] [20:08:46 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.7841 ms
+[WebServer] [20:08:46 INF] HTTP GET /api/v1/sim/push responded 200 in 4.3326 ms
+[WebServer] [20:08:47 INF] HTTP GET /hubs/app responded 101 in 20193.3421 ms
+[WebServer] [20:08:47 INF] HTTP POST /api/v1/auth/login responded 200 in 25.8150 ms
+[WebServer] [20:08:47 INF] HTTP POST /api/v1/auth/login responded 200 in 20.6059 ms
+[WebServer] [20:08:47 INF] HTTP POST /api/v1/centers/bookings responded 200 in 16.3936 ms
+[WebServer] [20:08:47 INF] HTTP POST /api/v1/center-admin/bookings/ab940e4a-4534-4e79-ba91-872d1d58d083/confirm responded 200 in 16.4017 ms
+  ok  9 e2e\flows.spec.js:90:1 ΓÇ║ F04 booking (API after capturing the C19 UI field mismatch) (20.7s)
+[WebServer] [20:08:47 INF] HTTP GET /index.html responded 200 in 1.9333 ms
+[WebServer] [20:08:47 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.1383 ms
+[WebServer] [20:08:47 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 4.2205 ms
+[WebServer] [20:08:47 INF] HTTP GET /api/v1/system/status responded 200 in 1.7382 ms
+[WebServer] [20:08:47 INF] HTTP POST /api/v1/auth/login responded 200 in 20.7262 ms
+[WebServer] [20:08:47 INF] HTTP GET /api/v1/sim/push responded 200 in 2.8874 ms
+[WebServer] [20:08:47 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.6367 ms
+[WebServer] [20:08:47 INF] HTTP GET /api/v1/sim/otps responded 200 in 3.0175 ms
+[WebServer] [20:08:47 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.6624 ms
+[WebServer] [20:08:47 INF] HTTP GET /api/v1/vehicles responded 200 in 3.0414 ms
+[WebServer] [20:08:50 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2208 ms
+[WebServer] [20:08:51 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.9735 ms
+[WebServer] [20:08:51 INF] HTTP GET /api/v1/sim/push responded 200 in 3.0253 ms
+[WebServer] [20:08:53 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.3168 ms
+[WebServer] [20:08:55 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.4494 ms
+[WebServer] [20:08:55 INF] HTTP GET /api/v1/sim/push responded 200 in 2.8172 ms
+[WebServer] [20:08:56 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2389 ms
+[WebServer] [20:08:59 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7738 ms
+[WebServer] [20:08:59 INF] HTTP GET /api/v1/sim/push responded 200 in 2.7078 ms
+[WebServer] [20:08:59 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0739 ms
+[WebServer] [20:09:02 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0102 ms
+[WebServer] [20:09:03 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.6014 ms
+[WebServer] [20:09:03 INF] HTTP GET /api/v1/sim/push responded 200 in 2.2898 ms
+[WebServer] [20:09:05 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.5201 ms
+[WebServer] [20:09:07 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.2587 ms
+[WebServer] [20:09:07 INF] HTTP GET /api/v1/sim/push responded 200 in 1.7071 ms
+[WebServer] [20:09:07 INF] HTTP GET /hubs/app responded 101 in 20098.8945 ms
+[WebServer] [20:09:07 INF] HTTP POST /api/v1/auth/login responded 200 in 20.8708 ms
+[WebServer] [20:09:07 INF] HTTP GET /api/v1/payments/methods responded 200 in 13.6741 ms
+[WebServer] [20:09:07 INF] HTTP POST /api/v1/requests responded 200 in 11.5081 ms
+[WebServer] [20:09:07 INF] HTTP POST /api/v1/payments/invoices/request/b3c86071-d10e-4669-b3fa-e4e1664eaf2f/ensure responded 200 in 8.6730 ms
+[WebServer] [20:09:07 INF] Fake payment e2e-pay-6c66443f-5345-45f7-a62d-724484929c9a Succeeded
+[WebServer] [20:09:07 INF] HTTP POST /api/v1/payments/invoices/6c66443f-5345-45f7-a62d-724484929c9a/pay responded 200 in 10.2340 ms
+  ok 10 e2e\flows.spec.js:128:1 ΓÇ║ F05 card payment with 4242 4242 4242 4242 (API; UI C33 field mismatch captured) (20.6s)
+[WebServer] [20:09:07 INF] HTTP GET /index.html responded 200 in 0.8618 ms
+[WebServer] [20:09:07 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.0558 ms
+[WebServer] [20:09:07 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 5.3240 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/system/status responded 200 in 1.3001 ms
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/auth/login responded 200 in 22.1979 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.9575 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/sim/push responded 200 in 2.5422 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2668 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/vehicles responded 200 in 1.5008 ms
+[WebServer] [20:09:08 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.4574 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/chat/threads responded 200 in 24.8327 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/chat/threads/7b846468-26ef-49ff-becf-7f42760221f7 responded 200 in 7.6537 ms
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/chat/threads/7b846468-26ef-49ff-becf-7f42760221f7/messages responded 200 in 7.7170 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/chat/threads/7b846468-26ef-49ff-becf-7f42760221f7 responded 200 in 1.7438 ms
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/auth/login responded 200 in 19.2675 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/chat/threads/7b846468-26ef-49ff-becf-7f42760221f7 responded 200 in 1.7680 ms
+[WebServer] [20:09:08 INF] HTTP GET /hubs/app responded 101 in 327.3987 ms
+  ok 11 e2e\flows.spec.js:176:1 ΓÇ║ F06 chat send via UI (SH01) (720ms)
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/auth/login responded 200 in 20.5209 ms
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/auth/login responded 200 in 18.5975 ms
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/providers/kyc responded 200 in 75.4951 ms
+[WebServer] [20:09:08 INF] HTTP POST /api/v1/admin/kyc/987873ef-84e0-4d6d-b982-bb42638a6dde/review responded 200 in 55.9083 ms
+  ok 12 e2e\flows.spec.js:204:1 ΓÇ║ F07 KYC submission + F08 admin review (real API) (201ms)
+[WebServer] [20:09:08 INF] HTTP GET /index.html responded 200 in 0.7185 ms
+[WebServer] [20:09:08 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.5385 ms
+[WebServer] [20:09:08 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.8178 ms
+[WebServer] [20:09:08 INF] HTTP GET /api/v1/system/status responded 200 in 1.3996 ms
+[WebServer] [20:09:09 INF] HTTP POST /api/v1/auth/login responded 200 in 21.0417 ms
+[WebServer] [20:09:09 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.6070 ms
+[WebServer] [20:09:09 INF] HTTP GET /api/v1/sim/push responded 200 in 2.4421 ms
+[WebServer] [20:09:09 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.5574 ms
+[WebServer] [20:09:09 INF] HTTP GET /api/v1/vehicles responded 200 in 1.1105 ms
+[WebServer] [20:09:09 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.3503 ms
+[WebServer] [20:09:12 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8132 ms
+[WebServer] [20:09:13 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.8792 ms
+[WebServer] [20:09:13 INF] HTTP GET /api/v1/sim/push responded 200 in 1.5783 ms
+[WebServer] [20:09:15 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.6343 ms
+[WebServer] [20:09:17 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4395 ms
+[WebServer] [20:09:17 INF] HTTP GET /api/v1/sim/push responded 200 in 2.7163 ms
+[WebServer] [20:09:18 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7114 ms
+[WebServer] [20:09:21 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4994 ms
+[WebServer] [20:09:21 INF] HTTP GET /api/v1/sim/push responded 200 in 1.5006 ms
+[WebServer] [20:09:21 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.8229 ms
+[WebServer] [20:09:24 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0700 ms
+[WebServer] [20:09:25 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.4947 ms
+[WebServer] [20:09:25 INF] HTTP GET /api/v1/sim/push responded 200 in 2.0485 ms
+[WebServer] [20:09:27 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.7338 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.9292 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/sim/push responded 200 in 1.6797 ms
+[WebServer] [20:09:29 INF] HTTP GET /hubs/app responded 101 in 20097.6792 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/auth/login responded 200 in 20.2527 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/auth/login responded 200 in 20.1560 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/support/tickets responded 200 in 8.4255 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/admin/tickets/3f0b1063-5a3a-4c9f-9ca3-dd27a5ffbb3c/reply responded 200 in 8.2781 ms
+  ok 13 e2e\flows.spec.js:226:1 ΓÇ║ F09 support ticket (API; UI SH08 field mismatch captured) (20.5s)
+[WebServer] [20:09:29 INF] HTTP GET /index.html responded 200 in 0.7382 ms
+[WebServer] [20:09:29 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.9468 ms
+[WebServer] [20:09:29 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 4.0525 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/system/status responded 200 in 1.5195 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/auth/login responded 200 in 24.4279 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.8980 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.8733 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/sim/push responded 200 in 7.0349 ms
+[WebServer] [20:09:29 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5693 ms
+[WebServer] [20:09:29 INF] HTTP GET /api/v1/vehicles responded 200 in 3.3011 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/auth/login responded 200 in 19.4847 ms
+[WebServer] [20:09:29 INF] HTTP POST /api/v1/support/sos responded 200 in 8.5677 ms
+[WebServer] [20:09:29 INF] HTTP GET /hubs/app responded 101 in 164.5950 ms
+  ok 14 e2e\flows.spec.js:255:1 ΓÇ║ F10 SOS (API + SH19 UI renders SOS bar) (608ms)
+[WebServer] [20:09:30 INF] HTTP GET /index.html responded 200 in 1.1710 ms
+[WebServer] [20:09:30 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 1.0346 ms
+[WebServer] [20:09:30 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 2.9144 ms
+[WebServer] [20:09:30 INF] HTTP GET /api/v1/system/status responded 200 in 1.5231 ms
+[WebServer] [20:09:30 INF] HTTP POST /api/v1/auth/login responded 200 in 24.7194 ms
+[WebServer] [20:09:30 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.4547 ms
+[WebServer] [20:09:30 INF] HTTP GET /api/v1/sim/push responded 200 in 3.1128 ms
+[WebServer] [20:09:30 INF] HTTP GET /api/v1/sim/otps responded 200 in 1.9524 ms
+[WebServer] [20:09:30 INF] HTTP POST /hubs/app/negotiate responded 200 in 0.5493 ms
+[WebServer] [20:09:30 INF] HTTP GET /api/v1/vehicles responded 200 in 2.6903 ms
+[WebServer] [20:09:33 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2191 ms
+[WebServer] [20:09:34 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.6349 ms
+[WebServer] [20:09:34 INF] HTTP GET /api/v1/sim/push responded 200 in 2.6252 ms
+[WebServer] [20:09:35 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 6.3496 ms
+[WebServer] [20:09:35 INF] HTTP GET /api/v1/vehicles responded 200 in 1.9814 ms
+[WebServer] [20:09:35 INF] HTTP GET /api/v1/lookups/bootstrap responded 200 in 7.4364 ms
+[WebServer] [20:09:35 INF] HTTP GET /api/v1/requests responded 200 in 3.1100 ms
+[WebServer] [20:09:36 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614 responded 200 in 16.3544 ms
+[WebServer] [20:09:36 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2171 ms
+[WebServer] [20:09:36 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614 responded 200 in 1.4874 ms
+[WebServer] [20:09:37 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614/quotes responded 200 in 20.5418 ms
+[WebServer] [20:09:37 INF] HTTP GET /api/v1/payments/methods responded 200 in 1.8062 ms
+[WebServer] [20:09:37 INF] HTTP GET /api/v1/payments/invoices/request/c9ac616c-1ae6-4e14-9846-0d6601a2b614 responded 200 in 7.8718 ms
+[WebServer] [20:09:38 INF] HTTP GET /api/v1/centers responded 200 in 1.9010 ms
+[WebServer] [20:09:38 INF] HTTP GET /api/v1/centers/06120b0f-18a0-4a32-8b56-aae4dca4e137 responded 200 in 13.2653 ms
+[WebServer] [20:09:38 INF] HTTP GET /api/v1/sim/push responded 200 in 1.7453 ms
+[WebServer] [20:09:38 INF] HTTP GET /api/v1/sim/messages responded 200 in 2.1758 ms
+[WebServer] [20:09:38 INF] HTTP GET /api/v1/centers responded 200 in 1.3342 ms
+[WebServer] [20:09:38 INF] HTTP GET /api/v1/requests responded 200 in 2.0911 ms
+[WebServer] [20:09:39 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614 responded 200 in 1.6342 ms
+[WebServer] [20:09:39 INF] HTTP GET /api/v1/notifications responded 200 in 29.5362 ms
+[WebServer] [20:09:39 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.0600 ms
+[WebServer] [20:09:39 INF] HTTP GET /api/v1/auth/me responded 200 in 0.8911 ms
+[WebServer] [20:09:39 INF] HTTP GET /api/v1/vehicles/db3d8d5c-687b-46a3-bb73-ab3898f96e2c responded 200 in 13.1384 ms
+[WebServer] [20:09:40 INF] HTTP GET /api/v1/requests responded 200 in 3.0646 ms
+[WebServer] [20:09:41 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614 responded 200 in 1.9613 ms
+[WebServer] [20:09:42 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.7094 ms
+[WebServer] [20:09:42 INF] HTTP GET /api/v1/sim/push responded 200 in 2.6190 ms
+[WebServer] [20:09:42 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.2562 ms
+[WebServer] [20:09:42 INF] HTTP GET /api/v1/payments/invoices/request/c9ac616c-1ae6-4e14-9846-0d6601a2b614 responded 200 in 1.6165 ms
+[WebServer] [20:09:43 INF] HTTP GET /api/v1/centers/bookings responded 200 in 20.9788 ms
+[WebServer] [20:09:43 INF] HTTP GET /api/v1/centers/bookings/70e911b3-714e-47b5-b7c6-834de0f9cd7d responded 200 in 13.6119 ms
+[WebServer] [20:09:44 INF] HTTP GET /api/v1/requests/c9ac616c-1ae6-4e14-9846-0d6601a2b614/timeline responded 200 in 16.9433 ms
+[WebServer] [20:09:45 INF] HTTP GET /api/v1/chat/threads responded 200 in 2.6174 ms
+[WebServer] [20:09:45 INF] HTTP GET /api/v1/sim/otps responded 200 in 2.1652 ms
+[WebServer] [20:09:46 INF] HTTP GET /api/v1/sim/messages responded 200 in 1.8158 ms
+[WebServer] [20:09:46 INF] HTTP GET /api/v1/sim/push responded 200 in 2.0573 ms
+[WebServer] [20:09:46 INF] HTTP GET /api/v1/support/faqs responded 200 in 7.7866 ms
+[WebServer] [20:09:47 INF] HTTP GET /api/v1/support/tickets/195ed162-905d-41a2-8f88-c7bf997c8875 responded 200 in 16.3352 ms
+[WebServer] [20:09:48 INF] HTTP POST /api/v1/auth/logout responded 204 in 17.8868 ms
+[WebServer] [20:09:48 INF] HTTP GET /hubs/app responded 101 in 17829.1962 ms
+  ok 15 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: owner ΓÇö 71 screens (19.4s)
+[WebServer] [20:09:49 INF] HTTP GET /index.html responded 200 in 0.9483 ms
+[WebServer] [20:09:49 INF] HTTP GET /assets/index-D7RZrEI-.css responded 200 in 0.8212 ms
+[WebServer] [20:09:49 INF] HTTP GET /assets/index-BiNpvZf9.js responded 200 in 3.8757 ms
+[WebServer] [e2e-server] server exited early (code=4294967295, signal=null)
+  x  16 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: mechanic ΓÇö 22 screens (15.4s)
+  x  17 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: captain ΓÇö 15 screens (299ms)
+  x  18 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: center ΓÇö 17 screens (307ms)
+  x  19 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: admin ΓÇö 18 screens (296ms)
+  x  20 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: owner ΓÇö 71 screens (332ms)
+  x  21 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: mechanic ΓÇö 22 screens (294ms)
+  x  22 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: captain ΓÇö 15 screens (297ms)
+  x  23 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: center ΓÇö 17 screens (356ms)
+  x  24 e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: admin ΓÇö 18 screens (15.6s)
+  ok 25 e2e\screens.spec.js:120:1 ΓÇ║ registry size is fully covered (143 codes) (10ms)
+
+
+  1) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: mechanic ΓÇö 22 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /#\/M01/
+    Received string:  "http://127.0.0.1:54173/#/A03"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 15000ms
+        33 ├ù locator resolved to <html lang="en" dir="ltr">ΓÇª</html>
+           - unexpected value "http://127.0.0.1:54173/#/A03"
+
+
+       at helpers.js:63
+
+      61 |   // The authenticated shell exposes a stable screen container for every role.
+      62 |   await expect(page.locator('[data-testid="screen-container"]')).toBeVisible({ timeout: 30_000 });
+    > 63 |   await expect(page).toHaveURL(new RegExp(`#/${cred.home}`), { timeout: 15_000 });
+         |                      ^
+      64 |   return cred;
+      65 | }
+      66 |
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:63:22)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:9
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-light-en-light-en-mechanic-ΓÇö-22-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-mechanic-ΓÇö-22-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-mechanic-ΓÇö-22-screens\error-context.md
+
+  2) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: captain ΓÇö 15 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-light-en-light-en-captain-ΓÇö-15-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-captain-ΓÇö-15-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-captain-ΓÇö-15-screens\error-context.md
+
+  3) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: center ΓÇö 17 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-light-en-light-en-center-ΓÇö-17-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-center-ΓÇö-17-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-center-ΓÇö-17-screens\error-context.md
+
+  4) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: admin ΓÇö 18 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-light-en-light-en-admin-ΓÇö-18-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-admin-ΓÇö-18-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-light-en-light-en-admin-ΓÇö-18-screens\error-context.md
+
+  5) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: owner ΓÇö 71 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-owner-ΓÇö-71-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-owner-ΓÇö-71-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-owner-ΓÇö-71-screens\error-context.md
+
+  6) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: mechanic ΓÇö 22 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-mechanic-ΓÇö-22-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-mechanic-ΓÇö-22-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-mechanic-ΓÇö-22-screens\error-context.md
+
+  7) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: captain ΓÇö 15 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-captain-ΓÇö-15-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-captain-ΓÇö-15-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-captain-ΓÇö-15-screens\error-context.md
+
+  8) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: center ΓÇö 17 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:54173/#/A03
+    Call log:
+      - navigating to "http://127.0.0.1:54173/#/A03", waiting until "load"
+
+
+       at helpers.js:57
+
+      55 | export async function loginUI(page, key) {
+      56 |   const cred = CREDENTIALS[key];
+    > 57 |   await page.goto(`${baseURL()}/#/A03`);
+         |              ^
+      58 |   await page.locator('[data-testid="login-email"]').fill(cred.email);
+      59 |   await page.locator('[data-testid="login-password"]').fill(cred.password);
+      60 |   await page.locator('[data-testid="login-submit"]').click();
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:57:14)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:15
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-center-ΓÇö-17-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-center-ΓÇö-17-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-center-ΓÇö-17-screens\error-context.md
+
+  9) e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: admin ΓÇö 18 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /#\/AD01/
+    Received string:  "http://127.0.0.1:54173/#/A03"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 15000ms
+        34 ├ù locator resolved to <html lang="ar" dir="rtl" class="dark">ΓÇª</html>
+           - unexpected value "http://127.0.0.1:54173/#/A03"
+
+
+       at helpers.js:63
+
+      61 |   // The authenticated shell exposes a stable screen container for every role.
+      62 |   await expect(page.locator('[data-testid="screen-container"]')).toBeVisible({ timeout: 30_000 });
+    > 63 |   await expect(page).toHaveURL(new RegExp(`#/${cred.home}`), { timeout: 15_000 });
+         |                      ^
+      64 |   return cred;
+      65 | }
+      66 |
+        at loginUI (C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\helpers.js:63:22)
+        at C:\Users\xprenspel\Desktop\FixNGoFinal\client\e2e\screens.spec.js:77:9
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-admin-ΓÇö-18-screens\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-admin-ΓÇö-18-screens\error-context.md
+
+    Error Context: e2e\.artifacts\screens-screen-sweep-dark-ar-dark-ar-admin-ΓÇö-18-screens\error-context.md
+
+  9 failed
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: mechanic ΓÇö 22 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: captain ΓÇö 15 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: center ΓÇö 17 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep light-en ΓÇ║ light-en: admin ΓÇö 18 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: owner ΓÇö 71 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: mechanic ΓÇö 22 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: captain ΓÇö 15 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: center ΓÇö 17 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    e2e\screens.spec.js:69:7 ΓÇ║ screen sweep dark-ar ΓÇ║ dark-ar: admin ΓÇö 18 screens ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  16 passed (2.6m)
