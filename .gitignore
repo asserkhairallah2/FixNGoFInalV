@@ -1,0 +1,44 @@
+# Build output
+bin/
+obj/
+app/
+build/
+dist/
+**/wwwroot/
+*.dll
+*.pdb
+*.exe
+
+# Dependencies
+node_modules/
+.vite/
+
+# Runtime data & secrets (never commit)
+data/
+logs/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+secrets.json
+server.pid
+server.port
+
+# E2E / test artifacts (evidence is intentionally kept under docs/evidence)
+test-results/
+playwright-report/
+blob-report/
+*.trx
+coverage/
+
+# Editors / OS
+.vs/
+.idea/
+*.user
+*.suo
+Thumbs.db
+.DS_Store
+
+# Local env
+.env
+.env.local

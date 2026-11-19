@@ -1,0 +1,25 @@
+GOAL MODE, unattended. Project root: C:\Users\xprenspel\Desktop\FixNGoFinal. Work ONLY inside it (never touch C:\Users\xprenspel\Desktop\FixNGo).
+
+GOAL: Build the complete real FixNGo system (roadside assistance + car-care platform, Egypt, EN/AR) from the front-end-only prototype, and PROVE with real tests, logs and screenshots that everything works. Do not stop until the Definition of Done in docs/agent-brief/00_MASTER_PROMPT.md is fully met with evidence files.
+
+FIRST (before any code): read START_HERE.md, then ALL of docs/agent-brief/ in order: 00_MASTER_PROMPT, 01_PROJECT_ANALYSIS, 02a/02b/02c inventories, 03_ARCHITECTURE, 04_SCRIPTS_SPEC, 05_SIMULATORS_SPEC, 06_FRONTEND_MIGRATION, 07_TEST_QA_AND_EVIDENCE, 08_PROGRESS_TEMPLATES. Also read AGENT.md, reference/ (SRS, system design, design-images/) and legacy-prototype/ (original mock prototype, read-only; read a module's source before porting it). STATE.md is outdated: ignore its claims.
+
+DELIVER:
+1. ASP.NET Core 8 backend (Clean Architecture, EF Core + SQLite, SignalR, JWT, RBAC, workers) implementing every flow in the inventories and SRS/SDD.
+2. Prototype migrated to a real client (client/, Vite+React+Tailwind) wired to the API, design kept 1:1 (EN/AR RTL, light/dark). REMOVE all mock data, dev sidebar, role switchers, MOCK_PRESETS, hard-coded personas/numbers/dates/image URLs (forbidden-literal list in 06 must give zero hits).
+3. Fake-but-functional providers (maps, SMS/email/OTP, payments, push) + Simulator Dock with 5 side panels next to the phone (Notifications dot, Payments, SMS, OTP, GPS/Maps), switchable to real providers by config.
+4. Five tools in the root, exactly per 04_SCRIPTS_SPEC: setup.bat (console wizard creating the first admin, then closes and launches start.bat), start.bat (runs the system; no accounts => runs setup.bat), remove-db.bat (reset to first run), dummy-db.bat (verified backup, then one-month dummy DB + dummy-db.md listing EVERY user with role/status/password), restore-db.bat (byte-identical restore).
+5. Tests and evidence per 07: unit, API (authorization matrix, offer race, privacy), script tests S1-S10, client tests, Playwright E2E flows, and a screen sweep screenshotting EVERY screen in light/dark x EN/AR with automated checks. Provide tools/verify-all.ps1.
+
+HOW TO WORK:
+- Follow Phases 0-7 and gates in 00_MASTER_PROMPT; a phase is done only when its gate passes with proof.
+- Never ask the owner questions: decide, log in docs/DEVIATIONS.md, continue.
+- Install dependencies yourself, non-interactively. Tests must use FIXNGO_DATA_DIR temp folders and random ports, never the real data\ folder.
+- Small verified steps. After each step: append docs/AGENT_LOG.md, update docs/PROGRESS.md (keep a RESUME HERE section), git commit. Re-read brief files instead of trusting memory.
+- Run everything for real and inspect screenshots; if you cannot view images, say so in docs/FINAL_REPORT.md. Never claim unperformed checks. Never skip, weaken or delete failing tests; fix root causes and re-run the whole suite.
+- Blocked after 3 different approaches: record in docs/KNOWN_ISSUES.md and continue.
+- Logging is part of the product (Serilog, never log passwords/OTPs/tokens/card data) and of your process (docs/, logs/).
+
+FINISH: tools/verify-all.ps1 exits 0; hostile self-review (Phase 7); update README.md, STATE.md (English, true state), AGENT.md; write docs/FINAL_REPORT.md. Final message lists: what was built, how to run the five .bat tools, verify-all result, deviations, known issues, unverified items.
+
+Start with Phase 0.
