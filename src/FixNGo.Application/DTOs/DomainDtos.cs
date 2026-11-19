@@ -42,6 +42,7 @@ public sealed record CreateQuoteRequest(long CalloutMinor, long LaborMinor, long
 public sealed record QuoteDto(Guid Id, Guid RequestId, int Version, QuoteStatus Status, long TotalMinor,
     long ProviderNetMinor, long CalloutMinor, long LaborMinor, long PartsMinor, long ServiceFeeMinor, string? Diagnosis);
 public sealed record DisputeRequest(string Reason, string? ProposedResolution = null);
+public sealed record DisputeDto(Guid Id, Guid RequestId, string Reason, string? ProposedResolution, bool Resolved);
 
 // ---- Payments ----
 public sealed record AddCardRequest(string Number, int ExpMonth, int ExpYear, string? Label, bool IsDefault = false);

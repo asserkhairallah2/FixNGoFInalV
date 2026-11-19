@@ -86,6 +86,8 @@ public static class Mappings
 
     public static WorkOrderDto WorkOrder(WorkOrder w) => new(w.Id, w.Code, w.BookingId, w.CenterId, w.Status, w.Notes);
 
+    public static DisputeDto Dispute(Dispute d) => new(d.Id, d.RequestId, d.Reason, d.ProposedResolution, d.Resolved);
+
     public static KycApplicationDto Kyc(KycApplication a) => new(a.Id, a.Code, a.Status, a.ApplicantType,
         a.BusinessName, a.ReviewerNote, a.CreatedAt);
 

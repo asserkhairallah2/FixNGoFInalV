@@ -11,7 +11,7 @@ public sealed class CenterService(
     IAppDbContext db, IClock clock, INotifier notifier, SettingsService settings)
 {
     public async Task<IReadOnlyList<CenterDto>> CatalogAsync(CancellationToken ct = default) =>
-        await db.ServiceCenters.OrderByDescending(c => c.Rating).ThenBy(c => c.Name)
+        await db.ServiceCenters.OrderByDescending(c => (double)c.Rating).ThenBy(c => c.Name)
             .Select(c => Mappings.Center(c)).ToListAsync(ct);
 
     public async Task<CenterDto> GetAsync(Guid id, CancellationToken ct = default)
@@ -207,6 +207,36 @@ public sealed class CenterService(
         if (confirm && !await db.WorkOrders.AnyAsync(w => w.BookingId == b.Id, ct))
             db.WorkOrders.Add(new WorkOrder { Code = await Codes.NextAsync(db, "WO", ct), BookingId = b.Id, CenterId = center.Id });
         await db.SaveChangesAsync(ct);
+        return Mappings.Booking(b);
+    }
+
+    public async Task<BookingDto> StartBookingAsync(Guid ownerId, Guid id, CancellationToken ct = default)
+    {
+        var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("booking.not_found", "Booking not found.");
+        var center = await OwnedAsync(ownerId, ct);
+        if (b.CenterId != center.Id) throw new DomainException("auth.forbidden", "This booking is not for your center.");
+        b.Status = StateMachines.Booking.Transition(b.Status, BookingStatus.InProgress);
+        b.StartedAt = clock.UtcNow;
+        await db.SaveChangesAsync(ct);
+        await notifier.NotifyUserAsync(b.CustomerId, NotificationType.StatusWorking, "Appointment started",
+            $"Booking {b.Code} has started.", $"booking:{b.Id}", ct);
+        return Mappings.Booking(b);
+    }
+
+    public async Task<BookingDto> CompleteBookingAsync(Guid ownerId, Guid id, CancellationToken ct = default)
+    {
+        var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("booking.not_found", "Booking not found.");
+        var center = await OwnedAsync(ownerId, ct);
+        if (b.CenterId != center.Id) throw new DomainException("auth.forbidden", "This booking is not for your center.");
+        b.Status = StateMachines.Booking.Transition(b.Status, BookingStatus.Completed);
+        b.CompletedAt = clock.UtcNow;
+        var profile = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == b.CustomerId, ct);
+        if (profile is not null) { profile.CompletedJobs++; }
+        await db.SaveChangesAsync(ct);
+        await notifier.NotifyUserAsync(b.CustomerId, NotificationType.StatusCompleted, "Appointment complete",
+            $"Booking {b.Code} was completed.", $"booking:{b.Id}", ct);
         return Mappings.Booking(b);
     }
 

@@ -1,11 +1,13 @@
 # Progress
 
 ## RESUME HERE
-Phase: 2 (Domain & API) — all 13 services + 12 controllers + 4 workers written and compiling; now adding Gate 2 tests.
-Last verified: Release build of full solution 0 Warning(s) 0 Error(s) after fixing notifier signature, CenterService collision, EF Relational package, tuple order and nullability. Gate 1 still green (17/17).
-Next command: add Phase 2 API integration tests (authz matrix, tow/mechanic/booking/payment/KYC flows, offer race, privacy), export OpenAPI to docs/API.md, regenerate TEST_REPORT.md, then commit Gate 2.
+Phase: 3 (Client migration & wiring) — next: port the 138 legacy prototype screens into `client/` wired to the real API, module by module (Auth → Owner → Mechanic/Captain → Center → Admin → Shared), remove mocks/dev sidebar, take EN-light + AR-dark screenshots, tick SCREEN_MATRIX.
+Last verified: Gate 2 PASS — Release build 0 Warning(s) 0 Error(s); full suite 26/26 (1 domain + 9 app + 16 API); authz matrix, tow/mechanic/booking/payment/KYC flows, offer race, privacy and OpenAPI export all green; docs/API.md generated (161 lines); TEST_REPORT.md regenerated.
+Next command: `git add -A; git commit` Gate 2, then inspect `client/` current shell + a legacy module source and begin Phase 3 porting per `06_FRONTEND_MIGRATION.md`.
 
 ## Gate summaries (newest first)
+Gate 2 — PASS (2026-11-19): Release build 0 warnings/errors; 26/26 tests (1 domain + 9 app + 16 API via WebApplicationFactory + temp SQLite); authz matrix 17 routes × 6 callers; flow tests tow/P0, mechanic quote/dispute, booking lifecycle, payments (card/cash/declined/retry/idempotent), KYC; offer race (2 captains → exactly 1 winner); privacy (pre-accept payloads hide phone/plate/exact coords); OpenAPI exported to docs/API.md. Evidence: docs/evidence/test-output/dotnet-test-gate2.txt, authz-matrix.md, docs/API.md, docs/TEST_REPORT.md. Root causes fixed: SQLite decimal ORDER BY, dispute JSON cycle, default-card test bug, Swagger global security export.
+
 Gate 1 — PASS (2026-11-19): Release build 0 warnings/errors; 17/17 tests (1 domain + 9 app auth + 7 API); S1–S3 script tests 11/11 with transcripts; browser login E2E (POST /auth/login 200, authenticated shell, 0 console errors) with screenshots; mock-scan 0 hits. Evidence: docs/evidence/test-output/dotnet-test-gate1.txt, docs/evidence/test-output/mock-scan.txt, docs/evidence/scripts/S1-S3, docs/evidence/screens/. Deviations 1–12 logged.
 
 Gate 0 — PASS (2026-11-19): layout verified; 11 brief files + AGENT.md + SRS + SDD read; git baseline commit `e90d3a4` exists; legacy prototype served HTTP 200 and 12 screens rendered in Chromium with 0 console errors. Evidence: `docs/evidence/phase0/legacy-prototype-check.md`.
@@ -43,13 +45,13 @@ Gate 0 — PASS (2026-11-19): layout verified; 11 brief files + AGENT.md + SRS +
 - [x] Gate 1: Release build 0 warnings, 17 tests green, S1–S3 (11/11), browser login E2E, mock-scan 0 hits
 
 ### Phase 2 Domain & API
-- [ ] vehicles, lookups, requests/matching/offers/P0, quotes/disputes, payments/invoices/wallet/withdrawals
-- [ ] reviews, chat (REST+SignalR), notifications/outbox/preferences
-- [ ] service centers (catalog/hours/bays/technicians/availability/bookings/work orders/reports)
-- [ ] providers (profile/documents/KYC/availability/location/earnings/history)
-- [ ] admin (dashboard/verification/users/settings/payment reviews/safety/reviews/support/reports/audit/2FA/sessions)
-- [ ] support/legal/SOS/deletion, background workers, file store
-- [ ] Gate 2: all tests green, API.md, authz matrix, flow tests, offer race, privacy test
+- [x] vehicles, lookups, requests/matching/offers/P0, quotes/disputes, payments/invoices/wallet/withdrawals
+- [x] reviews, chat (REST+SignalR), notifications/outbox/preferences
+- [x] service centers (catalog/hours/bays/technicians/availability/bookings/work orders/reports)
+- [x] providers (profile/documents/KYC/availability/location/earnings/history)
+- [x] admin (dashboard/verification/users/settings/payment reviews/safety/reviews/support/reports/audit/2FA/sessions)
+- [x] support/legal/SOS/deletion, background workers, file store
+- [x] Gate 2: all tests green, API.md, authz matrix, flow tests, offer race, privacy test
 
 ### Phase 3 Client
 - [ ] shell + shared UI kit (no dev sidebar/mocks)

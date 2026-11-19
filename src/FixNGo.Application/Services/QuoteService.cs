@@ -75,7 +75,7 @@ public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notif
         return Mappings.Quote(q);
     }
 
-    public async Task<Dispute> DisputeAsync(Guid customerId, Guid requestId, DisputeRequest req, CancellationToken ct = default)
+    public async Task<DisputeDto> DisputeAsync(Guid customerId, Guid requestId, DisputeRequest req, CancellationToken ct = default)
     {
         var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
             ?? throw new DomainException("request.not_found", "Request not found.");
@@ -90,6 +90,6 @@ public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notif
         if (r.AssignedProviderId is not null)
             await notifier.NotifyUserAsync(r.AssignedProviderId.Value, NotificationType.EstimateDisputed, "Quote disputed",
                 $"The customer disputed the quote for {r.Code}.", $"request:{r.Id}", ct);
-        return dispute;
+        return Mappings.Dispute(dispute);
     }
 }

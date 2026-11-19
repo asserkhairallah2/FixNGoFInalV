@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace FixNGo.Api.Tests;
 
 /// <summary>Real HTTP integration tests for the auth API using WebApplicationFactory + temp SQLite DB.</summary>
+[Collection("api")]
 public sealed class AuthApiTests : IClassFixture<AuthApiTests.ApiFactory>
 {
     private readonly ApiFactory _factory;
