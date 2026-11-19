@@ -1,0 +1,16 @@
+# Deviations from prototype / spec
+
+Decisions taken autonomously (the owner must not be asked). Every deliberate difference from the prototype/spec is recorded here with its reason and evidence.
+
+| # | Screen/Area | Prototype/spec said | What was implemented | Why | Evidence |
+|---|---|---|---|---|---|
+| 1 | Global | Login jumps to a role chosen in host state | Login derives role from the authenticated account; dev sidebar/role switchers removed | Security (FR-04/NFR-09); prototype behaviour was a demo artefact | docs/evidence/phase0/legacy-prototype-check.md (prototype role pills observed) |
+| 2 | A07 | New-password screen had a pre-filled "verification code" field | OTP is verified on A05 and A07 receives a one-time reset token; no code field | Remove duplicated/dead demo input (brief 02a A07) | Pending screenshot |
+| 3 | C03 | Role chooser demo screen | Removed from the real app | Explicit requirement in 02a/06 | mock-scan result (pending) |
+| 4 | C11/C12 | "Advance Trip Status" demo button | Removed; status driven by provider actions only | Brief 02a C11/C12 | Pending screenshot |
+| 5 | C34 | "Simulate Declined Payment" button | Removed; declining achieved with the documented fake PSP test card | Brief 02a C34, 05 §1 | Pending screenshot |
+| 6 | All screens | Remote Unsplash stock images | Bundled local SVG/illustrations or uploaded images only | Offline operation, no fake data (06 §1) | mock-scan (pending) |
+| 7 | Platform | ASP.NET MVC + Razor (AGENT.md / SDD) | REST API + SignalR + Vite/React SPA served by same ASP.NET app | Brief 00 §2 precedence: brief wins over AGENT.md/SDD for presentation | This file |
+| 8 | Platform | SQL Server (SRS/SDD) | SQLite by default (configurable provider), because the five DB tools swap a file | Brief 03 §1, 04 | This file |
+| 9 | Environment | Python available per brief §4 | Python is not on PATH on the machine; DB inspection uses .NET/Node instead | Verified with `python --version` | docs/evidence/phase0 (tool versions) |
+| 10 | Visual QA | Inspect screenshots visually | Agent model cannot view images; automated DOM/screenshot assertions used instead, explicitly reported | Model capability limitation | docs/FINAL_REPORT.md (pending) |
