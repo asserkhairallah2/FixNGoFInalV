@@ -1,0 +1,151 @@
+using FixNGo.Application.DTOs;
+using FixNGo.Application.Interfaces;
+using FixNGo.Domain;
+using FixNGo.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace FixNGo.Application.Services;
+
+/// <summary>Customer roadside request lifecycle: estimate, create, timeline, cancel, status.</summary>
+public sealed class RequestService(
+    IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier)
+{
+    public async Task<EstimateDto> EstimateAsync(EstimateRequest req, CancellationToken ct = default)
+    {
+        var st = await db.ServiceTypes.FirstOrDefaultAsync(s => s.Id == req.ServiceTypeId, ct)
+            ?? throw new DomainException("request.service_type_invalid", "Unknown service type.");
+        if (req.DistanceKm < 0 || req.DistanceKm > 2000)
+            throw new DomainException("request.distance_invalid", "Invalid distance.");
+        var (s, version) = await settings.CurrentAsync(ct);
+        var total = st.Kind == RequestKind.Tow
+            ? Pricing.TowTotalMinor(req.DistanceKm, s)
+            : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s);
+        var (low, high) = Pricing.EstimateRange(total);
+        return new EstimateDto(low, high, total, version);
+    }
+
+    public async Task<RequestDto> CreateAsync(Guid customerId, CreateRequestRequest req, CancellationToken ct = default)
+    {
+        var st = await db.ServiceTypes.FirstOrDefaultAsync(s => s.Id == req.ServiceTypeId, ct)
+            ?? throw new DomainException("request.service_type_invalid", "Unknown service type.");
+        if (req.VehicleId is not null &&
+            !await db.Vehicles.AnyAsync(v => v.Id == req.VehicleId && v.OwnerId == customerId, ct))
+            throw new DomainException("request.vehicle_not_owned", "Vehicle not found.");
+        if (req.DistanceKm < 0 || req.DistanceKm > 2000)
+            throw new DomainException("request.distance_invalid", "Invalid distance.");
+        if (string.IsNullOrWhiteSpace(req.PickupAddress))
+            throw new DomainException("request.address_required", "Pickup address is required.");
+
+        var (s, version) = await settings.CurrentAsync(ct);
+        var total = st.Kind == RequestKind.Tow
+            ? Pricing.TowTotalMinor(req.DistanceKm, s)
+            : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s);
+        var priority = req.Priority;
+        if (priority == RequestPriority.Normal && await EscalatesAsync(req, ct)) priority = RequestPriority.P0;
+
+        var r = new ServiceRequest
+        {
+            Code = await Codes.NextAsync(db, st.Kind == RequestKind.Tow ? "FG" : "MR", ct),
+            CustomerId = customerId, VehicleId = req.VehicleId, Kind = st.Kind, Priority = priority,
+            Status = RequestStatus.Searching, ServiceTypeId = st.Id, Problem = req.Problem,
+            AnswersJson = req.AnswersJson ?? "{}", Note = req.Note,
+            PickupLatitude = req.PickupLatitude, PickupLongitude = req.PickupLongitude,
+            PickupAddress = req.PickupAddress.Trim(), DestinationLatitude = req.DestinationLatitude,
+            DestinationLongitude = req.DestinationLongitude, DestinationAddress = req.DestinationAddress,
+            DistanceKm = req.DistanceKm, RadiusKm = s.SearchRadiusKm, SettingsVersion = version,
+            EstimateMinor = total
+        };
+        db.ServiceRequests.Add(r);
+        db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = "created", ActorId = customerId, At = clock.UtcNow });
+        await db.SaveChangesAsync(ct);
+        return Mappings.Request(r);
+    }
+
+    /// <summary>Any escalates-to-P0 answer of "yes" turns the request into an accident priority.</summary>
+    private async Task<bool> EscalatesAsync(CreateRequestRequest req, CancellationToken ct)
+    {
+        if (req.ServiceTypeId == Guid.Empty || string.IsNullOrWhiteSpace(req.AnswersJson)) return false;
+        var ids = await db.FollowUpQuestions.Where(q => q.ServiceTypeId == req.ServiceTypeId && q.EscalatesToP0WhenYes)
+            .Select(q => q.Key).ToListAsync(ct);
+        if (ids.Count == 0) return false;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(req.AnswersJson);
+            foreach (var key in ids)
+                if (doc.RootElement.TryGetProperty(key, out var v) &&
+                    (v.ValueKind == System.Text.Json.JsonValueKind.True ||
+                     string.Equals(v.GetString(), "yes", StringComparison.OrdinalIgnoreCase))) return true;
+        }
+        catch (System.Text.Json.JsonException) { /* invalid answer JSON treated as no escalation */ }
+        return false;
+    }
+
+    public async Task<RequestDto> GetAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
+    {
+        var r = await Visible(callerId, isAdmin, id, ct);
+        return Mappings.Request(r);
+    }
+
+    public async Task<IReadOnlyList<RequestDto>> ListAsync(Guid callerId, bool isAdmin, CancellationToken ct = default)
+    {
+        var q = db.ServiceRequests.AsQueryable();
+        if (!isAdmin) q = q.Where(r => r.CustomerId == callerId || r.AssignedProviderId == callerId);
+        return await q.OrderByDescending(r => r.CreatedAt).Take(200).Select(r => Mappings.Request(r)).ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<RequestEventDto>> TimelineAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
+    {
+        var r = await Visible(callerId, isAdmin, id, ct);
+        return await db.RequestEvents.Where(e => e.RequestId == r.Id).OrderBy(e => e.At)
+            .Select(e => Mappings.Event(e)).ToListAsync(ct);
+    }
+
+    public async Task<RequestDto> CancelAsync(Guid callerId, bool isAdmin, Guid id, CancelRequestRequest req, CancellationToken ct = default)
+    {
+        var r = await Visible(callerId, isAdmin, id, ct);
+        if (!isAdmin && r.CustomerId != callerId)
+            throw new DomainException("auth.forbidden", "Only the customer may cancel this request.");
+        r.Status = StateMachines.Request.Transition(r.Status, RequestStatus.Cancelled);
+        r.CancellationReason = req.ReasonKey;
+        db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = req.ReasonKey ?? req.Note, ActorId = callerId, At = clock.UtcNow });
+        foreach (var o in db.Offers.Where(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending))
+            o.Status = OfferStatus.Withdrawn;
+        await db.SaveChangesAsync(ct);
+        await notifier.NotifyUserAsync(r.CustomerId, NotificationType.StatusCompleted, "Request cancelled", $"Request {r.Code} was cancelled.", $"request:{r.Id}", ct);
+        return Mappings.Request(r);
+    }
+
+    /// <summary>Provider advances an assigned request through the legal state machine.</summary>
+    public async Task<RequestDto> AdvanceAsync(Guid providerId, Guid id, StatusRequest req, CancellationToken ct = default)
+    {
+        var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("request.not_found", "Request not found.");
+        if (r.AssignedProviderId != providerId)
+            throw new DomainException("auth.forbidden", "This request is not assigned to you.");
+        r.Status = StateMachines.Request.Transition(r.Status, req.Status);
+        if (req.Status == RequestStatus.Accepted) r.AcceptedAt = clock.UtcNow;
+        if (req.Status == RequestStatus.Completed) r.CompletedAt = clock.UtcNow;
+        db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = req.Note, ActorId = providerId, At = clock.UtcNow });
+        await db.SaveChangesAsync(ct);
+        var map = new Dictionary<RequestStatus, NotificationType>
+        {
+            [RequestStatus.Accepted] = NotificationType.RequestAccepted,
+            [RequestStatus.EnRoute] = NotificationType.StatusEnRoute,
+            [RequestStatus.Arrived] = NotificationType.StatusArrived,
+            [RequestStatus.Working] = NotificationType.StatusWorking,
+            [RequestStatus.Completed] = NotificationType.StatusCompleted
+        };
+        if (map.TryGetValue(req.Status, out var nt))
+            await notifier.NotifyUserAsync(r.CustomerId, nt, "Request update", $"{r.Code}: {req.Status}", $"request:{r.Id}", ct);
+        return Mappings.Request(r);
+    }
+
+    private async Task<ServiceRequest> Visible(Guid callerId, bool isAdmin, Guid id, CancellationToken ct)
+    {
+        var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == id, ct)
+            ?? throw new DomainException("request.not_found", "Request not found.");
+        if (!isAdmin && r.CustomerId != callerId && r.AssignedProviderId != callerId)
+            throw new DomainException("auth.forbidden", "You cannot view this request.");
+        return r;
+    }
+}

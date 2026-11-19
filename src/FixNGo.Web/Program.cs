@@ -4,6 +4,9 @@ using FixNGo.Application.Services;
 using FixNGo.Application.Validators;
 using FixNGo.Domain;
 using FixNGo.Infrastructure;
+using FixNGo.Infrastructure.Services;
+using FixNGo.Web.Services;
+using FixNGo.Web.Workers;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -56,6 +59,27 @@ builder.Services.AddSingleton(new AuthOptions
     ExposeDevCodes = exposeDevCodes
 });
 builder.Services.AddScoped<AuthService>();
+// Phase 2 application services
+builder.Services.AddScoped<SettingsService>();
+builder.Services.AddScoped<VehicleService>();
+builder.Services.AddScoped<LookupService>();
+builder.Services.AddScoped<RequestService>();
+builder.Services.AddScoped<OfferService>();
+builder.Services.AddScoped<QuoteService>();
+builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<CenterService>();
+builder.Services.AddScoped<ProviderService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<ReviewService>();
+builder.Services.AddScoped<ChatService>();
+builder.Services.AddScoped<SupportService>();
+builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<INotifier, SignalRNotifier>();
+builder.Services.AddScoped<IFileStore, LocalFileStore>();
+builder.Services.AddHostedService<OfferExpiryWorker>();
+builder.Services.AddHostedService<BookingExpiryWorker>();
+builder.Services.AddHostedService<WithdrawalWorker>();
+builder.Services.AddHostedService<HousekeepingWorker>();
 builder.Services.AddValidatorsFromAssembly(typeof(SignupValidator).Assembly);
 
 // ---- Auth / RBAC ----

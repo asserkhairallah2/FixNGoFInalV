@@ -46,6 +46,6 @@ public interface IFileStore
 /// <summary>Real-time notification fan-out (SignalR + fake push recorder).</summary>
 public interface INotifier
 {
-    Task NotifyUserAsync(Guid userId, string eventName, object payload, CancellationToken ct = default);
+    Task NotifyUserAsync(Guid userId, NotificationType type, string title, string body, string? deepLink, CancellationToken ct = default);
     Task PushAsync(Guid userId, string title, string body, string? deepLink, CancellationToken ct = default);
 }

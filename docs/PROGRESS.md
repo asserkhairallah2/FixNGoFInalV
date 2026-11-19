@@ -1,9 +1,9 @@
 # Progress
 
 ## RESUME HERE
-Phase: 2 (Domain & API) — Gate 1 PASSED; begin implementing domain modules per inventories.
-Last verified: Gate 1 full suite 17/17 green, Release build 0 warnings/errors, S1–S3 11/11, mock-scan 0 hits, browser login E2E OK, Screenshots saved.
-Next command: implement Phase 2 domain modules (vehicles, requests/offers, payments, reviews, chat, centers, providers, admin) wired to the API; add API authz matrix / offer race / privacy tests; re-read 01/02a/02b/02c/03 and SRS/SDD first.
+Phase: 2 (Domain & API) — all 13 services + 12 controllers + 4 workers written and compiling; now adding Gate 2 tests.
+Last verified: Release build of full solution 0 Warning(s) 0 Error(s) after fixing notifier signature, CenterService collision, EF Relational package, tuple order and nullability. Gate 1 still green (17/17).
+Next command: add Phase 2 API integration tests (authz matrix, tow/mechanic/booking/payment/KYC flows, offer race, privacy), export OpenAPI to docs/API.md, regenerate TEST_REPORT.md, then commit Gate 2.
 
 ## Gate summaries (newest first)
 Gate 1 — PASS (2026-11-19): Release build 0 warnings/errors; 17/17 tests (1 domain + 9 app auth + 7 API); S1–S3 script tests 11/11 with transcripts; browser login E2E (POST /auth/login 200, authenticated shell, 0 console errors) with screenshots; mock-scan 0 hits. Evidence: docs/evidence/test-output/dotnet-test-gate1.txt, docs/evidence/test-output/mock-scan.txt, docs/evidence/scripts/S1-S3, docs/evidence/screens/. Deviations 1–12 logged.
