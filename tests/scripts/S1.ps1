@@ -24,6 +24,23 @@ try {
     $healthy = Wait-Health -Port $port -TimeoutSec 75
     Assert-Bool $healthy 'server answers /health after start.bat triggered first-run setup'
 
+    # Verify B1 fix: start.bat serves the SPA HTML on GET / (never 404)
+    $spaOk = $false
+    try {
+        $req = [System.Net.HttpWebRequest]::Create('http://127.0.0.1:' + $port + '/')
+        $req.Timeout = 5000
+        $req.Proxy = $null
+        $resp = $req.GetResponse()
+        $reader = New-Object IO.StreamReader($resp.GetResponseStream())
+        $html = $reader.ReadToEnd()
+        $reader.Close()
+        $code = [int]$resp.StatusCode
+        $resp.Close()
+        $spaOk = ($code -eq 200 -and $html -match 'id="root"')
+    }
+    catch { $spaOk = $false }
+    Assert-Bool $spaOk 'start.bat serves the SPA index.html (HTTP 200 with #root) on GET /'
+
     $after = Invoke-Cli @('check-setup', '--json')
     W ('check-setup after: exit=' + $after.Code + ' ' + $after.Out.Trim())
     Assert-Equal 0 $after.Code 'check-setup reports set up (exit 0) after start.bat'

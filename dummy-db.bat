@@ -38,12 +38,8 @@ echo   FixNGo - Switch to dummy database
 echo ===================================================
 call :log "dummy-db.bat started (args: %*)"
 
-if not exist "app\FixNGo.Cli.dll" (
-  call :log "build output missing -> building"
-  echo [BUILD] Building application first...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1"
-  if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
-)
+powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1" -IfNeeded
+if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
 
 echo [WARN] Your current data will be set aside in data\backups\real-*.
 echo [WARN] Run restore-db.bat to return to it.

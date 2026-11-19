@@ -75,9 +75,14 @@ public sealed class PaymentService(
     // ---- Invoices & charges ----
     public async Task<InvoiceDto> InvoiceForRequestAsync(Guid callerId, bool isAdmin, Guid requestId, CancellationToken ct = default)
     {
-        var inv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId, ct)
-            ?? throw new DomainException("payment.invoice_not_found", "Invoice not found.");
-        if (!isAdmin && inv.CustomerId != callerId) throw new DomainException("auth.forbidden", "You cannot view this invoice.");
+        var inv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId, ct);
+        if (inv is null) return await EnsureInvoiceAsync(requestId, ct);
+        if (!isAdmin && inv.CustomerId != callerId)
+        {
+            var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct);
+            if (r?.AssignedProviderId != callerId)
+                throw new DomainException("auth.forbidden", "You cannot view this invoice.");
+        }
         return Mappings.Invoice(inv);
     }
 
@@ -239,7 +244,8 @@ public sealed class PaymentService(
         {
             UserId = userId, HolderName = req.HolderName.Trim(), BankName = bank.NameEn,
             IbanLast4 = compact[^4..], IbanEncrypted = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(compact)),
-            IsDefault = req.IsDefault || !await db.BankAccounts.AnyAsync(b => b.UserId == userId, ct)
+            IsDefault = req.IsDefault || !await db.BankAccounts.AnyAsync(b => b.UserId == userId, ct),
+            IsVerified = true
         };
         db.BankAccounts.Add(account);
         await db.SaveChangesAsync(ct);

@@ -14,11 +14,13 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | GET | `/api/v1/admin/users/{id}` | id | Bearer |
 | POST | `/api/v1/admin/users/{id}/suspend` | suspend | Bearer |
 | POST | `/api/v1/admin/users/{id}/restore` | restore | Bearer |
+| GET | `/api/v1/admin/sessions` | sessions | Bearer |
 | GET | `/api/v1/admin/users/{id}/sessions` | sessions | Bearer |
 | DELETE | `/api/v1/admin/sessions/{id}` | id | Bearer |
 | GET | `/api/v1/admin/settings` | settings | Bearer |
 | PUT | `/api/v1/admin/settings` | settings | Bearer |
 | GET | `/api/v1/admin/kyc/queue` | queue | Bearer |
+| GET | `/api/v1/admin/kyc/{id}` | id | Bearer |
 | POST | `/api/v1/admin/kyc/{id}/review` | review | Bearer |
 | GET | `/api/v1/admin/payment-reviews` | payment-reviews | Bearer |
 | GET | `/api/v1/admin/payment-reviews/{id}` | id | Bearer |
@@ -39,6 +41,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | GET | `/api/v1/admin/reports` | reports | Bearer |
 | POST | `/api/v1/auth/signup` | signup | Bearer |
 | POST | `/api/v1/auth/verify-otp` | verify-otp | Bearer |
+| POST | `/api/v1/auth/resend-otp` | resend-otp | Bearer |
 | POST | `/api/v1/auth/login` | login | Bearer |
 | POST | `/api/v1/auth/login/verify-otp` | verify-otp | Bearer |
 | POST | `/api/v1/auth/refresh` | refresh | Bearer |
@@ -48,6 +51,13 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/auth/reset-password` | reset-password | Bearer |
 | POST | `/api/v1/auth/change-password` | change-password | Bearer |
 | GET | `/api/v1/auth/me` | me | Bearer |
+| PUT | `/api/v1/auth/me` | me | Bearer |
+| GET | `/api/v1/auth/sessions` | sessions | Bearer |
+| DELETE | `/api/v1/auth/sessions/{id}` | id | Bearer |
+| POST | `/api/v1/auth/sessions/revoke-others` | revoke-others | Bearer |
+| POST | `/api/v1/auth/2fa/setup` | setup | Bearer |
+| POST | `/api/v1/auth/2fa/enable` | enable | Bearer |
+| POST | `/api/v1/auth/2fa/disable` | disable | Bearer |
 | GET | `/api/v1/centers` | centers | Bearer |
 | GET | `/api/v1/centers/{id}` | id | Bearer |
 | GET | `/api/v1/centers/{id}/services` | services | Bearer |
@@ -61,6 +71,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | PUT | `/api/v1/center-admin/profile` | profile | Bearer |
 | GET | `/api/v1/center-admin/services` | services | Bearer |
 | POST | `/api/v1/center-admin/services` | services | Bearer |
+| PUT | `/api/v1/center-admin/services/{id}` | id | Bearer |
 | DELETE | `/api/v1/center-admin/services/{id}` | id | Bearer |
 | GET | `/api/v1/center-admin/hours` | hours | Bearer |
 | PUT | `/api/v1/center-admin/hours` | hours | Bearer |
@@ -121,6 +132,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/providers/heartbeat` | heartbeat | Bearer |
 | GET | `/api/v1/providers/nearby` | nearby | Bearer |
 | POST | `/api/v1/providers/kyc` | kyc | Bearer |
+| POST | `/api/v1/providers/kyc/documents` | documents | Bearer |
 | GET | `/api/v1/providers/kyc/me` | me | Bearer |
 | GET | `/api/v1/providers/kyc/{id}/documents` | documents | Bearer |
 | GET | `/api/v1/providers/history` | history | Bearer |
@@ -140,6 +152,8 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/requests/{id}/quotes/{quoteId}/approve` | approve | Bearer |
 | POST | `/api/v1/requests/{id}/dispute` | dispute | Bearer |
 | POST | `/api/v1/requests/{id}/chat` | chat | Bearer |
+| POST | `/api/v1/requests/{id}/photos` | photos | Bearer |
+| POST | `/api/v1/requests/{id}/expand-radius` | expand-radius | Bearer |
 | POST | `/api/v1/reviews/provider/{providerId}` | providerId | Bearer |
 | GET | `/api/v1/reviews/provider/{providerId}` | providerId | Bearer |
 | POST | `/api/v1/reviews/center/{centerId}` | centerId | Bearer |

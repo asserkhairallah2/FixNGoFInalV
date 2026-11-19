@@ -36,8 +36,9 @@ public sealed class CenterAdminController(CenterService svc) : ControllerBase
 {
     [HttpGet("profile")] public async Task<IActionResult> Profile(CancellationToken ct) => Ok(Mappings.Center(await svc.OwnedAsync(this.UserId(), ct)));
     [HttpPut("profile")] public async Task<IActionResult> UpdateProfile([FromBody] CenterProfileRequest req, CancellationToken ct) => Ok(await svc.UpdateProfileAsync(this.UserId(), req, ct));
-    [HttpGet("services")] public async Task<IActionResult> Services(CancellationToken ct) => Ok(await svc.ServicesAsync((await svc.OwnedAsync(this.UserId(), ct)).Id, ct));
+    [HttpGet("services")] public async Task<IActionResult> Services(CancellationToken ct) => Ok(await svc.AllServicesAsync((await svc.OwnedAsync(this.UserId(), ct)).Id, ct));
     [HttpPost("services")] public async Task<IActionResult> AddService([FromBody] CenterServiceRequest req, CancellationToken ct) => Ok(await svc.AddServiceAsync(this.UserId(), req, ct));
+    [HttpPut("services/{id:guid}")] public async Task<IActionResult> UpdateService(Guid id, [FromBody] CenterServiceRequest req, CancellationToken ct) => Ok(await svc.UpdateServiceAsync(this.UserId(), id, req, ct));
     [HttpDelete("services/{id:guid}")] public async Task<IActionResult> RemoveService(Guid id, CancellationToken ct) { await svc.RemoveServiceAsync(this.UserId(), id, ct); return NoContent(); }
     [HttpGet("hours")] public async Task<IActionResult> Hours(CancellationToken ct) => Ok(await svc.WorkingHoursAsync((await svc.OwnedAsync(this.UserId(), ct)).Id, ct));
     [HttpPut("hours")] public async Task<IActionResult> SetHours([FromBody] IReadOnlyList<WorkingHoursRequest> req, CancellationToken ct) { await svc.SetWorkingHoursAsync(this.UserId(), req, ct); return NoContent(); }

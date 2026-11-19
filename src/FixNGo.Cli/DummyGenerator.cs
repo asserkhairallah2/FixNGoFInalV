@@ -72,8 +72,9 @@ public static class DummyGenerator
                 var phone = "+2010" + (10_000_000 + n * 37).ToString("D8");
                 var password = $"{prefix}@{i:D4}";
                 var status = role == Role.Admin ? UserStatus.Active
-                    : n % 47 == 0 ? UserStatus.DeletionRequested
-                    : n % 11 == 0 ? UserStatus.PendingVerification
+                    : n % 67 == 0 ? UserStatus.DeletionRequested
+                    : n % 31 == 0 ? UserStatus.Suspended
+                    : n % 17 == 0 ? UserStatus.PendingVerification
                     : UserStatus.Active;
                 var kyc = role switch
                 {
@@ -112,6 +113,7 @@ public static class DummyGenerator
                 db.Wallets.Add(wallet);
 
                 var notes = new StringBuilder();
+                if (status == UserStatus.Suspended) notes.Append("suspended account; ");
                 if (status == UserStatus.DeletionRequested) notes.Append("account deletion requested; ");
                 if (status == UserStatus.PendingVerification) notes.Append("pending verification; ");
                 if (kyc is KycStatus.Submitted or KycStatus.UnderReview) notes.Append("KYC in queue; ");
@@ -150,18 +152,22 @@ public static class DummyGenerator
                         };
                         db.ProviderProfiles.Add(profile);
                         providers.Add(user);
-                        if (i % 4 == 0)
-                            db.KycApplications.Add(new KycApplication
+                        {
+                            var kycApp = new KycApplication
                             {
                                 User = user, UserId = user.Id, Code = $"KYC-{n:D4}", Status = kyc,
-                                ApplicantType = role.ToString(), ServicesJson = "[]"
-                            });
+                                ApplicantType = role.ToString(), ServicesJson = "[\"general\"]",
+                                ReviewerNote = kyc == KycStatus.ChangesNeeded ? "Driving license photo is unclear."
+                                    : kyc == KycStatus.Rejected ? "Expired commercial documents." : null
+                            };
+                            db.KycApplications.Add(kycApp);
+                        }
                         notes.Append($"online={profile.IsOnline}, jobs={profile.CompletedJobs}");
                         break;
                     case Role.ServiceCenter:
                         var center = new ServiceCenter
                         {
-                            Owner = user, OwnerId = user.Id, Name = $"{Translit(first)} Auto Center",
+                            Owner = user, OwnerId = user.Id, Name = $"{TranslitCap(first)} Auto Center",
                             Address = area, Phone = user.Phone!, Latitude = user.Latitude, Longitude = user.Longitude,
                             RecommendPercent = 70 + rng.Next(30)
                         };
@@ -176,13 +182,16 @@ public static class DummyGenerator
                         center.Technicians.Add(new Technician { Center = center, CenterId = center.Id, Name = $"{first} Senior", Phone = user.Phone! });
                         db.ServiceCenters.Add(center);
                         centers.Add(center);
-                        if (i % 4 == 0)
-                            db.KycApplications.Add(new KycApplication
+                        {
+                            var kycApp = new KycApplication
                             {
                                 User = user, UserId = user.Id, Code = $"KYC-{n:D4}", Status = kyc,
                                 ApplicantType = role.ToString(), BusinessName = center.Name,
-                                Address = area, ServicesJson = "[]"
-                            });
+                                Address = area, ServicesJson = "[\"inspection\",\"oil\"]",
+                                ReviewerNote = kyc == KycStatus.ChangesNeeded ? "Please re-upload commercial registration." : null
+                            };
+                            db.KycApplications.Add(kycApp);
+                        }
                         notes.Append("full service catalog");
                         break;
                 }
@@ -211,15 +220,22 @@ public static class DummyGenerator
         var admin = accounts.First(a => a.Role == Role.Admin).Email;
         var adminUser = db.Users.Local.First(u => u.Email == admin);
 
-        for (var i = 0; i < 120; i++)
+        var activeStatuses = new[]
+        {
+            RequestStatus.Searching, RequestStatus.Offered, RequestStatus.Accepted,
+            RequestStatus.EnRoute, RequestStatus.Arrived, RequestStatus.QuotePending,
+            RequestStatus.QuoteApproved, RequestStatus.Working, RequestStatus.AwaitingPayment,
+            RequestStatus.Disputed
+        };
+
+        for (var i = 0; i < 140; i++)
         {
             var owner = owners[i % owners.Count];
             var provider = providers.Count > 0 ? providers[(i * 7) % providers.Count] : null;
             var kind = i % 2 == 0 ? RequestKind.Tow : RequestKind.Mechanic;
-            var status = i < 8 ? RequestStatus.Searching
-                : i == 8 ? RequestStatus.Disputed
+            var status = i < activeStatuses.Length ? activeStatuses[i]
                 : i % 17 == 0 ? RequestStatus.NoProviders
-                : i % 13 == 0 ? RequestStatus.Cancelled
+                : i % 10 == 0 ? RequestStatus.Cancelled
                 : RequestStatus.Completed;
             var created = DateTime.UtcNow.AddDays(-rng.Next(0, 30)).AddHours(-rng.Next(0, 12));
             var request = new ServiceRequest
@@ -227,62 +243,113 @@ public static class DummyGenerator
                 Code = $"{(kind == RequestKind.Tow ? "FG" : "MR")}-{20260000 + i}", CustomerId = owner.Id,
                 VehicleId = vehicles.Count > 0 ? vehicles[(i * 3) % vehicles.Count].Id : null,
                 Kind = kind, Status = status, Priority = i == 19 ? RequestPriority.P0 : RequestPriority.Normal,
-                AssignedProviderId = provider?.Id, PickupLatitude = 30.04 + i % 30 / 1000.0,
+                AssignedProviderId = status is RequestStatus.Searching or RequestStatus.NoProviders ? null : provider?.Id,
+                PickupLatitude = 30.04 + i % 30 / 1000.0,
                 PickupLongitude = 31.23 + i % 40 / 1000.0, PickupAddress = Areas[i % Areas.Length],
+                DestinationAddress = kind == RequestKind.Tow ? Areas[(i + 1) % Areas.Length] : null,
                 DistanceKm = 2 + rng.Next(18), RadiusKm = 5, SettingsVersion = 1,
                 EstimateMinor = 20_000L + rng.Next(80) * 1000L, CreatedAt = created
             };
             request.Events.Add(new RequestEvent { Request = request, RequestId = request.Id, Status = RequestStatus.Searching, At = created });
+            if (status == RequestStatus.Disputed)
+            {
+                db.Disputes.Add(new Dispute
+                {
+                    Request = request, RequestId = request.Id,
+                    Reason = "Estimate labor charge higher than expected",
+                    ProposedResolution = "Adjust labor to standard rate"
+                });
+            }
             if (status == RequestStatus.Completed)
             {
                 request.AcceptedAt = created.AddMinutes(8);
                 request.CompletedAt = created.AddHours(1);
                 request.Events.Add(new RequestEvent { Request = request, RequestId = request.Id, Status = RequestStatus.Completed, At = request.CompletedAt.Value });
+                var method = i % 3 == 0 ? PaymentMethodType.Cash : i % 5 == 0 ? PaymentMethodType.ApplePay : PaymentMethodType.Card;
                 db.Invoices.Add(new Invoice
                 {
                     Number = $"INV-2026-{i:D4}", RequestId = request.Id, CustomerId = owner.Id,
-                    SubtotalMinor = request.EstimateMinor ?? 25_000L, ServiceFeeMinor = 2_000L,
-                    TotalMinor = (request.EstimateMinor ?? 25_000L) + 2_000L, Status = InvoiceStatus.Paid,
-                    Method = i % 3 == 0 ? PaymentMethodType.Cash : PaymentMethodType.Card, IssuedAt = request.CompletedAt.Value
+                    SubtotalMinor = request.EstimateMinor ?? 25_000L, ServiceFeeMinor = 5_000L,
+                    TotalMinor = (request.EstimateMinor ?? 25_000L) + 5_000L, Status = InvoiceStatus.Paid,
+                    Method = method, IssuedAt = request.CompletedAt.Value
                 });
-                db.Payments.Add(new Payment
+                var payment = new Payment
                 {
-                    RequestId = request.Id, PayerId = owner.Id, AmountMinor = request.EstimateMinor ?? 25_000L,
-                    Method = i % 3 == 0 ? PaymentMethodType.Cash : PaymentMethodType.Card,
-                    Status = PaymentStatus.Succeeded, SettledAt = request.CompletedAt.Value,
+                    RequestId = request.Id, PayerId = owner.Id, AmountMinor = (request.EstimateMinor ?? 25_000L) + 5_000L,
+                    Method = method,
+                    Status = i == 25 ? PaymentStatus.Failed : PaymentStatus.Succeeded,
+                    FailureReason = i == 25 ? "card_declined" : null,
+                    SettledAt = request.CompletedAt.Value,
                     IdempotencyKey = $"DUMMY-PAY-{i:D4}"
-                });
+                };
+                db.Payments.Add(payment);
+                if (method == PaymentMethodType.Cash && i < 30)
+                {
+                    db.PaymentReviews.Add(new PaymentReview
+                    {
+                        Payment = payment, PaymentId = payment.Id, RequestId = request.Id,
+                        RecordedMinor = payment.AmountMinor, CustomerConfirmedMinor = payment.AmountMinor,
+                        ProviderCollectedMinor = payment.AmountMinor,
+                        Status = i % 2 == 0 ? PaymentReviewStatus.Pending : PaymentReviewStatus.Resolved,
+                        Note = i % 2 == 0 ? null : "Verified cash reconciliation"
+                    });
+                }
                 if (provider is not null && i % 4 == 0)
                     db.Reviews.Add(new Review
                     {
                         TargetType = ReviewTargetType.Provider, ProviderId = provider.Id, RequestId = request.Id,
-                        AuthorId = owner.Id, Stars = 3 + rng.Next(3), Text = "Great service.", Recommend = true
+                        AuthorId = owner.Id, Stars = 4 + (i % 2), Text = "Prompt and professional roadside service.", Recommend = true
                     });
+                if (provider is not null && i < 20)
+                {
+                    var thread = new ChatThread { Request = request, RequestId = request.Id, CustomerId = owner.Id, CounterpartId = provider.Id };
+                    thread.Messages.Add(new ChatMessage { Thread = thread, ThreadId = thread.Id, SenderId = provider.Id, Text = "I am heading to your pickup pin now." });
+                    thread.Messages.Add(new ChatMessage { Thread = thread, ThreadId = thread.Id, SenderId = owner.Id, Text = "Thank you, hazard lights are on." });
+                    db.ChatThreads.Add(thread);
+                }
             }
             db.ServiceRequests.Add(request);
         }
 
-        for (var i = 0; i < 40 && centers.Count > 0; i++)
+        var bookingStatuses = new[]
+        {
+            BookingStatus.Pending, BookingStatus.Confirmed, BookingStatus.InProgress,
+            BookingStatus.Completed, BookingStatus.Rejected, BookingStatus.Cancelled, BookingStatus.Expired
+        };
+        var woStatuses = new[]
+        {
+            WorkOrderStatus.Assigned, WorkOrderStatus.InProgress, WorkOrderStatus.ReadyForReview, WorkOrderStatus.Closed
+        };
+
+        for (var i = 0; i < 45 && centers.Count > 0; i++)
         {
             var center = centers[i % centers.Count];
             var service = center.Services.ElementAt(i % center.Services.Count);
             var customer = owners[(i * 11) % owners.Count];
-            var slot = DateTime.UtcNow.AddDays(-rng.Next(0, 30)).AddHours(9 + i % 8);
+            var slot = DateTime.UtcNow.AddDays(-rng.Next(0, 25)).AddHours(9 + i % 8);
+            var bStatus = i < bookingStatuses.Length ? bookingStatuses[i]
+                : i % 9 == 0 ? BookingStatus.Cancelled
+                : i % 7 == 0 ? BookingStatus.Pending
+                : BookingStatus.Completed;
             var booking = new Booking
             {
                 Code = $"BK-{20260000 + i}", CenterId = center.Id, Center = center, CustomerId = customer.Id,
                 Customer = customer, ServiceId = service.Id, Service = service,
                 SlotStart = slot, SlotEnd = slot.AddMinutes(service.DurationMinutes), PriceMinor = service.PriceMinor,
-                Status = i < 4 ? BookingStatus.Pending : i % 9 == 0 ? BookingStatus.Cancelled : BookingStatus.Completed
+                Status = bStatus
             };
-            if (booking.Status == BookingStatus.Completed)
+            if (bStatus is BookingStatus.Confirmed or BookingStatus.InProgress or BookingStatus.Completed)
             {
+                var woStatus = bStatus == BookingStatus.Completed ? WorkOrderStatus.Closed : woStatuses[i % woStatuses.Length];
                 booking.WorkOrders.Add(new WorkOrder
                 {
                     Booking = booking, BookingId = booking.Id, Center = center, CenterId = center.Id,
                     BayId = center.Bays.Count > 0 ? center.Bays.First().Id : null,
-                    Code = $"WO-{20260000 + i}", Status = WorkOrderStatus.Closed
+                    Code = $"WO-{20260000 + i}", Status = woStatus
                 });
+            }
+            if (booking.Status == BookingStatus.Completed)
+            {
                 db.Invoices.Add(new Invoice
                 {
                     Number = $"INV-SC-{i:D4}", BookingId = booking.Id, CustomerId = customer.Id,
@@ -293,18 +360,56 @@ public static class DummyGenerator
             db.Bookings.Add(booking);
         }
 
+        var wdStatuses = Enum.GetValues<WithdrawalStatus>();
+        for (var i = 0; i < Math.Min(10, providers.Count); i++)
+        {
+            var prov = providers[i];
+            var bank = new BankAccount
+            {
+                User = prov, UserId = prov.Id, HolderName = prov.FullName,
+                BankName = "National Bank of Egypt", IbanLast4 = (1000 + i).ToString("D4"),
+                IbanEncrypted = "RUcyOTA...", IsDefault = true, IsVerified = true
+            };
+            db.BankAccounts.Add(bank);
+            db.Withdrawals.Add(new Withdrawal
+            {
+                Code = $"WD-2611-{i + 1:D3}", User = prov, UserId = prov.Id,
+                BankAccount = bank, BankAccountId = bank.Id,
+                AmountMinor = 50_000L, FeeMinor = 0, NetMinor = 50_000L,
+                Status = wdStatuses[i % wdStatuses.Length],
+                FailureReason = wdStatuses[i % wdStatuses.Length] == WithdrawalStatus.Failed ? "Bank rejected transfer" : null
+            });
+        }
+
+        var safetyStatuses = Enum.GetValues<SafetyReportStatus>();
+        for (var i = 0; i < 6; i++)
+        {
+            var reporter = owners[i % owners.Count];
+            db.SafetyReports.Add(new SafetyReport
+            {
+                Category = i % 2 == 0 ? "Driver conduct" : "Pricing dispute",
+                ReporterId = reporter.Id,
+                ReportedUserId = providers.Count > 0 ? providers[i % providers.Count].Id : null,
+                Description = $"Dummy safety report #{i + 1} for review queue.",
+                Status = safetyStatuses[i % safetyStatuses.Length],
+                ReviewNote = safetyStatuses[i % safetyStatuses.Length] == SafetyReportStatus.Open ? null : "Reviewed by trust & safety."
+            });
+        }
+
+        var ticketStatuses = Enum.GetValues<TicketStatus>();
         for (var i = 0; i < 18; i++)
         {
             var owner = owners[(i * 5) % owners.Count];
+            var tStatus = ticketStatuses[i % ticketStatuses.Length];
             var ticket = new SupportTicket
             {
                 Code = $"SUP-{20260000 + i}", UserId = owner.Id, User = owner,
                 Category = i % 2 == 0 ? "Payment" : "Account", Subject = $"Dummy support case {i + 1}",
                 Description = "Generated for the realistic dummy dataset.",
-                Status = i % 3 == 0 ? TicketStatus.Open : i % 3 == 1 ? TicketStatus.Answered : TicketStatus.Closed
+                Status = tStatus
             };
             ticket.Messages.Add(new SupportMessage { Ticket = ticket, TicketId = ticket.Id, FromSupport = false, Text = "I need help with my account." });
-            if (ticket.Status != TicketStatus.Open)
+            if (ticket.Status is TicketStatus.Answered or TicketStatus.Closed)
                 ticket.Messages.Add(new SupportMessage { Ticket = ticket, TicketId = ticket.Id, FromSupport = true, AuthorName = "FixNGo Support", Text = "We have looked into this for you." });
             db.SupportTickets.Add(ticket);
         }
@@ -328,11 +433,21 @@ public static class DummyGenerator
         sb.AppendLine("- **DUMMY DATA — NOT REAL — run `restore-db.bat` to return to your real data**");
         sb.AppendLine($"- Total accounts: {accounts.Count}");
         sb.AppendLine();
-        sb.AppendLine("## Counts by role");
-        sb.AppendLine("| Role | Accounts |");
-        sb.AppendLine("|---|---:|");
+        sb.AppendLine("## Counts by role and status");
+        sb.AppendLine("| Role | Total | Active | Suspended | PendingVerification | DeletionRequested |");
+        sb.AppendLine("|---|---:|---:|---:|---:|---:|");
         foreach (var role in Enum.GetValues<Role>())
-            sb.AppendLine($"| {role} | {accounts.Count(a => a.Role == role)} |");
+        {
+            var rAcc = accounts.Where(a => a.Role == role).ToList();
+            sb.AppendLine($"| {role} | {rAcc.Count} | {rAcc.Count(a => a.Status == UserStatus.Active)} | {rAcc.Count(a => a.Status == UserStatus.Suspended)} | {rAcc.Count(a => a.Status == UserStatus.PendingVerification)} | {rAcc.Count(a => a.Status == UserStatus.DeletionRequested)} |");
+        }
+        sb.AppendLine();
+
+        sb.AppendLine("## Provider KYC status counts");
+        sb.AppendLine("| KYC Status | Count |");
+        sb.AppendLine("|---|---:|");
+        foreach (var kyc in Enum.GetValues<KycStatus>())
+            sb.AppendLine($"| {kyc} | {accounts.Count(a => a.Kyc == kyc)} |");
         sb.AppendLine();
 
         foreach (var role in Enum.GetValues<Role>())
@@ -345,13 +460,22 @@ public static class DummyGenerator
             sb.AppendLine();
         }
 
+        var admin1 = accounts.FirstOrDefault(a => a.Role == Role.Admin);
+        var suspendedUser = accounts.FirstOrDefault(a => a.Status == UserStatus.Suspended);
+        var pendingKyc = accounts.FirstOrDefault(a => a.Kyc == KycStatus.Submitted);
+        var changesKyc = accounts.FirstOrDefault(a => a.Kyc == KycStatus.ChangesNeeded);
+
         sb.AppendLine("## Suggested test scenarios");
-        sb.AppendLine("- Log in as `Admin@0001` to see the admin dashboard with non-zero counters.");
-        sb.AppendLine("- Log in as an owner with an active request to see the live tracking screens.");
-        sb.AppendLine("- Log in as a provider whose KYC status is `Submitted`/`ChangesNeeded` to exercise the verification queue.");
-        sb.AppendLine("- Log in as a provider whose notes include `jobs=` to see wallet and earnings history.");
+        sb.AppendLine($"- **Admin dashboard & queues:** Log in as `{admin1?.Email}` (`{admin1?.Password}`) to see non-zero counters, KYC queue, payment reviews, and safety reports.");
+        sb.AppendLine("- **Active roadside request & tracking:** Log in as the first CarOwner account to view active and completed requests.");
+        if (pendingKyc is not null)
+            sb.AppendLine($"- **Pending KYC application:** Log in as `{pendingKyc.Email}` (`{pendingKyc.Password}`) to see A11 `Submitted` state.");
+        if (changesKyc is not null)
+            sb.AppendLine($"- **Changes-needed KYC application:** Log in as `{changesKyc.Email}` (`{changesKyc.Password}`) to test document replacement on A11/SH18.");
+        if (suspendedUser is not null)
+            sb.AppendLine($"- **Suspended account:** Attempt login as `{suspendedUser.Email}` (`{suspendedUser.Password}`) to verify suspended-account blocking (HTTP 403).");
         sb.AppendLine();
-        sb.AppendLine("Every credential above logs in with `POST /api/v1/auth/login` using its email and password.");
+        sb.AppendLine("Every active credential above logs in with `POST /api/v1/auth/login` using its email and password.");
 
         var path = Path.Combine(paths.Root, "dummy-db.md");
         File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
@@ -364,5 +488,42 @@ public static class DummyGenerator
         Role.TowCaptain => "Tow captains", Role.ServiceCenter => "Service centers", _ => role.ToString()
     };
 
-    private static string Translit(string value) => new(value.Where(char.IsLetterOrDigit).Select(c => c < 128 ? c : 'x').ToArray());
+    private static readonly Dictionary<string, string> KnownArabicNames = new(StringComparer.Ordinal)
+    {
+        ["محمد"] = "mohamed", ["أحمد"] = "ahmed", ["محمود"] = "mahmoud", ["عمر"] = "omar",
+        ["كريم"] = "karim", ["حسن"] = "hassan", ["نور"] = "nour", ["سلمى"] = "salma",
+        ["منى"] = "mona", ["ديانا"] = "diana", ["عبد العزيز"] = "abdelaziz", ["السيد"] = "elsayed",
+        ["مصطفى"] = "mostafa", ["فتحى"] = "fathy", ["على"] = "aly", ["صبرى"] = "sabry"
+    };
+
+    private static string Translit(string value)
+    {
+        if (KnownArabicNames.TryGetValue(value.Trim(), out var mapped)) return mapped;
+        var sb = new StringBuilder();
+        foreach (var c in value)
+        {
+            if (c < 128)
+            {
+                if (char.IsLetterOrDigit(c)) sb.Append(char.ToLowerInvariant(c));
+                continue;
+            }
+            sb.Append(c switch
+            {
+                'ا' or 'أ' or 'إ' or 'آ' or 'ى' or 'ة' or 'ع' => "a",
+                'ب' => "b", 'ت' or 'ط' => "t", 'ث' => "th", 'ج' => "g",
+                'ح' or 'ه' => "h", 'خ' => "kh", 'د' or 'ض' => "d",
+                'ذ' or 'ز' or 'ظ' => "z", 'ر' => "r", 'س' or 'ص' => "s",
+                'ش' => "sh", 'غ' => "gh", 'ف' => "f", 'ق' or 'ك' => "k",
+                'ل' => "l", 'م' => "m", 'ن' => "n", 'و' => "w", 'ي' or 'ئ' => "y",
+                _ => ""
+            });
+        }
+        return sb.Length > 0 ? sb.ToString() : "user";
+    }
+
+    private static string TranslitCap(string value)
+    {
+        var t = Translit(value);
+        return char.ToUpperInvariant(t[0]) + t[1..];
+    }
 }

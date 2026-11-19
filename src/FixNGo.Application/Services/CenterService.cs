@@ -38,6 +38,10 @@ public sealed class CenterService(
         await db.CenterServices.Where(s => s.CenterId == centerId && s.IsActive)
             .OrderBy(s => s.Name).Select(s => Mappings.CenterService(s)).ToListAsync(ct);
 
+    public async Task<IReadOnlyList<CenterServiceDto>> AllServicesAsync(Guid centerId, CancellationToken ct = default) =>
+        await db.CenterServices.Where(s => s.CenterId == centerId)
+            .OrderBy(s => s.Name).Select(s => Mappings.CenterService(s)).ToListAsync(ct);
+
     public async Task<CenterServiceDto> AddServiceAsync(Guid ownerId, CenterServiceRequest req, CancellationToken ct = default)
     {
         var c = await OwnedAsync(ownerId, ct);
@@ -49,6 +53,20 @@ public sealed class CenterService(
             PriceMinor = req.PriceMinor, DurationMinutes = req.DurationMinutes, IsActive = req.IsActive
         };
         db.CenterServices.Add(s);
+        await db.SaveChangesAsync(ct);
+        return Mappings.CenterService(s);
+    }
+
+    public async Task<CenterServiceDto> UpdateServiceAsync(Guid ownerId, Guid serviceId, CenterServiceRequest req, CancellationToken ct = default)
+    {
+        var c = await OwnedAsync(ownerId, ct);
+        var s = await db.CenterServices.FirstOrDefaultAsync(x => x.Id == serviceId && x.CenterId == c.Id, ct)
+            ?? throw new DomainException("center.service_not_found", "Service not found.");
+        if (!string.IsNullOrWhiteSpace(req.Name)) s.Name = req.Name.Trim();
+        if (req.Description is not null) s.Description = req.Description;
+        if (req.PriceMinor > 0) s.PriceMinor = req.PriceMinor;
+        if (req.DurationMinutes >= 5) s.DurationMinutes = req.DurationMinutes;
+        s.IsActive = req.IsActive;
         await db.SaveChangesAsync(ct);
         return Mappings.CenterService(s);
     }
@@ -168,13 +186,14 @@ public sealed class CenterService(
 
     public async Task<IReadOnlyList<BookingDto>> BookingsAsync(Guid callerId, bool isAdmin, CancellationToken ct = default)
     {
-        var q = db.Bookings.AsQueryable();
+        var q = db.Bookings.Include(b => b.Center).Include(b => b.Service).Include(b => b.Customer).AsQueryable();
         if (!isAdmin)
         {
             var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.OwnerId == callerId, ct);
             q = center is null ? q.Where(b => b.CustomerId == callerId) : q.Where(b => b.CustomerId == callerId || b.CenterId == center.Id);
         }
-        return await q.OrderByDescending(b => b.CreatedAt).Take(200).Select(b => Mappings.Booking(b)).ToListAsync(ct);
+        var list = await q.OrderByDescending(b => b.CreatedAt).Take(200).ToListAsync(ct);
+        return list.Select(Mappings.Booking).ToList();
     }
 
     public async Task<BookingDto> GetBookingAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
@@ -185,7 +204,8 @@ public sealed class CenterService(
 
     private async Task<Booking> VisibleBooking(Guid callerId, bool isAdmin, Guid id, CancellationToken ct)
     {
-        var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == id, ct)
+        var b = await db.Bookings.Include(x => x.Center).Include(x => x.Service).Include(x => x.Customer)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("booking.not_found", "Booking not found.");
         var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.Id == b.CenterId, ct);
         if (!isAdmin && b.CustomerId != callerId && center?.OwnerId != callerId)

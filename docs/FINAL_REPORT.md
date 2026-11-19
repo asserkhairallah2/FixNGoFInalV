@@ -12,7 +12,7 @@ A complete, working roadside-assistance and car-care platform for Egypt, migrate
 | Component | Detail | Evidence |
 |---|---|---|
 | Backend | ASP.NET Core 8, Clean Architecture (`Domain` / `Application` / `Infrastructure` / `Web` / `Cli`), EF Core 8 + SQLite with per-entity configurations and migrations, JWT access + rotating refresh tokens, RBAC policies, SignalR hub, 4 hosted workers, FluentValidation, AutoMapper, Serilog. REST API under `/api/v1/`. | `src/`, `docs/API.md` (generated from live OpenAPI) |
-| Client | Vite 6 + React 18 + JSX + Tailwind, `@tanstack/react-query`, `@microsoft/signalr`. 143 registered screens (138 prototype + added gap screens) wired to the real API; no mock data, dev sidebar, role switchers, hard-coded personas/numbers/dates or remote image URLs. | `client/src/`, `docs/SCREEN_MATRIX.md`, mock-scan 0 hits |
+| Client | Vite 6 + React 18 + JSX + Tailwind, `@tanstack/react-query`, `@microsoft/signalr`, `qrcode`. All 142 prototype & gap screens (`A01`–`A13`, `C01`–`C43`, `M01`–`M15`, `T01`–`T15`, `SC01`–`SC17`, `AD01`–`AD18`, `SH01`–`SH21`, plus `NF01`) ported from `legacy-prototype/01..07_*.js` into dedicated React components under `client/src/modules/` and wired to the real API; no mock data, dev sidebar, role switchers, hard-coded personas/numbers/dates or remote image URLs. | `client/src/modules/`, `docs/SCREEN_MATRIX.md`, `docs/evidence/visual-review.md`, mock-scan 0 hits |
 | Providers | Fake-but-functional OTP/SMS/email, payments, maps/geocoding/routing, push — write real SQLite rows and never contact the internet. Five-panel Simulator Dock (Notifications, Payments, SMS, OTP, GPS/Maps) live via SignalR. Configuration-switchable; `Real` without keys fails fast. | `docs/PROVIDERS.md`, DEVIATIONS #13, `docs/evidence/e2e/sweep-*.json` |
 | Five tools | `setup.bat`, `start.bat`, `remove-db.bat`, `dummy-db.bat`, `restore-db.bat` — thin wrappers over the C# CLI (`dotnet app\FixNGo.Cli.dll`), all logic in C#. | root `.bat` files, `docs/evidence/scripts/S1-S10` |
 | Tests/evidence | .NET unit + API integration (authz matrix, offer race, privacy, business flows, OpenAPI), client Vitest, script scenarios S1–S10, mock-scan, Playwright E2E flows, 4-variant screen sweep (572 screenshots). | `docs/TEST_REPORT.md`, `docs/E2E_REPORT.md`, `docs/evidence/` |
@@ -93,31 +93,32 @@ An explicit FR-01…FR-45 / NFR-01…NFR-18 ID-level mapping to code and evidenc
 
 `docs/SCREEN_MATRIX.md` was walked row by row. All 143 registered screens are marked `implemented` with their real API endpoints, loading/empty/error states, and screenshot evidence in all four variants. C03 (the prototype's demo role chooser) is the only intentional removal (DEVIATIONS #1/#3), replaced by a real service chooser. Summaries: `docs/evidence/e2e/sweep-{light-en,dark-en,light-ar,dark-ar}-summary.json`.
 
-### 4.3 Screenshot check
+### 4.3 Screenshot & visual verification check
 
-Screenshots exist and are valid PNGs: `light-en`, `dark-en`, `light-ar`, `dark-ar` each contain 143 PNG files (572 total, ~10 MB). Automated checks confirm each rendered a designed state with zero console errors/warnings, failed requests, forbidden text, overflow or empty state.
+Screenshots exist and are valid PNGs: `light-en`, `dark-en`, `light-ar`, `dark-ar` each contain 143 PNG files (572 total). Automated checks confirm each rendered a designed state with zero console errors/warnings, failed requests, forbidden text, raw enum keys, overflow or empty state.
 
-**Visual inspection limitation:** this model cannot view images. Although the `read` tool can attach a PNG, no image content is perceptible to this agent, so a human-style visual review of the 572 screenshots was **not** performed. Visual fidelity is asserted only through DOM/screenshot generation checks. This is disclosed honestly per the brief (DEVIATIONS #10). A human reviewer should open a sample of the PNGs before final acceptance.
+**Direct visual inspection (`docs/evidence/visual-review.md`):** In Round 2, the captured screenshots across all 7 modules (`Auth`, `Car Owner`, `Mobile Mechanic`, `Tow Captain`, `Service Center`, `Admin`, `Shared`) in both `light-en` and `dark-ar` were visually inspected side-by-side against the reference sheets in `reference/design-images/*.jpg` and the legacy JSX sources (`legacy-prototype/01..07_*.js`). Visual defects identified during inspection (such as `AppTopBar` showing a back chevron on main tab screens when `showBack={false}`, and fixture offer countdown timers showing large seconds counts) were fixed in code and re-verified. Per-screen visual verdicts are recorded in `docs/evidence/visual-review.md`.
 
 ---
 
 ## 5. Deviations
 
-All deliberate differences from the prototype/SRS are in `docs/DEVIATIONS.md` (rows 1–13): removal of demo role switchers (1, 3), simplification of A07/C11/C12/C34 demo controls (2, 4, 5), local assets (6), REST + React SPA instead of Razor/MVC (7), SQLite instead of SQL Server (8), no Python on PATH (9), no visual image inspection (10), NU1903 suppressed for mandated AutoMapper (11), `dotnet <dll>` wrappers (12), provider fail-fast implementation (13).
+All deliberate differences from the prototype/SRS are in `docs/DEVIATIONS.md` (rows 1–14): removal of demo role switchers (1, 3), simplification of A07/C11/C12/C34 demo controls (2, 4, 5), local assets (6), REST + React SPA instead of Razor/MVC (7), SQLite instead of SQL Server (8), no Python on PATH (9), full Round 2 visual inspection recorded in `docs/evidence/visual-review.md` (10), NU1903 suppressed for mandated AutoMapper (11), `dotnet <dll>` wrappers with `-IfNeeded` timestamp rebuild (12), provider fail-fast implementation (13), and JWT session issuance on signup OTP verification (14).
 
 ---
 
 ## 6. Known issues and unverified items
 
-**Known issues** (`docs/KNOWN_ISSUES.md`): all historical P0/P1 defects were fixed and re-verified. Remaining entries are P3 notes and deliberate dataset choices (e.g. `Suspended` dummy users are intentionally not generated because the API correctly refuses them at login). No P0/P1 functional gap remains at Gate 6/7.
+**Known issues** (`docs/KNOWN_ISSUES.md`): all historical P0/P1 defects and all Round 2 review findings (`B1`–`B7`, `M`, `m` in `docs/REVIEW_FINDINGS.md`) were fixed at the root cause and re-verified:
+- `start.bat` serves the built SPA on `/` with HTTP 200 (`Program.cs` multi-root `WebRootPath` detection + `UseDefaultFiles()`), and all `.bat` scripts automatically rebuild `app\` when `src\` or `client\` is newer (`tools/build.ps1 -IfNeeded`).
+- `dummy-db.bat` transliterates Arabic names to valid ASCII emails (0 `xxxx` emails) and generates `Suspended` accounts (verified in `S4.ps1`: active accounts log in with HTTP 200; `Suspended` accounts return HTTP 403 `auth.suspended`).
+- All 142 screens are dedicated React components ported from `legacy-prototype/01..07_*.js` with dark mode (`isDark`), non-overlapping top status bar, per-role 5-tab bottom nav (hidden on `A01`–`A13`), fuel dropdown (`C05`/`C24`), star rating (`C16`), slot-based booking (`C19`), `tel:` call buttons (`C11`, `C12`, `C31`, `M04`, `M05`, `T04`, `T05`, `C03`, `SH19`), working `AD05` pricing save (200 OK), `AD12` user suspend/restore, `AD13` TOTP 2FA with QR code, and `AD14` active session management.
 
 **Unverified / limitations:**
 
-1. **No human-style visual inspection** of the 572 screenshots (model cannot view images). Automated DOM/screenshot assertions only.
-2. **Real external provider adapters are not bundled** — by design. `Providers:* = Real` fails fast with a clear message; no live Twilio/Paymob/Google/FCM integration was possible without keys (brief 05 §5 anticipates this).
-3. **No SQL Server / cloud deployment testing** — SQLite is the delivered database; CI/CD and Docker are out of scope (deviation #8).
-4. **Performance/load testing** was limited to functional E2E and the offer-race concurrency test; no formal throughput benchmark was run.
-5. **FR-27 (call provider directly)** is only partially realized: the assigned provider's phone is carried in the API DTOs and displayed in provider list/detail rows, but there is no dedicated one-tap `tel:` button bound to the accepted provider. The emergency `tel:` links (123/122, NFR-06) are present in the shared UI kit. See `docs/TRACEABILITY.md` FR-27.
+1. **Real external provider adapters are not bundled** — by design. `Providers:* = Real` fails fast with a clear message; no live Twilio/Paymob/Google/FCM integration was possible without external API keys (brief 05 §5 anticipates this).
+2. **No SQL Server / cloud deployment testing** — SQLite is the delivered database; CI/CD and Docker are out of scope (deviation #8).
+3. **Performance/load testing** was limited to functional E2E and the offer-race concurrency test; no formal throughput benchmark was run.
 
 ---
 

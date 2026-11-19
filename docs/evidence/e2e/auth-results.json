@@ -6,9 +6,18 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "62827271-2e47-4854-96e2-e03f29f261b3",
+      "id": "33db9201-c7a9-4800-8eb7-764f289984c5",
+      "fullName": "Gate Two Administrator",
       "email": "admin@gate2.test",
-      "role": "Admin"
+      "phone": "+201000000001",
+      "role": "Admin",
+      "status": "Active",
+      "kycStatus": "None",
+      "language": "en",
+      "theme": "light",
+      "twoFactorEnabled": false,
+      "isSuperAdmin": true,
+      "otpOnLogin": false
     },
     "hash": "#/AD01"
   },
@@ -19,9 +28,18 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "626edd02-d73c-4ce2-a4f5-4e6fb3bc6106",
+      "id": "3e6edea5-4fd4-4ae9-9279-e6b1d157f2ed",
+      "fullName": "Gate Two CarOwner",
       "email": "owner@gate2.test",
-      "role": "CarOwner"
+      "phone": "+201000000003",
+      "role": "CarOwner",
+      "status": "Active",
+      "kycStatus": "None",
+      "language": "en",
+      "theme": "light",
+      "twoFactorEnabled": false,
+      "isSuperAdmin": false,
+      "otpOnLogin": false
     },
     "hash": "#/C02"
   },
@@ -32,9 +50,21 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "ce40087e-9c1c-474b-b6bd-3e656f7904d9",
+      "id": "3ce51310-db70-4e4b-8ae5-0fa6b3dde1d7",
+      "fullName": "Gate Two Mechanic",
       "email": "mechanic@gate2.test",
-      "role": "Mechanic"
+      "phone": "+201000000004",
+      "role": "Mechanic",
+      "status": "Active",
+      "kycStatus": "Approved",
+      "language": "en",
+      "theme": "light",
+      "twoFactorEnabled": false,
+      "isSuperAdmin": false,
+      "otpOnLogin": false,
+      "latitude": 30.0444,
+      "longitude": 31.2357,
+      "areaLabel": "Cairo, Egypt"
     },
     "hash": "#/M01"
   },
@@ -45,9 +75,18 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "e008bf28-04a3-4930-a62f-5da919cb9488",
+      "id": "348a3063-8c1f-4c62-ab22-f0f3820b7e4e",
+      "fullName": "Gate Two TowCaptain",
       "email": "captain@gate2.test",
-      "role": "TowCaptain"
+      "phone": "+201000000005",
+      "role": "TowCaptain",
+      "status": "Active",
+      "kycStatus": "Approved",
+      "language": "en",
+      "theme": "light",
+      "twoFactorEnabled": false,
+      "isSuperAdmin": false,
+      "otpOnLogin": false
     },
     "hash": "#/T01"
   },
@@ -58,9 +97,18 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "c5ad2892-1e40-476e-92e8-7dcd9b2b898b",
+      "id": "3aef1827-159b-439e-976a-5dc54eb5a361",
+      "fullName": "Gate Two ServiceCenter",
       "email": "center@gate2.test",
-      "role": "ServiceCenter"
+      "phone": "+201000000006",
+      "role": "ServiceCenter",
+      "status": "Active",
+      "kycStatus": "Approved",
+      "language": "en",
+      "theme": "light",
+      "twoFactorEnabled": false,
+      "isSuperAdmin": false,
+      "otpOnLogin": false
     },
     "hash": "#/SC01"
   }

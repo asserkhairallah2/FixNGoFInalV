@@ -15,11 +15,25 @@ using Serilog;
 using System.Text;
 using System.Text.Json.Serialization;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // ---- Runtime paths & logging ----
 var paths = new RuntimePaths();
 paths.EnsureDirectories();
+
+var candidateWebRoots = new[]
+{
+    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
+    Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+    Path.Combine(paths.Root, "app", "web", "wwwroot"),
+    Path.Combine(paths.Root, "src", "FixNGo.Web", "wwwroot")
+};
+var resolvedWebRoot = candidateWebRoots.FirstOrDefault(d => File.Exists(Path.Combine(d, "index.html")))
+    ?? candidateWebRoots.FirstOrDefault(Directory.Exists);
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    WebRootPath = resolvedWebRoot
+});
 // Own our PID file so the start/stop helpers can manage the server process.
 File.WriteAllText(paths.PidPath, Environment.ProcessId.ToString());
 AppDomain.CurrentDomain.ProcessExit += (_, _) =>
@@ -119,7 +133,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             OnMessageReceived = ctx =>
             {
                 var token = ctx.Request.Query["access_token"];
-                if (!string.IsNullOrEmpty(token) && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                if (!string.IsNullOrEmpty(token) &&
+                    (ctx.HttpContext.Request.Path.StartsWithSegments("/hubs") ||
+                     ctx.HttpContext.Request.Path.StartsWithSegments("/api/v1/files")))
                     ctx.Token = token;
                 return Task.CompletedTask;
             }
@@ -166,6 +182,7 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 app.UseMiddleware<FixNGo.Web.Middleware.ExceptionMiddleware>();
+app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseCors("spa");
 app.UseSwagger();

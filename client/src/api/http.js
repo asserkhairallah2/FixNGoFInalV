@@ -14,6 +14,11 @@ export function setTokens(access, refresh) {
 
 export function clearTokens() { setTokens(null, null); }
 export function hasToken() { return !!accessToken; }
+export function getToken() { return accessToken; }
+export function fileUrl(fileId) {
+  if (!fileId) return '';
+  return `/api/v1/files/${fileId}${accessToken ? `?access_token=${encodeURIComponent(accessToken)}` : ''}`;
+}
 
 export class ApiError extends Error {
   constructor(status, payload, code) {
@@ -42,7 +47,8 @@ async function refresh() {
 export async function api(path, options = {}) {
   const { method = 'GET', body, idempotencyKey, _retried = false, ...rest } = options;
   const headers = { ...(rest.headers || {}) };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
 
@@ -55,7 +61,7 @@ export async function api(path, options = {}) {
   let res;
   try {
     res = await fetch(path.startsWith('http') ? path : `/api/v1${path}`, {
-      method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, ...rest
+      method, headers, body: body !== undefined ? (isForm ? body : JSON.stringify(body)) : undefined, ...rest
     });
   } catch (e) {
     throw new ApiError(0, { detail: 'Connection interrupted.' }, 'network.offline');
@@ -77,3 +83,8 @@ export const get = (p, o) => api(p, { ...o, method: 'GET' });
 export const post = (p, b, o) => api(p, { ...o, method: 'POST', body: b });
 export const put = (p, b, o) => api(p, { ...o, method: 'PUT', body: b });
 export const del = (p, o) => api(p, { ...o, method: 'DELETE' });
+export async function uploadFile(file, purpose = 'document') {
+  const fd = new FormData();
+  fd.append('file', file);
+  return api(`/files/upload?purpose=${encodeURIComponent(purpose)}`, { method: 'POST', body: fd });
+}

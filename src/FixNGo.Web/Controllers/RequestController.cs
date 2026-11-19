@@ -55,4 +55,14 @@ public sealed class RequestController(RequestService requests, OfferService offe
     [HttpPost("{id:guid}/chat")]
     public async Task<IActionResult> StartChat(Guid id, [FromBody] ChatThreadStartRequest? req, CancellationToken ct)
         => Ok(await chat.StartAsync(this.UserId(), (req ?? new ChatThreadStartRequest()) with { RequestId = id }, ct));
+
+    [HttpPost("{id:guid}/photos")]
+    public async Task<IActionResult> AddPhoto(Guid id, [FromBody] AddRequestPhotoDto req, CancellationToken ct)
+        => Ok(await requests.AddPhotoAsync(this.UserId(), this.IsAdmin(), id, req.FileId, ct));
+
+    [HttpPost("{id:guid}/expand-radius")]
+    public async Task<IActionResult> ExpandRadius(Guid id, CancellationToken ct)
+        => Ok(await requests.ExpandRadiusAsync(this.UserId(), this.IsAdmin(), id, ct));
 }
+
+public sealed record AddRequestPhotoDto(Guid FileId);

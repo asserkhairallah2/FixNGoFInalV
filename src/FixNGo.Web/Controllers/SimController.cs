@@ -28,8 +28,6 @@ public sealed class SimulatorEnabledAttribute : Attribute, IAuthorizationFilter
             context.Result = new NotFoundResult();
             return;
         }
-        if (context.HttpContext.User.Identity?.IsAuthenticated != true)
-            context.Result = new UnauthorizedResult();
     }
 }
 

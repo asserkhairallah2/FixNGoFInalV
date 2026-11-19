@@ -18,11 +18,15 @@ public sealed record LookupsDto(
 
 // ---- KYC / provider profile ----
 public sealed record KycDocumentInput(string DocumentType, Guid FileId);
-public sealed record SubmitKycRequest(string ApplicantType, string? BusinessName, string? Address,
-    double? Latitude, double? Longitude, IReadOnlyList<Guid> Services, IReadOnlyList<KycDocumentInput> Documents);
-public sealed record UpdateProviderProfileRequest(int YearsExperience, IReadOnlyList<Guid> Expertise,
-    double? Latitude, double? Longitude, double CoverageRadiusKm, string? CoverageArea, string? TruckMake,
-    string? TruckModel, string? TruckPlate, string? TruckType, decimal? TruckCapacityTonnes);
+public sealed record SubmitKycRequest(string ApplicantType, string? BusinessName = null, string? Address = null,
+    double? Latitude = null, double? Longitude = null, IReadOnlyList<Guid>? Services = null,
+    IReadOnlyList<KycDocumentInput>? Documents = null, string? FullName = null, string? Phone = null,
+    int? YearsExperience = null, string? TruckMake = null, string? TruckModel = null,
+    string? TruckType = null, decimal? TruckCapacityTonnes = null, string? TruckPlate = null);
+public sealed record UpdateProviderProfileRequest(int YearsExperience, IReadOnlyList<Guid>? Expertise = null,
+    double? Latitude = null, double? Longitude = null, double CoverageRadiusKm = 10, string? CoverageArea = null,
+    string? TruckMake = null, string? TruckModel = null, string? TruckPlate = null, string? TruckType = null,
+    decimal? TruckCapacityTonnes = null, string? FullName = null, string? Phone = null, string? Email = null);
 public sealed record UpdateProfileRequest(string FullName, string? Phone, string Language, string Theme, bool OtpOnLogin);
 
 // ---- Center management ----

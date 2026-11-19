@@ -381,13 +381,28 @@ public sealed class SimulatorService(
             toLat = target.Latitude;
             toLon = target.Longitude;
         }
-        var fromLat = profile.Latitude ?? user?.Latitude;
-        var fromLon = profile.Longitude ?? user?.Longitude;
-        if (fromLat is null || fromLon is null || toLat is null || toLon is null)
-            throw new DomainException("sim.gps_missing", "Both endpoints need coordinates.");
+        if (toLat is null || toLon is null)
+        {
+            var activeReq = await db.ServiceRequests
+                .Where(r => r.AssignedProviderId == req.ProviderId && r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled)
+                .OrderByDescending(r => r.CreatedAt)
+                .FirstOrDefaultAsync(ct);
+            if (activeReq is not null)
+            {
+                toLat = activeReq.PickupLatitude;
+                toLon = activeReq.PickupLongitude;
+            }
+            else
+            {
+                toLat ??= 30.0444;
+                toLon ??= 31.2357;
+            }
+        }
+        var fromLat = profile.Latitude ?? user?.Latitude ?? (toLat.Value - 0.015);
+        var fromLon = profile.Longitude ?? user?.Longitude ?? (toLon.Value - 0.015);
         ValidateCoordinates(toLat.Value, toLon.Value);
 
-        var route = BuildRoute(fromLat.Value, fromLon.Value, toLat.Value, toLon.Value, req.Steps, req.SpeedKmh);
+        var route = BuildRoute(fromLat, fromLon, toLat.Value, toLon.Value, req.Steps, req.SpeedKmh);
         var last = route.Points[^1];
         profile.Latitude = last.Latitude;
         profile.Longitude = last.Longitude;

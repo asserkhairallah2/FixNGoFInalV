@@ -25,12 +25,8 @@ echo   FixNGo - Restore real database
 echo ===================================================
 call :log "restore-db.bat started (args: %*)"
 
-if not exist "app\FixNGo.Cli.dll" (
-  call :log "build output missing -> building"
-  echo [BUILD] Building application first...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1"
-  if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
-)
+powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1" -IfNeeded
+if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
 
 echo [WARN] Anything created while in dummy mode will be discarded.
 if not defined YES (

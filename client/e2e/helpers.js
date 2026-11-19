@@ -95,7 +95,11 @@ export async function settleOnScreen(page) {
 export function screenDiagnostics(page) {
   return page.evaluate(() => {
     const text = document.body.innerText || '';
-    const bad = ['undefined', 'NaN', '[object Object]'].filter((s) => text.includes(s));
+    const bad = [
+      'undefined', 'NaN', '[object Object]',
+      'flatbed_tow', 'battery_jump', 'tire_change', 'fuel_delivery', 'engine_stall',
+      'Advance Trip Status', 'Simulate Declined Payment', '13:00 AM'
+    ].filter((s) => text.includes(s));
     const frame = document.querySelector('.phone-frame');
     const overflow = {
       document: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -105,7 +109,7 @@ export function screenDiagnostics(page) {
       '[data-testid="screen"],[data-testid="view-splash"],[data-testid="view-hero"],' +
       '[data-testid="view-login"],[data-testid="not-found"],[data-testid="setup-needed"],' +
       '[data-testid="empty-state"],[data-testid="error-state"]'
-    );
+    ) && text.trim().length >= 15;
     return { bad, overflow, hasContent, chars: text.length };
   });
 }

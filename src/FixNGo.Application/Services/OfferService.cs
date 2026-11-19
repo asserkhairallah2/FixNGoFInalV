@@ -151,9 +151,33 @@ public sealed class OfferService(
         return Mappings.Offer(offer);
     }
 
-    public async Task<IReadOnlyList<OfferDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default) =>
-        await db.Offers.Where(o => o.ProviderId == providerId && o.Status == OfferStatus.Pending)
-            .OrderBy(o => o.ExpiresAt).Select(o => Mappings.Offer(o)).ToListAsync(ct);
+    public async Task<IReadOnlyList<OfferDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default)
+    {
+        var list = await db.Offers
+            .Include(o => o.Request).ThenInclude(r => r.Customer)
+            .Include(o => o.Request).ThenInclude(r => r.Vehicle)
+            .Where(o => o.ProviderId == providerId && o.Status == OfferStatus.Pending)
+            .OrderBy(o => o.ExpiresAt).ToListAsync(ct);
+        return list.Select(o =>
+        {
+            var dto = Mappings.Offer(o);
+            var req = o.Request;
+            if (req is null) return dto;
+            var firstName = req.Customer?.FullName?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return dto with
+            {
+                RequestCode = req.Code,
+                CustomerFirstName = firstName,
+                PickupArea = req.PickupAddress,
+                DestinationAddress = req.DestinationAddress,
+                VehicleMake = req.Vehicle?.Make,
+                VehicleModel = req.Vehicle?.Model,
+                VehicleYear = req.Vehicle?.Year,
+                VehicleColor = req.Vehicle?.Color,
+                Problem = req.Problem
+            };
+        }).ToList();
+    }
 
     public async Task<IReadOnlyList<OfferDto>> ForRequestAsync(Guid callerId, bool isAdmin, Guid requestId, CancellationToken ct = default)
     {

@@ -136,8 +136,9 @@ if (-not (Invoke-Step -Name '02 dotnet test (Release)' -FileName 'dotnet' `
 if (-not (Invoke-Step -Name '03 npm test (client)' -FileName 'cmd.exe' `
         -Arguments ('/d /s /c "npm.cmd test"') -WorkingDirectory $client -TimeoutSec 900)) { $allOk = $false }
 
-if (-not (Invoke-Step -Name '04 npm run build (client)' -FileName 'cmd.exe' `
-        -Arguments ('/d /s /c "npm.cmd run build"') -WorkingDirectory $client -TimeoutSec 900)) { $allOk = $false }
+$buildScript = Join-Path $root 'tools\build.ps1'
+if (-not (Invoke-Step -Name '04 npm run build + publish app/' -FileName 'powershell' `
+        -Arguments ('-NoProfile -ExecutionPolicy Bypass -File "' + $buildScript + '"') -TimeoutSec 1200)) { $allOk = $false }
 
 if (-not (Invoke-Step -Name '05 mock-scan.ps1' -FileName 'powershell' `
         -Arguments ('-NoProfile -ExecutionPolicy Bypass -File "' + $mockScan + '"') -TimeoutSec 600)) { $allOk = $false }

@@ -21,13 +21,30 @@ public sealed class AdminController(AdminService svc, ProviderService providers,
     }
     [HttpPost("users/{id:guid}/suspend")] public async Task<IActionResult> Suspend(Guid id, [FromBody] SuspendRequest req, CancellationToken ct) => Ok(await svc.SuspendAsync(this.UserId(), id, req, ct));
     [HttpPost("users/{id:guid}/restore")] public async Task<IActionResult> Restore(Guid id, CancellationToken ct) => Ok(await svc.RestoreAsync(this.UserId(), id, ct));
+    [HttpGet("sessions")] public async Task<IActionResult> MySessions(CancellationToken ct) => Ok(await svc.SessionsAsync(this.UserId(), ct));
     [HttpGet("users/{id:guid}/sessions")] public async Task<IActionResult> Sessions(Guid id, CancellationToken ct) => Ok(await svc.SessionsAsync(id, ct));
     [HttpDelete("sessions/{id:guid}")] public async Task<IActionResult> RevokeSession(Guid id, CancellationToken ct) { await svc.RevokeSessionAsync(this.UserId(), id, ct); return NoContent(); }
 
     [HttpGet("settings")] public async Task<IActionResult> Settings(CancellationToken ct) => Ok(await svc.SettingsAsync(ct));
-    [HttpPut("settings")] public async Task<IActionResult> UpdateSettings([FromBody] UpdateSettingsRequest req, CancellationToken ct) => Ok(await svc.UpdateSettingsAsync(this.UserId(), req, ct));
+    [HttpPut("settings")]
+    public async Task<IActionResult> UpdateSettings([FromBody] System.Text.Json.JsonElement body, CancellationToken ct)
+    {
+        var opts = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        PricingSettings pricing;
+        if (body.ValueKind == System.Text.Json.JsonValueKind.Object && body.TryGetProperty("pricing", out var nested))
+            pricing = System.Text.Json.JsonSerializer.Deserialize<PricingSettings>(nested.GetRawText(), opts) ?? new PricingSettings();
+        else
+            pricing = System.Text.Json.JsonSerializer.Deserialize<PricingSettings>(body.GetRawText(), opts) ?? new PricingSettings();
+        return Ok(await svc.UpdateSettingsAsync(this.UserId(), new UpdateSettingsRequest(pricing), ct));
+    }
 
     [HttpGet("kyc/queue")] public async Task<IActionResult> KycQueue(CancellationToken ct) => Ok(await providers.KycQueueAsync(ct));
+    [HttpGet("kyc/{id:guid}")]
+    public async Task<IActionResult> GetKyc(Guid id, CancellationToken ct)
+    {
+        var item = await providers.KycByIdAsync(id, ct);
+        return item is null ? NotFound() : Ok(item);
+    }
     [HttpPost("kyc/{id:guid}/review")] public async Task<IActionResult> ReviewKyc(Guid id, [FromBody] ReviewKycRequest req, CancellationToken ct) => Ok(await providers.ReviewKycAsync(this.UserId(), id, req, ct));
 
     [HttpGet("payment-reviews")] public async Task<IActionResult> PaymentReviews(CancellationToken ct) => Ok(await svc.PaymentReviewsAsync(ct));

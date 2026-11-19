@@ -52,7 +52,14 @@ public static class Mappings
         r.Id, r.Code, r.Kind, r.Priority, r.Status, r.CustomerId, r.VehicleId,
         r.PickupLatitude, r.PickupLongitude, r.PickupAddress, r.DestinationLatitude, r.DestinationLongitude,
         r.DistanceKm, r.EstimateMinor, r.QuoteMinor, r.PaymentMethod, r.CreatedAt,
-        StateMachines.RequestStep(r.Status), r.CancellationReason);
+        StateMachines.RequestStep(r.Status), r.CancellationReason,
+        r.AssignedProviderId, r.AssignedProvider?.FullName,
+        r.AssignedProviderId is not null ? r.AssignedProvider?.Phone : null,
+        null, null, null, null,
+        r.Customer?.FullName, r.AssignedProviderId is not null ? r.Customer?.Phone : null,
+        r.Vehicle?.Make, r.Vehicle?.Model, r.Vehicle?.Year, r.Vehicle?.Color, r.Vehicle?.Plate,
+        r.DestinationAddress, r.Problem, r.Note,
+        r.Photos?.Select(p => p.FileId).ToList());
 
     public static RequestEventDto Event(RequestEvent e) => new(e.Status, e.Note, e.At);
 
@@ -77,22 +84,30 @@ public static class Mappings
     public static WithdrawalDto Withdrawal(Withdrawal w) => new(w.Id, w.Code, w.AmountMinor, w.FeeMinor, w.NetMinor, w.Status, w.FailureReason);
 
     public static CenterDto Center(ServiceCenter c) => new(c.Id, c.Name, c.Address, c.Rating, c.RatingCount,
-        c.RecommendPercent, c.Latitude, c.Longitude, c.Description);
+        c.RecommendPercent, c.Latitude, c.Longitude, c.Description, c.Phone);
 
-    public static CenterServiceDto CenterService(FixNGo.Domain.Entities.CenterService s) => new(s.Id, s.Name, s.PriceMinor, s.DurationMinutes);
+    public static CenterServiceDto CenterService(FixNGo.Domain.Entities.CenterService s) =>
+        new(s.Id, s.Name, s.PriceMinor, s.DurationMinutes, s.Description, s.IsActive);
 
     public static BookingDto Booking(Booking b) => new(b.Id, b.Code, b.CenterId, b.ServiceId, b.CustomerId,
-        b.SlotStart, b.SlotEnd, b.PriceMinor, b.Status, b.Note);
+        b.SlotStart, b.SlotEnd, b.PriceMinor, b.Status, b.Note,
+        b.Center?.Name, b.Service?.Name, b.Service?.DurationMinutes,
+        b.Customer?.FullName, b.Customer?.Phone);
 
-    public static WorkOrderDto WorkOrder(WorkOrder w) => new(w.Id, w.Code, w.BookingId, w.CenterId, w.Status, w.Notes);
+    public static WorkOrderDto WorkOrder(WorkOrder w) => new(w.Id, w.Code, w.BookingId, w.CenterId, w.Status, w.Notes,
+        w.Booking?.Code, w.Booking?.Service?.Name, w.Booking?.Customer?.FullName, null,
+        w.BayId, null, w.TechnicianId, null, w.SupervisorReviewed, w.StartedAt);
 
     public static DisputeDto Dispute(Dispute d) => new(d.Id, d.RequestId, d.Reason, d.ProposedResolution, d.Resolved);
 
     public static KycApplicationDto Kyc(KycApplication a) => new(a.Id, a.Code, a.Status, a.ApplicantType,
-        a.BusinessName, a.ReviewerNote, a.CreatedAt);
+        a.BusinessName, a.ReviewerNote, a.CreatedAt, a.UserId, a.User?.FullName, a.User?.Email, a.User?.Phone,
+        a.Address, a.Documents?.Select(d => new KycDocumentDto(d.Id, d.DocumentType, d.FileId, d.Status.ToString(), d.ReviewNote, d.CreatedAt)).ToList());
 
     public static ProviderDto Provider(User u, ProviderProfile p) => new(u.Id, u.FullName, p.Rating, p.RatingCount,
-        p.CompletedJobs, p.IsOnline, p.Latitude, p.Longitude, u.AreaLabel);
+        p.CompletedJobs, p.IsOnline, p.Latitude ?? u.Latitude, p.Longitude ?? u.Longitude, p.CoverageArea ?? u.AreaLabel,
+        u.Email, u.Phone, u.KycStatus, p.YearsExperience, p.CoverageRadiusKm, p.CoverageArea ?? u.AreaLabel,
+        p.TruckMake, null, p.TruckPlate, p.TruckType?.ToString(), p.TruckCapacityTonnes);
 
     public static NotificationDto Notification(Notification n) => new(n.Id, n.Type, n.Title, n.Body, n.DeepLink, n.IsRead, n.CreatedAt);
 

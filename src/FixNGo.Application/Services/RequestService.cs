@@ -57,8 +57,42 @@ public sealed class RequestService(
         };
         db.ServiceRequests.Add(r);
         db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = "created", ActorId = customerId, At = clock.UtcNow });
+        if (req.PhotoFileIds is not null)
+        {
+            foreach (var fid in req.PhotoFileIds.Take(5))
+            {
+                if (await db.UploadedFiles.AnyAsync(f => f.Id == fid, ct))
+                    db.RequestPhotos.Add(new RequestPhoto { RequestId = r.Id, FileId = fid });
+            }
+        }
         await db.SaveChangesAsync(ct);
-        return Mappings.Request(r);
+        return await GetAsync(customerId, true, r.Id, ct);
+    }
+
+    public async Task<RequestDto> AddPhotoAsync(Guid callerId, bool isAdmin, Guid id, Guid fileId, CancellationToken ct = default)
+    {
+        var r = await Visible(callerId, isAdmin, id, ct);
+        if (!await db.UploadedFiles.AnyAsync(f => f.Id == fileId, ct))
+            throw new DomainException("file.not_found", "Uploaded file not found.");
+        if (!await db.RequestPhotos.AnyAsync(p => p.RequestId == r.Id && p.FileId == fileId, ct))
+        {
+            db.RequestPhotos.Add(new RequestPhoto { RequestId = r.Id, FileId = fileId });
+            await db.SaveChangesAsync(ct);
+        }
+        return await GetAsync(callerId, isAdmin, id, ct);
+    }
+
+    public async Task<RequestDto> ExpandRadiusAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
+    {
+        var r = await Visible(callerId, isAdmin, id, ct);
+        r.RadiusKm = r.RadiusKm < 10 ? 10 : r.RadiusKm < 20 ? 20 : r.RadiusKm + 10;
+        if (r.Status == RequestStatus.NoProviders)
+        {
+            r.Status = RequestStatus.Searching;
+            db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = RequestStatus.Searching, Note = $"radius.{r.RadiusKm}km", ActorId = callerId, At = clock.UtcNow });
+        }
+        await db.SaveChangesAsync(ct);
+        return await GetAsync(callerId, isAdmin, id, ct);
     }
 
     /// <summary>Any escalates-to-P0 answer of "yes" turns the request into an accident priority.</summary>
@@ -83,14 +117,20 @@ public sealed class RequestService(
     public async Task<RequestDto> GetAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
     {
         var r = await Visible(callerId, isAdmin, id, ct);
-        return Mappings.Request(r);
+        return await EnrichAsync(r, ct);
     }
 
     public async Task<IReadOnlyList<RequestDto>> ListAsync(Guid callerId, bool isAdmin, CancellationToken ct = default)
     {
-        var q = db.ServiceRequests.AsQueryable();
+        var q = db.ServiceRequests
+            .Include(r => r.Customer)
+            .Include(r => r.AssignedProvider)
+            .Include(r => r.Vehicle)
+            .Include(r => r.Photos)
+            .AsQueryable();
         if (!isAdmin) q = q.Where(r => r.CustomerId == callerId || r.AssignedProviderId == callerId);
-        return await q.OrderByDescending(r => r.CreatedAt).Take(200).Select(r => Mappings.Request(r)).ToListAsync(ct);
+        var list = await q.OrderByDescending(r => r.CreatedAt).Take(200).ToListAsync(ct);
+        return list.Select(Mappings.Request).ToList();
     }
 
     public async Task<IReadOnlyList<RequestEventDto>> TimelineAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
@@ -142,10 +182,35 @@ public sealed class RequestService(
 
     private async Task<ServiceRequest> Visible(Guid callerId, bool isAdmin, Guid id, CancellationToken ct)
     {
-        var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == id, ct)
+        var r = await db.ServiceRequests
+            .Include(x => x.Customer)
+            .Include(x => x.AssignedProvider)
+            .Include(x => x.Vehicle)
+            .Include(x => x.Photos)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("request.not_found", "Request not found.");
         if (!isAdmin && r.CustomerId != callerId && r.AssignedProviderId != callerId)
             throw new DomainException("auth.forbidden", "You cannot view this request.");
         return r;
+    }
+
+    private async Task<RequestDto> EnrichAsync(ServiceRequest r, CancellationToken ct)
+    {
+        var dto = Mappings.Request(r);
+        if (r.AssignedProviderId is not null)
+        {
+            var prof = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == r.AssignedProviderId, ct);
+            if (prof is not null)
+            {
+                dto = dto with
+                {
+                    ProviderRating = prof.Rating,
+                    ProviderJobs = prof.CompletedJobs,
+                    ProviderTruckMake = prof.TruckMake,
+                    ProviderTruckPlate = prof.TruckPlate
+                };
+            }
+        }
+        return dto;
     }
 }

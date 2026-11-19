@@ -49,13 +49,13 @@ public sealed class AuthService(
 
         if (role is Role.Mechanic or Role.TowCaptain)
             db.ProviderProfiles.Add(new ProviderProfile { UserId = user.Id, IsOnline = false });
-        if (role == Role.ServiceCenter && !string.IsNullOrWhiteSpace(req.BusinessName))
+        if (role == Role.ServiceCenter)
         {
             db.ServiceCenters.Add(new ServiceCenter
             {
                 OwnerId = user.Id,
-                Name = req.BusinessName.Trim(),
-                Address = string.Empty,
+                Name = !string.IsNullOrWhiteSpace(req.BusinessName) ? req.BusinessName.Trim() : user.FullName,
+                Address = "Cairo, Egypt",
                 Phone = phone
             });
         }
@@ -96,6 +96,132 @@ public sealed class AuthService(
         await db.SaveChangesAsync(ct);
         logger.LogInformation("OTP verified for user {UserId}", user.Id);
         return UserDtoMapper.ToDto(user);
+    }
+
+    /// <summary>Verify an OTP, activate the account, and issue a live session so signup flows stay signed in.</summary>
+    public async Task<AuthResponse> VerifyOtpAndIssueSessionAsync(VerifyOtpRequest req, string? device, string? ip, CancellationToken ct = default)
+    {
+        var dto = await VerifyOtpAsync(req, ct);
+        var user = await db.Users.FirstAsync(u => u.Id == dto.Id, ct);
+        return await IssueSessionAsync(user, device, ip, ct);
+    }
+
+    /// <summary>Resend an OTP code with cooldown and hourly limit checks.</summary>
+    public async Task<OtpResponse> ResendOtpAsync(ResendOtpRequest req, CancellationToken ct = default)
+    {
+        var target = req.Target.Trim().ToLowerInvariant();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == target, ct);
+        var code = GenerateCode();
+        await IssueOtpAsync(target, req.Purpose, code, ct);
+        await otpSender.SendAsync(target, user?.FullName ?? target, SimChannel.Email, code, req.Purpose.ToString().ToLowerInvariant(), ct);
+        await db.SaveChangesAsync(ct);
+        return new OtpResponse(target, (int)OtpTtl.TotalSeconds, options.ExposeDevCodes ? code : null);
+    }
+
+    public async Task<UserDto?> GetMeAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        return user is null ? null : UserDtoMapper.ToDto(user);
+    }
+
+    public async Task<UserDto> UpdateMeAsync(Guid userId, UpdateMeRequest req, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        if (!string.IsNullOrWhiteSpace(req.FullName)) user.FullName = req.FullName.Trim();
+        if (!string.IsNullOrWhiteSpace(req.Email))
+        {
+            var email = req.Email.Trim().ToLowerInvariant();
+            if (email != user.Email && await db.Users.AnyAsync(u => u.Email == email && u.Id != userId, ct))
+                throw new DomainException("auth.email_exists", "An account with this email already exists.");
+            user.Email = email;
+        }
+        if (!string.IsNullOrWhiteSpace(req.Phone))
+        {
+            var phone = Rules.NormalisePhone(req.Phone);
+            if (phone != user.Phone && await db.Users.AnyAsync(u => u.Phone == phone && u.Id != userId, ct))
+                throw new DomainException("auth.phone_exists", "An account with this phone already exists.");
+            user.Phone = phone;
+        }
+        if (!string.IsNullOrWhiteSpace(req.Language)) user.Language = req.Language.Trim().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(req.Theme)) user.Theme = req.Theme.Trim().ToLowerInvariant();
+        if (req.OtpOnLogin.HasValue) user.OtpOnLogin = req.OtpOnLogin.Value;
+        if (req.Latitude.HasValue) user.Latitude = req.Latitude.Value;
+        if (req.Longitude.HasValue) user.Longitude = req.Longitude.Value;
+        if (req.AreaLabel is not null) user.AreaLabel = req.AreaLabel.Trim();
+        await db.SaveChangesAsync(ct);
+        return UserDtoMapper.ToDto(user);
+    }
+
+    public async Task<IReadOnlyList<SessionDto>> MySessionsAsync(Guid userId, CancellationToken ct = default) =>
+        await db.Sessions.Where(s => s.UserId == userId && s.RevokedAt == null)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new SessionDto(s.Id, s.DeviceLabel ?? "Web Browser", s.IpAddress ?? "127.0.0.1", s.ExpiresAt, s.RevokedAt))
+            .ToListAsync(ct);
+
+    public async Task RevokeMySessionAsync(Guid userId, Guid sessionId, CancellationToken ct = default)
+    {
+        var s = await db.Sessions.FirstOrDefaultAsync(x => x.Id == sessionId && x.UserId == userId, ct)
+            ?? throw new DomainException("session.not_found", "Session not found.");
+        s.RevokedAt = clock.UtcNow;
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<int> RevokeOtherSessionsAsync(Guid userId, Guid? keepSessionId, CancellationToken ct = default)
+    {
+        var active = await db.Sessions.Where(s => s.UserId == userId && s.RevokedAt == null).OrderByDescending(s => s.CreatedAt).ToListAsync(ct);
+        var keep = keepSessionId ?? active.FirstOrDefault()?.Id;
+        var count = 0;
+        foreach (var s in active.Where(s => s.Id != keep))
+        {
+            s.RevokedAt = clock.UtcNow;
+            count++;
+        }
+        if (count > 0) await db.SaveChangesAsync(ct);
+        return count;
+    }
+
+    public async Task<TwoFactorSetupDto> SetupTwoFactorAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        var secretBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(20);
+        var secret = ToBase32(secretBytes);
+        user.TwoFactorSecret = secret;
+        await db.SaveChangesAsync(ct);
+        var uri = $"otpauth://totp/FixNGo:{Uri.EscapeDataString(user.Email)}?secret={secret}&issuer=FixNGo&digits=6&period=30";
+        var currentCode = ComputeTotp(secretBytes, clock.UtcNow);
+        return new TwoFactorSetupDto(secret, uri, currentCode);
+    }
+
+    public async Task<TwoFactorEnableDto> EnableTwoFactorAsync(Guid userId, TwoFactorVerifyRequest req, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        if (string.IsNullOrWhiteSpace(user.TwoFactorSecret))
+            throw new DomainException("auth.2fa_not_setup", "Run 2FA setup first.");
+        var secretBytes = FromBase32(user.TwoFactorSecret);
+        if (!VerifyTotp(secretBytes, req.Code?.Trim() ?? "", clock.UtcNow))
+            throw new DomainException("auth.2fa_invalid", "Invalid authenticator code.");
+        var recovery = Enumerable.Range(0, 8)
+            .Select(_ => $"{GenerateCode()[..4]}-{GenerateCode()[..4]}")
+            .ToList();
+        user.TwoFactorEnabled = true;
+        user.TwoFactorRecoveryHashes = System.Text.Json.JsonSerializer.Serialize(recovery.Select(HashCode).ToList());
+        await db.SaveChangesAsync(ct);
+        return new TwoFactorEnableDto(true, recovery);
+    }
+
+    public async Task DisableTwoFactorAsync(Guid userId, TwoFactorDisableRequest req, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        if (!string.IsNullOrWhiteSpace(req.Password) && !hasher.Verify(user.PasswordHash, req.Password))
+            throw new DomainException("auth.invalid_credentials", "Invalid password.");
+        user.TwoFactorEnabled = false;
+        user.TwoFactorSecret = null;
+        user.TwoFactorRecoveryHashes = null;
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Login with failed-attempt lockout and a new session.</summary>
@@ -270,6 +396,68 @@ public sealed class AuthService(
         var x = System.Text.Encoding.UTF8.GetBytes(a);
         var y = System.Text.Encoding.UTF8.GetBytes(b);
         return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(x, y);
+    }
+
+    private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+    private static string ToBase32(byte[] data)
+    {
+        var sb = new System.Text.StringBuilder();
+        int buffer = data[0], next = 1, bitsLeft = 8;
+        while (bitsLeft > 0 || next < data.Length)
+        {
+            if (bitsLeft < 5)
+            {
+                if (next < data.Length) { buffer = (buffer << 8) | (data[next++] & 0xff); bitsLeft += 8; }
+                else { int pad = 5 - bitsLeft; buffer <<= pad; bitsLeft += pad; }
+            }
+            int index = 0x1f & (buffer >> (bitsLeft - 5));
+            bitsLeft -= 5;
+            sb.Append(Base32Alphabet[index]);
+        }
+        return sb.ToString();
+    }
+
+    private static byte[] FromBase32(string base32)
+    {
+        var clean = base32.Trim().TrimEnd('=').ToUpperInvariant();
+        var bytes = new List<byte>();
+        int buffer = 0, bitsLeft = 0;
+        foreach (var c in clean)
+        {
+            var val = Base32Alphabet.IndexOf(c);
+            if (val < 0) continue;
+            buffer = (buffer << 5) | val;
+            bitsLeft += 5;
+            if (bitsLeft >= 8)
+            {
+                bytes.Add((byte)((buffer >> (bitsLeft - 8)) & 0xff));
+                bitsLeft -= 8;
+            }
+        }
+        return bytes.ToArray();
+    }
+
+    private static string ComputeTotp(byte[] secret, DateTime utcNow, long stepOffset = 0)
+    {
+        var unixSeconds = new DateTimeOffset(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc)).ToUnixTimeSeconds();
+        var counter = (unixSeconds / 30) + stepOffset;
+        var counterBytes = BitConverter.GetBytes(counter);
+        if (BitConverter.IsLittleEndian) Array.Reverse(counterBytes);
+        using var hmac = new System.Security.Cryptography.HMACSHA1(secret);
+        var hash = hmac.ComputeHash(counterBytes);
+        var offset = hash[^1] & 0x0f;
+        var binary = ((hash[offset] & 0x7f) << 24) | ((hash[offset + 1] & 0xff) << 16)
+                     | ((hash[offset + 2] & 0xff) << 8) | (hash[offset + 3] & 0xff);
+        return (binary % 1_000_000).ToString("D6");
+    }
+
+    private static bool VerifyTotp(byte[] secret, string code, DateTime utcNow)
+    {
+        if (code.Length != 6 || !code.All(char.IsDigit)) return false;
+        for (long step = -2; step <= 2; step++)
+            if (ComputeTotp(secret, utcNow, step) == code) return true;
+        return false;
     }
 }
 

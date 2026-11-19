@@ -28,12 +28,8 @@ echo   FixNGo - First-time setup
 echo ===================================================
 call :log "setup.bat started (args: %*)"
 
-if not exist "app\FixNGo.Cli.dll" (
-  call :log "build output missing -> building"
-  echo [BUILD] Building application first...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1"
-  if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
-)
+powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1" -IfNeeded
+if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
 
 %CLI% check-setup >nul 2>&1
 set "CHK=!ERRORLEVEL!"

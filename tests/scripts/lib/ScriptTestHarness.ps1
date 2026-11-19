@@ -367,17 +367,27 @@ function Assert-AllDummyCredentialsLogin {
     param([int]$Port, $Accounts)
     $failed = @()
     $byRole = @{}
+    $byStatus = @{}
+    $badEmails = @()
     foreach ($a in $Accounts) {
         if (-not $byRole.ContainsKey($a.Role)) { $byRole[$a.Role] = 0 }
+        if (-not $byStatus.ContainsKey($a.Status)) { $byStatus[$a.Status] = 0 }
+        $byStatus[$a.Status]++
+        if ($a.Email -match 'xxxx') { $badEmails += $a.Email }
         $r = Invoke-Login -Port $Port -Email $a.Email -Password $a.Password
-        if ($r.Code -eq 200) { $byRole[$a.Role]++ }
-        else { $failed += ($a.Email + ' -> HTTP ' + $r.Code) }
+        $expectedCode = if ($a.Status -eq 'Suspended') { 403 } else { 200 }
+        if ($r.Code -eq $expectedCode) { $byRole[$a.Role]++ }
+        else { $failed += ($a.Email + ' [' + $a.Status + '] -> HTTP ' + $r.Code + ' (expected ' + $expectedCode + ')') }
     }
     $roleSummary = ($byRole.GetEnumerator() | Sort-Object Name | ForEach-Object { $_.Name + '=' + $_.Value }) -join ', '
+    $statusSummary = ($byStatus.GetEnumerator() | Sort-Object Name | ForEach-Object { $_.Name + '=' + $_.Value }) -join ', '
     W ('Login sweep: ' + $Accounts.Count + ' credentials; per-role successes: ' + $roleSummary)
+    W ('Status coverage: ' + $statusSummary)
     if ($failed.Count -gt 0) { W ('First failures: ' + (($failed | Select-Object -First 5) -join '; ')) }
     Assert-Bool ($Accounts.Count -ge 200) 'dummy-db.md lists at least 200 credentials'
-    Assert-Bool ($failed.Count -eq 0) ('every listed dummy credential logged in (' + ($Accounts.Count - $failed.Count) + '/' + $Accounts.Count + ')')
+    Assert-Bool ($badEmails.Count -eq 0) 'every dummy email is clean transliterated ASCII (no xxxx placeholders)'
+    Assert-Bool ($byStatus.ContainsKey('Suspended') -and $byStatus['Suspended'] -gt 0) 'dummy accounts include Suspended users'
+    Assert-Bool ($failed.Count -eq 0) ('every listed dummy credential authenticated as expected (' + ($Accounts.Count - $failed.Count) + '/' + $Accounts.Count + ')')
     Assert-Bool ($byRole.Count -eq 5) 'all five roles are represented in the credential login sweep'
 }
 

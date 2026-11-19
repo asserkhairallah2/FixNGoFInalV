@@ -20,17 +20,30 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
 
     public async Task<ProviderDto> UpdateProfileAsync(Guid userId, UpdateProviderProfileRequest req, CancellationToken ct = default)
     {
-        var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == userId, ct)
-            ?? throw new DomainException("provider.profile_not_found", "Provider profile not found.");
-        if (req.CoverageRadiusKm < 1 || req.CoverageRadiusKm > 200)
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == userId, ct);
+        if (p is null)
+        {
+            p = new ProviderProfile { UserId = userId };
+            db.ProviderProfiles.Add(p);
+        }
+        var radius = req.CoverageRadiusKm <= 0 ? 10 : req.CoverageRadiusKm;
+        if (radius < 1 || radius > 200)
             throw new DomainException("provider.radius_invalid", "Invalid coverage radius.");
-        p.YearsExperience = req.YearsExperience;
-        p.ExpertiseJson = JsonSerializer.Serialize(req.Expertise);
-        p.Latitude = req.Latitude; p.Longitude = req.Longitude;
-        p.CoverageRadiusKm = req.CoverageRadiusKm; p.CoverageArea = req.CoverageArea;
-        p.TruckMake = req.TruckMake; p.TruckPlate = req.TruckPlate;
-        p.TruckCapacityTonnes = req.TruckCapacityTonnes;
-        if (Enum.TryParse<TruckType>(req.TruckType, true, out var tt)) p.TruckType = tt;
+        if (!string.IsNullOrWhiteSpace(req.FullName)) u.FullName = req.FullName.Trim();
+        if (!string.IsNullOrWhiteSpace(req.Phone)) u.Phone = Rules.NormalisePhone(req.Phone);
+        if (!string.IsNullOrWhiteSpace(req.Email)) u.Email = req.Email.Trim().ToLowerInvariant();
+        if (req.YearsExperience > 0) p.YearsExperience = req.YearsExperience;
+        if (req.Expertise is not null) p.ExpertiseJson = JsonSerializer.Serialize(req.Expertise);
+        if (req.Latitude.HasValue) { p.Latitude = req.Latitude; u.Latitude = req.Latitude; }
+        if (req.Longitude.HasValue) { p.Longitude = req.Longitude; u.Longitude = req.Longitude; }
+        p.CoverageRadiusKm = radius;
+        if (req.CoverageArea is not null) { p.CoverageArea = req.CoverageArea; u.AreaLabel = req.CoverageArea; }
+        if (req.TruckMake is not null) p.TruckMake = req.TruckMake;
+        if (req.TruckPlate is not null) p.TruckPlate = req.TruckPlate;
+        if (req.TruckCapacityTonnes.HasValue) p.TruckCapacityTonnes = req.TruckCapacityTonnes;
+        if (!string.IsNullOrWhiteSpace(req.TruckType) && Enum.TryParse<TruckType>(req.TruckType, true, out var tt)) p.TruckType = tt;
         await db.SaveChangesAsync(ct);
         return await ProfileAsync(userId, ct);
     }
@@ -69,20 +82,68 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
             ?? throw new DomainException("user.not_found", "User not found.");
         if (u.KycStatus == KycStatus.Approved)
             throw new DomainException("kyc.already_approved", "KYC is already approved.");
-        var existing = await db.KycApplications.FirstOrDefaultAsync(a => a.UserId == userId && a.Status != KycStatus.Rejected, ct);
-        if (existing is not null && existing.Status is KycStatus.Submitted or KycStatus.UnderReview)
-            throw new DomainException("kyc.in_review", "An application is already under review.");
-        u.KycStatus = StateMachines.Kyc.Transition(u.KycStatus == KycStatus.Approved ? KycStatus.None : u.KycStatus, KycStatus.Submitted);
+
+        if (!string.IsNullOrWhiteSpace(req.FullName)) u.FullName = req.FullName.Trim();
+        if (!string.IsNullOrWhiteSpace(req.Phone)) u.Phone = Rules.NormalisePhone(req.Phone);
+        if (req.Latitude.HasValue) u.Latitude = req.Latitude;
+        if (req.Longitude.HasValue) u.Longitude = req.Longitude;
+        if (!string.IsNullOrWhiteSpace(req.Address)) u.AreaLabel = req.Address.Trim();
+
+        if (u.Role is Role.Mechanic or Role.TowCaptain)
+        {
+            var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == userId, ct);
+            if (p is null) { p = new ProviderProfile { UserId = userId }; db.ProviderProfiles.Add(p); }
+            if (req.YearsExperience.HasValue) p.YearsExperience = req.YearsExperience.Value;
+            if (req.Services is not null) p.ExpertiseJson = JsonSerializer.Serialize(req.Services);
+            if (req.Latitude.HasValue) p.Latitude = req.Latitude;
+            if (req.Longitude.HasValue) p.Longitude = req.Longitude;
+            if (!string.IsNullOrWhiteSpace(req.Address)) p.CoverageArea = req.Address.Trim();
+            if (!string.IsNullOrWhiteSpace(req.TruckMake)) p.TruckMake = req.TruckMake.Trim();
+            if (!string.IsNullOrWhiteSpace(req.TruckPlate)) p.TruckPlate = req.TruckPlate.Trim();
+            if (req.TruckCapacityTonnes.HasValue) p.TruckCapacityTonnes = req.TruckCapacityTonnes.Value;
+            if (!string.IsNullOrWhiteSpace(req.TruckType) && Enum.TryParse<TruckType>(req.TruckType, true, out var tt)) p.TruckType = tt;
+        }
+        else if (u.Role == Role.ServiceCenter)
+        {
+            var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.OwnerId == userId, ct);
+            if (center is null)
+            {
+                center = new ServiceCenter
+                {
+                    OwnerId = userId,
+                    Name = req.BusinessName ?? u.FullName,
+                    Address = req.Address ?? "Cairo, Egypt",
+                    Phone = u.Phone ?? "+201000000000"
+                };
+                db.ServiceCenters.Add(center);
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(req.BusinessName)) center.Name = req.BusinessName.Trim();
+                if (!string.IsNullOrWhiteSpace(req.Address)) center.Address = req.Address.Trim();
+                if (!string.IsNullOrWhiteSpace(req.Phone)) center.Phone = Rules.NormalisePhone(req.Phone);
+                if (req.Latitude.HasValue) center.Latitude = req.Latitude;
+                if (req.Longitude.HasValue) center.Longitude = req.Longitude;
+            }
+        }
+
+        var existing = await db.KycApplications.Include(a => a.Documents)
+            .FirstOrDefaultAsync(a => a.UserId == userId && a.Status != KycStatus.Rejected, ct);
+        var fromState = (u.KycStatus == KycStatus.Approved || u.KycStatus == KycStatus.Submitted || u.KycStatus == KycStatus.UnderReview)
+            ? KycStatus.None
+            : u.KycStatus;
+        u.KycStatus = StateMachines.Kyc.Transition(fromState, KycStatus.Submitted);
         var app = existing ?? new KycApplication { UserId = userId, Code = await Codes.NextAsync(db, "KYC", ct) };
         app.Status = KycStatus.Submitted;
-        app.ApplicantType = req.ApplicantType;
-        app.BusinessName = req.BusinessName;
-        app.Address = req.Address;
-        app.Latitude = req.Latitude; app.Longitude = req.Longitude;
-        app.ServicesJson = JsonSerializer.Serialize(req.Services);
+        app.ApplicantType = string.IsNullOrWhiteSpace(req.ApplicantType) ? u.Role.ToString() : req.ApplicantType;
+        app.BusinessName = req.BusinessName ?? app.BusinessName;
+        app.Address = req.Address ?? app.Address;
+        app.Latitude = req.Latitude ?? app.Latitude;
+        app.Longitude = req.Longitude ?? app.Longitude;
+        if (req.Services is not null) app.ServicesJson = JsonSerializer.Serialize(req.Services);
         app.ReviewerNote = null;
         if (existing is null) db.KycApplications.Add(app);
-        foreach (var doc in req.Documents)
+        foreach (var doc in req.Documents ?? [])
         {
             if (!await db.UploadedFiles.AnyAsync(f => f.Id == doc.FileId, ct))
                 throw new DomainException("file.not_found", "Uploaded document not found.");
@@ -93,16 +154,68 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
         return Mappings.Kyc(app);
     }
 
-    public async Task<KycApplicationDto> MyKycAsync(Guid userId, CancellationToken ct = default)
+    public async Task<KycApplicationDto> UploadDocumentAsync(Guid userId, KycDocumentInput doc, CancellationToken ct = default)
     {
-        var app = await db.KycApplications.Where(a => a.UserId == userId).OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync(ct)
-            ?? throw new DomainException("kyc.not_found", "No KYC application found.");
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        if (!await db.UploadedFiles.AnyAsync(f => f.Id == doc.FileId, ct))
+            throw new DomainException("file.not_found", "Uploaded document not found.");
+        var app = await db.KycApplications.Include(a => a.Documents)
+            .OrderByDescending(a => a.CreatedAt)
+            .FirstOrDefaultAsync(a => a.UserId == userId, ct);
+        if (app is null)
+        {
+            app = new KycApplication
+            {
+                UserId = userId,
+                Code = await Codes.NextAsync(db, "KYC", ct),
+                Status = KycStatus.Submitted,
+                ApplicantType = u.Role.ToString()
+            };
+            db.KycApplications.Add(app);
+        }
+        else if (app.Status is KycStatus.ChangesNeeded or KycStatus.Rejected)
+        {
+            app.Status = KycStatus.Submitted;
+            app.ReviewerNote = null;
+        }
+        if (u.KycStatus != KycStatus.Approved) u.KycStatus = KycStatus.Submitted;
+        app.Documents.Add(new KycDocument
+        {
+            DocumentType = string.IsNullOrWhiteSpace(doc.DocumentType) ? "NationalId" : doc.DocumentType.Trim(),
+            FileId = doc.FileId,
+            Status = DocumentStatus.Pending
+        });
+        await db.SaveChangesAsync(ct);
+        app.User = u;
         return Mappings.Kyc(app);
     }
 
+    public async Task<KycApplicationDto> MyKycAsync(Guid userId, CancellationToken ct = default)
+    {
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == userId, ct);
+        var app = await db.KycApplications.Include(a => a.Documents).Include(a => a.User)
+            .Where(a => a.UserId == userId).OrderByDescending(a => a.CreatedAt).FirstOrDefaultAsync(ct);
+        if (app is null)
+        {
+            return new KycApplicationDto(Guid.Empty, "KYC-0000", u?.KycStatus ?? KycStatus.Submitted,
+                u?.Role.ToString() ?? "Mechanic", null, null, DateTime.UtcNow, userId, u?.FullName, u?.Email, u?.Phone, u?.AreaLabel, []);
+        }
+        return Mappings.Kyc(app);
+    }
+
+    public async Task<KycApplicationDto?> KycByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var app = await db.KycApplications.Include(a => a.Documents).Include(a => a.User)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+        return app is null ? null : Mappings.Kyc(app);
+    }
+
     public async Task<IReadOnlyList<KycApplicationDto>> KycQueueAsync(CancellationToken ct = default) =>
-        await db.KycApplications.Where(a => a.Status == KycStatus.Submitted || a.Status == KycStatus.UnderReview)
-            .OrderBy(a => a.CreatedAt).Select(a => Mappings.Kyc(a)).ToListAsync(ct);
+        await db.KycApplications.Include(a => a.Documents).Include(a => a.User)
+            .OrderByDescending(a => a.Status == KycStatus.Submitted || a.Status == KycStatus.UnderReview)
+            .ThenBy(a => a.CreatedAt)
+            .Select(a => Mappings.Kyc(a)).ToListAsync(ct);
 
     public async Task<KycApplicationDto> ReviewKycAsync(Guid adminId, Guid appId, ReviewKycRequest req, CancellationToken ct = default)
     {

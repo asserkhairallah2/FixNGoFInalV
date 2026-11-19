@@ -28,12 +28,8 @@ echo   FixNGo - Remove database (reset to first run)
 echo ===================================================
 call :log "remove-db.bat started (args: %*)"
 
-if not exist "app\FixNGo.Cli.dll" (
-  call :log "build output missing -> building"
-  echo [BUILD] Building application first...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1"
-  if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
-)
+powershell -NoProfile -ExecutionPolicy Bypass -File "tools\build.ps1" -IfNeeded
+if errorlevel 1 ( call :log "BUILD FAILED" & echo [ERR] Build failed. & goto :fail )
 
 echo [WARN] This permanently deletes the live database, uploads, secrets and state.
 echo [WARN] A safety snapshot is created in data\backups\ first.

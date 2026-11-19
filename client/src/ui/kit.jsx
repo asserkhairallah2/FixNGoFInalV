@@ -5,7 +5,14 @@ import {
   ChevronLeft, ChevronRight, AlertTriangle, Phone, Navigation, Check,
   MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck
 } from 'lucide-react';
-import { usePrefs, useNav, useNavigate } from '../app/stores.jsx';
+import { usePrefs, useNav, useSession, useNavigate } from '../app/stores.jsx';
+import { fmtMoney } from '../i18n/format.js';
+
+export { usePrefs, useNav, useSession, useNavigate };
+
+export function egp(minor, isAr = false) {
+  return fmtMoney(Number(minor || 0), isAr ? 'ar' : 'en');
+}
 
 // ---- Brand ----
 export function ShieldLogo({ size = 40 }) {
@@ -49,20 +56,24 @@ export function useColors() {
         text: 'text-[#0F172A]', secondaryText: 'text-[#64748B]', inputBg: 'bg-[#F8FAFC]' };
 }
 
-export function AppTopBar({ showBack = false, onBack, title }) {
+export function AppTopBar({ showBack, onBack, title, right }) {
   const c = useColors(); const { isAr } = usePrefs();
   const nav = useNav();
+  const canBack = showBack !== undefined ? Boolean(showBack) : Boolean(onBack);
   return (
     <div className={`w-full px-4 py-3 flex items-center justify-between border-b ${c.border} ${c.bg} sticky top-0 z-30`}>
       <div className="flex items-center gap-2">
-        {showBack && (
-          <button onClick={onBack || (() => nav.back())} className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition`} title={isAr ? 'رجوع' : 'Back'} aria-label="Back">
+        {canBack && (
+          <button type="button" onClick={onBack || (() => nav.back())} className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition`} title={isAr ? 'رجوع' : 'Back'} aria-label="Back">
             {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         )}
         <BrandLockup />
       </div>
-      {title && <span className={`text-xs font-bold ${c.text}`}>{title}</span>}
+      <div className="flex items-center gap-2">
+        {title && <span className={`text-xs font-bold ${c.text}`}>{title}</span>}
+        {right}
+      </div>
     </div>
   );
 }
@@ -88,34 +99,108 @@ export function SecondaryButton({ children, onClick, className = '', disabled })
 const BADGE_STYLES = {
   Completed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   Online: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   Accepted: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Confirmed: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  QuoteApproved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   Paid: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Succeeded: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   Approved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   Verified: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Resolved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Answered: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Closed: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
   Pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Searching: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Offered: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  QuotePending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  AwaitingPayment: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Submitted: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  UnderReview: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  ChangesNeeded: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  PendingVerification: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Requested: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Processing: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  Sent: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
   EnRoute: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
   Arrived: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  Assigned: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
+  InProgress: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+  ReadyForReview: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
   Working: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+  Open: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  AwaitingSupport: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Escalated: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
   Disputed: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
   Unpaid: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Issued: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   Rejected: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Declined: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  Expired: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  NoProviders: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
   Suspended: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+  DeletionRequested: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
   Failed: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
   Cancelled: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
 };
-const AR_STATUS = {
-  Completed: 'مكتمل', Online: 'متصل', Accepted: 'مقبول', Paid: 'مدفوع', Approved: 'موافق عليه',
-  Verified: 'موثّق', Pending: 'قيد الانتظار', EnRoute: 'في الطريق', Arrived: 'وصل',
-  Working: 'جاري العمل', Disputed: 'متنازع عليه', Unpaid: 'غير مدفوع', Rejected: 'مرفوض',
-  Suspended: 'موقوف', Failed: 'فشل', Cancelled: 'ملغي'
+const EN_STATUS = {
+  Completed: 'Completed', Online: 'Online', Offline: 'Offline', Active: 'Active',
+  Accepted: 'Accepted', Confirmed: 'Confirmed', QuoteApproved: 'Estimate approved',
+  QuotePending: 'Estimate pending', AwaitingPayment: 'Awaiting payment',
+  Paid: 'Paid', Succeeded: 'Succeeded', Approved: 'Approved', Verified: 'Verified',
+  Pending: 'Pending', Searching: 'Searching', Offered: 'Offer sent',
+  Submitted: 'Submitted', UnderReview: 'Under review', ChangesNeeded: 'Changes needed',
+  PendingVerification: 'Pending verification', EnRoute: 'En route', Arrived: 'Arrived',
+  Working: 'In progress', InProgress: 'In progress', Assigned: 'Assigned',
+  ReadyForReview: 'Ready for review', Closed: 'Closed', Disputed: 'Disputed',
+  Unpaid: 'Unpaid', Issued: 'Issued', Rejected: 'Rejected', Declined: 'Declined',
+  Expired: 'Expired', NoProviders: 'No providers nearby', Suspended: 'Suspended',
+  DeletionRequested: 'Deletion requested', Failed: 'Failed', Cancelled: 'Cancelled',
+  Requested: 'Requested', Processing: 'Processing', Sent: 'Sent to bank',
+  Open: 'Open', AwaitingSupport: 'Awaiting support', Answered: 'Answered',
+  Escalated: 'Escalated', Resolved: 'Resolved', None: 'Not submitted',
+  CarOwner: 'Car Owner', Mechanic: 'Mobile Mechanic', TowCaptain: 'Tow Captain',
+  ServiceCenter: 'Service Center', Admin: 'Admin',
+  flatbed_tow: 'Flatbed Tow', mechanic: 'Mobile Mechanic', battery: 'Battery Jump',
+  battery_jump: 'Battery Jump', tire: 'Tire Change', tire_change: 'Tire Change',
+  fuel: 'Fuel Delivery', fuel_delivery: 'Fuel Delivery', lockout: 'Car Unlock', other: 'Other Issue'
 };
+const AR_STATUS = {
+  Completed: 'مكتمل', Online: 'متصل', Offline: 'غير متصل', Active: 'نشط',
+  Accepted: 'مقبول', Confirmed: 'مؤكد', QuoteApproved: 'تمت الموافقة على التكلفة',
+  QuotePending: 'بانتظار الموافقة على التكلفة', AwaitingPayment: 'بانتظار الدفع',
+  Paid: 'مدفوع', Succeeded: 'ناجح', Approved: 'معتمد', Verified: 'موثّق',
+  Pending: 'قيد الانتظار', Searching: 'جاري البحث', Offered: 'تم إرسال العرض',
+  Submitted: 'مُرسل للمراجعة', UnderReview: 'قيد المراجعة', ChangesNeeded: 'مطلوب تعديل',
+  PendingVerification: 'بانتظار التفعيل', EnRoute: 'في الطريق', Arrived: 'وصل للموقع',
+  Working: 'جاري العمل', InProgress: 'قيد التنفيذ', Assigned: 'معيّن',
+  ReadyForReview: 'جاهز للمراجعة', Closed: 'مغلق', Disputed: 'متنازع عليه',
+  Unpaid: 'غير مدفوع', Issued: 'صادرة', Rejected: 'مرفوض', Declined: 'مرفوض',
+  Expired: 'منتهي', NoProviders: 'لا يوجد مقدمو خدمة', Suspended: 'موقوف',
+  DeletionRequested: 'طلب حذف', Failed: 'فشل', Cancelled: 'ملغي',
+  Requested: 'مطلوب', Processing: 'قيد المعالجة', Sent: 'أُرسل للبنك',
+  Open: 'مفتوح', AwaitingSupport: 'بانتظار الدعم', Answered: 'تم الرد',
+  Escalated: 'مُصعّد', Resolved: 'تم الحل', None: 'غير مقدم',
+  CarOwner: 'مالك سيارة', Mechanic: 'ميكانيكي متنقل', TowCaptain: 'كابتن ونش',
+  ServiceCenter: 'مركز خدمة', Admin: 'مشرف',
+  flatbed_tow: 'ونش سطحة', mechanic: 'ميكانيكي متنقل', battery: 'شحن بطارية',
+  battery_jump: 'شحن بطارية', tire: 'تغيير إطار', tire_change: 'تغيير إطار',
+  fuel: 'توصيل وقود', fuel_delivery: 'توصيل وقود', lockout: 'فتح السيارة', other: 'مشكلة أخرى'
+};
+export function formatLabel(key, isAr = false) {
+  if (key === null || key === undefined) return '—';
+  const s = String(key);
+  if (isAr && AR_STATUS[s]) return AR_STATUS[s];
+  if (!isAr && EN_STATUS[s]) return EN_STATUS[s];
+  return s.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+}
 export function StatusBadge({ status, text }) {
   const { isAr } = usePrefs();
   const key = String(status ?? 'Pending');
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${BADGE_STYLES[key] || BADGE_STYLES.Pending}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-      {text || (isAr ? (AR_STATUS[key] || key) : key)}
+      {text || formatLabel(key, isAr)}
     </span>
   );
 }
@@ -196,16 +281,144 @@ export function Chip({ children, active, onClick }) {
   );
 }
 
-export function Card({ children, className = '' }) {
+export function Card({ children, className = '', onClick, style }) {
   const c = useColors();
-  return <div className={`rounded-2xl border ${c.border} ${c.surface} p-4 ${className}`}>{children}</div>;
+  return (
+    <div
+      onClick={onClick}
+      style={style}
+      className={`rounded-2xl border ${c.border} ${c.surface} p-4 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    >
+      {children}
+    </div>
+  );
 }
 
-export function StarRating({ value = 0, size = 14 }) {
+export function StarRating({ value = 0, size = 14, onChange }) {
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`${value} stars`}>
-      {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={size} className={n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-slate-400'} />)}
+    <span className="inline-flex items-center gap-1" aria-label={`${value} stars`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        onChange ? (
+          <button
+            key={n}
+            type="button"
+            aria-label={`Rate ${n} stars`}
+            data-testid={`star-${n}`}
+            onClick={() => onChange(n)}
+            className="p-0.5 transition hover:scale-110"
+          >
+            <Star size={size} className={n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-slate-400'} />
+          </button>
+        ) : (
+          <Star key={n} size={size} className={n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-slate-400'} />
+        )
+      ))}
     </span>
+  );
+}
+
+export function SectionHeader({ title, subtitle, action }) {
+  const c = useColors();
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <div>
+        <h3 className={`text-xs font-extrabold ${c.text}`}>{title}</h3>
+        {subtitle && <p className={`text-[11px] ${c.secondaryText}`}>{subtitle}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+export function InputField({ label, value, onChange, type = 'text', placeholder = '', disabled = false, testId }) {
+  const c = useColors();
+  return (
+    <label className="block space-y-1 mb-2.5">
+      {label && <span className={`text-[11px] font-medium ${c.secondaryText}`}>{label}</span>}
+      <input
+        type={type}
+        value={value ?? ''}
+        disabled={disabled}
+        placeholder={placeholder}
+        data-testid={testId}
+        onChange={(e) => onChange?.(e.target.value)}
+        className={`w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text} disabled:opacity-60`}
+      />
+    </label>
+  );
+}
+
+export function SelectField({ label, value, onChange, options = [], testId }) {
+  const c = useColors();
+  return (
+    <label className="block space-y-1 mb-2.5">
+      {label && <span className={`text-[11px] font-medium ${c.secondaryText}`}>{label}</span>}
+      <select
+        value={value ?? ''}
+        data-testid={testId}
+        onChange={(e) => onChange?.(e.target.value)}
+        className={`w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export const ToggleSwitch = Toggle;
+
+export function Banner({ tone = 'info', title, subtitle }) {
+  const tones = {
+    info: 'border-sky-500/30 bg-sky-500/10 text-sky-500',
+    success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500',
+    danger: 'border-rose-500/30 bg-rose-500/10 text-rose-500',
+    warning: 'border-amber-500/30 bg-amber-500/10 text-amber-500',
+  };
+  return (
+    <div className={`rounded-2xl border p-3.5 text-xs ${tones[tone] || tones.info}`} role="status">
+      {title && <div className="font-bold">{title}</div>}
+      {subtitle && <div className="text-[11px] opacity-90 mt-0.5">{subtitle}</div>}
+    </div>
+  );
+}
+
+export function Divider({ className = 'my-2' }) {
+  const c = useColors();
+  return <hr className={`border-t ${c.border} ${className}`} />;
+}
+
+export function Avatar({ name = 'U', size = 40, className = '' }) {
+  const initials = String(name || 'U')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('') || 'U';
+  return (
+    <div
+      style={{ width: size, height: size }}
+      className={`rounded-full bg-[#E51C23]/15 text-[#E51C23] border border-[#E51C23]/30 font-extrabold text-xs flex items-center justify-center shrink-0 select-none ${className}`}
+    >
+      {initials}
+    </div>
+  );
+}
+
+export function BottomSheet({ open, onClose, title, children }) {
+  const c = useColors();
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`w-full max-w-md rounded-t-3xl border-t ${c.border} ${c.surface} p-5 space-y-3`}
+      >
+        {title && <div className={`text-sm font-extrabold ${c.text}`}>{title}</div>}
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -217,13 +430,14 @@ export function Skeleton({ rows = 3 }) {
     </div>
   );
 }
-export function EmptyState({ title, message, action }) {
+export function EmptyState({ title, message, subtitle, icon, action }) {
   const c = useColors(); const { isAr } = usePrefs();
+  const body = message || subtitle;
   return (
     <div className="flex flex-col items-center justify-center text-center p-10 gap-3" data-testid="empty-state">
-      <ShieldCheck size={34} className="text-slate-400" />
+      {icon ? <span className="text-3xl">{icon}</span> : <ShieldCheck size={34} className="text-slate-400" />}
       <p className={`font-bold ${c.text}`}>{title || (isAr ? 'لا توجد بيانات بعد' : 'Nothing here yet')}</p>
-      {message && <p className={`text-xs ${c.secondaryText}`}>{message}</p>}
+      {body && <p className={`text-xs ${c.secondaryText}`}>{body}</p>}
       {action}
     </div>
   );
@@ -283,12 +497,12 @@ export function FilePicker({ accept = 'image/*', onFile, label }) {
   );
 }
 
-export function Page({ children, title, showBack = true }) {
+export function Page({ children, title, showBack = true, onBack }) {
   const c = useColors();
   return (
-    <div className={`min-h-[740px] flex flex-col ${c.bg}`} data-testid="screen">
-      <AppTopBar showBack={showBack} title={title} />
-      <div className="flex-1 overflow-y-auto">{children}</div>
+    <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="screen">
+      <AppTopBar showBack={showBack} onBack={onBack} title={title} />
+      <div className="flex-1 pb-6">{children}</div>
     </div>
   );
 }

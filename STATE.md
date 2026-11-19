@@ -19,22 +19,22 @@
 ## 2. What was delivered
 
 * **Backend:** ASP.NET Core 8, Clean Architecture (`Domain`, `Application`, `Infrastructure`, `Web`, `Cli`), EF Core 8 + SQLite, migrations, JWT + refresh tokens, RBAC policies, SignalR hub, hosted workers, FluentValidation, AutoMapper, Serilog. Full REST API under `/api/v1/` (generated reference in `docs/API.md`).
-* **Client:** `client/` — Vite 6 + React 18 + JSX + Tailwind. 143 registered screens (138 prototype + added gap screens) wired to the real API, EN/AR RTL, light/dark. No mocks, dev sidebar, role switchers, hard-coded personas/numbers/dates or remote image URLs (`tools/mock-scan.ps1` = 0 hits).
-* **Providers + Simulator Dock:** fake-but-functional OTP/SMS/email, payments, maps/geocoding/routing and push providers writing real SQLite rows; five-panel dock (Notifications/Payments/SMS/OTP/GPS). Configuration-switchable with fail-fast on `Real` without keys (`docs/PROVIDERS.md`, DEVIATIONS #13).
-* **Five root tools:** `setup.bat`, `start.bat`, `remove-db.bat`, `dummy-db.bat`, `restore-db.bat` — all logic in the C# CLI, wrappers call `dotnet <dll>`.
-* **Evidence:** unit/API/authz-matrix/offer-race/privacy tests, S1–S10 transcripts, client tests, Playwright flow + 572 screenshots (143 × 4 variants), reports under `docs/`.
+* **Client:** `client/` — Vite 6 + React 18 + JSX + Tailwind. All 143 registered screens (138 prototype + added gap screens) ported from `legacy-prototype/01..07_*.js` into dedicated per-screen React components under `client/src/modules/` and wired to the real API, EN/AR RTL, light/dark. Visually inspected against `reference/design-images/*.jpg` (`docs/evidence/visual-review.md`). No mocks, dev sidebar, role switchers, hard-coded personas/numbers/dates or remote image URLs (`tools/mock-scan.ps1` = 0 hits).
+* **Providers + Simulator Dock:** fake-but-functional OTP/SMS/email, payments, maps/geocoding/routing and push providers writing real SQLite rows; five-panel dock (Notifications/Payments/SMS/OTP/GPS) visible whenever `simulatorsEnabled = true` (including pre-login). Configuration-switchable with fail-fast on `Real` without keys (`docs/PROVIDERS.md`, DEVIATIONS #13).
+* **Five root tools:** `setup.bat`, `start.bat`, `remove-db.bat`, `dummy-db.bat`, `restore-db.bat` — all logic in the C# CLI, wrappers call `tools\build.ps1 -IfNeeded` and `dotnet <dll>`, and `start.bat` serves the built SPA at `/` with HTTP 200.
+* **Evidence:** unit/API/authz-matrix/offer-race/privacy tests (45 .NET tests), S1–S10 transcripts (including SPA root HTTP 200 and 201 dummy credentials with Arabic-to-ASCII transliteration and `Suspended` users), client tests (9 Vitest), Playwright E2E flows + 572 screenshots (143 × 4 variants), visual review (`docs/evidence/visual-review.md`), and reports under `docs/`.
 
 ---
 
 ## 3. Key decisions / deviations
 
-Recorded in `docs/DEVIATIONS.md` (rows 1–13). Most significant: REST + React SPA instead of Razor/MVC (#7); SQLite instead of SQL Server (#8); visual image inspection impossible for this model, replaced by automated DOM/screenshot assertions (#10); NU1903 suppressed for the mandated AutoMapper 12.0.1 (#11); `dotnet <dll>` wrappers due to user-local SDK (#12); provider fail-fast implementation (#13).
+Recorded in `docs/DEVIATIONS.md` (rows 1–14). Most significant: REST + React SPA instead of Razor/MVC (#7); SQLite instead of SQL Server (#8); Round 2 visual inspection of screenshots side-by-side against `reference/design-images/` (#10); NU1903 suppressed for the mandated AutoMapper 12.0.1 (#11); `dotnet <dll>` wrappers with `-IfNeeded` rebuild (#12); provider fail-fast implementation (#13); JWT session issued upon signup OTP verification (#14).
 
 ---
 
 ## 4. Known issues and unverified items
 
-See `docs/KNOWN_ISSUES.md` (all historical P0/P1 issues fixed; remaining items are deliberate dataset choices or P3 notes). Unverified: no human-style visual inspection of the 572 screenshots (model cannot view images); real external provider adapters are not bundled by design (fail-fast is the intended behaviour). See `docs/FINAL_REPORT.md`.
+See `docs/KNOWN_ISSUES.md` (all historical P0/P1 issues and all Round 2 review findings `B1`–`B7`, `M`, `m` fixed and verified). Unverified: real external provider adapters are not bundled by design (fail-fast is the intended behaviour); no formal load/throughput benchmark or SQL Server deployment test. See `docs/FINAL_REPORT.md`.
 
 ---
 

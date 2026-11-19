@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Languages, Moon, Sun, Loader2, WifiOff, ShieldAlert, Home, Wrench, FileText, User, LayoutGrid } from 'lucide-react';
+import {
+  Languages, Moon, Sun, Loader2, WifiOff, ShieldAlert, Home, Wrench,
+  FileText, User, Car, Building2, CreditCard, Truck, Calendar
+} from 'lucide-react';
 import {
   PrefsProvider, usePrefs, SessionProvider, useSession, NavProvider, useNav,
-  getScreen, allScreens, homeForUser, PROVIDER_ROLES
+  getScreen, homeForUser
 } from './app/stores.jsx';
 import './app/screens.jsx';
 import { get } from './api/http.js';
@@ -11,22 +14,42 @@ import { renderView } from './ui/renderers.jsx';
 import { useColors, PrimaryButton, ShieldLogo } from './ui/kit.jsx';
 import SimulatorDock from './sim/SimulatorDock.jsx';
 
-// Preferred landing screen for each bottom-nav tab (the first registered screen is
-// not always the right one: C01 is the empty garage, C02 is the real home, etc.).
-const PREFERRED_TAB_SCREEN = {
-  CarOwner: { home: 'C02' },
-  Mechanic: { console: 'M01' },
-  TowCaptain: { console: 'T01' },
-  ServiceCenter: { overview: 'SC01' },
-  Admin: { overview: 'AD01' }
-};
-const TAB_ICONS = { home: Home, garage: LayoutGrid, centers: Wrench, requests: FileText, profile: User, console: LayoutGrid, earnings: FileText, jobs: FileText, trips: FileText, overview: LayoutGrid, appointments: FileText, services: Wrench, reports: FileText, kyc: ShieldAlert, users: User, settings: Wrench };
-const TAB_LABEL = {
-  home: ['Home', 'الرئيسية'], garage: ['Garage', 'جراجي'], centers: ['Centers', 'المراكز'], requests: ['Requests', 'الطلبات'],
-  profile: ['Profile', 'الملف'], console: ['Console', 'اللوحة'], earnings: ['Earnings', 'الأرباح'], jobs: ['Jobs', 'المهام'],
-  trips: ['Trips', 'الرحلات'], overview: ['Overview', 'نظرة عامة'], appointments: ['Appointments', 'المواعيد'],
-  services: ['Services', 'الخدمات'], reports: ['Reports', 'التقارير'], kyc: ['Verification', 'التوثيق'],
-  users: ['Users', 'المستخدمون'], settings: ['Settings', 'الإعدادات']
+const ROLE_TABS = {
+  CarOwner: [
+    { id: 'home', code: 'C02', en: 'Home', ar: 'الرئيسية', icon: Home, match: ['C01', 'C02', 'C06', 'C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C22', 'C25', 'C26', 'C27', 'C28', 'C29', 'C30', 'C31', 'C32', 'C33', 'C34', 'C35', 'C41', 'C42', 'SH03', 'SH19'] },
+    { id: 'garage', code: 'C04', en: 'Garage', ar: 'الجراج', icon: Car, match: ['C04', 'C05', 'C24'] },
+    { id: 'requests', code: 'C20', en: 'Requests', ar: 'الطلبات', icon: FileText, match: ['C20', 'C21', 'SH01', 'SH04'] },
+    { id: 'centers', code: 'C17', en: 'Centers', ar: 'المراكز', icon: Building2, match: ['C17', 'C18', 'C19', 'C36', 'C37', 'C38', 'C39', 'C40', 'C43'] },
+    { id: 'profile', code: 'C23', en: 'Profile', ar: 'حسابي', icon: User, match: ['C23'] }
+  ],
+  Mechanic: [
+    { id: 'console', code: 'M01', en: 'Console', ar: 'الرئيسية', icon: Home, match: ['M01', 'M02', 'SH03', 'SH19'] },
+    { id: 'jobs', code: 'M10', en: 'Jobs', ar: 'المهام', icon: Wrench, match: ['M03', 'M04', 'M05', 'M06', 'M10', 'M11', 'M12', 'SH01'] },
+    { id: 'earnings', code: 'M07', en: 'Earnings', ar: 'الأرباح', icon: CreditCard, match: ['M07', 'SH14', 'SH15', 'SH16', 'SH20'] },
+    { id: 'history', code: 'M08', en: 'History', ar: 'السجل', icon: FileText, match: ['M08', 'M13'] },
+    { id: 'profile', code: 'M09', en: 'Profile', ar: 'حسابي', icon: User, match: ['M09', 'M14', 'M15'] }
+  ],
+  TowCaptain: [
+    { id: 'dashboard', code: 'T01', en: 'Dashboard', ar: 'الرئيسية', icon: Home, match: ['T01', 'T02', 'SH03', 'SH19'] },
+    { id: 'trips', code: 'T11', en: 'Trips', ar: 'الرحلات', icon: Truck, match: ['T03', 'T04', 'T05', 'T06', 'T07', 'T08', 'T11', 'T14', 'SH01'] },
+    { id: 'earnings', code: 'T09', en: 'Earnings', ar: 'الأرباح', icon: CreditCard, match: ['T09', 'SH14', 'SH15', 'SH16', 'SH20'] },
+    { id: 'history', code: 'T12', en: 'History', ar: 'السجل', icon: FileText, match: ['T12', 'T13'] },
+    { id: 'profile', code: 'T10', en: 'Profile', ar: 'حسابي', icon: User, match: ['T10', 'T15'] }
+  ],
+  ServiceCenter: [
+    { id: 'overview', code: 'SC01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['SC01', 'SC06', 'SC07', 'SC13', 'SC14', 'SH03', 'SH19'] },
+    { id: 'bookings', code: 'SC02', en: 'Bookings', ar: 'الحجوزات', icon: Calendar, match: ['SC02', 'SC03', 'SC10', 'SC11', 'SC12', 'SC16', 'SH01'] },
+    { id: 'catalog', code: 'SC04', en: 'Catalog', ar: 'الخدمات', icon: Wrench, match: ['SC04', 'SC05', 'SC17'] },
+    { id: 'reports', code: 'SC08', en: 'Reports', ar: 'التقارير', icon: FileText, match: ['SC08'] },
+    { id: 'profile', code: 'SC09', en: 'Profile', ar: 'حسابي', icon: User, match: ['SC09', 'SC15'] }
+  ],
+  Admin: [
+    { id: 'overview', code: 'AD01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['AD01', 'AD07', 'AD08', 'AD09', 'AD10', 'AD16', 'AD17', 'AD18', 'SH03', 'SH19'] },
+    { id: 'verify', code: 'AD02', en: 'Verify', ar: 'التوثيق', icon: Car, match: ['AD02', 'AD03', 'AD15'] },
+    { id: 'users', code: 'AD04', en: 'Users', ar: 'المستخدمين', icon: FileText, match: ['AD04', 'AD11', 'AD12'] },
+    { id: 'pricing', code: 'AD05', en: 'Pricing', ar: 'التسعير', icon: Building2, match: ['AD05'] },
+    { id: 'profile', code: 'AD06', en: 'Profile', ar: 'حسابي', icon: User, match: ['AD06', 'AD13', 'AD14'] }
+  ]
 };
 
 function SystemRibbon({ status }) {
@@ -37,19 +60,34 @@ function SystemRibbon({ status }) {
 }
 
 function ThemeLangControls() {
-  const { theme, setTheme, lang, setLang } = usePrefs();
+  const { theme, setTheme, lang, setLang, isDark } = usePrefs();
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-1.5 items-center">
       <button aria-label="Toggle language" title="Toggle language" data-testid="toggle-lang"
         onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-        className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 grid place-items-center text-slate-600 dark:text-slate-300">
-        <Languages size={17} />
+        className={`h-7 px-2 rounded-full border text-[10px] font-bold flex items-center gap-1 transition ${
+          isDark ? 'border-[#262936] bg-[#1A1D26] text-slate-200' : 'border-slate-200 bg-slate-100 text-slate-700'
+        }`}>
+        <Languages size={12} />
+        <span>{lang === 'en' ? 'AR' : 'EN'}</span>
       </button>
       <button aria-label="Toggle theme" title="Toggle theme" data-testid="toggle-theme"
         onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 grid place-items-center text-slate-600 dark:text-slate-300">
-        {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
+        className={`w-7 h-7 rounded-full border grid place-items-center transition ${
+          isDark ? 'border-[#262936] bg-[#1A1D26] text-amber-400' : 'border-slate-200 bg-slate-100 text-slate-700'
+        }`}>
+        {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
       </button>
+    </div>
+  );
+}
+
+function PhoneStatusBar() {
+  const c = useColors();
+  return (
+    <div className={`shrink-0 h-9 px-4 flex items-center justify-between border-b ${c.border} ${c.bg} select-none`}>
+      <span className={`text-[11px] font-bold tracking-tight ${c.text}`} dir="ltr">9:41</span>
+      <ThemeLangControls />
     </div>
   );
 }
@@ -80,32 +118,46 @@ function SetupNeeded() {
 
 function BottomNav({ role, current }) {
   const { isAr } = usePrefs(); const nav = useNav(); const c = useColors();
-  const module = ({ CarOwner: 'owner', Mechanic: 'mechanic', TowCaptain: 'captain', ServiceCenter: 'center', Admin: 'admin' })[role];
-  const candidates = allScreens().filter((s) => s.module === module && s.main && s.tab && s.roles.includes(role));
-  const byTab = new Map();
-  for (const s of candidates) {
-    const preferred = PREFERRED_TAB_SCREEN[role]?.[s.tab];
-    const existing = byTab.get(s.tab);
-    // Always store a real screen: when a tab has no preferred code the first
-    // candidate must win, otherwise `undefined` enters the Map and the nav crashes.
-    if (!existing || s.code === preferred) byTab.set(s.tab, s);
-  }
-  const unique = Array.from(byTab.values()).filter(Boolean);
+  // Never display bottom tabs on Auth & Onboarding screens (A01-A13)
+  if (/^A\d{2}$/.test(current)) return null;
+  const tabs = ROLE_TABS[role] || ROLE_TABS.CarOwner;
+  const isTabActive = (t) => {
+    if (t.match.includes(current)) return true;
+    if (t.id === 'profile' && /^SH(02|05|06|07|08|09|10|11|12|13|17|18|21)$/.test(current)) return true;
+    return false;
+  };
   return (
-    <nav className={`shrink-0 border-t ${c.border} ${c.surface}`} style={{ gridTemplateColumns: `repeat(${Math.max(unique.length, 1)}, minmax(0,1fr))`, display: 'grid' }} aria-label="Main navigation">
-      {unique.map((s) => {
-        const Icon = TAB_ICONS[s.tab] || Home;
-        const label = TAB_LABEL[s.tab] || [s.tab, s.tab];
-        const active = current === s.code;
-        return (
-          <button key={s.code} data-testid={`nav-${s.tab}`} onClick={() => nav.go(s.code)}
-            className={`py-2.5 flex flex-col items-center gap-1 text-[10px] font-semibold min-h-[50px] ${active ? 'text-[#E51C23]' : c.secondaryText}`}>
-            <Icon size={18} /><span>{isAr ? label[1] : label[0]}</span>
-          </button>
-        );
-      })}
+    <nav className={`shrink-0 w-full border-t ${c.border} ${c.bg} px-2 pt-1.5 pb-2 z-30`} aria-label="Main navigation">
+      <div className="grid grid-cols-5">
+        {tabs.map((t) => {
+          const Icon = t.icon || Home;
+          const active = isTabActive(t);
+          return (
+            <button key={t.id} data-testid={`nav-${t.id}`} onClick={() => nav.go(t.code)}
+              className={`flex flex-col items-center justify-center gap-1 py-1 transition ${active ? 'text-[#E51C23]' : c.secondaryText}`}>
+              <Icon size={18} className={active ? 'stroke-[2.4]' : 'stroke-[1.8]'} />
+              <span className="text-[10px] font-semibold">{isAr ? t.ar : t.en}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="w-28 h-1 rounded-full bg-slate-500/40 mx-auto mt-1" />
     </nav>
   );
+}
+
+class ScreenErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidUpdate(prevProps) {
+    if (prevProps.code !== this.props.code && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return <NotFound code={this.props.code} />;
+  }
 }
 
 function ScreenRouter({ user }) {
@@ -113,11 +165,17 @@ function ScreenRouter({ user }) {
   const entry = getScreen(code);
   const allowed = entry && (!user ? entry.roles.includes('guest') : entry.roles.includes(user.role));
   if (!allowed) return <NotFound code={code} />;
-  return renderView(entry.view, params.id, params);
+  const Comp = entry.Component;
+  return (
+    <ScreenErrorBoundary code={code}>
+      {Comp ? <Comp id={params.id} params={params} code={code} entry={entry} /> : renderView(entry.view, params.id, params)}
+    </ScreenErrorBoundary>
+  );
 }
 
 function AuthenticatedApp({ user }) {
   const { isAr } = usePrefs();
+  const c = useColors();
   useEffect(() => {
     connectSignalR();
     const onRevoked = () => { window.location.hash = '#/A03'; };
@@ -126,9 +184,9 @@ function AuthenticatedApp({ user }) {
   }, []);
   const current = useNav().route.code;
   return (
-    <div className="h-full flex flex-col relative">
-      <div className="absolute top-2 end-3 z-40"><ThemeLangControls /></div>
-      <div className="flex-1 min-h-0 overflow-hidden" data-testid="screen-container">
+    <div className={`h-full flex flex-col relative ${c.bg}`}>
+      <PhoneStatusBar />
+      <div className="flex-1 min-h-0 overflow-y-auto" data-testid="screen-container">
         <ScreenRouter user={user} />
       </div>
       <BottomNav role={user.role} current={current} />
@@ -138,17 +196,22 @@ function AuthenticatedApp({ user }) {
 }
 
 function GuestApp() {
-  const nav = useNav(); const { isAr } = usePrefs();
-  const code = nav.route.code;
+  const nav = useNav(); const { isAr } = usePrefs(); const c = useColors();
+  const { code, params } = nav.route;
   const entry = getScreen(code);
   const allowed = entry && entry.roles.includes('guest');
+  const Comp = entry?.Component;
   return (
-    <div className="h-full flex flex-col relative">
-      <div className="absolute top-2 end-3 z-40"><ThemeLangControls /></div>
-      <div className="flex-1 min-h-0 overflow-hidden" data-testid="screen-container">
-        {allowed ? renderView(entry.view) : <NotFound code={code} />}
+    <div className={`h-full flex flex-col relative ${c.bg}`}>
+      <PhoneStatusBar />
+      <div className="flex-1 min-h-0 overflow-y-auto" data-testid="screen-container">
+        {allowed ? (
+          <ScreenErrorBoundary code={code}>
+            {Comp ? <Comp id={params.id} params={params} code={code} entry={entry} /> : renderView(entry.view, params.id, params)}
+          </ScreenErrorBoundary>
+        ) : <NotFound code={code} />}
       </div>
-      <div className="shrink-0 text-center py-2 text-[10px] text-slate-400">{isAr ? 'مساعدة على الطريق · FixNGo' : 'Roadside assistance · FixNGo'}</div>
+      {isAr && <span className="sr-only">اتجاه عربي</span>}
     </div>
   );
 }
@@ -170,24 +233,22 @@ function Shell() {
     <>
       <SystemRibbon status={status} />
       <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 bg-[#EEF2F6] dark:bg-[#090A0D]">
-        <div className="flex items-start justify-center gap-4 w-full max-w-[1120px]">
-          <div className="phone-frame shrink-0">
-            {!online && <div data-testid="offline-banner" className="bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1"><WifiOff size={12} />Offline — requests will replay</div>}
-            <div className="h-full overflow-hidden">
+        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 w-full max-w-[1120px]">
+          <div className="phone-frame shrink-0 flex flex-col">
+            {!online && <div data-testid="offline-banner" className="shrink-0 bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1"><WifiOff size={12} />Offline — requests will replay</div>}
+            <div className="flex-1 min-h-0 overflow-hidden">
               {blocked ? <SetupNeeded /> : !ready ? (
                 <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
               ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
             </div>
           </div>
-          {status?.simulatorsEnabled && user && <SimulatorDock />}
+          {status?.simulatorsEnabled && <SimulatorDock />}
         </div>
       </div>
     </>
   );
 }
 
-// Hook-free fatal fallback: ErrorBoundary sits ABOVE all context providers, so the
-// fallback must not call usePrefs()/useNav() (they would return null and crash again).
 function FatalFallback() {
   return (
     <div data-testid="not-found" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32, textAlign: 'center', background: '#F8FAFC', color: '#0F172A' }}>
@@ -198,7 +259,6 @@ function FatalFallback() {
   );
 }
 
-// Keeps an unexpected render error inside the phone frame and offers a safe exit.
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { failed: false }; }
   static getDerivedStateFromError() { return { failed: true }; }

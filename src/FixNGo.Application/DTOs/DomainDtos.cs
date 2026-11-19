@@ -16,7 +16,8 @@ public sealed record CreateRequestRequest(
     Guid? VehicleId, Guid ServiceTypeId, double PickupLatitude, double PickupLongitude,
     string PickupAddress, double? DestinationLatitude, double? DestinationLongitude,
     string? DestinationAddress, double DistanceKm, string? Problem, string? AnswersJson,
-    string? Note, RequestPriority Priority = RequestPriority.Normal);
+    string? Note, RequestPriority Priority = RequestPriority.Normal,
+    IReadOnlyList<Guid>? PhotoFileIds = null);
 public sealed record EstimateRequest(Guid ServiceTypeId, double DistanceKm);
 public sealed record EstimateDto(long LowMinor, long HighMinor, long TotalMinor, int SettingsVersion);
 public sealed record RequestDto(
@@ -24,7 +25,13 @@ public sealed record RequestDto(
     Guid CustomerId, Guid? VehicleId, double PickupLatitude, double PickupLongitude,
     string PickupAddress, double? DestinationLatitude, double? DestinationLongitude,
     double DistanceKm, long? EstimateMinor, long? QuoteMinor, PaymentMethodType? PaymentMethod,
-    DateTime CreatedAt, int Step, string? CancellationReason);
+    DateTime CreatedAt, int Step, string? CancellationReason,
+    Guid? AssignedProviderId = null, string? ProviderName = null, string? ProviderPhone = null,
+    decimal? ProviderRating = null, int? ProviderJobs = null, string? ProviderTruckMake = null,
+    string? ProviderTruckPlate = null, string? CustomerName = null, string? CustomerPhone = null,
+    string? VehicleMake = null, string? VehicleModel = null, int? VehicleYear = null,
+    string? VehicleColor = null, string? VehiclePlate = null, string? DestinationAddress = null,
+    string? Problem = null, string? Note = null, IReadOnlyList<Guid>? PhotoFileIds = null);
 public sealed record RequestEventDto(RequestStatus Status, string? Note, DateTime At);
 public sealed record CancelRequestRequest(string ReasonKey, string? Note = null);
 public sealed record StatusRequest(RequestStatus Status, string? Note = null);
@@ -34,7 +41,10 @@ public sealed record CandidateDto(Guid ProviderId, string Name, decimal Rating, 
     double DistanceKm, int EtaMinutes, long PriceMinor, double Score, string? AreaLabel, string? TruckMake);
 public sealed record SelectProviderRequest(Guid ProviderId);
 public sealed record OfferDto(Guid Id, Guid RequestId, Guid ProviderId, OfferStatus Status,
-    DateTime ExpiresAt, long PriceMinor, double DistanceKm, int EtaMinutes, bool IsP0);
+    DateTime ExpiresAt, long PriceMinor, double DistanceKm, int EtaMinutes, bool IsP0,
+    string? RequestCode = null, string? CustomerFirstName = null, string? PickupArea = null,
+    string? DestinationAddress = null, string? VehicleMake = null, string? VehicleModel = null,
+    int? VehicleYear = null, string? VehicleColor = null, string? Problem = null);
 public sealed record DeclineOfferRequest(string? Reason = null);
 
 // ---- Quotes ----
@@ -60,15 +70,20 @@ public sealed record WithdrawalDto(Guid Id, string Code, long AmountMinor, long 
 
 // ---- Centers, bookings, work orders ----
 public sealed record CenterDto(Guid Id, string Name, string Address, decimal Rating, int RatingCount,
-    int RecommendPercent, double? Latitude, double? Longitude, string? Description);
-public sealed record CenterServiceDto(Guid Id, string Name, long PriceMinor, int DurationMinutes);
+    int RecommendPercent, double? Latitude, double? Longitude, string? Description, string? Phone = null);
+public sealed record CenterServiceDto(Guid Id, string Name, long PriceMinor, int DurationMinutes, string? Description = null, bool IsActive = true);
 public sealed record AvailabilityDto(DateTime SlotStart, DateTime SlotEnd, bool Available);
 public sealed record CreateBookingRequest(Guid CenterId, Guid ServiceId, DateTime SlotStart, Guid? VehicleId, string? Note);
 public sealed record BookingDto(Guid Id, string Code, Guid CenterId, Guid ServiceId, Guid CustomerId,
-    DateTime SlotStart, DateTime SlotEnd, long PriceMinor, BookingStatus Status, string? Note);
+    DateTime SlotStart, DateTime SlotEnd, long PriceMinor, BookingStatus Status, string? Note,
+    string? CenterName = null, string? ServiceName = null, int? DurationMinutes = null,
+    string? CustomerName = null, string? CustomerPhone = null, string? VehicleLabel = null);
 public sealed record RescheduleRequest(DateTime SlotStart);
 public sealed record CancelBookingRequest(string? Reason = null);
-public sealed record WorkOrderDto(Guid Id, string Code, Guid BookingId, Guid CenterId, WorkOrderStatus Status, string? Notes);
+public sealed record WorkOrderDto(Guid Id, string Code, Guid BookingId, Guid CenterId, WorkOrderStatus Status, string? Notes,
+    string? BookingCode = null, string? ServiceName = null, string? CustomerName = null, string? VehicleLabel = null,
+    Guid? BayId = null, string? BayName = null, Guid? TechnicianId = null, string? TechnicianName = null,
+    bool SupervisorReviewed = false, DateTime? StartedAt = null);
 
 // ---- Providers / KYC ----
 public sealed record MechanicApplicationRequest(string FullName, string Phone, int YearsExperience, IReadOnlyList<Guid> Expertise);
@@ -76,12 +91,19 @@ public sealed record CaptainApplicationRequest(string FullName, string Phone, st
     string TruckType, decimal CapacityTonnes, string Plate);
 public sealed record CenterApplicationRequest(string BusinessName, string Address, double? Latitude, double? Longitude,
     string Phone, IReadOnlyList<Guid> Services);
+public sealed record KycDocumentDto(Guid Id, string DocumentType, Guid FileId, string Status, string? ReviewNote, DateTime CreatedAt);
 public sealed record KycApplicationDto(Guid Id, string Code, KycStatus Status, string ApplicantType,
-    string? BusinessName, string? ReviewerNote, DateTime SubmittedAt);
+    string? BusinessName, string? ReviewerNote, DateTime SubmittedAt,
+    Guid? UserId = null, string? FullName = null, string? Email = null, string? Phone = null,
+    string? Address = null, IReadOnlyList<KycDocumentDto>? Documents = null);
 public sealed record OnlineRequest(bool IsOnline, double? Latitude = null, double? Longitude = null);
 public sealed record HeartbeatRequest(double? Latitude = null, double? Longitude = null);
 public sealed record ProviderDto(Guid Id, string FullName, decimal Rating, int RatingCount, int CompletedJobs,
-    bool IsOnline, double? Latitude, double? Longitude, string? AreaLabel);
+    bool IsOnline, double? Latitude, double? Longitude, string? AreaLabel,
+    string? Email = null, string? Phone = null, KycStatus KycStatus = KycStatus.None,
+    int YearsExperience = 0, double CoverageRadiusKm = 5, string? CoverageArea = null,
+    string? TruckMake = null, string? TruckModel = null, string? TruckPlate = null,
+    string? TruckType = null, decimal? TruckCapacityTonnes = null);
 
 // ---- Reviews, notifications, chat ----
 public sealed record CreateReviewRequest(int Stars, string? Text, bool Recommend = true);

@@ -1,0 +1,22 @@
+GOAL MODE, unattended. Project root: C:\Users\xprenspel\Desktop\FixNGoFinal (work only inside it).
+
+ROUND 2 (fix pass). An independent reviewer ran the delivered system and found it is NOT done. Your previous hand-off overclaimed. Read, in this order: docs/REVIEW_FINDINGS.md (your work order: every finding + acceptance criteria), docs/agent-brief/00_MASTER_PROMPT.md, 02a/02b/02c inventories, 06_FRONTEND_MIGRATION.md, 07_TEST_QA_AND_EVIDENCE.md, then the legacy source in legacy-prototype/ and the design images in reference/design-images/.
+
+GOAL: make the real product work end-to-end in a real browser, with the client being a FAITHFUL PORT of the approved prototype (not generic renderers). Do not stop until every acceptance item in docs/REVIEW_FINDINGS.md is true and proven by tests that would fail if it were false.
+
+MUST DO
+1. Fix start.bat (B1/B2): SPA must be served (set ContentRoot/WebRoot correctly), rebuild when src/ or client/ is newer than app/, and add tests that run the REAL setup.bat/start.bat against temp data dirs and fetch / and a JS asset (200, HTML has root div).
+2. Replace client/src/app/screens.jsx generic registry with real screen components ported from the legacy JSX, module by module (Auth, Owner, Mechanic, Captain, Center, Admin, Shared). Keep the markup, classes, maps, steppers, chips, checklists, tab bars, cards, EN/AR RTL, light/dark. Bind to the API; no mock literals. Start with the broken blockers: A04->A05->home after OTP (session kept), A08/A09/A10 real forms with file upload and KYC submission, SH17/SH18 real upload/viewer, the full request wizard C06->C07/C26->C25->C08->C09->C10/C27->C11..C16 (location, follow-ups, photos, estimate, POST /requests, offers, tracking, payment, invoice, rating), C02 vehicle card, C23 profile, AD05 pricing save (fix 400 payload), AD12 suspend/restore, AD13 TOTP 2FA, AD14 sessions, AD16-AD18, provider modules, service center.
+3. Fix UI defects: raw enum/keys shown, header overlapping top buttons, bottom nav covering buttons, owner tabs shown on non-owner screens, dark mode not applied to the phone and dock, Simulator Dock must be visible on all screens (including pre-login OTP) when simulators are enabled, ErrorBoundary, fuel type as dropdown, add-vehicle navigates back, star rating, slot-based booking, tel: call button, no reset-token field in A07.
+4. Dummy generator: valid ASCII emails for Arabic names, include Suspended and every other status listed in 04_SCRIPTS_SPEC; keep dummy-db.md complete.
+5. Tests: Playwright flows through the UI for every flow listed in REVIEW_FINDINGS item 3, using multiple browser contexts; screen sweep must assert semantic content per screen (headings/fields/buttons expected from the legacy file), not only no-errors. Run the real .bat tools in tests.
+
+RULES
+- Never claim done without a test that fails if the claim is false. Do not weaken tests. Open and inspect screenshots; if you cannot view images, say so and add structure/pixel checks against baselines.
+- Work module by module in small verified steps: after each, run the app in a browser, update docs/SCREEN_MATRIX.md with TRUE status (done/partial/placeholder), append docs/AGENT_LOG.md, update docs/PROGRESS.md (RESUME HERE), git commit.
+- Tests use FIXNGO_DATA_DIR temp dirs and random ports, never the real data folder.
+- Never ask the owner questions. Log decisions in docs/DEVIATIONS.md. If blocked after 3 approaches, record in docs/KNOWN_ISSUES.md and continue.
+
+FINISH: tools/verify-all.ps1 exits 0 including the new real-start and UI-flow tests; rewrite docs/FINAL_REPORT.md and STATE.md with honest per-screen status; final message lists what works, what is partial, and what is unverified.
+
+Start now.

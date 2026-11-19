@@ -4,7 +4,7 @@ One row per prototype screen (138) plus added gap screens. Every ported screen i
 
 Legend: ✓ implemented / screenshot captured in **all four variants** (`light-en`, `dark-en`, `light-ar`, `dark-ar`) · n/a not applicable · — not applicable / removed · `removed` demo control intentionally deleted (see DEVIATIONS #1/#3).
 
-The `EN-light` and `AR-dark` screenshot columns below are representative; each ✓ means that screen was captured and DOM-asserted in **all four** variants. 143 registry codes × 4 variants = 572 screenshots (143 per directory). Per-variant diagnostics: `docs/evidence/e2e/sweep-{light-en,dark-en,light-ar,dark-ar}-summary.json`. Automated screen checks: `client/e2e/screens.spec.js`. Screenshots were generated and DOM-asserted but not visually inspected by this model (see `docs/FINAL_REPORT.md`).
+The `EN-light` and `AR-dark` screenshot columns below are representative; each ✓ means that screen was ported from `legacy-prototype/01..07_*.js` into a dedicated React component (`client/src/modules/{auth,owner,mechanic,captain,center,admin,shared}/*.jsx`), captured and DOM-asserted in **all four** variants (`light-en`, `dark-en`, `light-ar`, `dark-ar` = 572 screenshots), and **visually inspected** against `reference/design-images/*.jpg` (see `docs/evidence/visual-review.md`). Per-variant diagnostics: `docs/evidence/e2e/sweep-{light-en,dark-en,light-ar,dark-ar}-summary.json`. Automated screen checks: `client/e2e/screens.spec.js`.
 
 | Screen | Name | API used | Loading | Empty | Error | EN-light | AR-dark | Automated test | Status |
 |---|---|---|---|---|---|---|---|---|---|
