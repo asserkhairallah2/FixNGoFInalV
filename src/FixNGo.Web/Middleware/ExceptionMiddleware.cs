@@ -22,7 +22,8 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
         catch (DomainException ex)
         {
             logger.LogWarning("Domain error {Code}: {Message}", ex.Code, ex.Message);
-            await WriteProblem(context, HttpStatusCode.Conflict, ex.Code, ex.Message);
+            var status = StatusForCode(ex.Code);
+            await WriteProblem(context, status, ex.Code, ex.Message);
         }
         catch (FluentValidation.ValidationException ex)
         {
@@ -46,8 +47,15 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
         var problem = new Dictionary<string, object>
         {
             ["type"] = "https://tools.ietf.org/html/rfc7807",
-            ["title"] = status == HttpStatusCode.BadRequest ? "Validation failed"
-                : status == HttpStatusCode.Conflict ? "Conflict" : "Server error",
+            ["title"] = status switch
+            {
+                HttpStatusCode.BadRequest => "Validation failed",
+                HttpStatusCode.Unauthorized => "Unauthorized",
+                HttpStatusCode.Forbidden => "Forbidden",
+                HttpStatusCode.NotFound => "Not found",
+                HttpStatusCode.Conflict => "Conflict",
+                _ => "Server error"
+            },
             ["status"] = (int)status,
             ["code"] = code,
             ["detail"] = detail ?? string.Empty,
@@ -56,4 +64,17 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
         if (extra is not null) problem["errors"] = extra;
         await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
     }
+
+    /// <summary>Maps domain error codes to the correct HTTP status.</summary>
+    private static HttpStatusCode StatusForCode(string code) => code switch
+    {
+        "auth.invalid_credentials" or "auth.refresh_invalid" or "auth.refresh_reuse"
+            or "auth.refresh_expired" or "auth.reset_invalid" or "auth.reset_expired"
+            or "auth.otp_required" => HttpStatusCode.Unauthorized,
+        "auth.account_blocked" or "auth.account_suspended" or "auth.forbidden"
+            => HttpStatusCode.Forbidden,
+        "auth.email_exists" or "auth.phone_exists" or "auth.otp_rate_limit"
+            or "auth.otp_cooldown" => HttpStatusCode.Conflict,
+        _ => HttpStatusCode.Conflict
+    };
 }

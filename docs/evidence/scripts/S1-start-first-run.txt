@@ -1,0 +1,9 @@
+﻿=== S1: start.bat on empty data dir -> first-run setup -> healthy server -> exactly 1 admin ===
+check-setup (before): exit=10 {"setupComplete":false,"firstRun":true,"userCount":0,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-13fd4b79\\fixngo.db","dbExists":false,"mode":"real"}
+[PASS] check-setup reports first run (exit 10) on empty dir
+start.bat health poll: healthy=True
+[PASS] server responds /health after start.bat first-run
+check-setup (after): exit=0 {"setupComplete":true,"firstRun":false,"userCount":1,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-13fd4b79\\fixngo.db","dbExists":true,"mode":"real"}
+[PASS] check-setup reports set up (exit 0) after start.bat
+[PASS] exactly one user (the admin) exists
+

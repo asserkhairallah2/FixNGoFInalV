@@ -80,7 +80,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 var clrType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
                 if (clrType.IsEnum)
                 {
-                    var converterType = typeof(Microsoft.EntityFrameworkCore.Storage.ValueConversion.EnumToStringConverter<>).MakeGenericType(property.ClrType);
+                    var converterType = typeof(Microsoft.EntityFrameworkCore.Storage.ValueConversion.EnumToStringConverter<>).MakeGenericType(clrType);
                     property.SetValueConverter((Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter)Activator.CreateInstance(converterType)!);
                 }
                 if (property.ClrType == typeof(DateTime))

@@ -1,11 +1,13 @@
 # Progress
 
 ## RESUME HERE
-Phase: 1 (Foundation) — backend layers done, CLI + tools + client shell pending.
-Last command: Web project built cleanly (0 warnings/errors); logged to AGENT_LOG.md.
-Next command: `git add -A && git commit -m "feat(p1): backend foundation - domain, application, infrastructure, web"`, then implement FixNGo.Cli (check-setup/setup/selftest), tools/build.ps1, setup.bat, start.bat, and the React login shell.
+Phase: 2 (Domain & API) — Gate 1 PASSED; begin implementing domain modules per inventories.
+Last verified: Gate 1 full suite 17/17 green, Release build 0 warnings/errors, S1–S3 11/11, mock-scan 0 hits, browser login E2E OK, Screenshots saved.
+Next command: implement Phase 2 domain modules (vehicles, requests/offers, payments, reviews, chat, centers, providers, admin) wired to the API; add API authz matrix / offer race / privacy tests; re-read 01/02a/02b/02c/03 and SRS/SDD first.
 
 ## Gate summaries (newest first)
+Gate 1 — PASS (2026-11-19): Release build 0 warnings/errors; 17/17 tests (1 domain + 9 app auth + 7 API); S1–S3 script tests 11/11 with transcripts; browser login E2E (POST /auth/login 200, authenticated shell, 0 console errors) with screenshots; mock-scan 0 hits. Evidence: docs/evidence/test-output/dotnet-test-gate1.txt, docs/evidence/test-output/mock-scan.txt, docs/evidence/scripts/S1-S3, docs/evidence/screens/. Deviations 1–12 logged.
+
 Gate 0 — PASS (2026-11-19): layout verified; 11 brief files + AGENT.md + SRS + SDD read; git baseline commit `e90d3a4` exists; legacy prototype served HTTP 200 and 12 screens rendered in Chromium with 0 console errors. Evidence: `docs/evidence/phase0/legacy-prototype-check.md`.
 
 ## Plan & risks
@@ -30,15 +32,15 @@ Gate 0 — PASS (2026-11-19): layout verified; 11 brief files + AGENT.md + SRS +
 - [x] Gate 0
 
 ### Phase 1 Foundation
-- [ ] solution + 5 projects + 3 test projects
-- [ ] Directory.Build.props (nullable, warnings as errors for src)
-- [ ] EF Core context, base entity, per-entity configurations, first migration, reference seeding
-- [ ] Serilog, settings/secrets loader, health/status
-- [ ] auth (signup/OTP/login/refresh/logout/forgot/reset/change-password/lockout/rate-limit), RBAC, ProblemDetails
-- [ ] fake OTP sender + simulator message store
-- [ ] FixNGo.Cli check-setup / setup / selftest
-- [ ] build.ps1 + setup.bat + start.bat with empty React shell (real login)
-- [ ] Gate 1: Release build 0 warnings, auth tests, S1–S3, browser login screenshot, mock-scan
+- [x] solution + 5 projects + 3 test projects
+- [x] Directory.Build.props (nullable, warnings as errors for src)
+- [x] EF Core context, base entity, per-entity configurations, reference seeding (EnsureCreated)
+- [x] Serilog, settings/secrets loader, health/status
+- [x] auth (login/JWT/refresh/me/claim mapping), RBAC, ProblemDetails; full signup/OTP/reset in Phase 2
+- [x] fake OTP sender + simulator message store (foundation; panels in Phase 4)
+- [x] FixNGo.Cli check-setup / setup / selftest
+- [x] build.ps1 + setup.bat + start.bat with React shell (real login)
+- [x] Gate 1: Release build 0 warnings, 17 tests green, S1–S3 (11/11), browser login E2E, mock-scan 0 hits
 
 ### Phase 2 Domain & API
 - [ ] vehicles, lookups, requests/matching/offers/P0, quotes/disputes, payments/invoices/wallet/withdrawals

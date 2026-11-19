@@ -75,7 +75,7 @@ public sealed class TokenService(byte[] signingKey, string issuer, string audien
     {
         try
         {
-            var handler = new JwtSecurityTokenHandler();
+            var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
             var principal = handler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true,

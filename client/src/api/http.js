@@ -1,0 +1,73 @@
+// Fetch wrapper: base URL, bearer auth, single refresh-on-401, ProblemDetails errors.
+
+let accessToken = sessionStorage.getItem('fixngo.access');
+let refreshToken = sessionStorage.getItem('fixngo.refresh');
+
+export function setTokens(access, refresh) {
+  accessToken = access;
+  refreshToken = refresh;
+  if (access) sessionStorage.setItem('fixngo.access', access);
+  else sessionStorage.removeItem('fixngo.access');
+  if (refresh) sessionStorage.setItem('fixngo.refresh', refresh);
+  else sessionStorage.removeItem('fixngo.refresh');
+}
+
+export function clearTokens() { setTokens(null, null); }
+export function hasToken() { return !!accessToken; }
+
+export class ApiError extends Error {
+  constructor(status, payload, code) {
+    super(payload?.detail || payload?.title || `HTTP ${status}`);
+    this.status = status;
+    this.code = code || payload?.code;
+    this.errors = payload?.errors;
+  }
+}
+
+async function refresh() {
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken })
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    setTokens(data.accessToken, data.refreshToken);
+    return true;
+  } catch { return false; }
+}
+
+export async function api(path, options = {}) {
+  const { method = 'GET', body, idempotencyKey, _retried = false, ...rest } = options;
+  const headers = { ...(rest.headers || {}) };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+
+  let res;
+  try {
+    res = await fetch(path.startsWith('http') ? path : `/api/v1${path}`, {
+      method, headers, body: body !== undefined ? JSON.stringify(body) : undefined, ...rest
+    });
+  } catch (e) {
+    throw new ApiError(0, { detail: 'Connection interrupted.' }, 'network.offline');
+  }
+
+  if (res.status === 401 && !_retried && refreshToken) {
+    if (await refresh()) return api(path, { ...options, _retried: true });
+    clearTokens();
+    window.dispatchEvent(new CustomEvent('fixngo:session-revoked'));
+  }
+
+  const text = await res.text();
+  const payload = text ? (() => { try { return JSON.parse(text); } catch { return { detail: text }; } })() : null;
+  if (!res.ok) throw new ApiError(res.status, payload, payload?.code);
+  return payload;
+}
+
+export const get = (p, o) => api(p, { ...o, method: 'GET' });
+export const post = (p, b, o) => api(p, { ...o, method: 'POST', body: b });
+export const put = (p, b, o) => api(p, { ...o, method: 'PUT', body: b });
+export const del = (p, o) => api(p, { ...o, method: 'DELETE' });

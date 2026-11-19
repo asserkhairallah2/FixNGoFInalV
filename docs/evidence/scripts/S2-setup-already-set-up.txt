@@ -1,0 +1,17 @@
+﻿[SAVED] docs/evidence/scripts/S1-start-first-run.txt
+=== S2: setup.bat when already set up -> refuses, exit 2, no changes ===
+setup (first): exit=0 === FixNGo first-time setup ===
+Create the first Super Administrator.
+
+--- Review ---
+Name: Test Administrator
+Email: s3admin@fixngo.local
+Phone: +201000000007
+Password: ********
+Simulators: on
+[OK] Administrator created: s3admin@fixngo.local
+[PASS] first setup succeeds
+setup (second): exit=2 [WARN] System already has accounts. Use remove-db.bat to reset.
+[PASS] second setup refused with exit 2
+[PASS] refusal message is clear
+

@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+:root.dark { color-scheme: dark; }
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: #EEF2F6;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body.dark, .dark body { background: #0f172a; }
+* { -webkit-tap-highlight-color: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.phone-frame {
+  width: 393px; height: 852px; max-height: calc(100vh - 48px);
+  border-radius: 44px; overflow: hidden; position: relative;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.22), 0 0 0 10px #111827, 0 0 0 12px #1f2937;
+  background: #fff;
+}
+.dark .phone-frame { background: #0b1220; }
+
+@media (max-width: 767px) {
+  .phone-frame { width: 100vw; height: 100dvh; max-height: none; border-radius: 0; box-shadow: none; }
+}
+
+.field-input {
+  width: 100%; border: 1px solid #d1d5db; border-radius: 12px;
+  padding: 12px 14px; font-size: 15px; background: #fff; color: #111827;
+}
+.dark .field-input { background: #1e293b; border-color: #334155; color: #f8fafc; }
+.field-input:focus { outline: none; border-color: #E51C23; box-shadow: 0 0 0 3px rgba(229,28,35,.12); }
+
+.btn-primary {
+  width: 100%; background: #E51C23; color: #fff; font-weight: 700;
+  border-radius: 12px; padding: 14px; font-size: 16px; border: none; cursor: pointer;
+}
+.btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+.btn-primary:hover:not(:disabled) { background: #B7151A; }

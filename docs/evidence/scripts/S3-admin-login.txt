@@ -1,0 +1,9 @@
+﻿[SAVED] docs/evidence/scripts/S2-setup-already-set-up.txt
+=== S3: admin login via API with setup credentials -> 200 Admin; wrong password 401 ===
+[PASS] setup created admin
+[PASS] server healthy
+login correct: role=Admin tokenLen=453
+[PASS] correct credentials -> 200 role Admin
+login wrong: 401
+[PASS] wrong password -> 401
+

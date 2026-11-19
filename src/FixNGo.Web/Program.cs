@@ -17,6 +17,12 @@ var builder = WebApplication.CreateBuilder(args);
 // ---- Runtime paths & logging ----
 var paths = new RuntimePaths();
 paths.EnsureDirectories();
+// Own our PID file so the start/stop helpers can manage the server process.
+File.WriteAllText(paths.PidPath, Environment.ProcessId.ToString());
+AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+{
+    try { if (File.Exists(paths.PidPath)) File.Delete(paths.PidPath); } catch { /* best effort */ }
+};
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .MinimumLevel.Information()
@@ -43,11 +49,11 @@ await DatabaseSetup.EnsureAsync(paths);
 // ---- DI ----
 builder.Services.AddFixNGoInfrastructure(paths, connection);
 builder.Services.AddFixNGoTokenService(signingKey, issuer, audience, accessMinutes);
-builder.Services.Configure<AuthOptions>(o =>
+builder.Services.AddSingleton(new AuthOptions
 {
-    o.AccessMinutes = accessMinutes;
-    o.RefreshDays = builder.Configuration.GetValue("Auth:RefreshDays", 30);
-    o.ExposeDevCodes = exposeDevCodes;
+    AccessMinutes = accessMinutes,
+    RefreshDays = builder.Configuration.GetValue("Auth:RefreshDays", 30),
+    ExposeDevCodes = exposeDevCodes
 });
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddValidatorsFromAssembly(typeof(SignupValidator).Assembly);
@@ -56,11 +62,14 @@ builder.Services.AddValidatorsFromAssembly(typeof(SignupValidator).Assembly);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false; // keep "sub"/"email"/"role" claim names verbatim
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true,
             ValidateIssuerSigningKey = true, ValidIssuer = issuer, ValidAudience = audience,
-            IssuerSigningKey = new SymmetricSecurityKey(signingKey), ClockSkew = TimeSpan.Zero
+            IssuerSigningKey = new SymmetricSecurityKey(signingKey), ClockSkew = TimeSpan.Zero,
+            NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub,
+            RoleClaimType = "role"
         };
         options.Events = new JwtBearerEvents
         {
