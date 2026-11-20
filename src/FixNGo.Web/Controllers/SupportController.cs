@@ -3,6 +3,7 @@ using FixNGo.Application.Interfaces;
 using FixNGo.Application.Services;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FixNGo.Web.Controllers;
@@ -32,24 +33,68 @@ public sealed class SupportController(SupportService svc, IPasswordHasher hasher
 [ApiController]
 [Route("api/v1/files")]
 [Authorize]
-public sealed class FileController(IFileStore files, IAppDbContext db) : ControllerBase
+public sealed class FileController(IFileStore files, IAppDbContext db, FileAccessService access,
+    Microsoft.AspNetCore.DataProtection.IDataProtectionProvider protection) : ControllerBase
 {
+    private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(10);
+    private Microsoft.AspNetCore.DataProtection.ITimeLimitedDataProtector Protector =>
+        Microsoft.AspNetCore.DataProtection.DataProtectionAdvancedExtensions.ToTimeLimitedDataProtector(
+            protection.CreateProtector("FixNGo.FileDownload.v1"));
+
     [HttpPost("upload")]
+    [RequestSizeLimit(11 * 1024 * 1024)]
     public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string purpose, CancellationToken ct)
     {
+        if (file is null || file.Length == 0) return BadRequest(new { code = "file.missing", detail = "Choose a file to upload." });
         await using var stream = file.OpenReadStream();
-        var (id, _) = await files.SaveAsync(stream, file.FileName, file.ContentType, purpose, ct);
+        var (id, _) = await files.SaveAsync(stream, file.FileName, file.ContentType, purpose ?? "document", ct);
         var record = await db.UploadedFiles.FindAsync([id], ct);
-        return Ok(new FileDto(id, record!.FileName, record.ContentType, record.SizeBytes, record.Purpose));
+        record!.OwnerId = this.UserId();
+        await db.SaveChangesAsync(ct);
+        return Ok(new FileDto(id, record.FileName, record.ContentType, record.SizeBytes, record.Purpose));
+    }
+
+    /// <summary>Issues a short-lived token usable only for GET /api/v1/files/{id} (for img/a tags).</summary>
+    [HttpPost("token")]
+    public IActionResult Token()
+    {
+        var expires = DateTimeOffset.UtcNow.Add(TokenLifetime);
+        var payload = $"{this.UserId()}|{(this.IsAdmin() ? 1 : 0)}";
+        return Ok(new { token = Protector.Protect(payload, expires), expiresAt = expires.UtcDateTime });
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
+    [AllowAnonymous]
+    public async Task<IActionResult> Get(Guid id, [FromQuery] string? ft, CancellationToken ct)
     {
+        Guid caller; bool isAdmin;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            caller = this.UserId(); isAdmin = this.IsAdmin();
+        }
+        else if (!string.IsNullOrEmpty(ft) && TryReadToken(ft, out caller, out isAdmin)) { }
+        else return Unauthorized();
+
+        if (!await access.CanReadAsync(caller, isAdmin, id, ct)) return NotFound();
         var record = await db.UploadedFiles.FindAsync([id], ct);
         if (record is null) return NotFound();
         var stream = await files.OpenAsync(id, ct);
         if (stream is null) return NotFound();
+        Response.Headers["Cache-Control"] = "private, max-age=300";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
         return File(stream, record.ContentType, record.FileName);
+    }
+
+    private bool TryReadToken(string token, out Guid caller, out bool isAdmin)
+    {
+        caller = Guid.Empty; isAdmin = false;
+        try
+        {
+            var parts = Protector.Unprotect(token).Split('|');
+            if (parts.Length != 2 || !Guid.TryParse(parts[0], out caller)) return false;
+            isAdmin = parts[1] == "1";
+            return true;
+        }
+        catch (System.Security.Cryptography.CryptographicException) { return false; }
     }
 }

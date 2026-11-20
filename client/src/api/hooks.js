@@ -36,8 +36,15 @@ export function useDeleteVehicle() {
 }
 
 // ---- Requests / offers / quotes ----
-export const useRequests = () => q(k.requests, '/requests', { refetchInterval: 15_000 });
-export const useRequest = (id) => q(['requests', id], `/requests/${id}`, { enabled: !!id });
+// Terminal request states never change again, so polling stops for them.
+const TERMINAL = new Set(['Completed', 'Cancelled', 'NoProviders']);
+const activePoll = (ms) => (query) => {
+  const s = query.state.data?.status;
+  return s && TERMINAL.has(s) ? false : ms;
+};
+export const useRequests = () => q(k.requests, '/requests', { refetchInterval: 10_000 });
+// Live fallback: active requests refresh every 5 s even if the SignalR socket drops.
+export const useRequest = (id) => q(['requests', id], `/requests/${id}`, { enabled: !!id, refetchInterval: activePoll(5_000) });
 export const useTimeline = (id) => q(['requests', id, 'timeline'], `/requests/${id}/timeline`, { enabled: !!id });
 export const useCandidates = (id) => q(['requests', id, 'candidates'], `/requests/${id}/candidates`, { enabled: !!id });
 export const useRequestOffers = (id) => q(['requests', id, 'offers'], `/requests/${id}/offers`, { enabled: !!id });
@@ -87,7 +94,11 @@ export function useDispute(id) {
 // ---- Payments ----
 export const useMethods = () => q(k.methods, '/payments/methods');
 export const useInvoices = () => q(k.invoices, '/payments/invoices');
-export const useInvoiceForRequest = (id) => q(['invoices', 'request', id], `/payments/invoices/request/${id}`, { enabled: !!id });
+export const useInvoiceForRequest = (id) => q(['invoices', 'request', id], `/payments/invoices/request/${id}`, {
+  enabled: !!id,
+  retry: false,
+  refetchInterval: (query) => (query.state.data?.status === 'Paid' ? false : 5_000)
+});
 export const useWallet = () => q(k.wallet, '/payments/wallet');
 export const useEarnings = () => q(k.earnings, '/payments/earnings');
 export const useBanks = () => q(k.banks, '/payments/banks');

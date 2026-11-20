@@ -364,14 +364,18 @@ public sealed class SimulatorService(
             if (!string.IsNullOrWhiteSpace(inferredLabel)) profile.CoverageArea = inferredLabel;
             profile.LastHeartbeatAt = clock.UtcNow;
             var activeRequests = await db.ServiceRequests
-                .Where(r => r.AssignedProviderId == target && (r.Status == RequestStatus.Accepted || r.Status == RequestStatus.EnRoute))
+                .Where(r => r.AssignedProviderId == target && r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled)
                 .ToListAsync(ct);
+            await db.SaveChangesAsync(ct);
             foreach (var r in activeRequests)
             {
-                r.DistanceKm = Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, req.Latitude, req.Longitude), 1));
+                await notifier.NotifyLocationAsync(r.CustomerId, r.Id, req.Latitude, req.Longitude, ct);
+                await notifier.NotifyLocationAsync(target, r.Id, req.Latitude, req.Longitude, ct);
             }
+            return FromUser(user, profile);
         }
         await db.SaveChangesAsync(ct);
+        await notifier.NotifyLocationAsync(target, null, req.Latitude, req.Longitude, ct);
         return FromUser(user, profile);
     }
 
@@ -425,13 +429,14 @@ public sealed class SimulatorService(
             if (!string.IsNullOrWhiteSpace(inferredLabel)) user.AreaLabel = inferredLabel;
         }
         var activeRequests = await db.ServiceRequests
-            .Where(r => r.AssignedProviderId == req.ProviderId && (r.Status == RequestStatus.Accepted || r.Status == RequestStatus.EnRoute))
+            .Where(r => r.AssignedProviderId == req.ProviderId && r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled)
             .ToListAsync(ct);
+        await db.SaveChangesAsync(ct);
         foreach (var r in activeRequests)
         {
-            r.DistanceKm = Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, last.Latitude, last.Longitude), 1));
+            await notifier.NotifyLocationAsync(r.CustomerId, r.Id, last.Latitude, last.Longitude, ct);
+            await notifier.NotifyLocationAsync(req.ProviderId, r.Id, last.Latitude, last.Longitude, ct);
         }
-        await db.SaveChangesAsync(ct);
         var gps = FromUser(user ?? new User { Id = req.ProviderId }, profile);
         logger.LogInformation("Simulator moved provider {ProviderId} over {DistanceKm} km", req.ProviderId, route.DistanceKm);
         return new SimDriveResult(req.ProviderId, gps, route);

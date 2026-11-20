@@ -139,12 +139,21 @@ public sealed class RequestService(
             var dto = Mappings.Request(r);
             if (r.AssignedProviderId is not null && profiles.TryGetValue(r.AssignedProviderId.Value, out var prof))
             {
+                var pLat = prof.Latitude ?? r.AssignedProvider?.Latitude;
+                var pLon = prof.Longitude ?? r.AssignedProvider?.Longitude;
+                var pickupKm = pLat.HasValue && pLon.HasValue
+                    ? Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, pLat.Value, pLon.Value), 1)
+                    : (double?)null;
                 dto = dto with
                 {
                     ProviderRating = prof.Rating,
                     ProviderJobs = prof.CompletedJobs,
                     ProviderTruckMake = prof.TruckMake,
-                    ProviderTruckPlate = prof.TruckPlate
+                    ProviderTruckPlate = prof.TruckPlate,
+                    ProviderTruckType = prof.TruckType?.ToString(),
+                    ProviderLatitude = pLat,
+                    ProviderLongitude = pLon,
+                    PickupDistanceKm = pickupKm
                 };
             }
             return dto;
@@ -272,12 +281,21 @@ public sealed class RequestService(
             var prof = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == r.AssignedProviderId, ct);
             if (prof is not null)
             {
+                var pLat = prof.Latitude ?? r.AssignedProvider?.Latitude;
+                var pLon = prof.Longitude ?? r.AssignedProvider?.Longitude;
+                var pickupKm = pLat.HasValue && pLon.HasValue
+                    ? Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, pLat.Value, pLon.Value), 1)
+                    : (double?)null;
                 dto = dto with
                 {
                     ProviderRating = prof.Rating,
                     ProviderJobs = prof.CompletedJobs,
                     ProviderTruckMake = prof.TruckMake,
-                    ProviderTruckPlate = prof.TruckPlate
+                    ProviderTruckPlate = prof.TruckPlate,
+                    ProviderTruckType = prof.TruckType?.ToString(),
+                    ProviderLatitude = pLat,
+                    ProviderLongitude = pLon,
+                    PickupDistanceKm = pickupKm
                 };
             }
         }

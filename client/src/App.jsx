@@ -11,15 +11,17 @@ import {
 import './app/screens.jsx';
 import { get } from './api/http.js';
 import { connectSignalR, disconnectSignalR } from './api/signalr.js';
+import { useLiveSync } from './api/live.js';
+import { ensureFileToken, clearFileToken } from './api/http.js';
 import { renderView } from './ui/renderers.jsx';
 import { useColors, PrimaryButton, ShieldLogo } from './ui/kit.jsx';
 import SimulatorDock from './sim/SimulatorDock.jsx';
 
 const ROLE_TABS = {
   CarOwner: [
-    { id: 'home', code: 'C02', en: 'Home', ar: 'الرئيسية', icon: Home, match: ['C01', 'C02', 'C06', 'C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C22', 'C25', 'C26', 'C27', 'C28', 'C29', 'C30', 'C31', 'C32', 'C33', 'C34', 'C35', 'C41', 'C42', 'SH03', 'SH19'] },
+    { id: 'home', code: 'C02', en: 'Home', ar: 'الرئيسية', icon: Home, match: ['C01', 'C02', 'C06', 'C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C22', 'C25', 'C26', 'C27', 'C28', 'C29', 'C30', 'C31', 'C32', 'C35', 'SH03', 'SH19'] },
     { id: 'garage', code: 'C04', en: 'Garage', ar: 'الجراج', icon: Car, match: ['C04', 'C05', 'C24'] },
-    { id: 'requests', code: 'C20', en: 'Requests', ar: 'الطلبات', icon: FileText, match: ['C20', 'C21', 'SH01', 'SH04'] },
+    { id: 'requests', code: 'C20', en: 'Requests', ar: 'الطلبات', icon: FileText, match: ['C20', 'C21', 'C16', 'C41', 'C42', 'SH01', 'SH04'] },
     { id: 'centers', code: 'C17', en: 'Centers', ar: 'المراكز', icon: Building2, match: ['C17', 'C18', 'C19', 'C36', 'C37', 'C38', 'C39', 'C40', 'C43'] },
     { id: 'profile', code: 'C23', en: 'Profile', ar: 'حسابي', icon: User, match: ['C23'] }
   ],
@@ -42,7 +44,7 @@ const ROLE_TABS = {
     { id: 'bookings', code: 'SC02', en: 'Bookings', ar: 'الحجوزات', icon: Calendar, match: ['SC02', 'SC03', 'SC10', 'SC11', 'SC12', 'SC16', 'SH01'] },
     { id: 'catalog', code: 'SC04', en: 'Catalog', ar: 'الخدمات', icon: Wrench, match: ['SC04', 'SC05', 'SC17'] },
     { id: 'reports', code: 'SC08', en: 'Reports', ar: 'التقارير', icon: FileText, match: ['SC08'] },
-    { id: 'profile', code: 'SC09', en: 'Profile', ar: 'حسابي', icon: User, match: ['SC09', 'SC15', 'SH14', 'SH20'] }
+    { id: 'profile', code: 'SC09', en: 'Profile', ar: 'حسابي', icon: User, match: ['SC09', 'SC15', 'SH14', 'SH15', 'SH16', 'SH20'] }
   ],
   Admin: [
     { id: 'overview', code: 'AD01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['AD01', 'AD07', 'AD08', 'AD09', 'AD10', 'AD16', 'AD17', 'AD18', 'SH03', 'SH19'] },
@@ -123,6 +125,10 @@ function BottomNav({ role, current }) {
   if (/^A\d{2}$/.test(current) || current === 'SH13') return null;
   const tabs = ROLE_TABS[role] || ROLE_TABS.CarOwner;
   const isTabActive = (t) => {
+    if (role === 'CarOwner' && (current === 'C33' || current === 'C34')) {
+      const fromCheckout = Boolean(nav.route.params?.id) && nav.route.params?.from !== 'profile';
+      return fromCheckout ? t.id === 'home' : t.id === 'profile';
+    }
     if (t.match.includes(current)) return true;
     if (t.id === 'profile' && /^SH(02|05|06|07|08|09|10|11|12|18|21)$/.test(current)) return true;
     if (t.id === 'profile' && current === 'SH17' && role !== 'Admin') return true;
@@ -178,13 +184,25 @@ function ScreenRouter({ user }) {
 function AuthenticatedApp({ user }) {
   const { isAr } = usePrefs();
   const c = useColors();
+  const [filesReady, setFilesReady] = useState(false);
+  useLiveSync();
   useEffect(() => {
     connectSignalR();
+    // Short-lived, download-only token for <img>/<a> file URLs (never the JWT).
+    let cancelled = false;
+    ensureFileToken().finally(() => { if (!cancelled) setFilesReady(true); });
+    const refresher = setInterval(() => { ensureFileToken(true); }, 4 * 60_000);
     const onRevoked = () => { window.location.hash = '#/A03'; };
     window.addEventListener('fixngo:session-revoked', onRevoked);
-    return () => { disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked); };
-  }, []);
+    return () => {
+      cancelled = true; clearInterval(refresher); clearFileToken();
+      disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked);
+    };
+  }, [user.id]);
   const current = useNav().route.code;
+  if (!filesReady) {
+    return <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>;
+  }
   return (
     <div className={`h-full flex flex-col relative ${c.bg}`}>
       <PhoneStatusBar />

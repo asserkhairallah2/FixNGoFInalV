@@ -32,8 +32,35 @@ $forbidden = @(
 $forbiddenClientRegexes = @(
     "\|\|\s*'[A-Z]{1,4}-\d{2,4}'",
     "\|\|\s*\d",
-    "\|\|\s*'\+2010"
+    "\|\|\s*'\+2010",
+    # Round 4 A.2: a translated sentence used as submitted DATA (e.g. `text: text || t('Great service')`).
+    "^\s*\w+\s*:\s*[\w.?]+\s*\|\|\s*t\(\s*'[^']{12,}'"
 )
+
+# Round 4 A.2/A.3: product form state must not start pre-filled or pre-ticked.
+# Only UI-state names (tabs, filters, periods, modes, selection *type* pickers) may have literal defaults.
+$uiStateNameRx = '(?i)(tab|filter|period|mode|sort|sortBy|view|step|panel|section|range|scope|kind|type|unit|channel|lang|theme|direction|role|open|visible|expanded|loading|busy|ready|online|show\w*|is(Open|Visible|Loading|Busy|Ready))$'
+$confirmNameRx = '(?i)(confirm\w*|understood|agree\w*|ack\w*|accept\w*|consent\w*|isDefault|useAsPayout|recommend\w*|checked|ticked)$'
+$numericAllowRx = '(?i)(seconds\w*|timer|countdown|page|step|index|attempt\w*|retr\w*|zoom|limit|size|delay|interval|count|tick)$'
+
+function Test-FormStateLine([string]$line, [string]$path) {
+    if ($line -match 'mock-scan:allow') { return }
+    $m = [regex]::Match($line, 'const\s*\[\s*(\w+)\s*,\s*set\w+\s*\]\s*=\s*useState\((.*?)\)\s*;')
+    if (-not $m.Success) { return }
+    $name = $m.Groups[1].Value; $init = $m.Groups[2].Value.Trim()
+    if ($init -eq 'true' -and $name -match $confirmNameRx) {
+        $script:hits.Add("PRETICKED-CONFIRM [$name] ${path}: $($line.Trim())"); return
+    }
+    if ($init -match "^'([^']{2,})'$" -and $name -notmatch $uiStateNameRx) {
+        $script:hits.Add("PREFILLED-FORM [$name=$init] ${path}: $($line.Trim())"); return
+    }
+    if (($init -match "\|\|\s*'([^']{2,})'$" -or $init -match "\?\?\s*'([^']{2,})'$") -and $name -notmatch $uiStateNameRx) {
+        $script:hits.Add("PREFILLED-FALLBACK [$name=$init] ${path}: $($line.Trim())"); return
+    }
+    if ($init -match '^\d+(\.\d+)?$' -and $init -notin @('0', '1') -and $name -notmatch $numericAllowRx) {
+        $script:hits.Add("PREFILLED-NUMBER [$name=$init] ${path}: $($line.Trim())")
+    }
+}
 
 # Files that legitimately contain simulator vocabulary (fake providers / sim store).
 $simPathRegex = '(Simulator|Simulat|SimMessage|SimPayment|SimPush|FakeOtpSender|FakePaymentGateway|FakeMap|FakePush|SimulatorDock|Providers)'
@@ -55,10 +82,11 @@ function Test-File([string]$path, [bool]$checkSmells) {
         }
         if ($isClientSrc) {
             foreach ($rx in $forbiddenClientRegexes) {
-                if ($line -match $rx) {
+                if ($line -match $rx -and $line -notmatch 'mock-scan:allow') {
                     $script:hits.Add("FALLBACK-REGEX [$rx] ${path}: $($line.Trim())")
                 }
             }
+            if ($path -notmatch '[\\/](sim|tests)[\\/]') { Test-FormStateLine -line $line -path $path }
         }
         if ($checkSmells) {
             foreach ($smell in @('TODO', 'FIXME', 'lorem ipsum', 'placeholder data')) {

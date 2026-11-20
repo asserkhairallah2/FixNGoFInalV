@@ -91,6 +91,7 @@ builder.Services.AddSingleton(new AuthOptions
     ExposeDevCodes = exposeDevCodes
 });
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<FileAccessService>();
 // Phase 2 application services
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<VehicleService>();
@@ -132,10 +133,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = ctx =>
             {
+                // Only SignalR may carry the JWT in the query string (WebSocket handshake limitation).
+                // Files use a separate short-lived download token (?ft=), see FileController.
                 var token = ctx.Request.Query["access_token"];
                 if (!string.IsNullOrEmpty(token) &&
-                    (ctx.HttpContext.Request.Path.StartsWithSegments("/hubs") ||
-                     ctx.HttpContext.Request.Path.StartsWithSegments("/api/v1/files")))
+                    ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
                     ctx.Token = token;
                 return Task.CompletedTask;
             }

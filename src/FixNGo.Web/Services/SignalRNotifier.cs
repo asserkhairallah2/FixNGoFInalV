@@ -26,4 +26,7 @@ public sealed class SignalRNotifier(IAppDbContext db, IHubContext<AppHub> hub) :
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group($"user:{userId}").SendAsync("push", new { title, body, deepLink }, ct);
     }
+
+    public Task NotifyLocationAsync(Guid userId, Guid? requestId, double latitude, double longitude, CancellationToken ct = default) =>
+        hub.Clients.Group($"user:{userId}").SendAsync("location.updated", new { requestId, latitude, longitude }, ct);
 }

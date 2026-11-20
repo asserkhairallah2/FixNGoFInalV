@@ -12,12 +12,33 @@ export function setTokens(access, refresh) {
   else sessionStorage.removeItem('fixngo.refresh');
 }
 
-export function clearTokens() { setTokens(null, null); }
+export function clearTokens() { setTokens(null, null); clearFileToken(); }
 export function hasToken() { return !!accessToken; }
 export function getToken() { return accessToken; }
+
+// Download-only file token: short-lived (server: 10 min), scoped to GET /api/v1/files/{id}
+// and still subject to per-file ownership checks. The JWT is never placed in a URL.
+let fileToken = null;
+let fileTokenExpiresAt = 0;
+let fileTokenPromise = null;
+export function clearFileToken() { fileToken = null; fileTokenExpiresAt = 0; fileTokenPromise = null; }
+export async function ensureFileToken(force = false) {
+  if (!accessToken) return null;
+  if (!force && fileToken && Date.now() < fileTokenExpiresAt - 60_000) return fileToken;
+  if (fileTokenPromise) return fileTokenPromise;
+  fileTokenPromise = api('/files/token', { method: 'POST', body: {} })
+    .then((r) => {
+      fileToken = r?.token || null;
+      fileTokenExpiresAt = r?.expiresAt ? Date.parse(r.expiresAt) : Date.now() + 5 * 60_000;
+      return fileToken;
+    })
+    .catch(() => null)
+    .finally(() => { fileTokenPromise = null; });
+  return fileTokenPromise;
+}
 export function fileUrl(fileId) {
   if (!fileId) return '';
-  return `/api/v1/files/${fileId}${accessToken ? `?access_token=${encodeURIComponent(accessToken)}` : ''}`;
+  return `/api/v1/files/${fileId}${fileToken ? `?ft=${encodeURIComponent(fileToken)}` : ''}`;
 }
 
 export class ApiError extends Error {

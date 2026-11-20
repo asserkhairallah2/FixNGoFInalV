@@ -100,6 +100,9 @@ export function resolveDeepLink(rawTarget, role) {
     if (kind === 'withdrawal') {
       return { code: 'SH16', params };
     }
+    if (kind === 'chat') {
+      return { code: 'SH01', params: { ...params, threadId: entityId } };
+    }
   }
   const [code, query = ''] = cleaned.split('?');
   const params = Object.fromEntries(new URLSearchParams(query));
@@ -146,6 +149,7 @@ export function NavProvider({ children }) {
     const cleanParams = sanitizeParams({ ...resolved.params, ...(params || {}) });
     if (getScreen(targetCode)?.main) setHistory([]);
     else setHistory((h) => [...h, route]);
+    setRoute({ code: targetCode, params: cleanParams });
     window.location.hash = `#/${targetCode}${Object.keys(cleanParams).length ? '?' + new URLSearchParams(cleanParams).toString() : ''}`;
   }, [route]);
 
@@ -153,6 +157,7 @@ export function NavProvider({ children }) {
     const resolved = resolveDeepLink(code) || { code, params: {} };
     const targetCode = resolved.code || code;
     const cleanParams = sanitizeParams({ ...resolved.params, ...(params || {}) });
+    setRoute({ code: targetCode, params: cleanParams });
     window.location.hash = `#/${targetCode}${Object.keys(cleanParams).length ? '?' + new URLSearchParams(cleanParams).toString() : ''}`;
   }, []);
 

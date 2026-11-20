@@ -32,7 +32,9 @@ public sealed record RequestDto(
     string? VehicleMake = null, string? VehicleModel = null, int? VehicleYear = null,
     string? VehicleColor = null, string? VehiclePlate = null, string? DestinationAddress = null,
     string? Problem = null, string? Note = null, IReadOnlyList<Guid>? PhotoFileIds = null,
-    DateTime? AcceptedAt = null, DateTime? CompletedAt = null);
+    DateTime? AcceptedAt = null, DateTime? CompletedAt = null,
+    double? ProviderLatitude = null, double? ProviderLongitude = null,
+    double? PickupDistanceKm = null, string? ProviderTruckType = null);
 public sealed record RequestEventDto(RequestStatus Status, string? Note, DateTime At);
 public sealed record CancelRequestRequest(string ReasonKey, string? Note = null);
 public sealed record StatusRequest(RequestStatus Status, string? Note = null);
@@ -45,7 +47,8 @@ public sealed record OfferDto(Guid Id, Guid RequestId, Guid ProviderId, OfferSta
     DateTime ExpiresAt, long PriceMinor, double DistanceKm, int EtaMinutes, bool IsP0,
     string? RequestCode = null, string? CustomerFirstName = null, string? PickupArea = null,
     string? DestinationAddress = null, string? VehicleMake = null, string? VehicleModel = null,
-    int? VehicleYear = null, string? VehicleColor = null, string? Problem = null);
+    int? VehicleYear = null, string? VehicleColor = null, string? Problem = null,
+    double? TripDistanceKm = null);
 public sealed record DeclineOfferRequest(string? Reason = null);
 
 // ---- Quotes ----
@@ -79,7 +82,8 @@ public sealed record BookingDto(Guid Id, string Code, Guid CenterId, Guid Servic
     DateTime SlotStart, DateTime SlotEnd, long PriceMinor, BookingStatus Status, string? Note,
     string? CenterName = null, string? ServiceName = null, int? DurationMinutes = null,
     string? CustomerName = null, string? CustomerPhone = null, string? VehicleLabel = null,
-    string? ExtraDescription = null, long? ExtraMinor = null, long? BasePriceMinor = null);
+    string? ExtraDescription = null, long? ExtraMinor = null, long? BasePriceMinor = null,
+    string? InvoiceNumber = null, string? InvoiceStatus = null);
 public sealed record RescheduleRequest(DateTime SlotStart);
 public sealed record CancelBookingRequest(string? Reason = null);
 public sealed record WorkOrderDto(Guid Id, string Code, Guid BookingId, Guid CenterId, WorkOrderStatus Status, string? Notes,
@@ -116,9 +120,9 @@ public sealed record ChatMessageDto(Guid Id, Guid ThreadId, Guid SenderId, strin
 public sealed record ChatThreadDto(Guid Id, Guid CustomerId, Guid CounterpartId, IReadOnlyList<ChatMessageDto> Messages);
 
 // ---- Support / legal / safety ----
-public sealed record CreateTicketRequest(string Category, string Subject, string Description, string? ReferenceType = null, Guid? ReferenceId = null);
+public sealed record CreateTicketRequest(string Category, string Subject, string Description, string? ReferenceType = null, Guid? ReferenceId = null, Guid? AttachmentFileId = null);
 public sealed record TicketDto(Guid Id, string Code, string Category, string Subject, TicketStatus Status, DateTime CreatedAt);
-public sealed record TicketReplyRequest(string Text);
+public sealed record TicketReplyRequest(string Text, Guid? FileId = null);
 public sealed record SosRequest(double Latitude, double Longitude, string? Note = null);
 public sealed record SafetyReportRequest(string Category, Guid? ReportedUserId, Guid? RequestId, string Description);
 public sealed record DeletionRequest(string Password);

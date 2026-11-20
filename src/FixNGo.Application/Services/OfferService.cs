@@ -189,7 +189,8 @@ public sealed class OfferService(
                 VehicleModel = req.Vehicle?.Model,
                 VehicleYear = req.Vehicle?.Year,
                 VehicleColor = req.Vehicle?.Color,
-                Problem = req.Problem
+                Problem = req.Problem,
+                TripDistanceKm = Math.Round(req.DistanceKm, 1)
             };
         }).ToList();
     }

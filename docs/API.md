@@ -94,6 +94,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/chat/threads/{id}/location` | location | Bearer |
 | POST | `/api/v1/chat/threads/{id}/read` | read | Bearer |
 | POST | `/api/v1/files/upload` | upload | Bearer |
+| POST | `/api/v1/files/token` | token | Bearer |
 | GET | `/api/v1/files/{id}` | id | Bearer |
 | GET | `/health` | health | Bearer |
 | GET | `/api/v1/system/status` | status | Bearer |

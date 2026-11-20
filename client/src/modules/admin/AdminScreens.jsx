@@ -2957,6 +2957,7 @@ export function AD18Screen({ id, params }) {
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
+  const [replyError, setReplyError] = useState('');
 
   const activeTicket =
     threadQuery.data?.ticket ||
@@ -2969,12 +2970,15 @@ export function AD18Screen({ id, params }) {
     if (!activeTicket || !reply.trim()) return;
     setBusy(true);
     setStatusMsg('');
+    setReplyError('');
     try {
       await post(`/admin/tickets/${activeTicket.id}/reply`, { text: reply.trim() });
       setReply('');
       await threadQuery.refetch();
       queryClient.invalidateQueries({ queryKey: ['admin', 'tickets'] });
       setStatusMsg(isAr ? 'تم إرسال الرد' : 'Reply sent');
+    } catch (err) {
+      setReplyError(friendlyError(err, isAr, isAr ? 'تعذر إرسال الرد' : 'Could not send the reply'));
     } finally {
       setBusy(false);
     }
@@ -2984,11 +2988,14 @@ export function AD18Screen({ id, params }) {
     if (!activeTicket) return;
     setBusy(true);
     setStatusMsg('');
+    setReplyError('');
     try {
       await post(`/admin/tickets/${activeTicket.id}/close`, {});
       await threadQuery.refetch();
       queryClient.invalidateQueries({ queryKey: ['admin', 'tickets'] });
       setStatusMsg(isAr ? 'تم إغلاق التذكرة' : 'Ticket closed');
+    } catch (err) {
+      setReplyError(friendlyError(err, isAr, isAr ? 'تعذر إغلاق التذكرة' : 'Could not close the ticket'));
     } finally {
       setBusy(false);
     }
@@ -3001,9 +3008,7 @@ export function AD18Screen({ id, params }) {
           {isAr ? 'صندوق الدعم الفني' : 'Support inbox'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {isAr
-            ? `${fmtNumber(tickets.length, lang)} تذاكر دعم`
-            : `${fmtNumber(tickets.length, lang)} support tickets`}
+          {countLabel(tickets.length, lang, 'support ticket', 'support tickets', 'تذكرة دعم', 'تذاكر دعم')}
         </p>
       </div>
 
@@ -3060,19 +3065,55 @@ export function AD18Screen({ id, params }) {
                 <StatusBadge status={activeTicket.status} />
               </div>
 
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-1 text-[11px]" data-testid="ticket-customer">
+                <div className="flex justify-between gap-2">
+                  <span className={colors.secondaryText}>{isAr ? 'العميل' : 'Customer'}</span>
+                  <span className={`font-bold ${colors.text}`}>
+                    {activeTicket.customerName || '—'}
+                    {activeTicket.customerRole ? ` · ${formatLabel(activeTicket.customerRole, isAr)}` : ''}
+                  </span>
+                </div>
+                {activeTicket.customerEmail && (
+                  <div className="flex justify-between gap-2">
+                    <span className={colors.secondaryText}>{isAr ? 'البريد الإلكتروني' : 'Email'}</span>
+                    <span className={`font-semibold ${colors.text}`} dir="ltr">{activeTicket.customerEmail}</span>
+                  </div>
+                )}
+                {activeTicket.customerPhone && (
+                  <div className="flex justify-between gap-2">
+                    <span className={colors.secondaryText}>{isAr ? 'الهاتف' : 'Phone'}</span>
+                    <span className={`font-semibold ${colors.text}`} dir="ltr">{activeTicket.customerPhone}</span>
+                  </div>
+                )}
+                <div className="flex justify-between gap-2">
+                  <span className={colors.secondaryText}>{isAr ? 'المرجع' : 'Reference'}</span>
+                  <span className={`font-bold font-mono ${colors.text}`} data-testid="ticket-reference">
+                    {activeTicket.referenceCode
+                      ? `${activeTicket.referenceType === 'Booking' ? (isAr ? 'حجز' : 'Booking') : (isAr ? 'طلب' : 'Trip')} · ${activeTicket.referenceCode}`
+                      : (isAr ? 'بدون مرجع' : 'None')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-72 overflow-y-auto">
                 {messages.map((m) => (
                   <div
                     key={m.id}
+                    data-testid="ticket-message"
                     className={`p-2.5 rounded-xl ${
                       m.fromSupport ? 'bg-[#E51C23]/15 text-[#E51C23] ms-4' : `${colors.elevated} ${colors.text} me-4`
                     }`}
                   >
-                    <div className="flex justify-between text-[10px] opacity-80 mb-0.5">
-                      <span className="font-bold">{m.authorName || (m.fromSupport ? 'Support' : 'User')}</span>
+                    <div className="flex justify-between gap-2 text-[10px] opacity-80 mb-0.5">
+                      <span className="font-bold">
+                        {m.fromSupport
+                          ? `${isAr ? 'الدعم' : 'Support'}${m.authorName ? ` · ${m.authorName}` : ''}`
+                          : m.authorName || activeTicket.customerName || (isAr ? 'العميل' : 'Customer')}
+                      </span>
                       <span>{fmtDateTime(m.createdAt, lang)}</span>
                     </div>
-                    <p className="text-xs">{m.text}</p>
+                    <p className="text-xs whitespace-pre-wrap">{m.text}</p>
+                    {m.fileId && <TicketAttachment message={m} isAr={isAr} />}
                   </div>
                 ))}
               </div>

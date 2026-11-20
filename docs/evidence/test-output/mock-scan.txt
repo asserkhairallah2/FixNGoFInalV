@@ -1,6 +1,45 @@
-﻿Mock scan - 2026-11-20T00:21:53.8150927+00:00
-Files scanned: 109
+﻿Mock scan - 2026-11-20T01:37:19.6193961+00:00
+Files scanned: 112
 DomDump: (not supplied)
 Forbidden literals checked: 44
-Hits: 0
+Hits: 39
 
+PREFILLED-FORM [reason='Policy violation'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\admin\AdminScreens.jsx: const [reason, setReason] = useState('Policy violation');
+PRETICKED-CONFIRM [confirmed] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\admin\AdminScreens.jsx: const [confirmed, setConfirmed] = useState(true);
+PREFILLED-NUMBER [yearsExperience=5] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\auth\AuthScreens.jsx: const [yearsExperience, setYearsExperience] = useState(5);
+PREFILLED-FORM [truckMake='Isuzu NPR'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\auth\AuthScreens.jsx: const [truckMake, setTruckMake] = useState('Isuzu NPR');
+PREFILLED-FORM [capacityTonnes='3.5'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\auth\AuthScreens.jsx: const [capacityTonnes, setCapacityTonnes] = useState('3.5');
+PREFILLED-FORM [plate='TOW-4510'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\auth\AuthScreens.jsx: const [plate, setPlate] = useState('TOW-4510');
+FALLBACK-REGEX [\|\|\s*\d] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\auth\providerLabels.js: const count = Number(n) || 0;
+PREFILLED-FORM [truckCapacityTonnes='3.5'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\captain\CaptainScreens.jsx: const [truckCapacityTonnes, setTruckCapacityTonnes] = useState('3.5');
+PREFILLED-FORM [durationMinutes='30'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\center\CenterScreens.jsx: const [durationMinutes, setDurationMinutes] = useState('30');
+PREFILLED-NUMBER [calloutEgp=150] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\mechanic\MechanicScreens.jsx: const [calloutEgp, setCalloutEgp] = useState(150);
+PREFILLED-NUMBER [laborEgp=200] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\mechanic\MechanicScreens.jsx: const [laborEgp, setLaborEgp] = useState(200);
+PREFILLED-NUMBER [yearsExperience=5] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\mechanic\MechanicScreens.jsx: const [yearsExperience, setYearsExperience] = useState(5);
+PREFILLED-NUMBER [radius=15] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\mechanic\MechanicScreens.jsx: const [radius, setRadius] = useState(15);
+PREFILLED-FORM [reason='Schedule conflict'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerCentersAndProfile.jsx: const [reason, setReason] = useState('Schedule conflict');
+PREFILLED-NUMBER [stars=5] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerCentersAndProfile.jsx: const [stars, setStars] = useState(5);
+FALLBACK-REGEX [^\s*\w+\s*:\s*[\w.?]+\s*\|\|\s*t\(\s*'[^']{12,}'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerCentersAndProfile.jsx: text: text || t('Professional workshop and punctual bay service.', 'مركز خدمة محترف ومواعيد دقيقة.'),
+FALLBACK-REGEX [^\s*\w+\s*:\s*[\w.?]+\s*\|\|\s*t\(\s*'[^']{12,}'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: note: note || t('Emergency roadside assistance needed immediately', 'مطلوب مساعدة طوارئ فورية على الطريق')
+PREFILLED-FALLBACK [make=existing?.make || makesList[0]?.name || 'Toyota'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [make, setMake] = useState(existing?.make || makesList[0]?.name || 'Toyota');
+PREFILLED-FALLBACK [model=existing?.model || 'Corolla'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [model, setModel] = useState(existing?.model || 'Corolla');
+PREFILLED-FALLBACK [color=existing?.color || 'Silver'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [color, setColor] = useState(existing?.color || 'Silver');
+PREFILLED-FALLBACK [fuel=existing?.fuel || 'Petrol'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [fuel, setFuel] = useState(existing?.fuel || 'Petrol');
+PREFILLED-FALLBACK [selectedKey=params?.problemKey || flow?.serviceTypeKey || serviceTypes[0]?.key || 'tow_flatbed'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [selectedKey, setSelectedKey] = useState(params?.problemKey || flow?.serviceTypeKey || serviceTypes[0]?.key || 'tow_flatbed');
+PREFILLED-FALLBACK [pickupAddress=flow?.pickupAddress || '90th Street, 5th Settlement, New Cairo'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [pickupAddress, setPickupAddress] = useState(flow?.pickupAddress || '90th Street, 5th Settlement, New Cairo');
+PREFILLED-FALLBACK [destAddress=flow?.destinationAddress || 'Al-Rehab Gate 6 Service Zone, New Cairo'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [destAddress, setDestAddress] = useState(flow?.destinationAddress || 'Al-Rehab Gate 6 Service Zone, New Cairo');
+FALLBACK-REGEX [^\s*\w+\s*:\s*[\w.?]+\s*\|\|\s*t\(\s*'[^']{12,}'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: diagnosis: req?.problem || t('Upfront service estimate based on selected service and distance.', 'التكلفة التقديرية بناءً على الخدمة والمسافة المحددة.'),
+PREFILLED-FORM [reason='Spare parts price higher than expected'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [reason, setReason] = useState('Spare parts price higher than expected');
+PREFILLED-FORM [expMonth='12'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [expMonth, setExpMonth] = useState('12');
+PREFILLED-FORM [expYear='2028'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [expYear, setExpYear] = useState('2028');
+PREFILLED-FORM [label='CIB Visa Platinum'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [label, setLabel] = useState('CIB Visa Platinum');
+PRETICKED-CONFIRM [isDefault] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [isDefault, setIsDefault] = useState(true);
+PREFILLED-NUMBER [stars=5] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [stars, setStars] = useState(5);
+PRETICKED-CONFIRM [recommend] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [recommend, setRecommend] = useState(true);
+PREFILLED-FORM [cancelReason='changed_mind'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [cancelReason, setCancelReason] = useState('changed_mind');
+FALLBACK-REGEX [^\s*\w+\s*:\s*[\w.?]+\s*\|\|\s*t\(\s*'[^']{12,}'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: text: comment || t('Great fast roadside assistance!', 'خدمة ممتازة وسريعة على الطريق!'),
+PREFILLED-FALLBACK [reasonKey=cancelReasons[0]?.key || 'changed_mind'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\owner\OwnerWizardAndHome.jsx: const [reasonKey, setReasonKey] = useState(cancelReasons[0]?.key || 'changed_mind');
+PREFILLED-FORM [category='General'] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\shared\SharedScreens.jsx: const [category, setCategory] = useState('General');
+PRETICKED-CONFIRM [confirmed] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\shared\SharedScreens.jsx: const [confirmed, setConfirmed] = useState(true);
+PRETICKED-CONFIRM [useAsPayout] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\shared\SharedScreens.jsx: const [useAsPayout, setUseAsPayout] = useState(true);
+PRETICKED-CONFIRM [understood] C:\Users\xprenspel\Desktop\FixNGoFinal\client\src\modules\shared\SharedScreens.jsx: const [understood, setUnderstood] = useState(true);

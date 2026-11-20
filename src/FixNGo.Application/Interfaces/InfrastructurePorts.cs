@@ -48,4 +48,5 @@ public interface INotifier
 {
     Task NotifyUserAsync(Guid userId, NotificationType type, string title, string body, string? deepLink, CancellationToken ct = default);
     Task PushAsync(Guid userId, string title, string body, string? deepLink, CancellationToken ct = default);
+    Task NotifyLocationAsync(Guid userId, Guid? requestId, double latitude, double longitude, CancellationToken ct = default) => Task.CompletedTask;
 }

@@ -172,9 +172,25 @@ const EN_STATUS = {
   'settings.update': 'Updated pricing & platform settings',
   'user.suspend': 'Suspended user account', 'user.restore': 'Restored user account',
   'kyc.approve': 'Approved KYC application', 'kyc.reject': 'Rejected KYC application',
-  flatbed_tow: 'Flatbed Tow', mechanic: 'Mobile Mechanic', battery: 'Battery Jump',
+  flatbed_tow: 'Flatbed Tow', wheel_lift: 'Wheel Lift Tow', wheel_lift_tow: 'Wheel Lift Tow',
+  mechanic: 'Mobile Mechanic', battery: 'Battery Jump',
   battery_jump: 'Battery Jump', tire: 'Tire Change', tire_change: 'Tire Change',
-  fuel: 'Fuel Delivery', fuel_delivery: 'Fuel Delivery', lockout: 'Car Unlock', other: 'Other Issue'
+  fuel: 'Fuel Delivery', fuel_delivery: 'Fuel Delivery', lockout: 'Car Unlock', other: 'Other Issue',
+  Flatbed: 'Flatbed', WheelLift: 'Wheel Lift', Hook: 'Hook & Chain', HookAndChain: 'Hook & Chain', Integrated: 'Integrated',
+  JobEarning: 'Job earning', Earning: 'Earning', Withdrawal: 'Withdrawal', Payout: 'Payout',
+  Commission: 'Platform fee', Refund: 'Refund', Adjustment: 'Adjustment', Bonus: 'Bonus',
+  CashCollected: 'Cash collected', Cash: 'Cash', Card: 'Card', ApplePay: 'Apple Pay', Wallet: 'Wallet',
+  sedan: 'Sedan', suv: 'SUV', van: 'Van / Pickup', motorcycle: 'Motorcycle', hatchback: 'Hatchback', truck: 'Truck',
+  created: 'Request created', 'offer.sent': 'Offer sent to provider', 'offer.accepted': 'Provider accepted offer',
+  'offer.declined': 'Provider declined offer', 'offer.expired': 'Offer expired',
+  'quote.created': 'Estimate submitted', 'quote.sent': 'Estimate submitted',
+  'quote.approved': 'Estimate approved', 'quote.disputed': 'Estimate disputed',
+  'payment.cash_confirmed': 'Cash payment confirmed', 'payment.paid': 'Payment settled',
+  'radius.expanded': 'Search radius expanded', 'request.cancelled': 'Request cancelled', cancelled: 'Request cancelled',
+  'kyc.changes_needed': 'Requested KYC changes', 'kyc.changes': 'Requested KYC changes',
+  'payment.reconcile': 'Reconciled cash payment', 'safety.escalate': 'Escalated safety report',
+  'safety.dismiss': 'Dismissed safety report', 'review.hide': 'Hidden customer review',
+  'review.keep': 'Kept customer review', 'ticket.reply': 'Replied to support ticket'
 };
 const AR_STATUS = {
   Completed: 'مكتمل', Online: 'متصل', Offline: 'غير متصل', Active: 'نشط',
@@ -201,9 +217,25 @@ const AR_STATUS = {
   'settings.update': 'تحديث إعدادات التسعير والمنصة',
   'user.suspend': 'إيقاف حساب مستخدم', 'user.restore': 'استعادة حساب مستخدم',
   'kyc.approve': 'الموافقة على طلب توثيق', 'kyc.reject': 'رفض طلب توثيق',
-  flatbed_tow: 'ونش سطحة', mechanic: 'ميكانيكي متنقل', battery: 'شحن بطارية',
+  flatbed_tow: 'ونش سطحة', wheel_lift: 'ونش رفع العجلات', wheel_lift_tow: 'ونش رفع العجلات',
+  mechanic: 'ميكانيكي متنقل', battery: 'شحن بطارية',
   battery_jump: 'شحن بطارية', tire: 'تغيير إطار', tire_change: 'تغيير إطار',
-  fuel: 'توصيل وقود', fuel_delivery: 'توصيل وقود', lockout: 'فتح السيارة', other: 'مشكلة أخرى'
+  fuel: 'توصيل وقود', fuel_delivery: 'توصيل وقود', lockout: 'فتح السيارة', other: 'مشكلة أخرى',
+  Flatbed: 'سطحة', WheelLift: 'رفع العجلات', Hook: 'خطاف وسلسلة', HookAndChain: 'خطاف وسلسلة', Integrated: 'ونش متكامل',
+  JobEarning: 'أرباح مهمة', Earning: 'أرباح', Withdrawal: 'سحب أرباح', Payout: 'تحويل بنكي',
+  Commission: 'رسوم المنصة', Refund: 'استرداد', Adjustment: 'تسوية', Bonus: 'مكافأة',
+  CashCollected: 'تم تحصيل النقدية', Cash: 'نقداً', Card: 'بطاقة بنكية', ApplePay: 'آبل باي', Wallet: 'المحفظة',
+  sedan: 'سيدان', suv: 'دفع رباعي SUV', van: 'فان / نصف نقل', motorcycle: 'دراجة نارية', hatchback: 'هاتشباك', truck: 'شاحنة',
+  created: 'تم إنشاء الطلب', 'offer.sent': 'تم إرسال العرض لمقدم الخدمة', 'offer.accepted': 'قبل مقدم الخدمة العرض',
+  'offer.declined': 'اعتذر مقدم الخدمة عن العرض', 'offer.expired': 'انتهت صلاحية العرض',
+  'quote.created': 'تم تقديم المقايسة', 'quote.sent': 'تم تقديم المقايسة',
+  'quote.approved': 'تم اعتماد المقايسة', 'quote.disputed': 'تم الاعتراض على المقايسة',
+  'payment.cash_confirmed': 'تم تأكيد الدفع النقدي', 'payment.paid': 'تم السداد',
+  'radius.expanded': 'تم توسيع نطاق البحث', 'request.cancelled': 'تم إلغاء الطلب', cancelled: 'تم إلغاء الطلب',
+  'kyc.changes_needed': 'طلب تعديل مستندات التوثيق', 'kyc.changes': 'طلب تعديل مستندات التوثيق',
+  'payment.reconcile': 'مطابقة دفعة نقدية', 'safety.escalate': 'تصعيد بلاغ أمان',
+  'safety.dismiss': 'حفظ بلاغ أمان', 'review.hide': 'إخفاء تقييم عميل',
+  'review.keep': 'الإبقاء على تقييم عميل', 'ticket.reply': 'الرد على تذكرة دعم'
 };
 export function formatLabel(key, isAr = false) {
   if (key === null || key === undefined) return '—';
@@ -211,6 +243,16 @@ export function formatLabel(key, isAr = false) {
   if (isAr && AR_STATUS[s]) return AR_STATUS[s];
   if (!isAr && EN_STATUS[s]) return EN_STATUS[s];
   return s.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+export function pluralCount(n, singularEn, pluralEn, oneAr, fewAr, manyAr, isAr = false) {
+  const count = Number(n ?? 0);
+  if (isAr) {
+    const numStr = count.toLocaleString('ar-EG');
+    if (count === 1) return `${numStr} ${oneAr}`;
+    if (count === 0 || (count >= 2 && count <= 10)) return `${numStr} ${fewAr || oneAr}`;
+    return `${numStr} ${manyAr || oneAr}`;
+  }
+  return `${count} ${count === 1 ? singularEn : (pluralEn || `${singularEn}s`)}`;
 }
 export function StatusBadge({ status, text }) {
   const { isAr } = usePrefs();
@@ -223,28 +265,79 @@ export function StatusBadge({ status, text }) {
   );
 }
 
-// ---- Map (label/subtitle are data-driven; no baked distances/coordinates) ----
-export function MapView({ label, subtitle, mode = 'route' }) {
-  const c = useColors(); const { isDark } = usePrefs(); const { isAr } = usePrefs();
+// ---- Map (label/subtitle/markers/pin are data-driven; interactive click-to-pin supported) ----
+export function MapView({ label, subtitle, mode = 'route', height, markers = [], pin = null, onPick, interactive = false }) {
+  const c = useColors(); const { isDark, isAr } = usePrefs();
+  const canPick = Boolean(onPick) || interactive;
+  // Project Cairo-region coordinates (~29.95..30.15 lat, ~31.10..31.55 lng) onto [16..84]% box.
+  const project = (lat, lng, fallbackX, fallbackY) => {
+    if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
+      return { x: fallbackX, y: fallbackY };
+    }
+    const x = Math.min(86, Math.max(14, ((lng - 31.10) / 0.45) * 72 + 14));
+    const y = Math.min(82, Math.max(18, ((30.14 - lat) / 0.20) * 64 + 18));
+    return { x: Math.round(x), y: Math.round(y) };
+  };
+
+  const handleMapClick = (e) => {
+    if (!onPick) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xRatio = Math.min(1, Math.max(0, (e.clientX - rect.left) / Math.max(1, rect.width)));
+    const yRatio = Math.min(1, Math.max(0, (e.clientY - rect.top) / Math.max(1, rect.height)));
+    const lat = Number((30.14 - yRatio * 0.20).toFixed(5));
+    const lng = Number((31.10 + xRatio * 0.45).toFixed(5));
+    onPick({ lat, lng });
+  };
+
+  const pickupCoord = pin || markers[0] || null;
+  const providerCoord = markers.length > 1 ? markers[1] : null;
+  const destPt = project(pickupCoord?.lat, pickupCoord?.lng ?? pickupCoord?.lon, canPick ? 50 : 78, canPick ? 50 : 74);
+  const provPt = providerCoord
+    ? project(providerCoord.lat, providerCoord.lng ?? providerCoord.lon, 24, 28)
+    : { x: 24, y: 28 };
+
   return (
-    <div className={`relative w-full h-36 rounded-2xl overflow-hidden border ${c.border} ${isDark ? 'bg-[#0D1017]' : 'bg-[#F1F5F9]'}`} data-testid="map-view">
+    <div
+      onClick={canPick ? handleMapClick : undefined}
+      role={canPick ? 'button' : undefined}
+      tabIndex={canPick ? 0 : undefined}
+      aria-label={canPick ? (isAr ? 'اضغط لتحديد الموقع على الخريطة' : 'Click map to set pin location') : undefined}
+      style={height ? { height } : undefined}
+      className={`relative w-full ${height ? '' : 'h-36'} rounded-2xl overflow-hidden border ${c.border} ${isDark ? 'bg-[#0D1017]' : 'bg-[#F1F5F9]'} ${canPick ? 'cursor-crosshair select-none' : ''}`}
+      data-testid="map-view"
+    >
       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(to right, #64748B 1px, transparent 1px), linear-gradient(to bottom, #64748B 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
-      <div className="absolute inset-0 flex items-center justify-center"><div className="w-28 h-28 rounded-full border border-[#E51C23]/30 bg-[#E51C23]/5 animate-pulse" /></div>
-      {mode === 'route' && (
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 150" aria-hidden="true">
-          <path d="M 45 30 L 145 30 L 145 120 L 245 120" fill="none" stroke="#E51C23" strokeWidth="3.5" strokeLinecap="round" />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-28 h-28 rounded-full border border-[#E51C23]/30 bg-[#E51C23]/5 animate-pulse" /></div>
+      {!canPick && mode === 'route' && (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d={`M ${provPt.x} ${provPt.y} L ${(provPt.x + destPt.x) / 2} ${provPt.y} L ${(provPt.x + destPt.x) / 2} ${destPt.y} L ${destPt.x} ${destPt.y}`} fill="none" stroke="#E51C23" strokeWidth="2.4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         </svg>
       )}
-      <div className="absolute top-4 left-8 w-6 h-6 rounded-full bg-[#E51C23] text-white flex items-center justify-center shadow-lg"><Navigation size={12} /></div>
+      {!canPick && mode !== 'pin' && (
+        <div style={{ left: `${provPt.x}%`, top: `${provPt.y}%` }} className="absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#E51C23] text-white flex items-center justify-center shadow-lg pointer-events-none"><Navigation size={12} /></div>
+      )}
       {mode === 'arrived' ? (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-lg"><Check size={12} /> {isAr ? 'وصل مقدم الخدمة' : 'Provider at pickup'}</div>
         </div>
-      ) : (
-        <div className="absolute bottom-4 right-9 w-6 h-6 rounded-full bg-white text-[#090A0D] border-2 border-[#090A0D] flex items-center justify-center shadow-lg"><MapPin size={12} /></div>
+      ) : (!canPick || pickupCoord) ? (
+        <div
+          data-testid="map-pin"
+          style={{ left: `${destPt.x}%`, top: `${destPt.y}%` }}
+          className={`absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${canPick ? 'bg-[#E51C23] text-white border-2 border-white' : 'bg-white text-[#090A0D] border-2 border-[#090A0D]'} flex items-center justify-center shadow-lg pointer-events-none`}
+        >
+          <MapPin size={13} />
+        </div>
+      ) : null}
+      {subtitle && <div className="absolute top-2 left-3 right-3 truncate text-[9px] font-bold uppercase tracking-wider text-slate-400 pointer-events-none">{subtitle}</div>}
+      {canPick && !pickupCoord && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="px-3 py-1 rounded-full bg-black/75 text-white text-[10px] font-semibold">
+            {isAr ? 'اضغط على الخريطة لتحديد الموقع' : 'Tap anywhere on the map to drop pin'}
+          </span>
+        </div>
       )}
-      {subtitle && <div className="absolute top-2 left-3 text-[9px] font-bold uppercase tracking-wider text-slate-400">{subtitle}</div>}
-      {label && <div className="absolute bottom-2 left-3 px-2 py-0.5 rounded-lg bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1"><Navigation size={10} className="text-[#E51C23]" />{label}</div>}
+      {label && <div className="absolute bottom-2 left-3 max-w-[85%] truncate px-2 py-0.5 rounded-lg bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1 pointer-events-none"><Navigation size={10} className="text-[#E51C23] shrink-0" /><span className="truncate">{label}</span></div>}
     </div>
   );
 }

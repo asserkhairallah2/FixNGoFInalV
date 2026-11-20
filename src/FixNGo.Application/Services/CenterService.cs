@@ -230,13 +230,26 @@ public sealed class CenterService(
             q = center is null ? q.Where(b => b.CustomerId == callerId) : q.Where(b => b.CustomerId == callerId || b.CenterId == center.Id);
         }
         var list = await q.OrderByDescending(b => b.CreatedAt).Take(200).ToListAsync(ct);
-        return list.Select(Mappings.Booking).ToList();
+        var ids = list.Select(b => b.Id).ToList();
+        var invoices = ids.Count == 0
+            ? new Dictionary<Guid, Invoice>()
+            : await db.Invoices.Where(i => i.BookingId != null && ids.Contains(i.BookingId.Value))
+                .ToDictionaryAsync(i => i.BookingId!.Value, ct);
+        return list.Select(b =>
+        {
+            var dto = Mappings.Booking(b);
+            return invoices.TryGetValue(b.Id, out var inv)
+                ? dto with { InvoiceNumber = inv.Number, InvoiceStatus = inv.Status.ToString() }
+                : dto;
+        }).ToList();
     }
 
     public async Task<BookingDto> GetBookingAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
     {
         var b = await VisibleBooking(callerId, isAdmin, id, ct);
-        return Mappings.Booking(b);
+        var inv = await db.Invoices.FirstOrDefaultAsync(i => i.BookingId == b.Id, ct);
+        var dto = Mappings.Booking(b);
+        return inv is null ? dto : dto with { InvoiceNumber = inv.Number, InvoiceStatus = inv.Status.ToString() };
     }
 
     private async Task<Booking> VisibleBooking(Guid callerId, bool isAdmin, Guid id, CancellationToken ct)
@@ -356,7 +369,7 @@ public sealed class CenterService(
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(b.CustomerId, NotificationType.StatusCompleted, "Appointment complete",
             $"Booking {b.Code} was completed.", $"booking:{b.Id}", ct);
-        return Mappings.Booking(b);
+        return Mappings.Booking(b) with { InvoiceNumber = inv.Number, InvoiceStatus = inv.Status.ToString() };
     }
 
     public async Task<BookingDto> CancelBookingAsync(Guid callerId, bool isAdmin, Guid id, CancelBookingRequest req, CancellationToken ct = default)
