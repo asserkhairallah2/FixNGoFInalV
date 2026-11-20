@@ -193,3 +193,4 @@
 {"at":"2026-11-20T09:20:29.950Z","name":"F13 live SignalR tracking on C11 + reload retention","status":"PASS","requestId":"8367c275-d246-4d27-b48e-5979ce2b50cf","code":"FG-0007"}
 {"at":"2026-11-20T09:20:31.473Z","name":"F14 C14/C34 Paid + C19 closed Friday + C40 empty review + C38 Paid badge","status":"PASS","requestId":"379a0d80-44ed-46de-bca8-6417edc1e541","bookingId":"54f937ab-fb4c-4dc3-993f-006049efdbd5"}
 {"at":"2026-11-20T09:20:32.963Z","name":"F15 unticked confirmations + empty A09/A10/SH20 + AD05 reload","status":"PASS"}
+{"at":"2026-11-20T10:13:34.839Z","name":"F09 support ticket + attachment + ?ft= + AD18 author","status":"PASS","subject":"E2E UI ticket 1795169613722","ticketId":"ce706d68-8cee-457a-8157-211af5b3ea8f","console":[]}

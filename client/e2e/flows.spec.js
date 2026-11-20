@@ -544,13 +544,22 @@ test('F09 support ticket with attachment via SH08 UI + scoped ?ft= URL + AD18 au
     expect(ticket).toBeTruthy();
     ticketId = ticket.id;
 
-    // B.8: Admin opens AD18 for this ticket — customer message must show customer name (never "You") and attachment
+    // B.8: Admin opens AD18 inbox list -> filters by Open -> clicks ticket -> opens thread view -> returns to list
     await loginUI(adminPage, 'admin');
-    await adminPage.goto(`${await adminPage.evaluate(() => location.origin)}/#/AD18?id=${ticketId}`);
+    const adminOrigin = await adminPage.evaluate(() => location.origin);
+    await adminPage.goto(`${adminOrigin}/#/AD18`);
+    await expect(adminPage.locator('[data-testid="ticket-status-filters"]')).toBeVisible({ timeout: 15_000 });
+    await adminPage.locator('[data-testid="ticket-filter-Open"]').click();
+    await adminPage.locator('[data-testid="data-row"]', { hasText: subject }).first().click();
+
     await expect(adminPage.locator('[data-testid="ticket-attachment-image"]').first()).toBeVisible({ timeout: 15_000 });
     const msgText = await adminPage.locator('[data-testid="ticket-message"]').first().innerText();
     expect(msgText).not.toMatch(/^You\b/m);
     expect(msgText).toContain('Gate Two CarOwner');
+
+    // Back to inbox list keeps filter bar visible
+    await adminPage.locator('[data-testid="back-to-tickets"]').click();
+    await expect(adminPage.locator('[data-testid="ticket-status-filters"]')).toBeVisible();
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);

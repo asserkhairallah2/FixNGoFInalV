@@ -1,67 +1,67 @@
 {
-  "at": "2026-11-20T09:19:52.265Z",
+  "at": "2026-11-20T10:13:58.146Z",
   "baseURL": "http://127.0.0.1:54173",
-  "dataDir": "C:\\Users\\XPRENS~1\\AppData\\Local\\Temp\\2\\fixngo-e2e-data-1uE9N4",
+  "dataDir": "C:\\Users\\XPRENS~1\\AppData\\Local\\Temp\\2\\fixngo-e2e-data-mthQZF",
   "users": {
     "admin": {
-      "id": "e694466e-ee8e-43cc-93e9-87da3bd52942",
+      "id": "4bff51fa-4668-49f4-beca-d19c077195dc",
       "email": "admin@gate2.test",
       "role": "Admin"
     },
     "owner": {
-      "id": "deb59674-9228-4936-89e2-cea583641ba4",
+      "id": "2b220423-fe19-4fa0-83f3-9c68ab77502a",
       "email": "owner@gate2.test",
       "role": "CarOwner",
       "created": true
     },
     "mechanic": {
-      "id": "6354b5fa-234e-4fb5-98ac-8075e925b9b3",
+      "id": "445ecd19-54c1-4d09-b89b-4f5edef58777",
       "email": "mechanic@gate2.test",
       "role": "Mechanic",
       "created": true
     },
     "captain": {
-      "id": "dd48c592-f5b2-4763-893d-47b056a3bbb8",
+      "id": "5dd65590-f93b-4a0d-8cc2-c49f643ccb97",
       "email": "captain@gate2.test",
       "role": "TowCaptain",
       "created": true
     },
     "center": {
-      "id": "3a7f9cf3-a06f-4655-bd0e-e1453192a938",
+      "id": "be12e73c-8c67-4d90-b94c-52cd6ff3b97c",
       "email": "center@gate2.test",
       "role": "ServiceCenter",
       "created": true
     },
     "kyc": {
-      "id": "5d5b16ca-ea2c-4601-90d8-1f83e66bbc64",
+      "id": "0b4bb342-150a-4d5f-a66f-4f0fbb7eb757",
       "email": "kyctest@gate2.test",
       "role": "Mechanic"
     }
   },
   "ids": {
-    "kycApplicationId": "287886ae-a7f8-484c-83e4-d7ac97a382ad",
-    "serviceTypeId": "78b9448d-2add-4c36-9697-19c0aa87be4e",
-    "mechanicServiceTypeId": "8798e0d7-9028-4fbe-b0ed-431319fea195",
-    "vehicleId": "a48b3051-e97b-4bac-b831-9b765a3e5f8c",
-    "requestId": "fafd9228-4be7-451c-b0e2-f714597c9341",
+    "kycApplicationId": "96f81437-b303-4604-b12e-bf9b9986d4bc",
+    "serviceTypeId": "2184dc24-3d78-480b-a3e9-28badbd4b5ac",
+    "mechanicServiceTypeId": "35b280b6-15b1-4de1-9adf-79392e08d711",
+    "vehicleId": "0cd58019-b15b-4312-95e2-7dc4ecffda62",
+    "requestId": "4d19aff5-da83-4660-b172-2bf7f8ba952a",
     "requestCode": "FG-0001",
-    "offerId": "d2e46f56-49b2-45b6-9988-03f56de58097",
-    "mechanicRequestId": "c96ac641-cebc-4360-9573-245eaa93e6a9",
-    "pendingMechanicOfferId": "3c6066c6-0e3f-4a85-9709-db8f597d9221",
-    "pendingCaptainOfferId": "7319aa84-88f0-4400-a9ff-925c368dccee",
-    "quoteId": "cbd2d1f8-7cf1-4779-801e-15943b82e530",
-    "centerServiceId": "8d47fca4-75a5-477f-acc4-54e75568f78e",
-    "centerId": "571e608e-3c30-4556-9aad-6a51aced9c1b",
-    "bookingId": "aac6c72e-f618-4c1a-b4f2-981f751364b0",
-    "workOrderId": "437fb29e-ca32-4869-b7d3-514b6e8b65ca",
-    "cardId": "70041ca4-a510-4232-a6d0-88ce6693ea51",
-    "invoiceId": "bf4310d5-2c12-4c4a-88c1-1d68dcba4f57",
-    "paymentId": "4415d0d2-4830-495f-a672-1be8e817489b",
-    "paymentReviewId": "6f9228c7-93a3-46a2-bd95-a64cc54cd088",
-    "threadId": "b704fee1-92bc-4cfc-a118-48a2b9203a20",
-    "ticketId": "bb4aae67-704b-489d-80e4-ca32395dc59f",
-    "sosId": "1d32e774-1f5a-4deb-9c54-35289024b045",
-    "safetyReportId": "ba205993-e44b-43e2-8261-444d44719b97"
+    "offerId": "5b643145-5469-41c0-8a1b-5ed0e854db47",
+    "mechanicRequestId": "5b3396f5-119e-49e1-b929-1f7f368c6ddc",
+    "pendingMechanicOfferId": "c138c17b-3e1f-41e3-90f1-48c77caf8425",
+    "pendingCaptainOfferId": "5e49e645-c3d6-41ec-b0af-9972c542d34d",
+    "quoteId": "eddfa173-76d8-4e61-a343-4f464f9547e0",
+    "centerServiceId": "15649cef-6b94-4b5c-bb04-4298b22b7367",
+    "centerId": "cfa35183-6cd9-495f-a679-556f2e2bcf23",
+    "bookingId": "356f202b-06be-41f8-b8c0-dfd25a860838",
+    "workOrderId": "3e784650-4b69-4f81-8d45-26d47c400316",
+    "cardId": "c0c3698a-417a-482a-94e9-3e075931fd6a",
+    "invoiceId": "3455fe75-a31e-48bc-9171-245f78465ff6",
+    "paymentId": "b03a859a-d351-4b58-8176-4dbef7584d59",
+    "paymentReviewId": "6a6e961c-4503-4668-8e0e-49800d36935a",
+    "threadId": "82d8a711-a719-4b62-bde2-d1750566ae8e",
+    "ticketId": "8e241e41-aa0c-48ee-a1ee-ccc46e299d0e",
+    "sosId": "578417cf-c5de-4cf3-a1ec-9d31806115ef",
+    "safetyReportId": "528d8fb7-31ae-4c4f-b6ef-9059c3af11d3"
   },
   "prerequisites": {
     "candidates": 1,

@@ -11,7 +11,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 1134
+      "chars": 906
     },
     "console": []
   },
@@ -27,14 +27,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 954
+      "chars": 515
     },
     "console": []
   },
   {
     "code": "AD03",
     "role": "admin",
-    "hash": "#/AD03?id=287886ae-a7f8-484c-83e4-d7ac97a382ad",
+    "hash": "#/AD03?id=96f81437-b303-4604-b12e-bf9b9986d4bc",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\AD03.png",
     "diagnostics": {
       "bad": [],
@@ -43,7 +43,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 935
+      "chars": 710
     },
     "console": []
   },
@@ -59,7 +59,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 1123
+      "chars": 803
     },
     "console": []
   },
@@ -75,7 +75,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 979
+      "chars": 754
     },
     "console": []
   },
@@ -91,7 +91,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 919
+      "chars": 694
     },
     "console": []
   },
@@ -107,14 +107,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 722
+      "chars": 497
     },
     "console": []
   },
   {
     "code": "AD08",
     "role": "admin",
-    "hash": "#/AD08?id=6f9228c7-93a3-46a2-bd95-a64cc54cd088",
+    "hash": "#/AD08?id=6a6e961c-4503-4668-8e0e-49800d36935a",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\AD08.png",
     "diagnostics": {
       "bad": [],
@@ -123,7 +123,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 889
+      "chars": 664
     },
     "console": []
   },
@@ -139,14 +139,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 811
+      "chars": 586
     },
     "console": []
   },
   {
     "code": "AD10",
     "role": "admin",
-    "hash": "#/AD10?id=ba205993-e44b-43e2-8261-444d44719b97",
+    "hash": "#/AD10?id=528d8fb7-31ae-4c4f-b6ef-9059c3af11d3",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\AD10.png",
     "diagnostics": {
       "bad": [],
@@ -155,14 +155,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 697
+      "chars": 472
     },
     "console": []
   },
   {
     "code": "AD11",
     "role": "admin",
-    "hash": "#/AD11?id=6354b5fa-234e-4fb5-98ac-8075e925b9b3",
+    "hash": "#/AD11?id=445ecd19-54c1-4d09-b89b-4f5edef58777",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\AD11.png",
     "diagnostics": {
       "bad": [],
@@ -171,7 +171,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 883
+      "chars": 657
     },
     "console": []
   },
@@ -187,7 +187,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 1306
+      "chars": 1017
     },
     "console": []
   },
@@ -203,7 +203,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 750
+      "chars": 525
     },
     "console": []
   },
@@ -219,14 +219,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 2462
+      "chars": 933
     },
     "console": []
   },
   {
     "code": "AD15",
     "role": "admin",
-    "hash": "#/AD15?id=287886ae-a7f8-484c-83e4-d7ac97a382ad",
+    "hash": "#/AD15?id=96f81437-b303-4604-b12e-bf9b9986d4bc",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\AD15.png",
     "diagnostics": {
       "bad": [],
@@ -235,7 +235,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 943
+      "chars": 718
     },
     "console": []
   },
@@ -251,7 +251,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 981
+      "chars": 591
     },
     "console": []
   },
@@ -267,14 +267,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 626
+      "chars": 401
     },
     "console": []
   },
   {
     "code": "AD18",
     "role": "admin",
-    "hash": "#/AD18?id=bb4aae67-704b-489d-80e4-ca32395dc59f",
+    "hash": "#/AD18?id=8e241e41-aa0c-48ee-a1ee-ccc46e299d0e",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\AD18.png",
     "diagnostics": {
       "bad": [],
@@ -283,7 +283,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 984
+      "chars": 604
     },
     "console": []
   }

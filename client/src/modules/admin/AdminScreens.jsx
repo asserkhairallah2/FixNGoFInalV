@@ -160,13 +160,13 @@ function TicketAttachment({ message, isAr }) {
   );
 }
 
-function AdminShell({ code, title, children }) {
+function AdminShell({ code, title, onBack, children }) {
   const colors = useColors();
   const nav = useNav();
-  const showBack = !ADMIN_MAIN_SCREENS.includes(code);
+  const showBack = Boolean(onBack) || !ADMIN_MAIN_SCREENS.includes(code);
   return (
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
-      <AppTopBar showBack={showBack} onBack={() => nav.back()} title={title} />
+      <AppTopBar showBack={showBack} onBack={onBack || (() => nav.back())} title={title} />
       <div className="flex-1 p-4 space-y-3.5 pb-6">{children}</div>
     </div>
   );
@@ -3094,17 +3094,21 @@ export function AD17Screen() {
 export function AD18Screen({ id, params }) {
   const colors = useColors();
   const { isAr, lang } = usePrefs();
+  const nav = useNav();
   const queryClient = useQueryClient();
+  const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
+  const BackChevron = isAr ? ChevronRight : ChevronLeft;
   const ticketsQuery = useAdminTickets();
   const tickets = Array.isArray(ticketsQuery.data) ? ticketsQuery.data : [];
 
-  const [selectedId, setSelectedId] = useState(id || params?.id || '');
+  const incomingId = id || params?.id || '';
+  const [selectedId, setSelectedId] = useState(incomingId);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (!selectedId && tickets.length > 0) {
-      setSelectedId(tickets[0].id);
-    }
-  }, [tickets, selectedId]);
+    setSelectedId(incomingId);
+  }, [incomingId]);
 
   const threadQuery = useQuery({
     queryKey: ['support', 'tickets', selectedId],
@@ -3117,11 +3121,52 @@ export function AD18Screen({ id, params }) {
   const [statusMsg, setStatusMsg] = useState('');
   const [replyError, setReplyError] = useState('');
 
+  const statusCounts = useMemo(() => {
+    const counts = { All: tickets.length, NeedsReply: 0, Open: 0, AwaitingSupport: 0, Answered: 0, Closed: 0 };
+    for (const t of tickets) {
+      if (t.status === 'Open') { counts.Open += 1; counts.NeedsReply += 1; }
+      else if (t.status === 'AwaitingSupport') { counts.AwaitingSupport += 1; counts.NeedsReply += 1; }
+      else if (t.status === 'Answered') counts.Answered += 1;
+      else if (t.status === 'Closed') counts.Closed += 1;
+    }
+    return counts;
+  }, [tickets]);
+
+  const filteredTickets = useMemo(() => {
+    const needle = searchTerm.trim().toLowerCase();
+    return tickets.filter((t) => {
+      if (statusFilter === 'NeedsReply' && t.status !== 'Open' && t.status !== 'AwaitingSupport') return false;
+      if (statusFilter !== 'All' && statusFilter !== 'NeedsReply' && t.status !== statusFilter) return false;
+      if (!needle) return true;
+      const hay = `${t.code || ''} ${t.subject || ''} ${t.category || ''} ${t.customerName || ''}`.toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [tickets, statusFilter, searchTerm]);
+
   const activeTicket =
     threadQuery.data?.ticket ||
     tickets.find((t) => String(t.id) === String(selectedId)) ||
     null;
   const messages = Array.isArray(threadQuery.data?.messages) ? threadQuery.data.messages : [];
+
+  const openTicket = (ticketId) => {
+    setStatusMsg('');
+    setReplyError('');
+    setReply('');
+    setSelectedId(ticketId);
+    nav.replace('AD18', { id: ticketId });
+    if (typeof document !== 'undefined') {
+      document.querySelector('.phone-scroll, main')?.scrollTo?.(0, 0);
+    }
+  };
+
+  const closeTicketView = () => {
+    setStatusMsg('');
+    setReplyError('');
+    setReply('');
+    setSelectedId('');
+    nav.replace('AD18');
+  };
 
   const handleReply = async (e) => {
     if (e) e.preventDefault();
@@ -3159,6 +3204,149 @@ export function AD18Screen({ id, params }) {
     }
   };
 
+  const filterTabs = [
+    { id: 'All', label: isAr ? 'الكل' : 'All', count: statusCounts.All },
+    { id: 'NeedsReply', label: isAr ? 'بانتظار الرد' : 'Needs reply', count: statusCounts.NeedsReply },
+    { id: 'Open', label: isAr ? 'مفتوحة' : 'Open', count: statusCounts.Open },
+    { id: 'AwaitingSupport', label: isAr ? 'بانتظار الدعم' : 'Awaiting support', count: statusCounts.AwaitingSupport },
+    { id: 'Answered', label: isAr ? 'تم الرد' : 'Answered', count: statusCounts.Answered },
+    { id: 'Closed', label: isAr ? 'مغلقة' : 'Closed', count: statusCounts.Closed }
+  ];
+
+  // Detail / Conversation View when a ticket is selected
+  if (selectedId) {
+    return (
+      <AdminShell code="AD18" onBack={closeTicketView}>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h1 className={`text-lg font-extrabold ${colors.text}`}>
+              {activeTicket ? activeTicket.code : (isAr ? 'محادثة التذكرة' : 'Ticket thread')}
+            </h1>
+            <p className={`text-xs ${colors.secondaryText}`}>
+              {activeTicket
+                ? `${activeTicket.subject} · ${formatLabel(activeTicket.category, isAr)}`
+                : (isAr ? 'تفاصيل التذكرة والردود' : 'Support ticket conversation')}
+            </p>
+          </div>
+          {activeTicket && <StatusBadge status={activeTicket.status} />}
+        </div>
+
+        <button
+          type="button"
+          data-testid="back-to-tickets"
+          onClick={closeTicketView}
+          className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${colors.secondaryText} hover:${colors.text} w-fit`}
+        >
+          <BackChevron size={13} />
+          <span>{isAr ? 'العودة إلى قائمة التذاكر' : 'Back to all tickets'}</span>
+        </button>
+
+        {threadQuery.isLoading && !activeTicket ? (
+          <Skeleton rows={3} />
+        ) : !activeTicket ? (
+          <EmptyState
+            title={isAr ? 'لم يتم العثور على التذكرة' : 'Ticket not found'}
+            message={isAr ? 'اختر تذكرة من قائمة صندوق الدعم.' : 'Select a ticket from the support inbox.'}
+          />
+        ) : (
+          <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-3 text-xs`}>
+            <div className="space-y-1 text-[11px] border-b border-slate-500/10 pb-2.5" data-testid="ticket-customer">
+              <div className="flex justify-between gap-2">
+                <span className={colors.secondaryText}>{isAr ? 'العميل' : 'Customer'}</span>
+                <span className={`font-bold ${colors.text}`}>
+                  {activeTicket.customerName || '—'}
+                  {activeTicket.customerRole ? ` · ${formatLabel(activeTicket.customerRole, isAr)}` : ''}
+                </span>
+              </div>
+              {activeTicket.customerEmail && (
+                <div className="flex justify-between gap-2">
+                  <span className={colors.secondaryText}>{isAr ? 'البريد الإلكتروني' : 'Email'}</span>
+                  <span className={`font-semibold ${colors.text}`} dir="ltr">{activeTicket.customerEmail}</span>
+                </div>
+              )}
+              {activeTicket.customerPhone && (
+                <div className="flex justify-between gap-2">
+                  <span className={colors.secondaryText}>{isAr ? 'الهاتف' : 'Phone'}</span>
+                  <span className={`font-semibold ${colors.text}`} dir="ltr">{activeTicket.customerPhone}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-2">
+                <span className={colors.secondaryText}>{isAr ? 'المرجع' : 'Reference'}</span>
+                <span className={`font-bold font-mono ${colors.text}`} data-testid="ticket-reference">
+                  {activeTicket.referenceCode
+                    ? `${activeTicket.referenceType === 'Booking' ? (isAr ? 'حجز' : 'Booking') : (isAr ? 'طلب' : 'Trip')} · ${activeTicket.referenceCode}`
+                    : '—'}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {messages.map((m) => {
+                const customerAuthor =
+                  (m.authorName && m.authorName !== 'You' ? m.authorName : '') ||
+                  activeTicket.customerName ||
+                  (isAr ? 'العميل' : 'Customer');
+                const supportAuthor = m.authorName || (isAr ? 'دعم FixNGo' : 'FixNGo Support');
+                return (
+                  <div
+                    key={m.id}
+                    data-testid="ticket-message"
+                    className={`p-2.5 rounded-xl ${
+                      m.fromSupport ? 'bg-[#E51C23]/15 text-[#E51C23] ms-4' : `${colors.elevated} ${colors.text} me-4`
+                    }`}
+                  >
+                    <div className="flex justify-between gap-2 text-[10px] opacity-80 mb-0.5">
+                      <span className="font-bold">
+                        {m.fromSupport ? supportAuthor : customerAuthor}
+                      </span>
+                      <span>{fmtDateTime(m.createdAt, lang)}</span>
+                    </div>
+                    <p className="text-xs whitespace-pre-wrap">{m.text}</p>
+                    {m.fileId && <TicketAttachment message={m} isAr={isAr} />}
+                  </div>
+                );
+              })}
+            </div>
+
+            {replyError && (
+              <p role="alert" className="text-xs font-bold text-rose-500">
+                {replyError}
+              </p>
+            )}
+
+            {statusMsg && (
+              <p role="status" className="text-xs font-bold text-emerald-500">
+                {statusMsg}
+              </p>
+            )}
+
+            <form onSubmit={handleReply} className="space-y-2">
+              <textarea
+                rows={2}
+                data-testid="field-reply"
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                placeholder={isAr ? 'اكتب رد الدعم الفني...' : 'Write a support reply...'}
+                className={`w-full p-3 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
+              />
+              <div className="flex gap-2">
+                <PrimaryButton type="submit" testId="screen-primary" disabled={busy || !reply.trim()}>
+                  {isAr ? 'إرسال الرد' : 'Send Reply'}
+                </PrimaryButton>
+                {activeTicket.status !== 'Closed' && (
+                  <SecondaryButton disabled={busy} onClick={handleCloseTicket}>
+                    {isAr ? 'إغلاق التذكرة' : 'Close Ticket'}
+                  </SecondaryButton>
+                )}
+              </div>
+            </form>
+          </div>
+        )}
+      </AdminShell>
+    );
+  }
+
+  // Inbox List View with Status Filter & Search
   return (
     <AdminShell code="AD18">
       <div>
@@ -3166,7 +3354,11 @@ export function AD18Screen({ id, params }) {
           {isAr ? 'صندوق الدعم الفني' : 'Support inbox'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {pluralCount(tickets.length, 'support ticket', 'support tickets', 'تذكرة دعم', 'تذاكر دعم', 'تذكرة دعم', isAr)}
+          {statusFilter === 'All' && !searchTerm.trim()
+            ? pluralCount(tickets.length, 'support ticket', 'support tickets', 'تذكرة دعم', 'تذاكر دعم', 'تذكرة دعم', isAr)
+            : isAr
+            ? `عرض ${fmtNumber(filteredTickets.length, lang)} من ${fmtNumber(tickets.length, lang)} تذكرة`
+            : `Showing ${fmtNumber(filteredTickets.length, lang)} of ${fmtNumber(tickets.length, lang)} tickets`}
         </p>
       </div>
 
@@ -3179,140 +3371,75 @@ export function AD18Screen({ id, params }) {
         />
       ) : (
         <>
-          <div className="space-y-2">
-            {tickets.map((t) => {
-              const isSelected = String(t.id) === String(selectedId);
+          <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface} flex items-center gap-2`}>
+            <Search size={14} className={colors.secondaryText} />
+            <input
+              type="text"
+              data-testid="field-ticket-search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={isAr ? 'ابحث برمز التذكرة أو الموضوع...' : 'Search by ticket code or subject...'}
+              className={`w-full bg-transparent outline-none text-xs ${colors.text}`}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5" data-testid="ticket-status-filters">
+            {filterTabs.map((tab) => {
+              const active = statusFilter === tab.id;
               return (
                 <button
-                  key={t.id}
+                  key={tab.id}
                   type="button"
-                  data-testid="data-row"
-                  onClick={() => setSelectedId(t.id)}
-                  className={`w-full p-3 rounded-2xl border text-start space-y-1 text-xs transition ${
-                    isSelected
-                      ? 'border-[#E51C23] bg-[#E51C23]/10'
-                      : `${colors.border} ${colors.surface}`
+                  data-testid={`ticket-filter-${tab.id}`}
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition inline-flex items-center gap-1.5 ${
+                    active
+                      ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]'
+                      : `${colors.border} ${colors.surface} ${colors.secondaryText}`
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className={`font-extrabold ${colors.text}`}>
-                      {t.code} · {t.subject}
-                    </span>
-                    <StatusBadge status={t.status} />
-                  </div>
-                  <div className="flex justify-between text-[10px]">
-                    <span className={colors.secondaryText}>{formatLabel(t.category, isAr)}</span>
-                    <span className={colors.secondaryText}>{fmtDateTime(t.createdAt, lang)}</span>
-                  </div>
+                  <span>{tab.label}</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${active ? 'bg-[#E51C23]/20 text-[#E51C23]' : colors.elevated}`}>
+                    {fmtNumber(tab.count, lang)}
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          {activeTicket && (
-            <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-3 text-xs`}>
-              <div className="flex items-center justify-between border-b border-slate-500/10 pb-2">
-                <div>
-                  <p className={`font-extrabold ${colors.text}`}>
-                    {activeTicket.code} · {activeTicket.subject}
-                  </p>
-                  <p className={`text-[10px] ${colors.secondaryText}`}>
-                    {formatLabel(activeTicket.category, isAr)}
-                  </p>
-                </div>
-                <StatusBadge status={activeTicket.status} />
-              </div>
-
-              <div className="space-y-1 text-[11px]" data-testid="ticket-customer">
-                <div className="flex justify-between gap-2">
-                  <span className={colors.secondaryText}>{isAr ? 'العميل' : 'Customer'}</span>
-                  <span className={`font-bold ${colors.text}`}>
-                    {activeTicket.customerName || '—'}
-                    {activeTicket.customerRole ? ` · ${formatLabel(activeTicket.customerRole, isAr)}` : ''}
-                  </span>
-                </div>
-                {activeTicket.customerEmail && (
-                  <div className="flex justify-between gap-2">
-                    <span className={colors.secondaryText}>{isAr ? 'البريد الإلكتروني' : 'Email'}</span>
-                    <span className={`font-semibold ${colors.text}`} dir="ltr">{activeTicket.customerEmail}</span>
+          {filteredTickets.length === 0 ? (
+            <EmptyState
+              title={isAr ? 'لا توجد تذاكر مطابقة' : 'No matching tickets'}
+              message={isAr ? 'جرّب تغيير فلتر الحالة أو كلمة البحث.' : 'Try selecting another status filter or clearing the search.'}
+            />
+          ) : (
+            <div className="space-y-2">
+              {filteredTickets.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  data-testid="data-row"
+                  onClick={() => openTicket(t.id)}
+                  className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} text-start space-y-1.5 text-xs transition hover:border-[#E51C23]/50`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`font-extrabold ${colors.text} truncate`}>
+                      {t.code} · {t.subject}
+                    </span>
+                    <StatusBadge status={t.status} />
                   </div>
-                )}
-                {activeTicket.customerPhone && (
-                  <div className="flex justify-between gap-2">
-                    <span className={colors.secondaryText}>{isAr ? 'الهاتف' : 'Phone'}</span>
-                    <span className={`font-semibold ${colors.text}`} dir="ltr">{activeTicket.customerPhone}</span>
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className={colors.secondaryText}>
+                      {formatLabel(t.category, isAr)}
+                      {t.customerName ? ` · ${t.customerName}` : ''}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 ${colors.secondaryText}`}>
+                      <span>{fmtDateTime(t.createdAt, lang)}</span>
+                      <ForwardChevron size={12} />
+                    </span>
                   </div>
-                )}
-                <div className="flex justify-between gap-2">
-                  <span className={colors.secondaryText}>{isAr ? 'المرجع' : 'Reference'}</span>
-                  <span className={`font-bold font-mono ${colors.text}`} data-testid="ticket-reference">
-                    {activeTicket.referenceCode
-                      ? `${activeTicket.referenceType === 'Booking' ? (isAr ? 'حجز' : 'Booking') : (isAr ? 'طلب' : 'Trip')} · ${activeTicket.referenceCode}`
-                      : '—'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-72 overflow-y-auto">
-                {messages.map((m) => {
-                  const customerAuthor =
-                    (m.authorName && m.authorName !== 'You' ? m.authorName : '') ||
-                    activeTicket.customerName ||
-                    (isAr ? 'العميل' : 'Customer');
-                  const supportAuthor = m.authorName || (isAr ? 'دعم FixNGo' : 'FixNGo Support');
-                  return (
-                    <div
-                      key={m.id}
-                      data-testid="ticket-message"
-                      className={`p-2.5 rounded-xl ${
-                        m.fromSupport ? 'bg-[#E51C23]/15 text-[#E51C23] ms-4' : `${colors.elevated} ${colors.text} me-4`
-                      }`}
-                    >
-                      <div className="flex justify-between gap-2 text-[10px] opacity-80 mb-0.5">
-                        <span className="font-bold">
-                          {m.fromSupport ? supportAuthor : customerAuthor}
-                        </span>
-                        <span>{fmtDateTime(m.createdAt, lang)}</span>
-                      </div>
-                      <p className="text-xs whitespace-pre-wrap">{m.text}</p>
-                      {m.fileId && <TicketAttachment message={m} isAr={isAr} />}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {replyError && (
-                <p role="alert" className="text-xs font-bold text-rose-500">
-                  {replyError}
-                </p>
-              )}
-
-              {statusMsg && (
-                <p role="status" className="text-xs font-bold text-emerald-500">
-                  {statusMsg}
-                </p>
-              )}
-
-              <form onSubmit={handleReply} className="space-y-2">
-                <textarea
-                  rows={2}
-                  data-testid="field-reply"
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder={isAr ? 'اكتب رد الدعم الفني...' : 'Write a support reply...'}
-                  className={`w-full p-3 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
-                />
-                <div className="flex gap-2">
-                  <PrimaryButton type="submit" testId="screen-primary" disabled={busy || !reply.trim()}>
-                    {isAr ? 'إرسال الرد' : 'Send Reply'}
-                  </PrimaryButton>
-                  {activeTicket.status !== 'Closed' && (
-                    <SecondaryButton disabled={busy} onClick={handleCloseTicket}>
-                      {isAr ? 'إغلاق التذكرة' : 'Close Ticket'}
-                    </SecondaryButton>
-                  )}
-                </div>
-              </form>
+                </button>
+              ))}
             </div>
           )}
         </>
