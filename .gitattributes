@@ -1,11 +1,14 @@
-# GitHub Linguist classification: FixNGo is an ASP.NET Core 8 (.NET C#) Clean Architecture application.
-# Historical prototype mockups, generated evidence, and bundled client widget modules are marked
-# appropriately so repository statistics reflect the primary C# / Razor architecture.
+# GitHub Linguist classification for ASP.NET Core 8 (.NET C#) Clean Architecture
 
-*.cs linguist-detectable=true
-*.cshtml linguist-detectable=true linguist-language=HTML+Razor
+*.cs linguist-detectable
+*.cshtml linguist-detectable
 
-legacy-prototype/** linguist-documentation=true
-reference/** linguist-documentation=true
-docs/** linguist-documentation=true
-client/** linguist-vendored=true
+legacy-prototype/* linguist-documentation
+legacy-prototype/** linguist-documentation
+reference/* linguist-documentation
+reference/** linguist-documentation
+docs/* linguist-documentation
+docs/** linguist-documentation
+client/* linguist-vendored
+client/** linguist-vendored
+*.jsx linguist-vendored
