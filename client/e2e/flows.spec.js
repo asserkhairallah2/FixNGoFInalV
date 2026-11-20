@@ -18,25 +18,30 @@ async function apiLogin(key) {
 
 test.afterAll(() => writeEvidence('ui-defects.json', JSON.stringify([], null, 2)));
 
-test('F01 login -> C02 (owner home) + settings theme/RTL toggle (no topbar toggles) + Simulator Dock visible', async ({ browser }) => {
+test('F01 login -> C02 (owner home) + fixed root URL + settings theme/RTL toggle (no topbar toggles) + Simulator Dock visible', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
   const logs = attachConsoleWatch(page);
   try {
     await loginUI(page, 'owner');
-    const hash = await page.evaluate(() => location.hash);
-    expect(hash).toContain('#/C02');
+    const origin = await page.evaluate(() => location.origin);
+    const routePath = await page.evaluate(() => window.__fixngoRoute?.path || '');
+    expect(routePath).toContain('#/C02');
+    expect(await page.evaluate(() => location.href)).toBe(`${origin}/`);
 
     // Verify Simulator Dock is visible and top status bar has NO theme/lang toggle buttons
     await expect(page.locator('[data-testid="simulator-dock"]')).toBeVisible();
     await expect(page.locator('[data-testid="toggle-theme"]')).toHaveCount(0);
     await expect(page.locator('[data-testid="toggle-lang"]')).toHaveCount(0);
 
-    // Navigate from Profile (C23) -> App Settings (SH06) and verify theme + RTL switching + single topbar back
+    // Navigate from Profile (C23) -> App Settings (SH06) and verify theme + RTL switching + single topbar back + URL stays fixed at '/'
     await page.locator('[data-testid="nav-profile"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C23'));
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C23'));
+    expect(await page.evaluate(() => location.href)).toBe(`${origin}/`);
+
     await page.getByText('App Settings (Language & Theme)').click();
-    await page.waitForFunction(() => location.hash.includes('#/SH06'));
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/SH06'));
+    expect(await page.evaluate(() => location.href)).toBe(`${origin}/`);
     await expect(page.locator('[data-testid="theme-dark"]')).toBeVisible();
 
     await page.locator('[data-testid="theme-dark"]').click();
@@ -48,16 +53,19 @@ test('F01 login -> C02 (owner home) + settings theme/RTL toggle (no topbar toggl
     await page.locator('[data-testid="lang-en"]').click();
 
     await page.locator('[data-testid="topbar-back"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C23'));
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C23'));
+    expect(await page.evaluate(() => location.href)).toBe(`${origin}/`);
 
-    // Also verify navigating from C23 -> C04 -> topbar-back returns to C23 (exact screen came from)
+    // Also verify navigating from C23 -> C04 -> topbar-back returns to C23 while URL stays fixed at '/'
     await page.getByText('My Vehicles').click();
-    await page.waitForFunction(() => location.hash.includes('#/C04'));
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C04'));
+    expect(await page.evaluate(() => location.href)).toBe(`${origin}/`);
     await page.locator('[data-testid="topbar-back"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C23'));
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C23'));
+    expect(await page.evaluate(() => location.href)).toBe(`${origin}/`);
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
-    recordFlow('F01 login->C02 + SH06 dark/RTL + single back', clean.length === 0 ? 'PASS' : 'FAIL', { hash, console: clean });
+    recordFlow('F01 login->C02 + fixed URL + SH06 dark/RTL + single back', clean.length === 0 ? 'PASS' : 'FAIL', { routePath, console: clean });
     expect(clean).toEqual([]);
   } finally {
     await context.close();
@@ -91,7 +99,7 @@ test('F02 vehicle add (C05 empty-by-default + 2022/Silver persistence) + request
     await expect(page.getByText(rawPlate.replace('-', ''))).toBeVisible();
     await page.locator('[data-testid="field-fuel"]').selectOption('Hybrid');
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C04'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C04'), null, { timeout: 15_000 });
     await expect(page.getByText(/Toyota Corolla \(2022\)/)).toBeVisible();
     await expect(page.getByText(/Silver/).first()).toBeVisible();
 
@@ -104,7 +112,7 @@ test('F02 vehicle add (C05 empty-by-default + 2022/Silver persistence) + request
     await page.locator('[data-testid="service-card-flatbed_tow"]').click();
     await expect(page.locator('[data-testid="screen-primary"]')).toBeEnabled();
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C07'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C07'), null, { timeout: 15_000 });
 
     await expect(page.locator('[data-testid="field-pickupAddress"]')).toHaveValue('');
     await expect(page.locator('[data-testid="field-destinationAddress"]')).toHaveValue('');
@@ -115,10 +123,10 @@ test('F02 vehicle add (C05 empty-by-default + 2022/Silver persistence) + request
     await page.locator('[data-testid="field-distanceKm"]').fill('8.5');
     await page.locator('[data-testid="field-problem"]').fill('E2E wizard tow request');
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C08'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C08'), null, { timeout: 15_000 });
 
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C09'), null, { timeout: 20_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C09'), null, { timeout: 20_000 });
 
     const after = ok(await api('/requests', { token }), 'list requests after');
     const pass = after.length > before.length;
@@ -214,7 +222,7 @@ test('F03 multi-role offer dispatch, accept, complete, Paid invoice, wallet earn
     await expect(ownerPage.locator('[data-testid="star-rating-picker"]')).toBeVisible();
     await ownerPage.locator('[data-testid="star-5"]').click();
     await ownerPage.locator('[data-testid="screen-primary"]').click();
-    await ownerPage.waitForFunction(() => location.hash.includes('#/C41'), null, { timeout: 15_000 });
+    await ownerPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C41'), null, { timeout: 15_000 });
 
     // Verify Captain wallet earnings, completedJobs, and rating updated (A.4)
     const earningsAfter = ok(await api('/payments/earnings', { token: captain.token }), 'earnings after');
@@ -269,10 +277,10 @@ test('F04 slot-based booking via C19 UI (Cairo time, no [object Object]) + SC11 
     expect(bodyText).not.toContain('13:00 AM');
 
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C36'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C36'), null, { timeout: 15_000 });
 
     // B.7: Verify C36 URL never contains [object Object]
-    const c36Hash = await page.evaluate(() => decodeURIComponent(location.hash));
+    const c36Hash = await page.evaluate(() => decodeURIComponent(window.__fixngoRoute?.path || ''));
     expect(c36Hash).not.toContain('[object Object]');
 
     const afterBookings = ok(await api('/centers/bookings', { token: owner.token }), 'list bookings after');
@@ -291,11 +299,11 @@ test('F04 slot-based booking via C19 UI (Cairo time, no [object Object]) + SC11 
     await expect(centerPage.locator('[data-testid="screen-primary"]')).toContainText(/Start Service|بدء الخدمة/i);
     await centerPage.locator('[data-testid="screen-primary"]').click();
     await expect(centerPage.locator('[data-testid="screen-primary"]')).toContainText(/Proceed to Complete|المتابعة لإتمام/i, { timeout: 15_000 });
-    expect(await centerPage.evaluate(() => location.hash)).toContain('#/SC11');
+    expect(await centerPage.evaluate(() => window.__fixngoRoute?.path || '')).toContain('#/SC11');
 
     // Proceed to SC12 and add extra item (Oil Filter, 75 EGP)
     await centerPage.locator('[data-testid="screen-primary"]').click();
-    await centerPage.waitForFunction(() => location.hash.includes('#/SC12'), null, { timeout: 15_000 });
+    await centerPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/SC12'), null, { timeout: 15_000 });
     await centerPage.locator('[data-testid="field-extraDescription"]').fill('Oil Filter');
     await centerPage.locator('[data-testid="field-extraAmount"]').fill('75');
     await centerPage.locator('[data-testid="screen-primary"]').click();
@@ -332,7 +340,7 @@ test('F05 card add via C33 UI form (with Luhn validation) + card payment', async
     await page.locator('[data-testid="field-ExpYear"]').fill('2030');
     await page.locator('[data-testid="field-Label"]').fill('E2E UI Visa');
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C34'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C34'), null, { timeout: 15_000 });
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);
@@ -421,7 +429,7 @@ test('F07 signup + OTP session retention (A04->A05->A08) + KYC submission & admi
     await page.locator('[data-testid="field-confirmPassword"]').fill(DEFAULT_PASSWORD);
     await page.locator('[data-testid="screen-primary"]').click();
 
-    await page.waitForFunction(() => location.hash.includes('#/A05'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/A05'), null, { timeout: 15_000 });
     // Read OTP from Simulator messages endpoint (exposed because simulatorsEnabled=true)
     const simMsgs = ok(await api('/sim/messages'), 'sim messages');
     const msg = (Array.isArray(simMsgs) ? simMsgs : []).find((m) =>
@@ -432,7 +440,7 @@ test('F07 signup + OTP session retention (A04->A05->A08) + KYC submission & admi
     expect(otpMatch).toBeTruthy();
     await page.locator('[data-testid="otp-box-0"]').fill(otpMatch[1]);
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/A08'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/A08'), null, { timeout: 15_000 });
 
     // Verify JWT session was issued and retained after A05 OTP verification!
     const storedToken = await page.evaluate(() => sessionStorage.getItem('fixngo.access'));
@@ -442,7 +450,7 @@ test('F07 signup + OTP session retention (A04->A05->A08) + KYC submission & admi
     await expect(page.locator('[data-testid="field-yearsExperience"]')).toHaveValue('');
     await page.locator('[data-testid="field-yearsExperience"]').fill('4');
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/A11'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/A11'), null, { timeout: 15_000 });
 
     // Admin approves KYC
     resetKycStatus(KYCTEST_EMAIL, 'None');
@@ -541,7 +549,7 @@ test('F09 support ticket with attachment via SH08 UI + scoped ?ft= URL + AD18 au
     });
     await expect(page.locator('[data-testid="uploaded-attachment"]')).toBeVisible({ timeout: 15_000 });
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/SH09'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/SH09'), null, { timeout: 15_000 });
 
     // B.8 & B.12: Verify reference shows FG-xxxx (never ticket code TK-xxxx) and attachment renders via ?ft= (never ?access_token=)
     await expect(page.locator('[data-testid="ticket-reference"]')).toContainText(seeded.ids.requestCode);
@@ -571,10 +579,12 @@ test('F09 support ticket with attachment via SH08 UI + scoped ?ft= URL + AD18 au
     expect(msgText).not.toMatch(/^You\b/m);
     expect(msgText).toContain('Gate Two CarOwner');
 
-    // Single unified topbar back button returns to inbox list (no duplicate back-to-tickets button)
+    // Single unified topbar back button returns to inbox list while browser URL stays fixed at '/'
+    expect(await adminPage.evaluate(() => location.href)).toBe(`${adminOrigin}/`);
     await expect(adminPage.locator('[data-testid="back-to-tickets"]')).toHaveCount(0);
     await adminPage.locator('[data-testid="topbar-back"]').click();
     await expect(adminPage.locator('[data-testid="ticket-status-filters"]')).toBeVisible();
+    expect(await adminPage.evaluate(() => location.href)).toBe(`${adminOrigin}/`);
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);
@@ -628,25 +638,25 @@ test('F11 notification deep links (offer/request/booking/kyc) + Admin SH17 appli
     await loginUI(page, 'captain');
     const origin = await page.evaluate(() => location.origin);
     await page.goto(`${origin}/#/offer:${seeded.ids.pendingCaptainOfferId}`);
-    await page.waitForFunction(() => location.hash.includes('#/T03'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/T03'), null, { timeout: 15_000 });
     expect(await page.locator('[data-testid="not-found"]').count()).toBe(0);
 
     // 2. Owner deep link #/request:<id> -> resolves to C11, #/booking:<id> -> resolves to C38
     await loginUI(page, 'owner');
     await page.goto(`${origin}/#/request:${seeded.ids.requestId}`);
-    await page.waitForFunction(() => location.hash.includes('#/C11'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C11'), null, { timeout: 15_000 });
     expect(await page.locator('[data-testid="not-found"]').count()).toBe(0);
 
     await page.goto(`${origin}/#/booking:${seeded.ids.bookingId}`);
-    await page.waitForFunction(() => location.hash.includes('#/C38'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C38'), null, { timeout: 15_000 });
     expect(await page.locator('[data-testid="not-found"]').count()).toBe(0);
 
     // 3. Admin deep link #/kyc:<id> -> resolves to AD03, clicking document opens SH17 with applicant's document
     await loginUI(page, 'admin');
     await page.goto(`${origin}/#/kyc:${seeded.ids.kycApplicationId}`);
-    await page.waitForFunction(() => location.hash.includes('#/AD03'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/AD03'), null, { timeout: 15_000 });
     await page.locator('[data-testid="data-row"]').first().click();
-    await page.waitForFunction(() => location.hash.includes('#/SH17'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/SH17'), null, { timeout: 15_000 });
     await expect(page.locator('[data-testid="document-preview-image"]')).toBeVisible();
     expect(await page.locator('[data-testid="replace-doc-btn"]').count()).toBe(0);
     await expect(page.locator('[data-testid="nav-verify"]')).toBeVisible();
@@ -831,14 +841,14 @@ test('F14 C14/C34 after cash Paid routes to C15 (0 HTTP 409) + C19 closed Friday
     await page.goto(`${origin}/#/C14?id=${created.id}`);
     await expect(page.locator('[data-testid="invoice-status"]')).toContainText(/Paid/i, { timeout: 15_000 });
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C15'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C15'), null, { timeout: 15_000 });
 
     // C34 on Paid invoice -> shows Paid, no active "Pay Now", primary routes to C15 (A.5)
     await page.goto(`${origin}/#/C34?id=${created.id}`);
     await expect(page.locator('[data-testid="invoice-status"]')).toContainText(/Paid/i, { timeout: 15_000 });
     await expect(page.getByText(/Pay Now/i)).toHaveCount(0);
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C15'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C15'), null, { timeout: 15_000 });
     expect(logs.filter((l) => l.type === 'http')).toEqual([]);
 
     // 2. C19 on closed Friday -> shows Closed notice, 0 slot buttons, disabled confirm (B.7)

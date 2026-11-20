@@ -55,12 +55,20 @@ export async function loginApi(email, password = DEFAULT_PASSWORD) {
 export async function loginUI(page, key) {
   const cred = CREDENTIALS[key];
   await page.goto(`${baseURL()}/#/A03`);
+  expect(await page.evaluate(() => location.hash)).toBe('');
+  expect(await page.evaluate(() => location.pathname)).toBe('/');
   await page.locator('[data-testid="login-email"]').fill(cred.email);
   await page.locator('[data-testid="login-password"]').fill(cred.password);
   await page.locator('[data-testid="login-submit"]').click();
-  // The authenticated shell exposes a stable screen container for every role.
+  // The authenticated shell exposes a stable screen container for every role while keeping the URL fixed at '/'.
   await expect(page.locator('[data-testid="screen-container"]')).toBeVisible({ timeout: 30_000 });
-  await expect(page).toHaveURL(new RegExp(`#/${cred.home}`), { timeout: 15_000 });
+  await page.waitForFunction(
+    (home) => (window.__fixngoRoute?.path || '').includes(`#/${home}`),
+    cred.home,
+    { timeout: 15_000 }
+  );
+  expect(await page.evaluate(() => location.hash)).toBe('');
+  expect(await page.evaluate(() => location.pathname)).toBe('/');
   return cred;
 }
 

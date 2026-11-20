@@ -600,9 +600,11 @@ export default function SimulatorDock({ notices = {} }) {
       if (user) qc.invalidateQueries({ queryKey: ['sim', 'push'] });
     };
     const offs = ['notification', 'push', 'sim.event', 'notification.new'].map((evt) => on(evt, refreshDock));
+    window.addEventListener('fixngo:navigate', refreshDock);
     window.addEventListener('hashchange', refreshDock);
     return () => {
       offs.forEach((off) => off());
+      window.removeEventListener('fixngo:navigate', refreshDock);
       window.removeEventListener('hashchange', refreshDock);
     };
   }, [qc, user]);

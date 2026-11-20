@@ -136,10 +136,76 @@ function readStoredHistory() {
   }
 }
 
+function formatRoutePath(code, params = {}) {
+  const clean = sanitizeParams(params);
+  const qs = Object.keys(clean).length ? '?' + new URLSearchParams(clean).toString() : '';
+  return `#/${code || 'A02'}${qs}`;
+}
+
+function stripBrowserUrl() {
+  if (typeof window === 'undefined') return;
+  if (window.location.hash || window.location.search || (window.location.pathname && window.location.pathname !== '/')) {
+    try {
+      window.history.replaceState(null, '', '/');
+    } catch {}
+  }
+}
+
+function parseHashString(rawInput) {
+  const raw = String(rawInput || '').replace(/^#\/?/, '');
+  const resolved = resolveDeepLink(raw);
+  if (resolved) {
+    const code = resolved.code || 'A02';
+    const params = sanitizeParams(resolved.params);
+    return { code, params };
+  }
+  const [code, query = ''] = raw.split('?');
+  const params = sanitizeParams(Object.fromEntries(new URLSearchParams(query)));
+  return { code: code || 'A02', params };
+}
+
+function persistRouteState(entry) {
+  const clean = { code: entry?.code || 'A02', params: sanitizeParams(entry?.params) };
+  const path = formatRoutePath(clean.code, clean.params);
+  if (typeof window !== 'undefined') {
+    window.__fixngoRoute = { ...clean, path };
+    try {
+      sessionStorage.setItem('fixngo.route', JSON.stringify(clean));
+      sessionStorage.setItem('fixngo.routePath', path);
+    } catch {}
+    try {
+      window.dispatchEvent(new CustomEvent('fixngo:navigate', { detail: { ...clean, path } }));
+    } catch {}
+  }
+  return clean;
+}
+
+function readInitialRoute() {
+  if (typeof window === 'undefined') return { code: 'A02', params: {} };
+  let incoming = '';
+  try {
+    incoming = window.location.hash || sessionStorage.getItem('fixngo.pendingHash') || '';
+    if (incoming) sessionStorage.removeItem('fixngo.pendingHash');
+  } catch {
+    incoming = window.location.hash || '';
+  }
+  stripBrowserUrl();
+  if (incoming) {
+    return persistRouteState(parseHashString(incoming));
+  }
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('fixngo.route') || 'null');
+    if (stored && typeof stored.code === 'string' && stored.code) {
+      return persistRouteState({ code: stored.code, params: stored.params || {} });
+    }
+  } catch {}
+  return persistRouteState({ code: 'A02', params: {} });
+}
+
 export function NavProvider({ children }) {
   const session = useSession();
   const user = session?.user ?? null;
-  const [route, setRoute] = useState(() => parseHash());
+  const [route, setRoute] = useState(readInitialRoute);
   const [history, setHistory] = useState(readStoredHistory);
   const prevAuthIdRef = useRef(undefined);
   const [flow, setFlowState] = useState(() => {
@@ -167,7 +233,14 @@ export function NavProvider({ children }) {
   }, [user?.id, saveHistory]);
 
   useEffect(() => {
-    const onHash = () => setRoute(parseHash());
+    stripBrowserUrl();
+    const onHash = () => {
+      const incoming = window.location.hash;
+      stripBrowserUrl();
+      if (!incoming) return;
+      const parsed = parseHashString(incoming);
+      setRoute(persistRouteState(parsed));
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -180,7 +253,7 @@ export function NavProvider({ children }) {
     });
   }, []);
 
-  const clearFlow = useCallback(( ) => {
+  const clearFlow = useCallback(() => {
     setFlowState({});
     try { sessionStorage.removeItem('fixngo.flow'); } catch {}
   }, []);
@@ -201,16 +274,16 @@ export function NavProvider({ children }) {
         });
       }
     }
-    setRoute(nextEntry);
-    window.location.hash = `#/${targetCode}${Object.keys(cleanParams).length ? '?' + new URLSearchParams(cleanParams).toString() : ''}`;
+    setRoute(persistRouteState(nextEntry));
+    stripBrowserUrl();
   }, [route, saveHistory]);
 
   const replace = useCallback((code, params = {}) => {
     const resolved = resolveDeepLink(code) || { code, params: {} };
     const targetCode = resolved.code || code;
     const cleanParams = sanitizeParams({ ...resolved.params, ...(params || {}) });
-    setRoute({ code: targetCode, params: cleanParams });
-    window.location.hash = `#/${targetCode}${Object.keys(cleanParams).length ? '?' + new URLSearchParams(cleanParams).toString() : ''}`;
+    setRoute(persistRouteState({ code: targetCode, params: cleanParams }));
+    stripBrowserUrl();
   }, []);
 
   const back = useCallback((fallback) => {
@@ -241,23 +314,6 @@ export function NavProvider({ children }) {
       {children}
     </NavContext.Provider>
   );
-}
-
-function parseHash() {
-  const raw = window.location.hash.replace(/^#\/?/, '');
-  const resolved = resolveDeepLink(raw);
-  if (resolved) {
-    const code = resolved.code || 'A02';
-    const params = sanitizeParams(resolved.params);
-    if (raw.includes(':')) {
-      const qs = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-      try { window.history.replaceState(null, '', `#/${code}${qs}`); } catch {}
-    }
-    return { code, params };
-  }
-  const [code, query = ''] = raw.split('?');
-  const params = sanitizeParams(Object.fromEntries(new URLSearchParams(query)));
-  return { code: code || 'A02', params };
 }
 
 export const useNav = () => useContext(NavContext);

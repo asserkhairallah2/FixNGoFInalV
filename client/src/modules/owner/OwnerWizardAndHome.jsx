@@ -1781,7 +1781,7 @@ export const C27 = (props) => <OffersListScreen isMechanic={true} {...props} />;
 // ---------------------------------------------------------------------------
 function LiveTrackingScreen({ mode = 'tow', params, code }) {
   const { t, isAr } = usePrefs();
-  const { go, back, updateFlow } = useNav();
+  const { go, replace, back, updateFlow } = useNav();
   const c = useColors();
   const { req, reqId, isLoading } = useActiveRequest(params);
   const { data: invoice } = useInvoiceForRequest(reqId);
@@ -1791,12 +1791,10 @@ function LiveTrackingScreen({ mode = 'tow', params, code }) {
       updateFlow({ requestId: req.id });
       if (!params?.id) {
         const screenCode = code || (mode === 'arrived' ? 'C31' : mode === 'mechanic' ? 'C12' : 'C11');
-        try {
-          window.history.replaceState(null, '', `#/${screenCode}?id=${req.id}`);
-        } catch {}
+        replace(screenCode, { ...(params || {}), id: req.id });
       }
     }
-  }, [req?.id, params?.id, code, mode, updateFlow]);
+  }, [req?.id, params, code, mode, updateFlow, replace]);
 
   if (isLoading && !req) {
     return (

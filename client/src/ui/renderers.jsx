@@ -518,7 +518,7 @@ export function ChatView({ view }) {
 }
 
 export function OfflineView({ view }) {
-  const c = useColors(); const t = useT(); const { replace } = useNav();
+  const c = useColors(); const t = useT(); const { go, replace } = useNav();
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
   return (
     <Page title={t(view.titleEn, view.titleAr)}>
@@ -526,7 +526,7 @@ export function OfflineView({ view }) {
         <WifiOff size={42} className="mx-auto text-amber-400" />
         <h1 className={`text-xl font-bold ${c.text}`}>{t(online ? 'Connection restored' : 'Connection interrupted', online ? 'تمت إعادة الاتصال' : 'انقطع الاتصال')}</h1>
         <p className={`text-xs ${c.secondaryText}`}>{t('Idempotent requests are replayed automatically when the connection returns.', 'تُعاد الطلبات الآمنة تلقائياً عند عودة الاتصال.')}</p>
-        <EmergencySOSBar onClick={() => { window.location.hash = '#/SH19'; }} />
+        <EmergencySOSBar onClick={() => go('SH19')} />
         <PrimaryButton onClick={() => replace('C02')} testId="screen-primary">{t('Back to home', 'العودة للرئيسية')}</PrimaryButton>
       </div>
     </Page>

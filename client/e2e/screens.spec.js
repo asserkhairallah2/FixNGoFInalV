@@ -98,7 +98,7 @@ for (const variant of variants) {
 
           const consoleEntries = [...logs];
           const real = consoleEntries.filter((l) => ['error', 'warning', 'pageerror', 'requestfailed'].includes(l.type));
-          rows.push({ code, role, hash: await page.evaluate(() => location.hash), screenshot: path.relative(process.cwd(), shot),
+          rows.push({ code, role, hash: await page.evaluate(() => window.__fixngoRoute?.path || ''), screenshot: path.relative(process.cwd(), shot),
             diagnostics, console: consoleEntries });
 
           expect.soft(diagnostics.hasContent, `${variant.dir}/${code}: no screen or designed state rendered`).toBe(true);

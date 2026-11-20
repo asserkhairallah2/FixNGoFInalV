@@ -478,13 +478,13 @@ function AuthenticatedApp({ user }) {
     let cancelled = false;
     ensureFileToken().finally(() => { if (!cancelled) setFilesReady(true); });
     const refresher = setInterval(() => { ensureFileToken(true); }, 4 * 60_000);
-    const onRevoked = () => { window.location.hash = '#/A03'; };
+    const onRevoked = () => { nav.replace('A03'); };
     window.addEventListener('fixngo:session-revoked', onRevoked);
     return () => {
       cancelled = true; clearInterval(refresher); clearFileToken();
       disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked);
     };
-  }, [user.id]);
+  }, [user.id, nav.replace]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -597,7 +597,7 @@ function FatalFallback() {
     <div data-testid="not-found" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32, textAlign: 'center', background: '#F8FAFC', color: '#0F172A' }}>
       <ShieldAlert size={44} color="#E51C23" />
       <strong>Screen not available</strong>
-      <a href="#/A02" style={{ color: '#E51C23', fontSize: 12 }}>Back to start</a>
+      <a href="/" style={{ color: '#E51C23', fontSize: 12 }}>Back to start</a>
     </div>
   );
 }

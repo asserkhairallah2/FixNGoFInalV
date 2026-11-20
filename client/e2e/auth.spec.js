@@ -21,8 +21,10 @@ for (const key of Object.keys(CREDENTIALS)) {
       expect(me.status, '/auth/me after UI login').toBe(200);
       expect(me.data.role, 'role returned by /auth/me').toBe(cred.role);
       entry.me = me.data;
-      entry.hash = await page.evaluate(() => location.hash);
+      entry.hash = await page.evaluate(() => window.__fixngoRoute?.path || '');
       expect(entry.hash).toContain(`#/${cred.home}`);
+      expect(await page.evaluate(() => location.hash)).toBe('');
+      expect(await page.evaluate(() => location.pathname)).toBe('/');
 
       const real = logs.filter((l) => ['error', 'warning', 'pageerror', 'requestfailed'].includes(l.type));
       entry.console = real;

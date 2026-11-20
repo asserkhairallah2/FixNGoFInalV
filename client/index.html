@@ -6,13 +6,26 @@
     <meta name="theme-color" content="#E51C23" />
     <title>FixNGo</title>
     <script>
-      // Apply persisted theme/lang before first paint (no flash).
+      // Apply persisted theme/lang before first paint (no flash) and keep URL fixed at '/'.
       (function () {
         var t = localStorage.getItem('fixngo.theme') || 'light';
         var l = localStorage.getItem('fixngo.lang') || 'en';
         document.documentElement.classList.toggle('dark', t === 'dark');
         document.documentElement.lang = l;
         document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+        try {
+          if (window.location.hash) {
+            sessionStorage.setItem('fixngo.pendingHash', window.location.hash);
+          } else if (window.location.pathname && window.location.pathname !== '/') {
+            var seg = window.location.pathname.replace(/^\/+/, '');
+            if (seg) {
+              sessionStorage.setItem('fixngo.pendingHash', '#/' + seg + (window.location.search || ''));
+            }
+          }
+          if (window.location.hash || window.location.search || (window.location.pathname && window.location.pathname !== '/')) {
+            window.history.replaceState(null, '', '/');
+          }
+        } catch (e) {}
       })();
     </script>
     <script>
