@@ -192,6 +192,10 @@ if ($e2eReason -and -not ($results | Where-Object { $_.Name -like '07*' })) {
     if (-not (Invoke-Step -Name '07 Playwright E2E' -FileName '' -Arguments '' -SkipReason $e2eReason)) { $allOk = $false }
 }
 
+$cloneGate = Join-Path $root 'tools\clone-gate.ps1'
+if (-not (Invoke-Step -Name '08 fresh-clone build & start.bat gate' -FileName 'powershell' `
+        -Arguments ('-NoProfile -ExecutionPolicy Bypass -File "' + $cloneGate + '"') -TimeoutSec 900)) { $allOk = $false }
+
 Log ''
 Log '==================== SUMMARY ===================='
 Log '| # | Step | Result | Exit | Duration | Detail |'
