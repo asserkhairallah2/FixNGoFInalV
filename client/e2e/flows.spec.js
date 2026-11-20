@@ -18,7 +18,7 @@ async function apiLogin(key) {
 
 test.afterAll(() => writeEvidence('ui-defects.json', JSON.stringify([], null, 2)));
 
-test('F01 login -> C02 (owner home) + theme/RTL toggle + Simulator Dock visible', async ({ browser }) => {
+test('F01 login -> C02 (owner home) + settings theme/RTL toggle (no topbar toggles) + Simulator Dock visible', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
   const logs = attachConsoleWatch(page);
@@ -27,23 +27,37 @@ test('F01 login -> C02 (owner home) + theme/RTL toggle + Simulator Dock visible'
     const hash = await page.evaluate(() => location.hash);
     expect(hash).toContain('#/C02');
 
-    // Verify Simulator Dock is visible
+    // Verify Simulator Dock is visible and top status bar has NO theme/lang toggle buttons
     await expect(page.locator('[data-testid="simulator-dock"]')).toBeVisible();
+    await expect(page.locator('[data-testid="toggle-theme"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="toggle-lang"]')).toHaveCount(0);
 
-    // Verify theme toggle switches dark mode on documentElement
-    await page.locator('[data-testid="toggle-theme"]').click();
-    const isDark = await page.evaluate(() => document.documentElement.classList.contains('dark'));
-    expect(isDark).toBe(true);
-    await page.locator('[data-testid="toggle-theme"]').click();
+    // Navigate from Profile (C23) -> App Settings (SH06) and verify theme + RTL switching + single topbar back
+    await page.locator('[data-testid="nav-profile"]').click();
+    await page.waitForFunction(() => location.hash.includes('#/C23'));
+    await page.getByText('App Settings (Language & Theme)').click();
+    await page.waitForFunction(() => location.hash.includes('#/SH06'));
+    await expect(page.locator('[data-testid="theme-dark"]')).toBeVisible();
 
-    // Verify language toggle switches dir="rtl"
-    await page.locator('[data-testid="toggle-lang"]').click();
-    const dir = await page.evaluate(() => document.documentElement.dir);
-    expect(dir).toBe('rtl');
-    await page.locator('[data-testid="toggle-lang"]').click();
+    await page.locator('[data-testid="theme-dark"]').click();
+    expect(await page.evaluate(() => document.documentElement.classList.contains('dark'))).toBe(true);
+    await page.locator('[data-testid="theme-light"]').click();
+
+    await page.locator('[data-testid="lang-ar"]').click();
+    expect(await page.evaluate(() => document.documentElement.dir)).toBe('rtl');
+    await page.locator('[data-testid="lang-en"]').click();
+
+    await page.locator('[data-testid="topbar-back"]').click();
+    await page.waitForFunction(() => location.hash.includes('#/C23'));
+
+    // Also verify navigating from C23 -> C04 -> topbar-back returns to C23 (exact screen came from)
+    await page.getByText('My Vehicles').click();
+    await page.waitForFunction(() => location.hash.includes('#/C04'));
+    await page.locator('[data-testid="topbar-back"]').click();
+    await page.waitForFunction(() => location.hash.includes('#/C23'));
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
-    recordFlow('F01 login->C02 + dark/RTL', clean.length === 0 ? 'PASS' : 'FAIL', { hash, console: clean });
+    recordFlow('F01 login->C02 + SH06 dark/RTL + single back', clean.length === 0 ? 'PASS' : 'FAIL', { hash, console: clean });
     expect(clean).toEqual([]);
   } finally {
     await context.close();
@@ -557,8 +571,9 @@ test('F09 support ticket with attachment via SH08 UI + scoped ?ft= URL + AD18 au
     expect(msgText).not.toMatch(/^You\b/m);
     expect(msgText).toContain('Gate Two CarOwner');
 
-    // Back to inbox list keeps filter bar visible
-    await adminPage.locator('[data-testid="back-to-tickets"]').click();
+    // Single unified topbar back button returns to inbox list (no duplicate back-to-tickets button)
+    await expect(adminPage.locator('[data-testid="back-to-tickets"]')).toHaveCount(0);
+    await adminPage.locator('[data-testid="topbar-back"]').click();
     await expect(adminPage.locator('[data-testid="ticket-status-filters"]')).toBeVisible();
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));

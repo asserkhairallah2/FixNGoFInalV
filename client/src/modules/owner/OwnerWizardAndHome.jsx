@@ -1582,14 +1582,14 @@ export function C08() {
 // ---------------------------------------------------------------------------
 export function C09({ params }) {
   const { t } = usePrefs();
-  const { go } = useNav();
+  const { go, back } = useNav();
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
   const { data: candidates = [] } = useCandidates(reqId);
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('Searching Nearby Providers', 'البحث عن مقدمي الخدمة')} />
+      <AppTopBar title={t('Searching Nearby Providers', 'البحث عن مقدمي الخدمة')} onBack={() => back('C08')} />
       <div className="px-4 pt-4 space-y-4">
         <MapView height={200} />
 
@@ -2820,25 +2820,28 @@ export function C16({ params }) {
 
 export function C41({ params }) {
   const { t } = usePrefs();
-  const { go } = useNav();
+  const { go, back } = useNav();
   const c = useColors();
 
   return (
-    <div className="flex flex-col min-h-full pb-24 justify-center px-4" style={{ backgroundColor: c.bg }}>
-      <Card className="text-center py-8">
-        <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl" style={{ backgroundColor: c.successBg, color: c.success }}>
-          🎉
-        </div>
-        <h2 className="text-lg font-extrabold" style={{ color: c.text }}>
-          {t('Thank You for Your Feedback!', 'شكراً لك على تقييمك!')}
-        </h2>
-        <p className="text-xs mt-1 mb-5" style={{ color: c.text2 }}>
-          {t('Your review helps keep FixNGo roadside providers safe, reliable and accountable across Egypt.', 'يساعد تقييمك في الحفاظ على جودة وأمان خدمات فيكس آند جو في جميع أنحاء مصر.')}
-        </p>
-        <PrimaryButton onClick={() => go('C01')}>
-          {t('Back to Home', 'العودة للرئيسية')}
-        </PrimaryButton>
-      </Card>
+    <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
+      <AppTopBar showBack={true} onBack={() => back('C16')} />
+      <div className="flex-1 flex flex-col justify-center px-4 pt-4">
+        <Card className="text-center py-8">
+          <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl" style={{ backgroundColor: c.successBg, color: c.success }}>
+            🎉
+          </div>
+          <h2 className="text-lg font-extrabold" style={{ color: c.text }}>
+            {t('Thank You for Your Feedback!', 'شكراً لك على تقييمك!')}
+          </h2>
+          <p className="text-xs mt-1 mb-5" style={{ color: c.text2 }}>
+            {t('Your review helps keep FixNGo roadside providers safe, reliable and accountable across Egypt.', 'يساعد تقييمك في الحفاظ على جودة وأمان خدمات فيكس آند جو في جميع أنحاء مصر.')}
+          </p>
+          <PrimaryButton onClick={() => go('C02')}>
+            {t('Go to Home', 'الانتقال للرئيسية')}
+          </PrimaryButton>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -2925,31 +2928,34 @@ export function C29({ params }) {
 
 export function C30({ params }) {
   const { t } = usePrefs();
-  const { go } = useNav();
+  const { go, back } = useNav();
   const c = useColors();
   const { req } = useActiveRequest(params);
 
   return (
-    <div className="flex flex-col min-h-full pb-24 justify-center px-4" style={{ backgroundColor: c.bg }}>
-      <Card className="text-center py-7">
-        <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl" style={{ backgroundColor: c.surface2 }}>
-          ✋
-        </div>
-        <h2 className="text-lg font-extrabold" style={{ color: c.text }}>
-          {t('Request Cancelled', 'تم إلغاء الطلب')}
-        </h2>
-        <p className="text-xs mt-1 mb-5" style={{ color: c.text2 }}>
-          {t(`Request ${params?.code || req?.code || ''} has been cancelled with 0 EGP fee.`, `تم إلغاء الطلب ${params?.code || req?.code || ''} بدون أي رسوم.`)}
-        </p>
-        <div className="space-y-2">
-          <PrimaryButton onClick={() => go('C02')}>
-            {t('Back to Home', 'العودة للرئيسية')}
-          </PrimaryButton>
-          <SecondaryButton onClick={() => go('C20')}>
-            {t('View Request History', 'عرض سجل الطلبات')}
-          </SecondaryButton>
-        </div>
-      </Card>
+    <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
+      <AppTopBar showBack={true} onBack={() => back('C29')} />
+      <div className="flex-1 flex flex-col justify-center px-4 pt-4">
+        <Card className="text-center py-7">
+          <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl" style={{ backgroundColor: c.surface2 }}>
+            ✋
+          </div>
+          <h2 className="text-lg font-extrabold" style={{ color: c.text }}>
+            {t('Request Cancelled', 'تم إلغاء الطلب')}
+          </h2>
+          <p className="text-xs mt-1 mb-5" style={{ color: c.text2 }}>
+            {t(`Request ${params?.code || req?.code || ''} has been cancelled with 0 EGP fee.`, `تم إلغاء الطلب ${params?.code || req?.code || ''} بدون أي رسوم.`)}
+          </p>
+          <div className="space-y-2">
+            <PrimaryButton onClick={() => go('C02')}>
+              {t('Go to Home', 'الانتقال للرئيسية')}
+            </PrimaryButton>
+            <SecondaryButton onClick={() => go('C20')}>
+              {t('View Request History', 'عرض سجل الطلبات')}
+            </SecondaryButton>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

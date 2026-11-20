@@ -1924,10 +1924,6 @@ export function SH11Screen() {
             <ForwardChevron size={14} className={colors.secondaryText} />
           </button>
         </div>
-
-        <PrimaryButton onClick={() => nav.back()} testId="screen-primary">
-          {isAr ? 'العودة إلى الملف الشخصي' : 'Back to Profile'}
-        </PrimaryButton>
       </div>
     </div>
   );
@@ -2654,13 +2650,6 @@ export function SH16Screen({ id, params }) {
             <p className="text-[11px] text-rose-500 pt-1">{withdrawal.failureReason}</p>
           )}
         </div>
-
-        <PrimaryButton
-          onClick={() => nav.go(user?.role === 'TowCaptain' ? 'T09' : 'M07')}
-          testId="screen-primary"
-        >
-          {isAr ? 'العودة إلى الأرباح' : 'Back to Earnings'}
-        </PrimaryButton>
       </div>
     </div>
   );
@@ -2847,8 +2836,8 @@ export function SH17Screen({ id, params }) {
           )}
         </div>
 
-        <div className="space-y-2">
-          {!isAdmin && (
+        {!isAdmin && (
+          <div className="space-y-2">
             <PrimaryButton
               onClick={() => {
                 nav.updateFlow({ replaceDocType: docType });
@@ -2858,11 +2847,8 @@ export function SH17Screen({ id, params }) {
             >
               {isAr ? 'استبدال المستند / رفع جديد' : 'Replace Document / Upload New'}
             </PrimaryButton>
-          )}
-          <SecondaryButton onClick={() => nav.back()}>
-            {isAr ? 'إغلاق المعاينة' : 'Close Preview'}
-          </SecondaryButton>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

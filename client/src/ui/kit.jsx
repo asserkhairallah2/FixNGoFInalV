@@ -65,7 +65,14 @@ export function AppTopBar({ showBack, onBack, title, right }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {canBack && (
-            <button type="button" onClick={onBack || (() => nav.back())} className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition shrink-0`} title={isAr ? 'رجوع' : 'Back'} aria-label="Back">
+            <button
+              type="button"
+              data-testid="topbar-back"
+              onClick={() => (onBack ? onBack() : nav.back())}
+              className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition shrink-0`}
+              title={isAr ? 'رجوع' : 'Back'}
+              aria-label="Back"
+            >
               {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
           )}

@@ -492,7 +492,7 @@ export function C19({ params }) {
 // ---------------------------------------------------------------------------
 export function C36({ params }) {
   const { t, isAr } = usePrefs();
-  const { go } = useNav();
+  const { go, back } = useNav();
   const c = useColors();
   const { data: bookings = [] } = useBookings();
   const targetId = params?.id || bookings[0]?.id;
@@ -500,8 +500,10 @@ export function C36({ params }) {
   const booking = detail || bookings.find((b) => b.id === targetId) || bookings[0] || null;
 
   return (
-    <div className="flex flex-col min-h-full pb-24 justify-center px-4" style={{ backgroundColor: c.bg }}>
-      <Card className="text-center py-6">
+    <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
+      <AppTopBar showBack={true} onBack={() => back('C19')} />
+      <div className="flex-1 flex flex-col justify-center px-4 pt-4">
+        <Card className="text-center py-6">
         <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl" style={{ backgroundColor: c.successBg, color: c.success }}>
           📅
         </div>
@@ -543,7 +545,8 @@ export function C36({ params }) {
             {t('All My Bookings', 'جميع حجوزاتي')}
           </SecondaryButton>
         </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

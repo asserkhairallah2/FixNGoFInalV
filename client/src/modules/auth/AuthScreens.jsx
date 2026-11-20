@@ -1560,9 +1560,6 @@ export function A11Screen() {
               {isAr ? 'استبدال المستند وإعادة الإرسال' : 'Replace Document & Resubmit'}
             </PrimaryButton>
           )}
-          <SecondaryButton onClick={() => nav.go('A03')}>
-            {isAr ? 'العودة لتسجيل الدخول' : 'Back to Login'}
-          </SecondaryButton>
         </div>
       </div>
     </div>
@@ -1655,7 +1652,7 @@ export function A13Screen() {
           </p>
         </div>
         <PrimaryButton onClick={() => nav.go('A03')} testId="screen-primary">
-          {isAr ? 'العودة لتسجيل الدخول' : 'Back to Login'}
+          {isAr ? 'تسجيل الدخول' : 'Sign In'}
         </PrimaryButton>
       </div>
     </div>

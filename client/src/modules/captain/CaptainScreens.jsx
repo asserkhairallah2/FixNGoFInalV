@@ -1249,9 +1249,6 @@ export function T08Screen({ id }) {
         </div>
       </div>
 
-      <PrimaryButton onClick={() => nav.go('T02')} testId="screen-primary">
-        {isAr ? 'العودة إلى لوحة القيادة' : 'Back to Dashboard'}
-      </PrimaryButton>
       <SecondaryButton onClick={() => nav.go('T11')}>
         {isAr ? 'مركز الرحلات' : 'Trips Hub'}
       </SecondaryButton>

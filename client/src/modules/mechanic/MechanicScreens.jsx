@@ -1443,9 +1443,6 @@ export function M13Screen({ id }) {
         )}
       </div>
 
-      <PrimaryButton onClick={() => nav.go('M08')} testId="screen-primary">
-        {isAr ? 'العودة لسجل الخدمات' : 'Back to Service History'}
-      </PrimaryButton>
       <SecondaryButton onClick={() => nav.go('M07')}>
         {isAr ? 'عرض الأرباح' : 'View Earnings'}
       </SecondaryButton>

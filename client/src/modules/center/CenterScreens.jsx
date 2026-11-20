@@ -590,12 +590,6 @@ export function SC03Screen({ id, params, code = 'SC03' }) {
                 </PrimaryButton>
               </div>
             )}
-
-            {!['Pending', 'Confirmed', 'InProgress'].includes(booking.status) && (
-              <PrimaryButton onClick={() => nav.go('SC02')} testId="screen-primary">
-                {isAr ? 'العودة للمواعيد' : 'Back to Appointments'}
-              </PrimaryButton>
-            )}
           </>
         )}
       </div>
@@ -1909,10 +1903,6 @@ export function SC10Screen({ code = 'SC10' }) {
               : 'Tap a booking to manage it. Available slots reflect service duration and bay capacity.'}
           </p>
         </div>
-
-        <SecondaryButton onClick={() => nav.go('SC02')}>
-          {isAr ? 'العودة للمواعيد' : 'Back to Appointments'}
-        </SecondaryButton>
       </div>
     </div>
   );
@@ -2285,15 +2275,11 @@ export function SC12Screen({ id, params, code = 'SC12' }) {
           </div>
         )}
 
-        {!completed ? (
+        {!completed && (
           <PrimaryButton onClick={handleComplete} disabled={busy} testId="screen-primary">
             {busy
               ? (isAr ? 'جارٍ الإصدار…' : 'Completing…')
               : (isAr ? 'إصدار الفاتورة وإتمام الخدمة' : 'Issue Invoice & Complete')}
-          </PrimaryButton>
-        ) : (
-          <PrimaryButton onClick={() => nav.go('SC02')} testId="screen-primary">
-            {isAr ? 'العودة للمواعيد' : 'Back to Appointments'}
           </PrimaryButton>
         )}
       </div>

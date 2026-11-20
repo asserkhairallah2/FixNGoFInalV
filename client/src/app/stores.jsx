@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { setTokens, clearTokens, hasToken, get, post, put, ApiError } from '../api/http.js';
 
 // ---- Theme + language store ----
@@ -117,12 +117,54 @@ function sanitizeParams(params) {
   );
 }
 
+function sameRouteEntry(a, b) {
+  if (!a || !b || a.code !== b.code) return false;
+  const pa = sanitizeParams(a.params);
+  const pb = sanitizeParams(b.params);
+  const ka = Object.keys(pa).sort();
+  const kb = Object.keys(pb).sort();
+  if (ka.length !== kb.length) return false;
+  return ka.every((k, i) => k === kb[i] && String(pa[k]) === String(pb[k]));
+}
+
+function readStoredHistory() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem('fixngo.history') || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function NavProvider({ children }) {
+  const session = useSession();
+  const user = session?.user ?? null;
   const [route, setRoute] = useState(() => parseHash());
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(readStoredHistory);
+  const prevAuthIdRef = useRef(undefined);
   const [flow, setFlowState] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem('fixngo.flow') || '{}'); } catch { return {}; }
   });
+
+  const saveHistory = useCallback((updater) => {
+    setHistory((prev) => {
+      const raw = typeof updater === 'function' ? updater(prev) : updater;
+      const trimmed = Array.isArray(raw) ? raw.slice(-50) : [];
+      try {
+        if (trimmed.length) sessionStorage.setItem('fixngo.history', JSON.stringify(trimmed));
+        else sessionStorage.removeItem('fixngo.history');
+      } catch {}
+      return trimmed;
+    });
+  }, []);
+
+  useEffect(() => {
+    const authId = user?.id ?? null;
+    if (prevAuthIdRef.current !== undefined && prevAuthIdRef.current !== authId) {
+      saveHistory([]);
+    }
+    prevAuthIdRef.current = authId;
+  }, [user?.id, saveHistory]);
 
   useEffect(() => {
     const onHash = () => setRoute(parseHash());
@@ -138,7 +180,7 @@ export function NavProvider({ children }) {
     });
   }, []);
 
-  const clearFlow = useCallback(() => {
+  const clearFlow = useCallback(( ) => {
     setFlowState({});
     try { sessionStorage.removeItem('fixngo.flow'); } catch {}
   }, []);
@@ -147,11 +189,21 @@ export function NavProvider({ children }) {
     const resolved = resolveDeepLink(code) || { code, params: {} };
     const targetCode = resolved.code || code;
     const cleanParams = sanitizeParams({ ...resolved.params, ...(params || {}) });
-    if (getScreen(targetCode)?.main) setHistory([]);
-    else setHistory((h) => [...h, route]);
-    setRoute({ code: targetCode, params: cleanParams });
+    const nextEntry = { code: targetCode, params: cleanParams };
+    const curEntry = { code: route.code, params: sanitizeParams(route.params) };
+    if (!sameRouteEntry(curEntry, nextEntry)) {
+      if (targetCode === 'A01' || targetCode === 'A02') {
+        saveHistory([]);
+      } else {
+        saveHistory((h) => {
+          const last = h[h.length - 1];
+          return sameRouteEntry(last, curEntry) ? h : [...h, curEntry];
+        });
+      }
+    }
+    setRoute(nextEntry);
     window.location.hash = `#/${targetCode}${Object.keys(cleanParams).length ? '?' + new URLSearchParams(cleanParams).toString() : ''}`;
-  }, [route]);
+  }, [route, saveHistory]);
 
   const replace = useCallback((code, params = {}) => {
     const resolved = resolveDeepLink(code) || { code, params: {} };
@@ -162,19 +214,27 @@ export function NavProvider({ children }) {
   }, []);
 
   const back = useCallback((fallback) => {
-    if (history.length > 0) {
-      const prev = history[history.length - 1];
-      setHistory((h) => h.slice(0, -1));
-      replace(prev.code, prev.params || {});
+    const curEntry = { code: route.code, params: sanitizeParams(route.params) };
+    for (let idx = history.length - 1; idx >= 0; idx--) {
+      const candidate = history[idx];
+      if (!candidate?.code || sameRouteEntry(candidate, curEntry)) continue;
+      const entry = getScreen(candidate.code);
+      const allowed = entry && (!user ? entry.roles.includes('guest') : entry.roles.includes(user.role));
+      if (!allowed) continue;
+      saveHistory(history.slice(0, idx));
+      replace(candidate.code, candidate.params || {});
       return;
     }
-    const target = fallback || getScreen(route.code)?.fallbackBack;
-    if (target) {
-      replace(target, route.params || {});
+    if (route.code === 'AD18' && route.params?.id) {
+      replace('AD18', {});
       return;
     }
-    replace('A02');
-  }, [history, replace, route.code, route.params]);
+    const safeFallback = typeof fallback === 'string' && fallback ? fallback : null;
+    const screenFallback = getScreen(route.code)?.fallbackBack || null;
+    const target = safeFallback || screenFallback || homeForUser(user);
+    const keepParams = Boolean(safeFallback || screenFallback) && target !== route.code && !getScreen(target)?.main;
+    replace(target, keepParams ? (route.params || {}) : {});
+  }, [history, replace, route.code, route.params, saveHistory, user]);
 
   return (
     <NavContext.Provider value={{ route, go, replace, back, flow, updateFlow, clearFlow, history }}>

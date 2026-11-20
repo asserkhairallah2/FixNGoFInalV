@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  Languages, Moon, Sun, Loader2, WifiOff, ShieldAlert, Home, Wrench,
+  Loader2, WifiOff, ShieldAlert, Home, Wrench,
   FileText, User, Car, Building2, CreditCard, Truck, Calendar
 } from 'lucide-react';
 import {
@@ -90,29 +90,6 @@ function SystemRibbon({ status }) {
   return null;
 }
 
-function ThemeLangControls() {
-  const { theme, setTheme, lang, setLang, isDark } = usePrefs();
-  return (
-    <div className="flex gap-1 items-center">
-      <button aria-label="Toggle language" title="Toggle language" data-testid="toggle-lang"
-        onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-        className={`h-6 px-1.5 rounded-full border text-[9px] font-bold flex items-center gap-0.5 transition ${
-          isDark ? 'border-[#262936] bg-[#1A1D26] text-slate-200' : 'border-slate-200 bg-slate-100 text-slate-700'
-        }`}>
-        <Languages size={11} />
-        <span>{lang === 'en' ? 'AR' : 'EN'}</span>
-      </button>
-      <button aria-label="Toggle theme" title="Toggle theme" data-testid="toggle-theme"
-        onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        className={`w-6 h-6 rounded-full border grid place-items-center transition ${
-          isDark ? 'border-[#262936] bg-[#1A1D26] text-amber-400' : 'border-slate-200 bg-slate-100 text-slate-700'
-        }`}>
-        {theme === 'light' ? <Moon size={11} /> : <Sun size={11} />}
-      </button>
-    </div>
-  );
-}
-
 function PhoneStatusBar() {
   const c = useColors();
   const [clock, setClock] = useState(formatClock);
@@ -144,7 +121,6 @@ function PhoneStatusBar() {
             <path d="M25 5.2v3.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.7" />
           </svg>
         </div>
-        <ThemeLangControls />
       </div>
     </div>
   );

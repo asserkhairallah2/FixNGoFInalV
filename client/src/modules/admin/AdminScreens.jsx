@@ -1586,9 +1586,6 @@ export function AD08Screen({ id, params }) {
             >
               {busy ? (isAr ? 'جاري الحفظ...' : 'Saving...') : isAr ? 'تحديد كمسواة' : 'Mark Reconciled'}
             </PrimaryButton>
-            <SecondaryButton onClick={() => nav.go('AD07')}>
-              {isAr ? 'العودة لمراجعات الدفع' : 'Back to Payment Reviews'}
-            </SecondaryButton>
           </div>
         </>
       )}
@@ -1978,16 +1975,13 @@ export function AD11Screen({ id, params }) {
             </button>
           </div>
 
-          <div className="space-y-2">
-            {!u.isSuperAdmin && (
+          {!u.isSuperAdmin && (
+            <div className="space-y-2">
               <PrimaryButton testId="screen-primary" onClick={() => nav.go('AD12', { id: u.id })}>
                 {isAr ? 'إيقاف / استعادة صلاحية الحساب' : 'Suspend / Restore Account Access'}
               </PrimaryButton>
-            )}
-            <SecondaryButton onClick={() => nav.go('AD04')}>
-              {isAr ? 'العودة للمستخدمين' : 'Back to Users'}
-            </SecondaryButton>
-          </div>
+            </div>
+          )}
         </>
       )}
     </AdminShell>
@@ -2841,9 +2835,6 @@ export function AD15Screen({ id, params }) {
         <PrimaryButton testId="screen-primary" disabled={busy || !canConfirm} onClick={handleConfirm}>
           {busy ? (isAr ? 'جاري الإرسال...' : 'Submitting...') : isAr ? 'تأكيد القرار' : 'Confirm Decision'}
         </PrimaryButton>
-        <SecondaryButton onClick={() => nav.go('AD03', { id: app?.id })}>
-          {isAr ? 'العودة للطلب' : 'Back to Application'}
-        </SecondaryButton>
       </div>
     </AdminShell>
   );
@@ -3097,7 +3088,6 @@ export function AD18Screen({ id, params }) {
   const nav = useNav();
   const queryClient = useQueryClient();
   const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
-  const BackChevron = isAr ? ChevronRight : ChevronLeft;
   const ticketsQuery = useAdminTickets();
   const tickets = Array.isArray(ticketsQuery.data) ? ticketsQuery.data : [];
 
@@ -3154,18 +3144,10 @@ export function AD18Screen({ id, params }) {
     setReplyError('');
     setReply('');
     setSelectedId(ticketId);
-    nav.replace('AD18', { id: ticketId });
+    nav.go('AD18', { id: ticketId });
     if (typeof document !== 'undefined') {
-      document.querySelector('.phone-scroll, main')?.scrollTo?.(0, 0);
+      document.querySelector('[data-testid="screen-container"], .phone-scroll, main')?.scrollTo?.(0, 0);
     }
-  };
-
-  const closeTicketView = () => {
-    setStatusMsg('');
-    setReplyError('');
-    setReply('');
-    setSelectedId('');
-    nav.replace('AD18');
   };
 
   const handleReply = async (e) => {
@@ -3216,7 +3198,7 @@ export function AD18Screen({ id, params }) {
   // Detail / Conversation View when a ticket is selected
   if (selectedId) {
     return (
-      <AdminShell code="AD18" onBack={closeTicketView}>
+      <AdminShell code="AD18" onBack={() => nav.back('AD18')}>
         <div className="flex items-center justify-between gap-2">
           <div>
             <h1 className={`text-lg font-extrabold ${colors.text}`}>
@@ -3230,16 +3212,6 @@ export function AD18Screen({ id, params }) {
           </div>
           {activeTicket && <StatusBadge status={activeTicket.status} />}
         </div>
-
-        <button
-          type="button"
-          data-testid="back-to-tickets"
-          onClick={closeTicketView}
-          className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${colors.secondaryText} hover:${colors.text} w-fit`}
-        >
-          <BackChevron size={13} />
-          <span>{isAr ? 'العودة إلى قائمة التذاكر' : 'Back to all tickets'}</span>
-        </button>
 
         {threadQuery.isLoading && !activeTicket ? (
           <Skeleton rows={3} />
@@ -3348,7 +3320,7 @@ export function AD18Screen({ id, params }) {
 
   // Inbox List View with Status Filter & Search
   return (
-    <AdminShell code="AD18">
+    <AdminShell code="AD18" onBack={() => nav.back('AD01')}>
       <div>
         <h1 className={`text-lg font-extrabold ${colors.text}`}>
           {isAr ? 'صندوق الدعم الفني' : 'Support inbox'}
