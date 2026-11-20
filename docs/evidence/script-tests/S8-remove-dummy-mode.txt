@@ -1,9 +1,9 @@
 ﻿=== S8 : remove-db.bat in dummy mode -> refused without --force-dummy; real backup preserved ===
-Timestamp: 2026-11-20T02:29:52.3446390+00:00
+Timestamp: 2026-11-20T02:49:18.2579566+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-b2a3bd07
-Private port: 5310
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-9bc07271
+Private port: 5436
 [PASS] CLI setup created the original admin (value=0)
 [PASS] dummy mode enabled (value=0)
 [PASS] real-data backup exists before reset attempt
@@ -14,22 +14,22 @@ remove-db.bat in dummy mode exit=2
 [WARN] This permanently deletes the live database, uploads, secrets and state.
 [WARN] A safety snapshot is created in data\backups\ first.
 [WARN] Type RESET to confirm (nothing is deleted on any other input).
-[WARN] Cannot reset while in dummy mode. Run restore-db.bat first; your real data backup is in C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-b2a3bd07\backups\real-20261120-022959.
+[WARN] Cannot reset while in dummy mode. Run restore-db.bat first; your real data backup is in C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s8-9bc07271\backups\real-20261120-024924.
 [ERR] Reset failed with exit code 2.
 [PASS] remove-db.bat refuses in dummy mode with exit 2 (value=2)
 [PASS] refusal gives restore-db.bat guidance
-[PASS] dummy DB unchanged after refusal (value=BB10CE372F12D660F45547C321A126A26B9836162375F658EF80873C93E3522B)
+[PASS] dummy DB unchanged after refusal (value=4F1FFB3700E0824087D1469153F1C9602C3AE9F4053AFCD265F1DDBCEE12C0EB)
 [PASS] dummy users still present after refusal (value=201)
 [PASS] dummy-db.md still present after refusal
 [PASS] real backup directory still present after refusal
-[PASS] real backup bytes unchanged after refusal (value=C0A6D9F12CD3F1B84BF1DCA983B18E043055E87429740E41A92B397F2A08AD0D)
+[PASS] real backup bytes unchanged after refusal (value=2A86F81F10637458CF7DF8976BE0B088CFC64F1908345454F4796FAB12C9B3F9)
 remove-db.bat --force-dummy exit=0
 [PASS] --force-dummy allows reset from dummy mode (value=0)
 [PASS] forced reset returns to first run (value=10)
 [PASS] dummy DB deleted by forced reset
 [PASS] orphaned dummy-db.md deleted by forced reset
 [PASS] forced reset preserves data\backups\real-*
-[PASS] preserved real backup bytes unchanged (value=C0A6D9F12CD3F1B84BF1DCA983B18E043055E87429740E41A92B397F2A08AD0D)
+[PASS] preserved real backup bytes unchanged (value=2A86F81F10637458CF7DF8976BE0B088CFC64F1908345454F4796FAB12C9B3F9)
 [PASS] remove-db.log created in isolated log dir
 [PASS] remove-db.log is non-empty
 [PASS] remove-db.log contains no plaintext passwords

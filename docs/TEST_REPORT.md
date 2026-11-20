@@ -12,8 +12,8 @@ Status: **PASS** — authoritative gate `tools/verify-all.ps1` (**8/8 steps, `OV
 | 2 | `02 dotnet test (Release)` — API Integration | same | 26 | 26 | 0 | 0 |
 | 3 | `03 npm test (client)` | `npm test` (Vitest) | 9 | 9 | 0 | 0 |
 | 4 | `04 npm run build + publish app/` | `tools/build.ps1` | 0 errors | — | 0 | — |
-| 5 | `05 mock-scan.ps1` | `tools/mock-scan.ps1` | 112 files / 44 literals + prefill/confirm rules | 0 hits | 0 | — |
-| 6 | `06 script tests S1-S10` | `tests/scripts/run-all.ps1` | 10 scenarios (`S1`–`S10`) | 10 | 0 | 0 |
+| 5 | `05 mock-scan.ps1` | `tools/mock-scan.ps1` | 117 files / 44 literals + prefill/confirm rules | 0 hits | 0 | — |
+| 6 | `06 script tests S1-S10` | `tests/scripts/run-all.ps1` | 10 scenarios (`S1`–`S10`, 155 assertions) | 10 | 0 | 0 |
 | 7 | `07 Playwright E2E` | `npm run test:e2e` | 41 | 41 | 0 | 0 |
 | 8 | `08 fresh-clone build & start.bat gate` | `tools/clone-gate.ps1` | 1 | 1 | 0 | 0 |
 
@@ -37,7 +37,7 @@ Status: **PASS** — authoritative gate `tools/verify-all.ps1` (**8/8 steps, `OV
 ### Evidence files
 
 - `docs/evidence/test-output/verify-all.txt` — authoritative 8-gate transcript and summary table (`OVERALL: PASS`)
-- `docs/evidence/test-output/mock-scan.txt` — `0` hits across `112` scanned files
+- `docs/evidence/test-output/mock-scan.txt` — `0` hits across `117` scanned files
 - `docs/evidence/test-output/script-tests.txt` & `docs/evidence/script-tests/S1..S10*.txt` — `.bat` script scenario transcripts
 - `docs/evidence/e2e/results.json`, `flows.ndjson`, `auth-results.json`, `sweep-*-summary.json` — Playwright machine-readable outputs
 - `docs/evidence/screenshots/{light-en,dark-en,light-ar,dark-ar}/*.png` — `572` phone-frame screenshots

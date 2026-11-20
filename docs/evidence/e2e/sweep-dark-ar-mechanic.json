@@ -50,7 +50,7 @@
   {
     "code": "M03",
     "role": "mechanic",
-    "hash": "#/M03?id=407ac088-dd23-4cc9-9fde-adb88059a92d",
+    "hash": "#/M03?id=3318c46c-eeae-4227-9ab8-64bce7e3d9c7",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M03.png",
     "diagnostics": {
       "bad": [],
@@ -66,7 +66,7 @@
   {
     "code": "M04",
     "role": "mechanic",
-    "hash": "#/M04?id=9f479694-2709-4903-a050-6c7243efc739",
+    "hash": "#/M04?id=7ac67272-4260-4a77-bd5a-dcc18179f0c9",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M04.png",
     "diagnostics": {
       "bad": [],
@@ -82,7 +82,7 @@
   {
     "code": "M05",
     "role": "mechanic",
-    "hash": "#/M05?id=9f479694-2709-4903-a050-6c7243efc739",
+    "hash": "#/M05?id=7ac67272-4260-4a77-bd5a-dcc18179f0c9",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M05.png",
     "diagnostics": {
       "bad": [],
@@ -98,7 +98,7 @@
   {
     "code": "M06",
     "role": "mechanic",
-    "hash": "#/M06?id=9f479694-2709-4903-a050-6c7243efc739",
+    "hash": "#/M06?id=7ac67272-4260-4a77-bd5a-dcc18179f0c9",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M06.png",
     "diagnostics": {
       "bad": [],
@@ -178,7 +178,7 @@
   {
     "code": "M11",
     "role": "mechanic",
-    "hash": "#/M11?id=9f479694-2709-4903-a050-6c7243efc739",
+    "hash": "#/M11?id=7ac67272-4260-4a77-bd5a-dcc18179f0c9",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M11.png",
     "diagnostics": {
       "bad": [],
@@ -194,7 +194,7 @@
   {
     "code": "M12",
     "role": "mechanic",
-    "hash": "#/M12?id=9f479694-2709-4903-a050-6c7243efc739",
+    "hash": "#/M12?id=7ac67272-4260-4a77-bd5a-dcc18179f0c9",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M12.png",
     "diagnostics": {
       "bad": [],
@@ -210,7 +210,7 @@
   {
     "code": "M13",
     "role": "mechanic",
-    "hash": "#/M13?id=9f479694-2709-4903-a050-6c7243efc739",
+    "hash": "#/M13?id=7ac67272-4260-4a77-bd5a-dcc18179f0c9",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-ar\\M13.png",
     "diagnostics": {
       "bad": [],

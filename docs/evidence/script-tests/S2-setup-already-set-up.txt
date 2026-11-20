@@ -1,9 +1,9 @@
 ﻿=== S2 : setup.bat when already set up -> exit 2, no changes ===
-Timestamp: 2026-11-20T02:28:02.1986149+00:00
+Timestamp: 2026-11-20T02:47:36.8655562+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s2-4ef6235a
-Private port: 5367
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s2-e677c700
+Private port: 5390
 setup.bat (first run) exit=0
 ===================================================
   FixNGo - First-time setup
@@ -29,7 +29,7 @@ setup.bat (second run) exit=2
 [WARN] System already has accounts. Use remove-db.bat to reset.
 [PASS] second setup.bat refuses with exit 2 (value=2)
 [PASS] refusal message is clear
-[PASS] database bytes unchanged by refused setup (value=FE6C87655E591E54271693E47B2CA471282CAD5B172BF734D25EE5252B5DDBFF)
+[PASS] database bytes unchanged by refused setup (value=E4D603F534C19F2E5882C12E73EF933326EC40FFB0F96704B227925B92D07D86)
 [PASS] user count unchanged by refused setup (value=1)
 [PASS] setup.log created in isolated log dir
 [PASS] setup.log is non-empty

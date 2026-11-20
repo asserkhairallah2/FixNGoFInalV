@@ -14,8 +14,8 @@
 * **Tests:**
   * **.NET:** `47/47` (`1` Domain + `20` Application + `26` API integration, including `FileSecurityTests` for magic-byte upload validation, ownership checks, and short-lived `?ft=` file tokens).
   * **Client unit (Vitest):** `9/9`.
-  * **Strict mock/prefill scan (`tools/mock-scan.ps1`):** `0` hits across `112` files (44 forbidden literals + form-prefill `useState` checks + fallback-sentence regexes + pre-ticked confirmation checks).
-  * **Script scenarios (`tests/scripts/run-all.ps1`):** `10/10` (`S1`–`S10`).
+  * **Strict mock/prefill scan (`tools/mock-scan.ps1`):** `0` hits across `117` files (44 forbidden literals + form-prefill `useState` checks + fallback-sentence regexes + pre-ticked confirmation checks).
+  * **Script scenarios (`tests/scripts/run-all.ps1`):** `10/10` (`S1`–`S10`, `155/155` assertions).
   * **Playwright E2E:** `41/41` (`5` role logins + `15` UI/API business flows `F01`–`F15` + `20` four-variant screen sweeps + `1` registry check = `572` phone-frame screenshots with `0` console errors, `0` warnings, `0` failed requests, `0` forbidden/raw-enum text, `0` horizontal overflow).
   * **Fresh-clone gate (`tools/clone-gate.ps1`):** `PASS` (`git clone` to temp folder → `setup.bat` → `start.bat` → HTTP 200 SPA + JS bundle).
 * **Git:** branch `main`; `client/src/app/` tracked (`.gitignore` anchored to `/app/`); post-commit working tree clean; `data/` untouched.

@@ -53,8 +53,8 @@ It executes 8 sequential gates and exits `0` only when all 8 pass:
 2. `02 dotnet test (Release)` — **PASS** (`47/47`: `1` Domain + `20` Application + `26` API integration)
 3. `03 npm test (client)` — **PASS** (`9/9` Vitest)
 4. `04 npm run build + publish app/` — **PASS** (`tools/build.ps1`)
-5. `05 mock-scan.ps1` — **PASS** (`0` hits across `112` files; checks 44 forbidden literals, `useState` string/numeric form prefills, submitted `|| t('...sentence...')` fallbacks, and pre-ticked confirmation states)
-6. `06 script tests S1-S10` — **PASS** (`10/10` scenarios across all 5 `.bat` scripts)
+5. `05 mock-scan.ps1` — **PASS** (`0` hits across `117` files; checks 44 forbidden literals, `useState` string/numeric form prefills, submitted `|| t('...sentence...')` fallbacks, and pre-ticked confirmation states)
+6. `06 script tests S1-S10` — **PASS** (`10/10` scenarios, `155/155` assertions across all 5 `.bat` scripts)
 7. `07 Playwright E2E` — **PASS** (`41/41` tests: `auth.spec.js` `5/5`, `flows.spec.js` `F01`–`F15` `15/15`, `screens.spec.js` `21/21` = `572` screenshots across `light-en`, `dark-en`, `light-ar`, `dark-ar`, `0` console errors/warnings, `0` failed requests, `0` raw enum/forbidden text, `0` horizontal overflow)
 8. `08 fresh-clone build & start.bat gate` — **PASS** (`tools/clone-gate.ps1`: fails if any source under `src/` or `client/src/` is untracked, `git clone`s HEAD to a temp dir, runs `setup.bat --non-interactive` + `start.bat`, and verifies `/health`, `/`, and `/assets/*.js` HTTP 200)
 
@@ -88,7 +88,7 @@ It executes 8 sequential gates and exits `0` only when all 8 pass:
 - [x] Builds and starts cleanly from a fresh `git clone` (`tools/clone-gate.ps1`)
 - [x] Complete real system wired to `/api/v1/` + live SignalR hub (`/hubs/app`)
 - [x] All 143 screens registered and swept in 4 variants (`572` screenshots, `0` console/overflow/enum errors)
-- [x] Strict `tools/mock-scan.ps1` = `0` hits across `112` files
+- [x] Strict `tools/mock-scan.ps1` = `0` hits across `117` files
 - [x] Five `.bat` tools implemented and verified (`S1`–`S10` + fresh clone)
 - [x] Scoped file download tokens (`?ft=`), magic-byte upload checks, and ownership enforcement (`FileSecurityTests`)
 - [x] `tools/verify-all.ps1` = **8/8 PASS, `OVERALL: PASS`**

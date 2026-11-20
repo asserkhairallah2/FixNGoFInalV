@@ -34,7 +34,7 @@
   {
     "code": "AD03",
     "role": "admin",
-    "hash": "#/AD03?id=b849a697-de0f-4946-8ed8-3086a77ddca0",
+    "hash": "#/AD03?id=f23336f1-236c-44ba-a40c-e8d8e669dbfa",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD03.png",
     "diagnostics": {
       "bad": [],
@@ -114,7 +114,7 @@
   {
     "code": "AD08",
     "role": "admin",
-    "hash": "#/AD08?id=37cf11eb-2a1a-4702-9a1f-aa00fea079af",
+    "hash": "#/AD08?id=334ddf9d-6067-44d2-b8bf-5cebaf82a1d5",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD08.png",
     "diagnostics": {
       "bad": [],
@@ -146,7 +146,7 @@
   {
     "code": "AD10",
     "role": "admin",
-    "hash": "#/AD10?id=91d2a902-c29c-4cfa-a425-1c86e8d1650d",
+    "hash": "#/AD10?id=272561f8-120d-42ed-ac3e-69cd8d1c6322",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD10.png",
     "diagnostics": {
       "bad": [],
@@ -162,7 +162,7 @@
   {
     "code": "AD11",
     "role": "admin",
-    "hash": "#/AD11?id=3814fc75-1a92-4429-a22e-785e32e0edf9",
+    "hash": "#/AD11?id=1783d2ba-c138-490c-b8bb-e9443a0bd956",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD11.png",
     "diagnostics": {
       "bad": [],
@@ -226,7 +226,7 @@
   {
     "code": "AD15",
     "role": "admin",
-    "hash": "#/AD15?id=b849a697-de0f-4946-8ed8-3086a77ddca0",
+    "hash": "#/AD15?id=f23336f1-236c-44ba-a40c-e8d8e669dbfa",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD15.png",
     "diagnostics": {
       "bad": [],
@@ -274,7 +274,7 @@
   {
     "code": "AD18",
     "role": "admin",
-    "hash": "#/AD18?id=fc9d2d37-c3aa-4943-8f2e-b4e4eb96561f",
+    "hash": "#/AD18?id=32c5a893-0e2f-4269-ba8b-cf7cb6b43997",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD18.png",
     "diagnostics": {
       "bad": [],

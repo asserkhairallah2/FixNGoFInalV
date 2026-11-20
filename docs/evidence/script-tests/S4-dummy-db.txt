@@ -1,9 +1,9 @@
 ﻿=== S4 : dummy-db.bat -> verified backup, >=200 users, all credentials log in, mode=dummy ===
-Timestamp: 2026-11-20T02:28:23.7729846+00:00
+Timestamp: 2026-11-20T02:47:56.6848965+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-75930c56
-Private port: 5287
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-650e785a
+Private port: 5876
 [PASS] CLI setup created the original admin (value=0)
 dummy-db.bat exit=0
 ===================================================
@@ -14,7 +14,7 @@ dummy-db.bat exit=0
 [INFO] No server.pid found.
 [OK] Dummy database created (201 users, seed 20261119).
 [OK] Credentials written to C:\Users\xprenspel\Desktop\FixNGoFinal\dummy-db.md
-[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-75930c56\backups\real-20261120-022830
+[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-650e785a\backups\real-20261120-024803
 [OK] Dummy database ready. See dummy-db.md for every credential.
 [PASS] dummy-db.bat succeeds with --yes (value=0)
 [PASS] dummy-db.log created in isolated log dir
@@ -24,8 +24,8 @@ dummy-db.bat exit=0
 [PASS] backup contains manifest.json
 [PASS] backup contains the database copy
 [PASS] backup contains the uploads folder
-manifest: users=1 uploads=0 sha=D6381AE7E5B8952CA70B8001B59170D95D71D69EE57E823EB7F4955C6C1CF8F5
-[PASS] backup db SHA-256 matches manifest (value=D6381AE7E5B8952CA70B8001B59170D95D71D69EE57E823EB7F4955C6C1CF8F5)
+manifest: users=1 uploads=0 sha=2B4A31C2590EE820C185F523CC3B3AD45862283E39B25131C375E3B9F8797B55
+[PASS] backup db SHA-256 matches manifest (value=2B4A31C2590EE820C185F523CC3B3AD45862283E39B25131C375E3B9F8797B55)
 [PASS] manifest records the pre-dummy user count
 [PASS] manifest records hadRealData=true
 [PASS] manifest records appVersion
