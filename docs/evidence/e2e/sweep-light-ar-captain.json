@@ -11,7 +11,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 377
+      "chars": 809
     },
     "console": []
   },
@@ -27,14 +27,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 458
+      "chars": 809
     },
     "console": []
   },
   {
     "code": "T03",
     "role": "captain",
-    "hash": "#/T03?id=34e2e919-2044-4f27-a9e6-00ee09c3000f",
+    "hash": "#/T03?id=c64eee94-d6a9-4f30-b0b3-e923ed5f10b4",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\T03.png",
     "diagnostics": {
       "bad": [],
@@ -43,14 +43,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 419
+      "chars": 777
     },
     "console": []
   },
   {
     "code": "T04",
     "role": "captain",
-    "hash": "#/T04?id=b5dab703-0ceb-4cbe-9f39-a8d0c7b2b552",
+    "hash": "#/T04?id=fd795ad4-4117-4736-ad41-5a09425f616c",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\T04.png",
     "diagnostics": {
       "bad": [],
@@ -59,14 +59,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 399
+      "chars": 753
     },
     "console": []
   },
   {
     "code": "T05",
     "role": "captain",
-    "hash": "#/T05?id=b5dab703-0ceb-4cbe-9f39-a8d0c7b2b552",
+    "hash": "#/T05?id=fd795ad4-4117-4736-ad41-5a09425f616c",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\T05.png",
     "diagnostics": {
       "bad": [],
@@ -75,7 +75,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 388
+      "chars": 742
     },
     "console": []
   },
@@ -91,14 +91,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 405
+      "chars": 759
     },
     "console": []
   },
   {
     "code": "T07",
     "role": "captain",
-    "hash": "#/T07?id=b5dab703-0ceb-4cbe-9f39-a8d0c7b2b552",
+    "hash": "#/T07?id=fd795ad4-4117-4736-ad41-5a09425f616c",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\T07.png",
     "diagnostics": {
       "bad": [],
@@ -107,7 +107,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 340
+      "chars": 694
     },
     "console": []
   },
@@ -123,7 +123,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 468
+      "chars": 831
     },
     "console": []
   },
@@ -139,7 +139,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 440
+      "chars": 848
     },
     "console": []
   },
@@ -155,7 +155,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 460
+      "chars": 809
     },
     "console": []
   },
@@ -171,7 +171,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 595
+      "chars": 844
     },
     "console": []
   },
@@ -187,14 +187,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 445
+      "chars": 801
     },
     "console": []
   },
   {
     "code": "T13",
     "role": "captain",
-    "hash": "#/T13?id=b5dab703-0ceb-4cbe-9f39-a8d0c7b2b552",
+    "hash": "#/T13?id=fd795ad4-4117-4736-ad41-5a09425f616c",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\T13.png",
     "diagnostics": {
       "bad": [],
@@ -203,14 +203,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 585
+      "chars": 940
     },
     "console": []
   },
   {
     "code": "T14",
     "role": "captain",
-    "hash": "#/T14?id=b5dab703-0ceb-4cbe-9f39-a8d0c7b2b552",
+    "hash": "#/T14?id=fd795ad4-4117-4736-ad41-5a09425f616c",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\T14.png",
     "diagnostics": {
       "bad": [],
@@ -219,7 +219,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 550
+      "chars": 906
     },
     "console": []
   },
@@ -235,7 +235,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 601
+      "chars": 675
     },
     "console": []
   }

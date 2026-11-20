@@ -24,7 +24,8 @@ describe('Intl format helpers', () => {
   });
 
   it('formats distance from raw kilometres', () => {
-    expect(fmtDistance(8.2, 'en')).toBe('8 km');
+    expect(fmtDistance(8.2, 'en')).toBe('8.2 km');
+    expect(fmtDistance(8, 'en')).toBe('8 km');
     expect(fmtDistance(8.2, 'ar')).toContain('كم');
   });
 });

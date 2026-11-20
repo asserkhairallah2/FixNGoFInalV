@@ -130,7 +130,25 @@ public sealed class RequestService(
             .AsQueryable();
         if (!isAdmin) q = q.Where(r => r.CustomerId == callerId || r.AssignedProviderId == callerId);
         var list = await q.OrderByDescending(r => r.CreatedAt).Take(200).ToListAsync(ct);
-        return list.Select(Mappings.Request).ToList();
+        var providerIds = list.Where(r => r.AssignedProviderId is not null).Select(r => r.AssignedProviderId!.Value).Distinct().ToList();
+        var profiles = providerIds.Count == 0
+            ? new Dictionary<Guid, ProviderProfile>()
+            : await db.ProviderProfiles.Where(p => providerIds.Contains(p.UserId)).ToDictionaryAsync(p => p.UserId, ct);
+        return list.Select(r =>
+        {
+            var dto = Mappings.Request(r);
+            if (r.AssignedProviderId is not null && profiles.TryGetValue(r.AssignedProviderId.Value, out var prof))
+            {
+                dto = dto with
+                {
+                    ProviderRating = prof.Rating,
+                    ProviderJobs = prof.CompletedJobs,
+                    ProviderTruckMake = prof.TruckMake,
+                    ProviderTruckPlate = prof.TruckPlate
+                };
+            }
+            return dto;
+        }).ToList();
     }
 
     public async Task<IReadOnlyList<RequestEventDto>> TimelineAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
@@ -162,9 +180,61 @@ public sealed class RequestService(
             ?? throw new DomainException("request.not_found", "Request not found.");
         if (r.AssignedProviderId != providerId)
             throw new DomainException("auth.forbidden", "This request is not assigned to you.");
+        var prevStatus = r.Status;
         r.Status = StateMachines.Request.Transition(r.Status, req.Status);
         if (req.Status == RequestStatus.Accepted) r.AcceptedAt = clock.UtcNow;
-        if (req.Status == RequestStatus.Completed) r.CompletedAt = clock.UtcNow;
+        if (req.Status == RequestStatus.Completed && prevStatus != RequestStatus.Completed)
+        {
+            r.CompletedAt = clock.UtcNow;
+            var prof = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == providerId, ct);
+            if (prof is not null) prof.CompletedJobs++;
+
+            var (s, _) = await settings.CurrentAsync(ct);
+            var total = r.QuoteMinor ?? r.EstimateMinor ?? 0;
+            var fee = total >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0;
+            var subtotal = Math.Max(0, total - fee);
+            var inv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == r.Id, ct);
+            if (inv is null)
+            {
+                inv = new Invoice
+                {
+                    Number = await Codes.NextAsync(db, "INV", ct),
+                    RequestId = r.Id,
+                    CustomerId = r.CustomerId,
+                    SubtotalMinor = subtotal,
+                    ServiceFeeMinor = fee,
+                    TotalMinor = total,
+                    Method = r.PaymentMethod ?? PaymentMethodType.Cash,
+                    Status = InvoiceStatus.Paid,
+                    CustomerCashConfirmed = true,
+                    LinesJson = System.Text.Json.JsonSerializer.Serialize(new[] { new { label = "service", amountMinor = subtotal } })
+                };
+                db.Invoices.Add(inv);
+            }
+            else
+            {
+                inv.Status = InvoiceStatus.Paid;
+                inv.Method ??= r.PaymentMethod ?? PaymentMethodType.Cash;
+            }
+            var wallet = await db.Wallets.FirstOrDefaultAsync(w => w.UserId == providerId, ct);
+            if (wallet is null)
+            {
+                wallet = new Wallet { UserId = providerId };
+                db.Wallets.Add(wallet);
+                await db.SaveChangesAsync(ct);
+            }
+            if (!await db.WalletEntries.AnyAsync(e => e.WalletId == wallet.Id && e.Type == WalletEntryType.JobEarning && e.Reference == inv.Number, ct))
+            {
+                db.WalletEntries.Add(new WalletEntry
+                {
+                    WalletId = wallet.Id,
+                    Type = WalletEntryType.JobEarning,
+                    AmountMinor = inv.SubtotalMinor > 0 ? inv.SubtotalMinor : subtotal,
+                    Reference = inv.Number,
+                    At = clock.UtcNow
+                });
+            }
+        }
         db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = req.Note, ActorId = providerId, At = clock.UtcNow });
         await db.SaveChangesAsync(ct);
         var map = new Dictionary<RequestStatus, NotificationType>

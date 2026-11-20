@@ -49,7 +49,7 @@ public sealed class CenterAdminController(CenterService svc) : ControllerBase
     [HttpPost("bookings/{id:guid}/confirm")] public async Task<IActionResult> Confirm(Guid id, CancellationToken ct) => Ok(await svc.DecideBookingAsync(this.UserId(), id, true, null, ct));
     [HttpPost("bookings/{id:guid}/reject")] public async Task<IActionResult> Reject(Guid id, [FromBody] RejectBookingRequest? req, CancellationToken ct) => Ok(await svc.DecideBookingAsync(this.UserId(), id, false, req?.Reason, ct));
     [HttpPost("bookings/{id:guid}/start")] public async Task<IActionResult> Start(Guid id, CancellationToken ct) => Ok(await svc.StartBookingAsync(this.UserId(), id, ct));
-    [HttpPost("bookings/{id:guid}/complete")] public async Task<IActionResult> Complete(Guid id, CancellationToken ct) => Ok(await svc.CompleteBookingAsync(this.UserId(), id, ct));
+    [HttpPost("bookings/{id:guid}/complete")] public async Task<IActionResult> Complete(Guid id, [FromBody] CompleteBookingRequest? req, CancellationToken ct) => Ok(await svc.CompleteBookingAsync(this.UserId(), id, req, ct));
     [HttpGet("work-orders")] public async Task<IActionResult> WorkOrders([FromQuery] Guid? bookingId, CancellationToken ct) => Ok(await svc.WorkOrdersAsync(this.UserId(), this.IsAdmin(), bookingId, ct));
     [HttpPost("work-orders/{id:guid}/assign")] public async Task<IActionResult> Assign(Guid id, [FromBody] WorkOrderRequest req, CancellationToken ct) => Ok(await svc.AssignWorkOrderAsync(this.UserId(), id, req, ct));
     [HttpPost("work-orders/{id:guid}/advance")] public async Task<IActionResult> Advance(Guid id, [FromBody] WorkOrderNotesRequest req, CancellationToken ct) => Ok(await svc.AdvanceWorkOrderAsync(this.UserId(), id, req, ct));

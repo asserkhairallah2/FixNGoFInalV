@@ -8,10 +8,10 @@
 
 ## 1. Current milestone and health
 
-* **Phase:** 0-7 complete with gate evidence; hostile self-review, final report and final commit done.
+* **Phase:** 0-7 + Round 2 + Round 3 complete with gate evidence; hostile self-review, visual inspection (`docs/evidence/visual-review.md`), final report and final commit done.
 * **Build:** `dotnet build FixNGo.sln -c Release` → 0 warnings, 0 errors; client production build → 0 errors.
-* **Authoritative gate:** `tools/verify-all.ps1` - 7/7 steps PASS (`OVERALL: PASS`) at 2026-11-19 21:11:13 on the final post-fix source (includes the `ExceptionMiddleware` cancellation fix, client P0/P2 fixes, provider fail-fast and E2E harness corrections). Transcript: `docs/evidence/test-output/verify-all.txt`.
-* **Tests:** .NET (Domain + Application + API), client Vitest, script scenarios S1–S10, mock-scan, and Playwright E2E (35 tests, 4 screen-sweep variants). Exact final counts are in `docs/TEST_REPORT.md` and `docs/E2E_REPORT.md`.
+* **Authoritative gate:** `tools/verify-all.ps1` - 7/7 steps PASS (`OVERALL: PASS`) at 2026-11-20T00:28:22Z on the final Round 3 post-fix source (includes all `A.1`–`A.6`, `B.7`–`B.16`, `C`, and `D.17`–`D.19` items). Transcript: `docs/evidence/test-output/verify-all.txt`.
+* **Tests:** .NET (`45/45` — 1 Domain + 20 Application + 24 API), client Vitest (`9/9`), script scenarios S1–S10 (`10/10`), extended `tools/mock-scan.ps1` (`0` hits across 108 files, 44 literals + fallback regexes), and Playwright E2E (`38/38` tests including `F01`–`F12` and 4 screen-sweep variants = `572` screenshots). Exact final counts are in `docs/TEST_REPORT.md` and `docs/E2E_REPORT.md`.
 * **Git:** branch `main`; phase commits `e90d3a4` → `a882b9a` plus the final Phase 7 commit (see `git log`); post-commit tree clean.
 
 ---

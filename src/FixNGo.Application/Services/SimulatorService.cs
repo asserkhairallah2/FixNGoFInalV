@@ -354,13 +354,22 @@ public sealed class SimulatorService(
             ?? throw new DomainException("user.not_found", "User not found.");
         user.Latitude = req.Latitude;
         user.Longitude = req.Longitude;
-        if (req.AreaLabel is not null) user.AreaLabel = req.AreaLabel;
+        var inferredLabel = req.AreaLabel ?? InferCairoDistrict(req.Latitude, req.Longitude);
+        if (!string.IsNullOrWhiteSpace(inferredLabel)) user.AreaLabel = inferredLabel;
         var profile = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == target, ct);
         if (profile is not null)
         {
             profile.Latitude = req.Latitude;
             profile.Longitude = req.Longitude;
+            if (!string.IsNullOrWhiteSpace(inferredLabel)) profile.CoverageArea = inferredLabel;
             profile.LastHeartbeatAt = clock.UtcNow;
+            var activeRequests = await db.ServiceRequests
+                .Where(r => r.AssignedProviderId == target && (r.Status == RequestStatus.Accepted || r.Status == RequestStatus.EnRoute))
+                .ToListAsync(ct);
+            foreach (var r in activeRequests)
+            {
+                r.DistanceKm = Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, req.Latitude, req.Longitude), 1));
+            }
         }
         await db.SaveChangesAsync(ct);
         return FromUser(user, profile);
@@ -404,10 +413,24 @@ public sealed class SimulatorService(
 
         var route = BuildRoute(fromLat, fromLon, toLat.Value, toLon.Value, req.Steps, req.SpeedKmh);
         var last = route.Points[^1];
+        var inferredLabel = InferCairoDistrict(last.Latitude, last.Longitude);
         profile.Latitude = last.Latitude;
         profile.Longitude = last.Longitude;
+        if (!string.IsNullOrWhiteSpace(inferredLabel)) profile.CoverageArea = inferredLabel;
         profile.LastHeartbeatAt = clock.UtcNow;
-        if (user is not null) { user.Latitude = last.Latitude; user.Longitude = last.Longitude; }
+        if (user is not null)
+        {
+            user.Latitude = last.Latitude;
+            user.Longitude = last.Longitude;
+            if (!string.IsNullOrWhiteSpace(inferredLabel)) user.AreaLabel = inferredLabel;
+        }
+        var activeRequests = await db.ServiceRequests
+            .Where(r => r.AssignedProviderId == req.ProviderId && (r.Status == RequestStatus.Accepted || r.Status == RequestStatus.EnRoute))
+            .ToListAsync(ct);
+        foreach (var r in activeRequests)
+        {
+            r.DistanceKm = Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, last.Latitude, last.Longitude), 1));
+        }
         await db.SaveChangesAsync(ct);
         var gps = FromUser(user ?? new User { Id = req.ProviderId }, profile);
         logger.LogInformation("Simulator moved provider {ProviderId} over {DistanceKm} km", req.ProviderId, route.DistanceKm);
@@ -436,8 +459,26 @@ public sealed class SimulatorService(
 
     private static SimGpsDto FromUser(User u, ProviderProfile? p) => new(u.Id, u.FullName,
         p?.Latitude ?? u.Latitude ?? 0, p?.Longitude ?? u.Longitude ?? 0,
-        u.AreaLabel ?? p?.CoverageArea, p?.IsOnline ?? false, p?.LastHeartbeatAt,
+        p?.CoverageArea ?? u.AreaLabel, p?.IsOnline ?? false, p?.LastHeartbeatAt,
         p is null ? "user" : "provider");
+
+    private static string InferCairoDistrict(double lat, double lon)
+    {
+        (string Name, double Lat, double Lon)[] districts =
+        [
+            ("Tahrir · Downtown Cairo", 30.0444, 31.2357),
+            ("Nasr City · Cairo", 30.0561, 31.3301),
+            ("Heliopolis · Cairo", 30.0875, 31.3242),
+            ("Maadi · Cairo", 29.9602, 31.2569),
+            ("New Cairo · 5th Settlement", 30.0074, 31.4913),
+            ("Mohandessin · Giza", 30.0566, 31.2001),
+            ("Dokki · Giza", 30.0385, 31.2122),
+            ("6th of October · Giza", 29.9723, 30.9435),
+            ("Zamalek · Cairo", 30.0609, 31.2197)
+        ];
+        var closest = districts.OrderBy(d => HaversineKm(lat, lon, d.Lat, d.Lon)).First();
+        return closest.Name;
+    }
 
     private static void ValidateCoordinates(double lat, double lon)
     {

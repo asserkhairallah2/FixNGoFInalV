@@ -93,13 +93,18 @@ test('F02 vehicle add (C05 dropdown fuel) + request creation wizard (C06->C07->C
   }
 });
 
-test('F03 multi-role offer dispatch, accept, quote, approve, invoice & 5-star rating (C10->T03->C13->C15->C16->C41)', async ({ browser }) => {
+test('F03 multi-role offer dispatch, accept, complete, Paid invoice, wallet earnings & 5-star rating (C10->T03->C15->C16->T09)', async ({ browser }) => {
   const ownerCtx = await browser.newContext();
   const ownerPage = await ownerCtx.newPage();
+  const captainCtx = await browser.newContext();
+  const captainPage = await captainCtx.newPage();
   try {
     const owner = await apiLogin('owner');
     const captain = await apiLogin('captain');
     const seeded = readSeeded();
+
+    const earningsBefore = ok(await api('/payments/earnings', { token: captain.token }), 'earnings before');
+    const availBefore = earningsBefore.availableMinor || 0;
 
     // Ensure captain is online
     ok(await api('/providers/online', {
@@ -135,35 +140,75 @@ test('F03 multi-role offer dispatch, accept, quote, approve, invoice & 5-star ra
       token: captain.token
     }), 'accept offer');
 
-    // Verify owner live tracking screen C11 & star rating screen C16 -> C41 in browser UI
+    // Verify owner live tracking screen C11 in browser UI
     await loginUI(ownerPage, 'owner');
     await ownerPage.goto(`${await ownerPage.evaluate(() => location.origin)}/#/C11?id=${created.id}`);
     await expect(ownerPage.locator('[data-testid="screen"]')).toBeVisible();
     await expect(ownerPage.locator('a[href^="tel:"]')).toBeVisible();
 
+    // Captain advances trip through EnRoute -> Arrived -> Working -> Completed
+    for (const status of ['EnRoute', 'Arrived', 'Working', 'Completed']) {
+      ok(await api(`/requests/${created.id}/status`, {
+        method: 'POST',
+        token: captain.token,
+        body: { status, note: `E2E ${status}` }
+      }), `advance ${status}`);
+    }
+
+    // Ensure invoice & verify Subtotal + Fee == Total and Paid status (A.4, A.5)
+    const inv = ok(await api(`/payments/invoices/request/${created.id}/ensure`, {
+      method: 'POST',
+      token: owner.token
+    }), 'ensure invoice');
+    expect(inv.subtotalMinor + inv.serviceFeeMinor).toBe(inv.totalMinor);
+    expect(inv.status).toBe('Paid');
+
+    // Verify C15 shows Paid and "Total Settled" in browser UI
+    await ownerPage.goto(`${await ownerPage.evaluate(() => location.origin)}/#/C15?id=${created.id}`);
+    await expect(ownerPage.locator('[data-testid="invoice-status"]')).toContainText(/Paid|مدفوع/i);
+    await expect(ownerPage.getByText(/Total Settled|تم تسوية الإجمالي/i)).toBeVisible();
+
+    // Owner submits 5-star review on C16 -> C41
     await ownerPage.goto(`${await ownerPage.evaluate(() => location.origin)}/#/C16?id=${created.id}&providerId=${captain.user.id}`);
     await expect(ownerPage.locator('[data-testid="star-rating-picker"]')).toBeVisible();
     await ownerPage.locator('[data-testid="star-5"]').click();
     await ownerPage.locator('[data-testid="screen-primary"]').click();
     await ownerPage.waitForFunction(() => location.hash.includes('#/C41'), null, { timeout: 15_000 });
 
-    recordFlow('F03 multi-role offer accept + tracking + 5-star review', 'PASS', {
+    // Verify Captain wallet earnings, completedJobs, and rating updated (A.4)
+    const earningsAfter = ok(await api('/payments/earnings', { token: captain.token }), 'earnings after');
+    expect(earningsAfter.availableMinor).toBeGreaterThan(availBefore);
+    const captainProfile = ok(await api('/providers/me', { token: captain.token }), 'captain profile after');
+    expect(captainProfile.completedJobs).toBeGreaterThanOrEqual(1);
+    expect(captainProfile.rating).toBeGreaterThanOrEqual(4.5);
+
+    await loginUI(captainPage, 'captain');
+    await captainPage.goto(`${await captainPage.evaluate(() => location.origin)}/#/T09`);
+    await expect(captainPage.locator('[data-testid="wallet-balance"]')).not.toHaveText('0.00 EGP');
+
+    recordFlow('F03 multi-role offer accept + complete + Paid invoice + wallet + 5-star review', 'PASS', {
       requestId: created.id,
       offerId: offer.id,
-      offerStatus: accepted.status
+      offerStatus: accepted.status,
+      availableMinor: earningsAfter.availableMinor,
+      completedJobs: captainProfile.completedJobs,
+      rating: captainProfile.rating
     });
   } catch (err) {
-    recordFlow('F03 multi-role offer accept + tracking + 5-star review', 'FAIL', { error: err.message });
+    recordFlow('F03 multi-role offer accept + complete + Paid invoice + wallet + 5-star review', 'FAIL', { error: err.message });
     throw err;
   } finally {
     await ownerCtx.close();
+    await captainCtx.close();
   }
 });
 
-test('F04 slot-based booking via C19 UI + center admin confirmation', async ({ browser }) => {
+test('F04 slot-based booking via C19 UI (Cairo time, no [object Object]) + SC11 Start Service + SC12 extra line item on C38', async ({ browser }) => {
   const seeded = readSeeded();
   const context = await browser.newContext();
   const page = await context.newPage();
+  const centerCtx = await browser.newContext();
+  const centerPage = await centerCtx.newPage();
   const logs = attachConsoleWatch(page);
   let booking;
   try {
@@ -185,24 +230,52 @@ test('F04 slot-based booking via C19 UI + center admin confirmation', async ({ b
     await page.locator('[data-testid="screen-primary"]').click();
     await page.waitForFunction(() => location.hash.includes('#/C36'), null, { timeout: 15_000 });
 
+    // B.7: Verify C36 URL never contains [object Object]
+    const c36Hash = await page.evaluate(() => decodeURIComponent(location.hash));
+    expect(c36Hash).not.toContain('[object Object]');
+
     const afterBookings = ok(await api('/centers/bookings', { token: owner.token }), 'list bookings after');
     const list = Array.isArray(afterBookings) ? afterBookings : afterBookings.items || [];
     expect(list.length).toBeGreaterThan(beforeCount);
     booking = list[0];
 
+    // Service Center confirms booking, clicks Start Service on SC11 -> stays on SC11 with InProgress (B.9), then adds extra item on SC12 (A.5)
+    const center = await apiLogin('center');
+    const confirmed = ok(await api(`/center-admin/bookings/${booking.id}/confirm`, { method: 'POST', token: center.token }), 'confirm booking');
+    expect(confirmed.status).toBe('Confirmed');
+
+    await loginUI(centerPage, 'center');
+    const centerOrigin = await centerPage.evaluate(() => location.origin);
+    await centerPage.goto(`${centerOrigin}/#/SC11?id=${booking.id}`);
+    await expect(centerPage.locator('[data-testid="screen-primary"]')).toContainText(/Start Service|بدء الخدمة/i);
+    await centerPage.locator('[data-testid="screen-primary"]').click();
+    await expect(centerPage.locator('[data-testid="screen-primary"]')).toContainText(/Proceed to Complete|المتابعة لإتمام/i, { timeout: 15_000 });
+    expect(await centerPage.evaluate(() => location.hash)).toContain('#/SC11');
+
+    // Proceed to SC12 and add extra item (Oil Filter, 75 EGP)
+    await centerPage.locator('[data-testid="screen-primary"]').click();
+    await centerPage.waitForFunction(() => location.hash.includes('#/SC12'), null, { timeout: 15_000 });
+    await centerPage.locator('[data-testid="field-extraDescription"]').fill('Oil Filter');
+    await centerPage.locator('[data-testid="field-extraAmount"]').fill('75');
+    await centerPage.locator('[data-testid="screen-primary"]').click();
+    await expect(centerPage.locator('[data-testid="completion-banner"]')).toBeVisible({ timeout: 15_000 });
+
+    // Verify Owner C38 shows the extra line item and updated total (A.5)
+    await page.goto(`${await page.evaluate(() => location.origin)}/#/C38?id=${booking.id}`);
+    await expect(page.getByText('Oil Filter')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/EGP\s*75\.00|75\.00\s*EGP/i)).toBeVisible();
+    await expect(page.getByText(/EGP\s*160\.00|160\.00\s*EGP/i)).toBeVisible();
+
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);
-    recordFlow('F04 slot-based booking (UI C19 + confirm)', 'PASS', { bookingId: booking.id, console: clean });
+    recordFlow('F04 slot-based booking (C19->C36->SC11 InProgress->SC12 extra item->C38)', 'PASS', { bookingId: booking.id, console: clean });
   } catch (err) {
-    recordFlow('F04 slot-based booking (UI C19 + confirm)', 'FAIL', { error: err.message });
+    recordFlow('F04 slot-based booking (C19->C36->SC11 InProgress->SC12 extra item->C38)', 'FAIL', { error: err.message });
     throw err;
   } finally {
     await context.close();
+    await centerCtx.close();
   }
-
-  const center = await apiLogin('center');
-  const confirmed = ok(await api(`/center-admin/bookings/${booking.id}/confirm`, { method: 'POST', token: center.token }), 'confirm booking');
-  expect(confirmed.status).toBeTruthy();
 });
 
 test('F05 card add via C33 UI form (with Luhn validation) + card payment', async ({ browser }) => {
@@ -454,4 +527,95 @@ test('F10 SOS (API + SH19 UI renders tel: links)', async ({ browser }) => {
   } finally {
     await context.close();
   }
+});
+
+test('F11 notification deep links (offer/request/booking/kyc) + Admin SH17 applicant document viewer (A.2, A.6)', async ({ browser }) => {
+  const seeded = readSeeded();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  try {
+    // 1. Captain deep link #/offer:<id> -> resolves to T03 (never NF01)
+    await loginUI(page, 'captain');
+    const origin = await page.evaluate(() => location.origin);
+    await page.goto(`${origin}/#/offer:${seeded.ids.pendingCaptainOfferId}`);
+    await page.waitForFunction(() => location.hash.includes('#/T03'), null, { timeout: 15_000 });
+    expect(await page.locator('[data-testid="not-found"]').count()).toBe(0);
+
+    // 2. Owner deep link #/request:<id> -> resolves to C11, #/booking:<id> -> resolves to C38
+    await loginUI(page, 'owner');
+    await page.goto(`${origin}/#/request:${seeded.ids.requestId}`);
+    await page.waitForFunction(() => location.hash.includes('#/C11'), null, { timeout: 15_000 });
+    expect(await page.locator('[data-testid="not-found"]').count()).toBe(0);
+
+    await page.goto(`${origin}/#/booking:${seeded.ids.bookingId}`);
+    await page.waitForFunction(() => location.hash.includes('#/C38'), null, { timeout: 15_000 });
+    expect(await page.locator('[data-testid="not-found"]').count()).toBe(0);
+
+    // 3. Admin deep link #/kyc:<id> -> resolves to AD03, clicking document opens SH17 with applicant's document
+    await loginUI(page, 'admin');
+    await page.goto(`${origin}/#/kyc:${seeded.ids.kycApplicationId}`);
+    await page.waitForFunction(() => location.hash.includes('#/AD03'), null, { timeout: 15_000 });
+    await page.locator('[data-testid="data-row"]').first().click();
+    await page.waitForFunction(() => location.hash.includes('#/SH17'), null, { timeout: 15_000 });
+    await expect(page.locator('[data-testid="document-preview-image"]')).toBeVisible();
+    expect(await page.locator('[data-testid="replace-doc-btn"]').count()).toBe(0);
+    await expect(page.locator('[data-testid="nav-verify"]')).toBeVisible();
+
+    recordFlow('F11 notification deep links + Admin SH17 document viewer', 'PASS', {
+      offerId: seeded.ids.pendingCaptainOfferId,
+      kycId: seeded.ids.kycApplicationId
+    });
+  } catch (err) {
+    recordFlow('F11 notification deep links + Admin SH17 document viewer', 'FAIL', { error: err.message });
+    throw err;
+  } finally {
+    await context.close();
+  }
+});
+
+test('F12 expired/declined offer re-dispatch to same provider returns 200 OK instead of 500 (A.3)', async () => {
+  const seeded = readSeeded();
+  const owner = await apiLogin('owner');
+  const captain = await apiLogin('captain');
+
+  const req = ok(await api('/requests', {
+    method: 'POST',
+    token: owner.token,
+    body: {
+      vehicleId: seeded.ids.vehicleId,
+      serviceTypeId: seeded.ids.serviceTypeId,
+      pickupLatitude: 30.0444,
+      pickupLongitude: 31.2357,
+      pickupAddress: 'E2E re-dispatch flow, Cairo',
+      distanceKm: 4.2,
+      problem: 'E2E re-dispatch flow',
+      answersJson: '{}'
+    }
+  }), 'create request for re-dispatch');
+
+  // 1st dispatch
+  const firstOffer = ok(await api(`/requests/${req.id}/offers`, {
+    method: 'POST',
+    token: owner.token,
+    body: { providerId: captain.user.id }
+  }), '1st offer dispatch');
+  expect(firstOffer.status).toBe('Pending');
+
+  // Captain declines (simulating non-pending / expired state)
+  const declined = ok(await api(`/offers/${firstOffer.id}/decline`, {
+    method: 'POST',
+    token: captain.token
+  }), 'decline offer');
+  expect(declined.status).toBe('Declined');
+
+  // Re-dispatch to the same provider on the same request — must succeed with 200 OK (no unique constraint 500)
+  const secondRes = await api(`/requests/${req.id}/offers`, {
+    method: 'POST',
+    token: owner.token,
+    body: { providerId: captain.user.id }
+  });
+  expect(secondRes.status).toBe(200);
+  expect(secondRes.data.id).toBe(firstOffer.id);
+  expect(secondRes.data.status).toBe('Pending');
+  recordFlow('F12 expired/declined offer re-dispatch (200 OK)', 'PASS', { requestId: req.id, offerId: secondRes.data.id });
 });

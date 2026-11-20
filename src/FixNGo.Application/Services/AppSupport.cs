@@ -59,7 +59,8 @@ public static class Mappings
         r.Customer?.FullName, r.AssignedProviderId is not null ? r.Customer?.Phone : null,
         r.Vehicle?.Make, r.Vehicle?.Model, r.Vehicle?.Year, r.Vehicle?.Color, r.Vehicle?.Plate,
         r.DestinationAddress, r.Problem, r.Note,
-        r.Photos?.Select(p => p.FileId).ToList());
+        r.Photos?.Select(p => p.FileId).ToList(),
+        r.AcceptedAt, r.CompletedAt);
 
     public static RequestEventDto Event(RequestEvent e) => new(e.Status, e.Note, e.At);
 
@@ -89,14 +90,59 @@ public static class Mappings
     public static CenterServiceDto CenterService(FixNGo.Domain.Entities.CenterService s) =>
         new(s.Id, s.Name, s.PriceMinor, s.DurationMinutes, s.Description, s.IsActive);
 
-    public static BookingDto Booking(Booking b) => new(b.Id, b.Code, b.CenterId, b.ServiceId, b.CustomerId,
-        b.SlotStart, b.SlotEnd, b.PriceMinor, b.Status, b.Note,
-        b.Center?.Name, b.Service?.Name, b.Service?.DurationMinutes,
-        b.Customer?.FullName, b.Customer?.Phone);
+    public static BookingDto Booking(Booking b)
+    {
+        var (cleanNote, extraDesc, extraMinor, baseMinor) = ParseBookingNote(b.Note, b.Service?.PriceMinor ?? b.PriceMinor, b.PriceMinor);
+        var vehicleLabel = b.Vehicle is null ? null : $"{b.Vehicle.Year} {b.Vehicle.Make} {b.Vehicle.Model} ({b.Vehicle.Plate})";
+        return new(b.Id, b.Code, b.CenterId, b.ServiceId, b.CustomerId,
+            b.SlotStart, b.SlotEnd, b.PriceMinor, b.Status, cleanNote,
+            b.Center?.Name, b.Service?.Name, b.Service?.DurationMinutes,
+            b.Customer?.FullName, b.Customer?.Phone, vehicleLabel,
+            extraDesc, extraMinor, baseMinor);
+    }
 
-    public static WorkOrderDto WorkOrder(WorkOrder w) => new(w.Id, w.Code, w.BookingId, w.CenterId, w.Status, w.Notes,
-        w.Booking?.Code, w.Booking?.Service?.Name, w.Booking?.Customer?.FullName, null,
-        w.BayId, null, w.TechnicianId, null, w.SupervisorReviewed, w.StartedAt);
+    public static string EncodeBookingNote(string? note, string? extraDescription, long extraMinor, long baseMinor)
+    {
+        var (clean, _, _, _) = ParseBookingNote(note, baseMinor, baseMinor + extraMinor);
+        var trimmed = clean?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(extraDescription) && extraMinor <= 0) return trimmed;
+        var safeDesc = (extraDescription ?? string.Empty).Replace("|", "/").Replace("]]", "]").Trim();
+        return $"{trimmed}[[EXTRA:{safeDesc}|{extraMinor}|{baseMinor}]]";
+    }
+
+    private static (string? CleanNote, string? ExtraDescription, long? ExtraMinor, long BaseMinor) ParseBookingNote(
+        string? rawNote, long defaultBaseMinor, long totalPriceMinor)
+    {
+        if (string.IsNullOrEmpty(rawNote))
+        {
+            var diff = totalPriceMinor > defaultBaseMinor ? totalPriceMinor - defaultBaseMinor : (long?)null;
+            return (rawNote, null, diff, defaultBaseMinor);
+        }
+        const string marker = "[[EXTRA:";
+        var idx = rawNote.IndexOf(marker, StringComparison.Ordinal);
+        if (idx < 0)
+        {
+            var diff = totalPriceMinor > defaultBaseMinor ? totalPriceMinor - defaultBaseMinor : (long?)null;
+            return (rawNote, null, diff, defaultBaseMinor);
+        }
+        var clean = rawNote[..idx].Trim();
+        var end = rawNote.IndexOf("]]", idx + marker.Length, StringComparison.Ordinal);
+        var payload = end > idx ? rawNote[(idx + marker.Length)..end] : rawNote[(idx + marker.Length)..];
+        var parts = payload.Split('|');
+        var desc = parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]) ? parts[0].Trim() : null;
+        var extra = parts.Length > 1 && long.TryParse(parts[1], out var ex) && ex > 0 ? ex : (long?)null;
+        var basePrice = parts.Length > 2 && long.TryParse(parts[2], out var bp) && bp > 0 ? bp : defaultBaseMinor;
+        return (string.IsNullOrEmpty(clean) ? null : clean, desc, extra, basePrice);
+    }
+
+    public static WorkOrderDto WorkOrder(WorkOrder w)
+    {
+        var v = w.Booking?.Vehicle;
+        var vehicleLabel = v is null ? null : $"{v.Year} {v.Make} {v.Model} ({v.Plate})";
+        return new(w.Id, w.Code, w.BookingId, w.CenterId, w.Status, w.Notes,
+            w.Booking?.Code, w.Booking?.Service?.Name, w.Booking?.Customer?.FullName, vehicleLabel,
+            w.BayId, w.Bay?.Name, w.TechnicianId, w.Technician?.Name, w.SupervisorReviewed, w.StartedAt);
+    }
 
     public static DisputeDto Dispute(Dispute d) => new(d.Id, d.RequestId, d.Reason, d.ProposedResolution, d.Resolved);
 
@@ -107,7 +153,7 @@ public static class Mappings
     public static ProviderDto Provider(User u, ProviderProfile p) => new(u.Id, u.FullName, p.Rating, p.RatingCount,
         p.CompletedJobs, p.IsOnline, p.Latitude ?? u.Latitude, p.Longitude ?? u.Longitude, p.CoverageArea ?? u.AreaLabel,
         u.Email, u.Phone, u.KycStatus, p.YearsExperience, p.CoverageRadiusKm, p.CoverageArea ?? u.AreaLabel,
-        p.TruckMake, null, p.TruckPlate, p.TruckType?.ToString(), p.TruckCapacityTonnes);
+        p.TruckMake, null, p.TruckPlate, p.TruckType?.ToString(), p.TruckCapacityTonnes, p.ExpertiseJson);
 
     public static NotificationDto Notification(Notification n) => new(n.Id, n.Type, n.Title, n.Body, n.DeepLink, n.IsRead, n.CreatedAt);
 

@@ -11,7 +11,7 @@ import { fmtMoney } from '../i18n/format.js';
 export { usePrefs, useNav, useSession, useNavigate };
 
 export function egp(minor, isAr = false) {
-  return fmtMoney(Number(minor || 0), isAr ? 'ar' : 'en');
+  return fmtMoney(Number(minor ?? 0), isAr ? 'ar' : 'en');
 }
 
 // ---- Brand ----
@@ -61,19 +61,23 @@ export function AppTopBar({ showBack, onBack, title, right }) {
   const nav = useNav();
   const canBack = showBack !== undefined ? Boolean(showBack) : Boolean(onBack);
   return (
-    <div className={`w-full px-4 py-3 flex items-center justify-between border-b ${c.border} ${c.bg} sticky top-0 z-30`}>
-      <div className="flex items-center gap-2">
-        {canBack && (
-          <button type="button" onClick={onBack || (() => nav.back())} className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition`} title={isAr ? 'رجوع' : 'Back'} aria-label="Back">
-            {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-        )}
-        <BrandLockup />
+    <div className={`w-full px-4 py-2.5 border-b ${c.border} ${c.bg} sticky top-0 z-30`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {canBack && (
+            <button type="button" onClick={onBack || (() => nav.back())} className={`p-1.5 rounded-xl ${c.elevated} ${c.text} hover:opacity-80 transition shrink-0`} title={isAr ? 'رجوع' : 'Back'} aria-label="Back">
+              {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          )}
+          <BrandLockup />
+        </div>
+        {right && <div className="flex items-center gap-2 shrink-0">{right}</div>}
       </div>
-      <div className="flex items-center gap-2">
-        {title && <span className={`text-xs font-bold ${c.text}`}>{title}</span>}
-        {right}
-      </div>
+      {title && (
+        <div className={`mt-1.5 text-xs font-extrabold ${c.text} truncate`}>
+          {title}
+        </div>
+      )}
     </div>
   );
 }
@@ -161,6 +165,13 @@ const EN_STATUS = {
   Escalated: 'Escalated', Resolved: 'Resolved', None: 'Not submitted',
   CarOwner: 'Car Owner', Mechanic: 'Mobile Mechanic', TowCaptain: 'Tow Captain',
   ServiceCenter: 'Service Center', Admin: 'Admin',
+  Tow: 'Flatbed Tow', Normal: 'Standard', P0: 'Priority P0',
+  NationalId: 'National ID', DrivingLicense: 'Driving License',
+  TruckRegistration: 'Truck Registration', ProfessionalCertificate: 'Professional Certificate',
+  CommercialLicense: 'Commercial License', TaxId: 'Tax ID Card', CenterPhoto: 'Facility Photo',
+  'settings.update': 'Updated pricing & platform settings',
+  'user.suspend': 'Suspended user account', 'user.restore': 'Restored user account',
+  'kyc.approve': 'Approved KYC application', 'kyc.reject': 'Rejected KYC application',
   flatbed_tow: 'Flatbed Tow', mechanic: 'Mobile Mechanic', battery: 'Battery Jump',
   battery_jump: 'Battery Jump', tire: 'Tire Change', tire_change: 'Tire Change',
   fuel: 'Fuel Delivery', fuel_delivery: 'Fuel Delivery', lockout: 'Car Unlock', other: 'Other Issue'
@@ -183,6 +194,13 @@ const AR_STATUS = {
   Escalated: 'مُصعّد', Resolved: 'تم الحل', None: 'غير مقدم',
   CarOwner: 'مالك سيارة', Mechanic: 'ميكانيكي متنقل', TowCaptain: 'كابتن ونش',
   ServiceCenter: 'مركز خدمة', Admin: 'مشرف',
+  Tow: 'ونش إنقاذ', Normal: 'عادي', P0: 'أولوية قصوى P0',
+  NationalId: 'بطاقة الرقم القومي', DrivingLicense: 'رخصة القيادة',
+  TruckRegistration: 'رخصة تسيير الونش', ProfessionalCertificate: 'شهادة الخبرة المهنية',
+  CommercialLicense: 'السجل التجاري', TaxId: 'البطاقة الضريبية', CenterPhoto: 'صورة المركز',
+  'settings.update': 'تحديث إعدادات التسعير والمنصة',
+  'user.suspend': 'إيقاف حساب مستخدم', 'user.restore': 'استعادة حساب مستخدم',
+  'kyc.approve': 'الموافقة على طلب توثيق', 'kyc.reject': 'رفض طلب توثيق',
   flatbed_tow: 'ونش سطحة', mechanic: 'ميكانيكي متنقل', battery: 'شحن بطارية',
   battery_jump: 'شحن بطارية', tire: 'تغيير إطار', tire_change: 'تغيير إطار',
   fuel: 'توصيل وقود', fuel_delivery: 'توصيل وقود', lockout: 'فتح السيارة', other: 'مشكلة أخرى'

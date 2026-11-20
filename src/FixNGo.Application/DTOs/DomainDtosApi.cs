@@ -37,6 +37,7 @@ public sealed record NamedRequest(string Name);
 public sealed record TechnicianRequest(string Name, string Phone);
 public sealed record WorkOrderRequest(Guid? BayId, Guid? TechnicianId, string? Notes);
 public sealed record WorkOrderNotesRequest(string? Notes, bool SupervisorReviewed = false);
+public sealed record CompleteBookingRequest(string? ExtraDescription = null, long ExtraMinor = 0, string? Notes = null);
 
 // ---- Payments admin / support ----
 public sealed record PaymentReviewDto(Guid Id, Guid RequestId, long CustomerConfirmedMinor, long ProviderCollectedMinor,

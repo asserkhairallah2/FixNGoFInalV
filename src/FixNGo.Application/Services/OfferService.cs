@@ -32,12 +32,10 @@ public sealed class OfferService(
             ? Pricing.TowTotalMinor(r.DistanceKm, s) : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s));
         foreach (var x in providers)
         {
-            var road = Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, x.p.Latitude!.Value, x.p.Longitude!.Value);
-            if (road > s.SearchRadiusKm * 4) continue;
-            candidates.Add(new CandidateScore(x.p.UserId, road, Geo.EtaMinutes(road), x.p.Rating, total)
-            {
-                // stash seconds in a side lookup by id below
-            });
+            var rawRoad = Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, x.p.Latitude!.Value, x.p.Longitude!.Value);
+            if (rawRoad > s.SearchRadiusKm * 4) continue;
+            var road = Math.Max(0.5, Math.Round(rawRoad, 1));
+            candidates.Add(new CandidateScore(x.p.UserId, road, Geo.EtaMinutes(road), x.p.Rating, total));
         }
         var ranked = Matching.Rank(candidates, sort);
         var result = new List<CandidateDto>();
@@ -45,12 +43,12 @@ public sealed class OfferService(
         {
             var x = providers.First(p => p.p.UserId == c.ProviderId);
             result.Add(new CandidateDto(c.ProviderId, x.u.FullName, c.Rating, x.p.RatingCount,
-                c.DistanceKm, c.EtaMinutes, c.PriceMinor, c.Score, x.u.AreaLabel, x.p.TruckMake));
+                c.DistanceKm, c.EtaMinutes, c.PriceMinor, c.Score, x.p.CoverageArea ?? x.u.AreaLabel, x.p.TruckMake));
         }
         return result;
     }
 
-    /// <summary>Customer selects a provider: create a short-lived offer and move to Offered.</summary>
+    /// <summary>Customer selects a provider: create or re-dispatch a short-lived offer and move to Offered.</summary>
     public async Task<OfferDto> SendAsync(Guid customerId, Guid requestId, SelectProviderRequest req, CancellationToken ct = default)
     {
         var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
@@ -64,22 +62,39 @@ public sealed class OfferService(
         var expected = r.Kind == RequestKind.Tow ? Role.TowCaptain : Role.Mechanic;
         if (provider.Role != expected)
             throw new DomainException("offer.wrong_role", "Provider does not match the request type.");
-        if (await db.Offers.AnyAsync(o => o.RequestId == requestId && o.ProviderId == req.ProviderId && o.Status == OfferStatus.Pending, ct))
+        var existing = await db.Offers.FirstOrDefaultAsync(o => o.RequestId == requestId && o.ProviderId == req.ProviderId, ct);
+        if (existing is not null && existing.Status == OfferStatus.Pending && existing.ExpiresAt > clock.UtcNow)
             throw new DomainException("offer.already_sent", "An offer is already pending for this provider.");
 
         var (s, _) = await settings.CurrentAsync(ct);
         var profile = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == req.ProviderId, ct);
-        var distance = profile?.Latitude is not null
+        var rawDistance = profile?.Latitude is not null
             ? Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, profile.Latitude!.Value, profile.Longitude!.Value)
             : r.DistanceKm;
+        var distance = Math.Max(0.5, Math.Round(rawDistance, 1));
         var seconds = r.Priority == RequestPriority.P0 ? s.P0TimeoutSeconds : s.OfferTimeoutSeconds;
-        var offer = new Offer
+        Offer offer;
+        if (existing is not null)
         {
-            RequestId = requestId, ProviderId = req.ProviderId, Status = OfferStatus.Pending,
-            ExpiresAt = clock.UtcNow.AddSeconds(seconds), PriceMinor = r.EstimateMinor ?? 0,
-            DistanceKm = distance, EtaMinutes = Geo.EtaMinutes(distance), IsP0 = r.Priority == RequestPriority.P0
-        };
-        db.Offers.Add(offer);
+            existing.Status = OfferStatus.Pending;
+            existing.ExpiresAt = clock.UtcNow.AddSeconds(seconds);
+            existing.PriceMinor = r.EstimateMinor ?? 0;
+            existing.DistanceKm = distance;
+            existing.EtaMinutes = Geo.EtaMinutes(distance);
+            existing.IsP0 = r.Priority == RequestPriority.P0;
+            existing.DeclineReason = null;
+            offer = existing;
+        }
+        else
+        {
+            offer = new Offer
+            {
+                RequestId = requestId, ProviderId = req.ProviderId, Status = OfferStatus.Pending,
+                ExpiresAt = clock.UtcNow.AddSeconds(seconds), PriceMinor = r.EstimateMinor ?? 0,
+                DistanceKm = distance, EtaMinutes = Geo.EtaMinutes(distance), IsP0 = r.Priority == RequestPriority.P0
+            };
+            db.Offers.Add(offer);
+        }
         if (r.Status != RequestStatus.Offered)
             db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = RequestStatus.Offered, Note = "offer.sent", ActorId = customerId, At = clock.UtcNow });
         r.Status = RequestStatus.Offered;
@@ -156,7 +171,7 @@ public sealed class OfferService(
         var list = await db.Offers
             .Include(o => o.Request).ThenInclude(r => r.Customer)
             .Include(o => o.Request).ThenInclude(r => r.Vehicle)
-            .Where(o => o.ProviderId == providerId && o.Status == OfferStatus.Pending)
+            .Where(o => o.ProviderId == providerId && o.Status == OfferStatus.Pending && o.ExpiresAt > clock.UtcNow)
             .OrderBy(o => o.ExpiresAt).ToListAsync(ct);
         return list.Select(o =>
         {

@@ -1,9 +1,9 @@
 ﻿=== S5 : dummy-db.bat twice -> second run refused (exit 2) ===
-Timestamp: 2026-11-19T22:42:39.3859486+00:00
+Timestamp: 2026-11-20T00:22:58.5809928+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s5-0921d982
-Private port: 5225
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s5-f7adc0d2
+Private port: 5631
 [PASS] CLI setup created the original admin (value=0)
 dummy-db.bat (first) exit=0
 [PASS] first dummy-db.bat succeeds (value=0)
@@ -17,7 +17,7 @@ dummy-db.bat (second) exit=2
 [ERR] Dummy database failed with exit code 2.
 [PASS] second dummy-db.bat refuses with exit 2 (value=2)
 [PASS] refusal explains that restore-db.bat is needed
-[PASS] database bytes unchanged by refused second run (value=DE405298D2E975396EEF4EA8FBF79F9AC49FF0A132BEEB0C956D63D369AA0F0E)
+[PASS] database bytes unchanged by refused second run (value=69CBC8F0C54C683C8ABB67658ACF5E7F17263583955184BC8985AFD8E0AB7A19)
 [PASS] user count unchanged by refused second run (value=201)
 [PASS] no additional backup created by refused second run (value=1)
 [PASS] dummy-db.log created in isolated log dir

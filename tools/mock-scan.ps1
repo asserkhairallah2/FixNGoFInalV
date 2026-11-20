@@ -16,14 +16,23 @@ $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
 
-# Forbidden prototype persona / hard-coded literals (brief 06 section 6).
+# Forbidden prototype persona / hard-coded literals (brief 06 section 6 + Round 3 A.1).
 $forbidden = @(
     'Ahmed Mohamed', 'ahmed.mohamed', 'Karim Mostafa', 'Mahmoud Hassan', 'Nile Auto Care',
     'Nour El-Sayed', 'Omar Adel', 'Salma Nabil', 'Cairo Motor Clinic', 'Hany Samir',
     '@fixngo.eg', 'Password@123', 'Admin@123', 'FG-2606', 'MR-2611', 'BK-2048', 'KYC-1042',
     'SR-108', 'WO-3102', 'SUP-2041', 'WD-2606', 'INV-2026-2606', '12,482', '248.6k',
     'A B C 1234', 'C R T 9087', 'unsplash.com', '284106', 'NewPass@2026', 'MOCK_PRESETS',
-    'switchRolePreview', 'Advance Trip Status', 'Simulate Declined Payment'
+    'switchRolePreview', 'Advance Trip Status', 'Simulate Declined Payment',
+    'FG-1042', 'INV-2026-0104', 'BK-101', 'KYC-0001', 'SUP-1042', 'WD-1042', 'TOW-01',
+    'Verified FixNGo Specialist', 'Your FixNGo Specialist', 'El-alamia', 'alternator'
+)
+
+# Forbidden fallback regexes in client/src (Round 3 A.1).
+$forbiddenClientRegexes = @(
+    "\|\|\s*'[A-Z]{1,4}-\d{2,4}'",
+    "\|\|\s*\d",
+    "\|\|\s*'\+2010"
 )
 
 # Files that legitimately contain simulator vocabulary (fake providers / sim store).
@@ -37,10 +46,18 @@ $filesScanned = 0
 
 function Test-File([string]$path, [bool]$checkSmells) {
     $script:filesScanned++
+    $isClientSrc = $path -match 'client[\\/]src'
     foreach ($line in [System.IO.File]::ReadAllLines($path)) {
         foreach ($lit in $forbidden) {
             if ($line.IndexOf($lit, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
                 $script:hits.Add("MOCK-LITERAL [$lit] ${path}: $($line.Trim())")
+            }
+        }
+        if ($isClientSrc) {
+            foreach ($rx in $forbiddenClientRegexes) {
+                if ($line -match $rx) {
+                    $script:hits.Add("FALLBACK-REGEX [$rx] ${path}: $($line.Trim())")
+                }
             }
         }
         if ($checkSmells) {

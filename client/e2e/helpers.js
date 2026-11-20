@@ -98,7 +98,9 @@ export function screenDiagnostics(page) {
     const bad = [
       'undefined', 'NaN', '[object Object]',
       'flatbed_tow', 'battery_jump', 'tire_change', 'fuel_delivery', 'engine_stall',
-      'Advance Trip Status', 'Simulate Declined Payment', '13:00 AM'
+      'Advance Trip Status', 'Simulate Declined Payment', '13:00 AM',
+      'FG-1042', 'INV-2026-0104', 'BK-101', 'TOW-01',
+      'Verified FixNGo Specialist', 'Your FixNGo Specialist', 'El-alamia', 'alternator'
     ].filter((s) => text.includes(s));
     const frame = document.querySelector('.phone-frame');
     const overflow = {

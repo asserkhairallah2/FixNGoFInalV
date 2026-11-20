@@ -31,7 +31,8 @@ public sealed record RequestDto(
     string? ProviderTruckPlate = null, string? CustomerName = null, string? CustomerPhone = null,
     string? VehicleMake = null, string? VehicleModel = null, int? VehicleYear = null,
     string? VehicleColor = null, string? VehiclePlate = null, string? DestinationAddress = null,
-    string? Problem = null, string? Note = null, IReadOnlyList<Guid>? PhotoFileIds = null);
+    string? Problem = null, string? Note = null, IReadOnlyList<Guid>? PhotoFileIds = null,
+    DateTime? AcceptedAt = null, DateTime? CompletedAt = null);
 public sealed record RequestEventDto(RequestStatus Status, string? Note, DateTime At);
 public sealed record CancelRequestRequest(string ReasonKey, string? Note = null);
 public sealed record StatusRequest(RequestStatus Status, string? Note = null);
@@ -77,7 +78,8 @@ public sealed record CreateBookingRequest(Guid CenterId, Guid ServiceId, DateTim
 public sealed record BookingDto(Guid Id, string Code, Guid CenterId, Guid ServiceId, Guid CustomerId,
     DateTime SlotStart, DateTime SlotEnd, long PriceMinor, BookingStatus Status, string? Note,
     string? CenterName = null, string? ServiceName = null, int? DurationMinutes = null,
-    string? CustomerName = null, string? CustomerPhone = null, string? VehicleLabel = null);
+    string? CustomerName = null, string? CustomerPhone = null, string? VehicleLabel = null,
+    string? ExtraDescription = null, long? ExtraMinor = null, long? BasePriceMinor = null);
 public sealed record RescheduleRequest(DateTime SlotStart);
 public sealed record CancelBookingRequest(string? Reason = null);
 public sealed record WorkOrderDto(Guid Id, string Code, Guid BookingId, Guid CenterId, WorkOrderStatus Status, string? Notes,
@@ -103,7 +105,7 @@ public sealed record ProviderDto(Guid Id, string FullName, decimal Rating, int R
     string? Email = null, string? Phone = null, KycStatus KycStatus = KycStatus.None,
     int YearsExperience = 0, double CoverageRadiusKm = 5, string? CoverageArea = null,
     string? TruckMake = null, string? TruckModel = null, string? TruckPlate = null,
-    string? TruckType = null, decimal? TruckCapacityTonnes = null);
+    string? TruckType = null, decimal? TruckCapacityTonnes = null, string? ExpertiseJson = null);
 
 // ---- Reviews, notifications, chat ----
 public sealed record CreateReviewRequest(int Stars, string? Text, bool Recommend = true);

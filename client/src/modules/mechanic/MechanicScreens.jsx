@@ -243,6 +243,10 @@ export function M01Screen() {
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
   const todayEarningsMinor = earnings?.availableMinor ?? 0;
 
+  if (provider?.isOnline) {
+    return <M02Screen />;
+  }
+
   const handleGoOnline = async () => {
     setError('');
     try {
@@ -371,7 +375,13 @@ export function M02Screen() {
   const offers = Array.isArray(offersData) ? offersData : offersData?.items || [];
   const requests = Array.isArray(requestsData) ? requestsData : requestsData?.items || [];
   const liveOffer = offers.find((o) => !o.status || o.status === 'Pending') || offers[0] || null;
-  const activeJob = requests.find((r) => !['Completed', 'Cancelled', 'NoProviders'].includes(r.status)) || null;
+  const activeJob =
+    requests.find(
+      (r) =>
+        r.assignedProviderId &&
+        String(r.assignedProviderId) === String(user?.id) &&
+        !['Completed', 'Cancelled', 'NoProviders', 'Searching', 'Offered'].includes(String(r.status))
+    ) || null;
 
   const completedJobs = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
@@ -784,7 +794,7 @@ export function M05Screen({ id }) {
   const [busy, setBusy] = useState(false);
 
   const customerName = getCustomerName(req, isAr);
-  const customerPhone = req?.customerPhone || req?.customer?.phone || '+201000000000';
+  const customerPhone = req?.customerPhone || req?.customer?.phone || '';
   const vehicleStr = getVehicleSummary(req, isAr);
   const plate = getVehiclePlate(req);
 
@@ -842,14 +852,16 @@ export function M05Screen({ id }) {
               </p>
             </div>
           </div>
-          <a
-            href={`tel:${customerPhone}`}
-            data-testid="call-customer"
-            className="px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-bold text-xs inline-flex items-center gap-1.5"
-          >
-            <Phone size={13} />
-            {isAr ? 'اتصال' : 'Call'}
-          </a>
+          {customerPhone && (
+            <a
+              href={`tel:${customerPhone}`}
+              data-testid="call-customer"
+              className="px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-bold text-xs inline-flex items-center gap-1.5"
+            >
+              <Phone size={13} />
+              {isAr ? 'اتصال' : 'Call'}
+            </a>
+          )}
         </div>
         <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
           <span className={colors.secondaryText}>{isAr ? 'الموقع' : 'Pickup'}</span>
@@ -892,7 +904,10 @@ export function M11Screen({ id }) {
   }, [req?.problem]);
 
   const serviceFeeEgp = 50;
-  const netEgp = (Number(calloutEgp) || 0) + (Number(laborEgp) || 0) + (Number(partsEgp) || 0);
+  const cVal = Number(calloutEgp);
+  const lVal = Number(laborEgp);
+  const pVal = Number(partsEgp);
+  const netEgp = (Number.isFinite(cVal) ? cVal : 0) + (Number.isFinite(lVal) ? lVal : 0) + (Number.isFinite(pVal) ? pVal : 0);
   const totalEgp = netEgp + serviceFeeEgp;
 
   const handleSendQuote = async () => {
@@ -904,9 +919,9 @@ export function M11Screen({ id }) {
           await advanceRequestChain(req.id, req.status, 'Arrived');
         }
         await post('/requests/' + req.id + '/quotes', {
-          calloutMinor: Math.round((Number(calloutEgp) || 0) * 100),
-          laborMinor: Math.round((Number(laborEgp) || 0) * 100),
-          partsMinor: Math.round((Number(partsEgp) || 0) * 100),
+          calloutMinor: Math.round((Number.isFinite(cVal) ? cVal : 0) * 100),
+          laborMinor: Math.round((Number.isFinite(lVal) ? lVal : 0) * 100),
+          partsMinor: Math.round((Number.isFinite(pVal) ? pVal : 0) * 100),
           diagnosis:
             diagnosis.trim() ||
             (isAr ? 'تم فحص المركبة وتشخيص العطل في الموقع.' : 'Vehicle inspected and diagnosed on site.')
@@ -1041,7 +1056,7 @@ export function M06Screen({ id }) {
   const qc = useQueryClient();
   const { req } = useActiveRequest(id);
   const { data: quotesData } = useQuotes(req?.id);
-  const [checks, setChecks] = useState([true, true, true, true]);
+  const [checks, setChecks] = useState([false, false, false, false]);
   const [busy, setBusy] = useState(false);
 
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
@@ -1198,7 +1213,7 @@ export function M12Screen({ id }) {
   const { req } = useActiveRequest(id);
   const { data: quotesData } = useQuotes(req?.id);
   const { data: invoice } = useInvoiceForRequest(req?.id);
-  const [checks, setChecks] = useState([true, true, true]);
+  const [checks, setChecks] = useState([false, false, false]);
   const [busy, setBusy] = useState(false);
 
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
@@ -1750,7 +1765,12 @@ export function M10Screen() {
   const offers = Array.isArray(offersData) ? offersData : offersData?.items || [];
   const requests = Array.isArray(requestsData) ? requestsData : requestsData?.items || [];
 
-  const activeJobs = requests.filter((r) => !['Completed', 'Cancelled', 'NoProviders'].includes(r.status));
+  const activeJobs = requests.filter(
+    (r) =>
+      r.assignedProviderId &&
+      String(r.assignedProviderId) === String(user?.id) &&
+      !['Completed', 'Cancelled', 'NoProviders', 'Searching', 'Offered'].includes(String(r.status))
+  );
   const completedJobs = requests.filter((r) => r.status === 'Completed');
 
   return (
@@ -1940,8 +1960,23 @@ export function M14Screen() {
       setPhone(provider?.phone || user?.phone || '');
       setYearsExperience(provider?.yearsExperience ?? 5);
       setCoverageArea(provider?.coverageArea || user?.areaLabel || 'Cairo');
-      if (Array.isArray(provider?.expertise) && provider.expertise.length > 0) {
-        setExpertise(provider.expertise);
+      const savedLocal = localStorage.getItem(`fixngo.expertise.${user?.id || 'me'}`);
+      if (savedLocal) {
+        try {
+          const parsedLocal = JSON.parse(savedLocal);
+          if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
+            setExpertise(parsedLocal);
+            return;
+          }
+        } catch {}
+      }
+      if (provider?.expertiseJson) {
+        try {
+          const parsed = JSON.parse(provider.expertiseJson);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setExpertise(parsed.map(String));
+          }
+        } catch {}
       }
     }
   }, [provider, user]);
@@ -1950,7 +1985,8 @@ export function M14Screen() {
     { key: 'diagnostics', en: 'Mobile diagnostics', ar: 'تشخيص الأعطال المتنقل' },
     { key: 'battery_jump', en: 'Battery jump', ar: 'شحن البطارية' },
     { key: 'tire_change', en: 'Tire change', ar: 'تغيير الإطارات' },
-    { key: 'engine_repair', en: 'Engine repair', ar: 'إصلاح المحرك' }
+    { key: 'engine_repair', en: 'Engine repair', ar: 'إصلاح المحرك' },
+    { key: 'other', en: 'Other', ar: 'أخرى' }
   ];
 
   const toggleExpertise = (key) => {
@@ -1963,14 +1999,18 @@ export function M14Screen() {
     setError('');
     setBusy(true);
     try {
+      const expNum = Number(yearsExperience);
+      const radNum = Number(provider?.coverageRadiusKm ?? 15);
+      try {
+        localStorage.setItem(`fixngo.expertise.${user?.id || 'me'}`, JSON.stringify(expertise));
+      } catch {}
       await put('/providers/me', {
         fullName,
         phone,
         email,
-        yearsExperience: Number(yearsExperience) || 5,
-        coverageRadiusKm: provider?.coverageRadiusKm || 15,
-        coverageArea: coverageArea || provider?.coverageArea || 'Cairo',
-        expertise
+        yearsExperience: expNum > 0 ? expNum : 5,
+        coverageRadiusKm: radNum > 0 ? radNum : 15,
+        coverageArea: coverageArea || provider?.coverageArea || 'Cairo'
       });
       qc.invalidateQueries({ queryKey: k.provider });
       await loadMe?.();
@@ -2123,10 +2163,12 @@ export function M15Screen() {
     setError('');
     setBusy(true);
     try {
+      const radNum = Number(radius);
+      const expNum = Number(provider?.yearsExperience ?? 5);
       await put('/providers/me', {
         coverageArea: coverageArea || 'Cairo',
-        coverageRadiusKm: Number(radius) || 15,
-        yearsExperience: provider?.yearsExperience || 5,
+        coverageRadiusKm: radNum >= 1 ? radNum : 15,
+        yearsExperience: expNum > 0 ? expNum : 5,
         latitude: provider?.latitude ?? 30.0444,
         longitude: provider?.longitude ?? 31.2357
       });

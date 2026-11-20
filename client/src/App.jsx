@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Languages, Moon, Sun, Loader2, WifiOff, ShieldAlert, Home, Wrench,
   FileText, User, Car, Building2, CreditCard, Truck, Calendar
@@ -41,11 +42,11 @@ const ROLE_TABS = {
     { id: 'bookings', code: 'SC02', en: 'Bookings', ar: 'الحجوزات', icon: Calendar, match: ['SC02', 'SC03', 'SC10', 'SC11', 'SC12', 'SC16', 'SH01'] },
     { id: 'catalog', code: 'SC04', en: 'Catalog', ar: 'الخدمات', icon: Wrench, match: ['SC04', 'SC05', 'SC17'] },
     { id: 'reports', code: 'SC08', en: 'Reports', ar: 'التقارير', icon: FileText, match: ['SC08'] },
-    { id: 'profile', code: 'SC09', en: 'Profile', ar: 'حسابي', icon: User, match: ['SC09', 'SC15'] }
+    { id: 'profile', code: 'SC09', en: 'Profile', ar: 'حسابي', icon: User, match: ['SC09', 'SC15', 'SH14', 'SH20'] }
   ],
   Admin: [
     { id: 'overview', code: 'AD01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['AD01', 'AD07', 'AD08', 'AD09', 'AD10', 'AD16', 'AD17', 'AD18', 'SH03', 'SH19'] },
-    { id: 'verify', code: 'AD02', en: 'Verify', ar: 'التوثيق', icon: Car, match: ['AD02', 'AD03', 'AD15'] },
+    { id: 'verify', code: 'AD02', en: 'Verify', ar: 'التوثيق', icon: Car, match: ['AD02', 'AD03', 'AD15', 'SH17'] },
     { id: 'users', code: 'AD04', en: 'Users', ar: 'المستخدمين', icon: FileText, match: ['AD04', 'AD11', 'AD12'] },
     { id: 'pricing', code: 'AD05', en: 'Pricing', ar: 'التسعير', icon: Building2, match: ['AD05'] },
     { id: 'profile', code: 'AD06', en: 'Profile', ar: 'حسابي', icon: User, match: ['AD06', 'AD13', 'AD14'] }
@@ -118,12 +119,13 @@ function SetupNeeded() {
 
 function BottomNav({ role, current }) {
   const { isAr } = usePrefs(); const nav = useNav(); const c = useColors();
-  // Never display bottom tabs on Auth & Onboarding screens (A01-A13)
-  if (/^A\d{2}$/.test(current)) return null;
+  // Never display bottom tabs on Auth & Onboarding screens (A01-A13) or Sign-out confirmation (SH13)
+  if (/^A\d{2}$/.test(current) || current === 'SH13') return null;
   const tabs = ROLE_TABS[role] || ROLE_TABS.CarOwner;
   const isTabActive = (t) => {
     if (t.match.includes(current)) return true;
-    if (t.id === 'profile' && /^SH(02|05|06|07|08|09|10|11|12|13|17|18|21)$/.test(current)) return true;
+    if (t.id === 'profile' && /^SH(02|05|06|07|08|09|10|11|12|18|21)$/.test(current)) return true;
+    if (t.id === 'profile' && current === 'SH17' && role !== 'Admin') return true;
     return false;
   };
   return (
@@ -218,8 +220,18 @@ function GuestApp() {
 
 function Shell() {
   const { user, ready } = useSession();
+  const qc = useQueryClient();
+  const prevUserId = useRef(undefined);
   const [status, setStatus] = useState(null);
   const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  useEffect(() => {
+    const nextId = user?.id || null;
+    if (prevUserId.current !== undefined && prevUserId.current !== nextId) {
+      qc.clear();
+    }
+    prevUserId.current = nextId;
+  }, [user?.id, qc]);
 
   useEffect(() => { get('/system/status').then(setStatus).catch(() => setStatus(null)); }, []);
   useEffect(() => {

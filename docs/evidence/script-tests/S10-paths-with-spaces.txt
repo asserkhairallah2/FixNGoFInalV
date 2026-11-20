@@ -1,14 +1,14 @@
 ﻿=== S10 : paths with spaces / run from another cwd -> all tools work ===
-Timestamp: 2026-11-19T22:44:22.1244263+00:00
+Timestamp: 2026-11-20T00:24:32.7494260+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces d7295b32
-Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces 088d5c94
-Private port: 5499
+Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces a0b7fdd7
+Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces c26fd84b
+Private port: 5239
 setup.bat from other cwd exit=0
 [PASS] setup.bat works from another cwd with spaces (value=0)
 [PASS] test data path actually contains spaces
-CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces d7295b32\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
+CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces a0b7fdd7\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
 [PASS] CLI works from another cwd (value=0)
 [PASS] CLI reports the spaced temp data dir
 [PASS] one admin created in the spaced data dir (value=1)

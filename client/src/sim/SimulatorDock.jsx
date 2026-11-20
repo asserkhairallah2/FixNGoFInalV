@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { get, post, put } from '../api/http.js';
 import { useColors } from '../ui/kit.jsx';
-import { usePrefs, useNav } from '../app/stores.jsx';
+import { usePrefs, useNav, useSession, resolveDeepLink } from '../app/stores.jsx';
+import { fmtTime } from '../i18n/format.js';
 
 const TABS = [
   { id: 'push', icon: Bell, en: 'Notifications', ar: 'الإشعارات' },
@@ -19,12 +20,8 @@ const TABS = [
   { id: 'gps', icon: MapPin, en: 'GPS', ar: 'الموقع' }
 ];
 
-const TIME = (v) => {
-  if (!v) return '—';
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-const MONEY = (minor, ar) => new Intl.NumberFormat(ar ? 'ar-EG' : 'en-GB').format((minor || 0) / 100);
+const TIME = (v, isAr = false) => fmtTime(v, isAr ? 'ar' : 'en');
+const MONEY = (minor, ar) => new Intl.NumberFormat(ar ? 'ar-EG' : 'en-GB').format((minor ?? 0) / 100);
 
 function PanelShell({ children, c }) {
   return <div className={`flex-1 min-h-0 overflow-y-auto p-3 space-y-2 ${c.bg}`}>{children}</div>;
@@ -51,19 +48,25 @@ function MiniBtn({ children, onClick, c, disabled, tone }) {
 function PushPanel({ c, isAr }) {
   const qc = useQueryClient();
   const nav = useNav();
+  const { user } = useSession();
   const [all, setAll] = useState(false);
   const { data = [], isLoading } = useQuery({
     queryKey: ['sim', 'push', all], queryFn: () => get(`/sim/push?all=${all}`), refetchInterval: 4000
   });
-  const markAll = useMutation({ mutationFn: () => post('/sim/push/read-all'), onSuccess: () => qc.invalidateQueries(['sim', 'push']) });
-  const markOne = useMutation({ mutationFn: (id) => post(`/sim/push/${id}/read`), onSuccess: () => qc.invalidateQueries(['sim', 'push']) });
+  const markAll = useMutation({
+    mutationFn: () => post('/sim/push/read-all'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sim', 'push'] }); qc.invalidateQueries({ queryKey: ['notifications'] }); }
+  });
+  const markOne = useMutation({
+    mutationFn: (id) => post(`/sim/push/${id}/read`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sim', 'push'] }); qc.invalidateQueries({ queryKey: ['notifications'] }); }
+  });
   const open = (p) => {
     if (!p.isRead) markOne.mutate(p.id);
     const link = p.deepLink || '';
     if (!link) return;
-    const raw = link.replace(/^#\/?/, '');
-    const [code, query = ''] = raw.split('?');
-    if (code) nav.go(code, Object.fromEntries(new URLSearchParams(query)));
+    const resolved = resolveDeepLink(link, user?.role);
+    if (resolved?.code) nav.go(resolved.code, resolved.params);
   };
   return (
     <PanelShell c={c}>
@@ -139,12 +142,14 @@ function PaymentPanel({ c, isAr }) {
           </Row>
         ))
       )}
-      <div className={`rounded-xl border ${c.border} p-2 text-[10px] ${c.secondaryText}`}>
-        <div className={`font-bold ${c.text}`}>{isAr ? 'بطاقات الاختبار' : 'Test cards'}</div>
-        <div dir="ltr">4242 4242 4242 4242 → OK</div>
-        <div dir="ltr">4000 0000 0000 0002 → card_declined</div>
-        <div dir="ltr">4000 0000 0000 9995 → insufficient_funds</div>
-      </div>
+      {tab === 'charges' && (
+        <div className={`rounded-xl border ${c.border} p-2 text-[10px] ${c.secondaryText}`}>
+          <div className={`font-bold ${c.text}`}>{isAr ? 'بطاقات الاختبار' : 'Test cards'}</div>
+          <div dir="ltr">4242 4242 4242 4242 → OK</div>
+          <div dir="ltr">4000 0000 0000 0002 → card_declined</div>
+          <div dir="ltr">4000 0000 0000 9995 → insufficient_funds</div>
+        </div>
+      )}
     </PanelShell>
   );
 }

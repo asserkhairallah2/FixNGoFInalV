@@ -80,9 +80,12 @@ public sealed class CenterService(
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<object>> WorkingHoursAsync(Guid centerId, CancellationToken ct = default) =>
-        await db.WorkingHours.Where(h => h.CenterId == centerId).OrderBy(h => h.DayOfWeek)
+    public async Task<IReadOnlyList<object>> WorkingHoursAsync(Guid centerId, CancellationToken ct = default)
+    {
+        await EnsureCenterDefaultsAsync(centerId, ct);
+        return await db.WorkingHours.Where(h => h.CenterId == centerId).OrderBy(h => h.DayOfWeek)
             .Select(h => (object)new { h.Id, h.DayOfWeek, h.IsClosed, h.OpenTime, h.CloseTime, h.IsSpecial }).ToListAsync(ct);
+    }
 
     public async Task SetWorkingHoursAsync(Guid ownerId, IReadOnlyList<WorkingHoursRequest> items, CancellationToken ct = default)
     {
@@ -97,9 +100,38 @@ public sealed class CenterService(
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<object>> BaysAsync(Guid centerId, CancellationToken ct = default) =>
-        await db.Bays.Where(b => b.CenterId == centerId && b.IsActive)
+    public async Task<IReadOnlyList<object>> BaysAsync(Guid centerId, CancellationToken ct = default)
+    {
+        await EnsureCenterDefaultsAsync(centerId, ct);
+        return await db.Bays.Where(b => b.CenterId == centerId && b.IsActive)
             .Select(b => (object)new { b.Id, b.Name }).ToListAsync(ct);
+    }
+
+    private async Task EnsureCenterDefaultsAsync(Guid centerId, CancellationToken ct)
+    {
+        var changed = false;
+        if (!await db.WorkingHours.AnyAsync(h => h.CenterId == centerId, ct))
+        {
+            for (var dow = 0; dow < 7; dow++)
+            {
+                db.WorkingHours.Add(new WorkingHours
+                {
+                    CenterId = centerId,
+                    DayOfWeek = dow,
+                    IsClosed = dow == 5, // Friday closed by default in Egypt
+                    OpenTime = TimeSpan.FromHours(9),
+                    CloseTime = TimeSpan.FromHours(17)
+                });
+            }
+            changed = true;
+        }
+        if (!await db.Bays.AnyAsync(b => b.CenterId == centerId && b.IsActive, ct))
+        {
+            db.Bays.Add(new Bay { CenterId = centerId, Name = "Bay 1", IsActive = true });
+            changed = true;
+        }
+        if (changed) await db.SaveChangesAsync(ct);
+    }
 
     public async Task<object> AddBayAsync(Guid ownerId, NamedRequest req, CancellationToken ct = default)
     {
@@ -128,21 +160,26 @@ public sealed class CenterService(
     {
         var service = await db.CenterServices.FirstOrDefaultAsync(s => s.Id == serviceId && s.CenterId == centerId, ct)
             ?? throw new DomainException("center.service_not_found", "Service not found.");
+        await EnsureCenterDefaultsAsync(centerId, ct);
         var dow = (int)day.DayOfWeek;
         var hours = await db.WorkingHours.FirstOrDefaultAsync(h => h.CenterId == centerId && h.DayOfWeek == dow && !h.IsSpecial, ct);
         var bays = await db.Bays.CountAsync(b => b.CenterId == centerId && b.IsActive, ct);
         if (hours is null || hours.IsClosed || bays == 0) return [];
         var date = day.Date;
-        var open = date.Add(hours.OpenTime);
-        var close = date.Add(hours.CloseTime);
+        // Working hours are entered in Africa/Cairo local time (UTC+2); store and return slots in UTC.
+        var open = DateTime.SpecifyKind(date.Add(hours.OpenTime).AddHours(-2), DateTimeKind.Utc);
+        var close = DateTime.SpecifyKind(date.Add(hours.CloseTime).AddHours(-2), DateTimeKind.Utc);
         var duration = TimeSpan.FromMinutes(Math.Max(15, service.DurationMinutes));
+        var windowStart = date.AddHours(-4);
+        var windowEnd = date.AddDays(1).AddHours(4);
         var existing = await db.Bookings.Where(b => b.CenterId == centerId && b.Status != BookingStatus.Cancelled
-            && b.SlotStart >= date && b.SlotStart < date.AddDays(1)).Select(b => b.SlotStart).ToListAsync(ct);
+            && b.SlotStart >= windowStart && b.SlotStart < windowEnd).Select(b => b.SlotStart).ToListAsync(ct);
 
         var slots = new List<AvailabilityDto>();
         for (var start = open; start + duration <= close; start += duration)
         {
-            var overlapping = existing.Count(s => s < start + duration && start < s.Add(duration));
+            var overlapping = existing.Count(s => DateTime.SpecifyKind(s, DateTimeKind.Utc) < start + duration
+                && start < DateTime.SpecifyKind(s, DateTimeKind.Utc).Add(duration));
             slots.Add(new AvailabilityDto(start, start + duration, overlapping < bays));
         }
         return slots;
@@ -186,7 +223,7 @@ public sealed class CenterService(
 
     public async Task<IReadOnlyList<BookingDto>> BookingsAsync(Guid callerId, bool isAdmin, CancellationToken ct = default)
     {
-        var q = db.Bookings.Include(b => b.Center).Include(b => b.Service).Include(b => b.Customer).AsQueryable();
+        var q = db.Bookings.Include(b => b.Center).Include(b => b.Service).Include(b => b.Customer).Include(b => b.Vehicle).AsQueryable();
         if (!isAdmin)
         {
             var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.OwnerId == callerId, ct);
@@ -204,7 +241,7 @@ public sealed class CenterService(
 
     private async Task<Booking> VisibleBooking(Guid callerId, bool isAdmin, Guid id, CancellationToken ct)
     {
-        var b = await db.Bookings.Include(x => x.Center).Include(x => x.Service).Include(x => x.Customer)
+        var b = await db.Bookings.Include(x => x.Center).Include(x => x.Service).Include(x => x.Customer).Include(x => x.Vehicle)
             .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("booking.not_found", "Booking not found.");
         var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.Id == b.CenterId, ct);
@@ -215,7 +252,8 @@ public sealed class CenterService(
 
     public async Task<BookingDto> DecideBookingAsync(Guid ownerId, Guid id, bool confirm, string? reason, CancellationToken ct = default)
     {
-        var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == id, ct)
+        var b = await db.Bookings.Include(x => x.Center).Include(x => x.Service).Include(x => x.Customer).Include(x => x.Vehicle)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("booking.not_found", "Booking not found.");
         var center = await OwnedAsync(ownerId, ct);
         if (b.CenterId != center.Id) throw new DomainException("auth.forbidden", "This booking is not for your center.");
@@ -232,28 +270,89 @@ public sealed class CenterService(
 
     public async Task<BookingDto> StartBookingAsync(Guid ownerId, Guid id, CancellationToken ct = default)
     {
-        var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == id, ct)
+        var b = await db.Bookings.Include(x => x.Center).Include(x => x.Service).Include(x => x.Customer).Include(x => x.Vehicle)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("booking.not_found", "Booking not found.");
         var center = await OwnedAsync(ownerId, ct);
         if (b.CenterId != center.Id) throw new DomainException("auth.forbidden", "This booking is not for your center.");
         b.Status = StateMachines.Booking.Transition(b.Status, BookingStatus.InProgress);
         b.StartedAt = clock.UtcNow;
+        var wo = await db.WorkOrders.FirstOrDefaultAsync(w => w.BookingId == b.Id, ct);
+        if (wo is not null && wo.Status == WorkOrderStatus.Assigned)
+        {
+            wo.Status = WorkOrderStatus.InProgress;
+            wo.StartedAt ??= clock.UtcNow;
+        }
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(b.CustomerId, NotificationType.StatusWorking, "Appointment started",
             $"Booking {b.Code} has started.", $"booking:{b.Id}", ct);
         return Mappings.Booking(b);
     }
 
-    public async Task<BookingDto> CompleteBookingAsync(Guid ownerId, Guid id, CancellationToken ct = default)
+    public async Task<BookingDto> CompleteBookingAsync(Guid ownerId, Guid id, CompleteBookingRequest? req = null, CancellationToken ct = default)
     {
-        var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == id, ct)
+        var b = await db.Bookings.Include(x => x.Center).Include(x => x.Service).Include(x => x.Customer).Include(x => x.Vehicle)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("booking.not_found", "Booking not found.");
         var center = await OwnedAsync(ownerId, ct);
         if (b.CenterId != center.Id) throw new DomainException("auth.forbidden", "This booking is not for your center.");
         b.Status = StateMachines.Booking.Transition(b.Status, BookingStatus.Completed);
         b.CompletedAt = clock.UtcNow;
-        var profile = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == b.CustomerId, ct);
-        if (profile is not null) { profile.CompletedJobs++; }
+
+        var basePrice = b.Service?.PriceMinor ?? b.PriceMinor;
+        var extraMinor = req is not null && req.ExtraMinor > 0 ? req.ExtraMinor : 0;
+        if (extraMinor > 0) b.PriceMinor = basePrice + extraMinor;
+        if (req is not null && (!string.IsNullOrWhiteSpace(req.ExtraDescription) || extraMinor > 0 || !string.IsNullOrWhiteSpace(req.Notes)))
+        {
+            var noteBase = !string.IsNullOrWhiteSpace(req.Notes) ? req.Notes : b.Note;
+            b.Note = Mappings.EncodeBookingNote(noteBase, req.ExtraDescription, extraMinor, basePrice);
+        }
+
+        var wo = await db.WorkOrders.FirstOrDefaultAsync(w => w.BookingId == b.Id, ct);
+        if (wo is not null)
+        {
+            wo.Status = WorkOrderStatus.Closed;
+            wo.ReadyAt ??= clock.UtcNow;
+            wo.SupervisorReviewed = true;
+            if (!string.IsNullOrWhiteSpace(req?.Notes)) wo.Notes = req.Notes;
+        }
+
+        var inv = await db.Invoices.FirstOrDefaultAsync(i => i.BookingId == b.Id, ct);
+        var lines = extraMinor > 0
+            ? new object[]
+            {
+                new { label = b.Service?.Name ?? "Service", amountMinor = basePrice },
+                new { label = string.IsNullOrWhiteSpace(req?.ExtraDescription) ? "Additional parts/labor" : req!.ExtraDescription!.Trim(), amountMinor = extraMinor }
+            }
+            : new object[]
+            {
+                new { label = b.Service?.Name ?? "Service", amountMinor = b.PriceMinor }
+            };
+        if (inv is null)
+        {
+            inv = new Invoice
+            {
+                Number = await Codes.NextAsync(db, "INV", ct),
+                BookingId = b.Id,
+                CustomerId = b.CustomerId,
+                SubtotalMinor = b.PriceMinor,
+                ServiceFeeMinor = 0,
+                TotalMinor = b.PriceMinor,
+                Status = InvoiceStatus.Paid,
+                Method = PaymentMethodType.Cash,
+                CustomerCashConfirmed = true,
+                LinesJson = System.Text.Json.JsonSerializer.Serialize(lines)
+            };
+            db.Invoices.Add(inv);
+        }
+        else
+        {
+            inv.SubtotalMinor = b.PriceMinor;
+            inv.TotalMinor = b.PriceMinor;
+            inv.Status = InvoiceStatus.Paid;
+            inv.LinesJson = System.Text.Json.JsonSerializer.Serialize(lines);
+        }
+
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(b.CustomerId, NotificationType.StatusCompleted, "Appointment complete",
             $"Booking {b.Code} was completed.", $"booking:{b.Id}", ct);
@@ -287,14 +386,21 @@ public sealed class CenterService(
 
     public async Task<IReadOnlyList<WorkOrderDto>> WorkOrdersAsync(Guid callerId, bool isAdmin, Guid? bookingId, CancellationToken ct = default)
     {
-        var q = db.WorkOrders.AsQueryable();
+        var q = db.WorkOrders
+            .Include(w => w.Booking).ThenInclude(b => b.Service)
+            .Include(w => w.Booking).ThenInclude(b => b.Customer)
+            .Include(w => w.Booking).ThenInclude(b => b.Vehicle)
+            .Include(w => w.Bay)
+            .Include(w => w.Technician)
+            .AsQueryable();
         if (bookingId is not null) q = q.Where(w => w.BookingId == bookingId);
         if (!isAdmin)
         {
             var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.OwnerId == callerId, ct);
             q = center is null ? q.Where(w => false) : q.Where(w => w.CenterId == center.Id);
         }
-        return await q.OrderByDescending(w => w.CreatedAt).Select(w => Mappings.WorkOrder(w)).ToListAsync(ct);
+        var list = await q.OrderByDescending(w => w.CreatedAt).ToListAsync(ct);
+        return list.Select(Mappings.WorkOrder).ToList();
     }
 
     public async Task<WorkOrderDto> AdvanceWorkOrderAsync(Guid ownerId, Guid id, WorkOrderNotesRequest req, CancellationToken ct = default)

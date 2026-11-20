@@ -18,7 +18,8 @@ import {
   Plus,
   Trash2,
   Users,
-  LogOut
+  LogOut,
+  CreditCard
 } from 'lucide-react';
 import { usePrefs, useNav } from '../../app/stores.jsx';
 import { get, post, put, del } from '../../api/http.js';
@@ -473,12 +474,14 @@ export function SC03Screen({ id, params, code = 'SC03' }) {
                     <p className={`text-xs font-extrabold ${colors.text}`}>
                       {booking.customerName || (isAr ? 'عميل' : 'Customer')}
                     </p>
-                    <a
-                      href={`tel:${booking.customerPhone || '+201000000000'}`}
-                      className={`text-[11px] ${colors.secondaryText} underline`}
-                    >
-                      {booking.customerPhone || '+201000000000'}
-                    </a>
+                    {booking.customerPhone && (
+                      <a
+                        href={`tel:${booking.customerPhone}`}
+                        className={`text-[11px] ${colors.secondaryText} underline`}
+                      >
+                        {booking.customerPhone}
+                      </a>
+                    )}
                   </div>
                 </div>
                 <CheckCircle2 size={16} className="text-emerald-500" />
@@ -668,7 +671,7 @@ export function SC04Screen({ code = 'SC04' }) {
             testId="screen-primary"
           >
             <Plus size={14} />
-            <span>{isAr ? '+ إضافة خدمة جديدة' : '+ Add New Service'}</span>
+            <span>{isAr ? 'إضافة خدمة جديدة' : 'Add New Service'}</span>
           </PrimaryButton>
         </div>
       </div>
@@ -714,8 +717,8 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
     } else if (editingService) {
       setName(editingService.name || '');
       setDescription(editingService.description || '');
-      setPriceEgp(String(Math.round((editingService.priceMinor || 0) / 100)));
-      setDurationMinutes(String(editingService.durationMinutes || 30));
+      setPriceEgp(String(Math.round((editingService.priceMinor ?? 0) / 100)));
+      setDurationMinutes(String(editingService.durationMinutes ?? 30));
       setIsActive(editingService.isActive !== false);
     }
   }, [isCreateMode, editingService]);
@@ -1095,7 +1098,7 @@ export function SC07Screen({ code = 'SC07' }) {
   const avgRating = useMemo(() => {
     if (profileQ.data?.rating) return Number(profileQ.data.rating).toFixed(1);
     if (!reviews.length) return '0.0';
-    const sum = reviews.reduce((acc, r) => acc + Number(r.stars || 0), 0);
+    const sum = reviews.reduce((acc, r) => acc + Number(r.stars ?? 0), 0);
     return (sum / reviews.length).toFixed(1);
   }, [profileQ.data?.rating, reviews]);
 
@@ -1167,7 +1170,7 @@ export function SC07Screen({ code = 'SC07' }) {
         ) : (
           <div className="space-y-2.5">
             {filtered.map((rev) => {
-              const starsCount = Math.min(5, Math.max(1, Number(rev.stars || 5)));
+              const starsCount = Math.min(5, Math.max(1, Number(rev.stars ?? 5)));
               const starStr = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
               return (
                 <div
@@ -1241,7 +1244,7 @@ export function SC08Screen({ code = 'SC08' }) {
     filteredBookings.filter((b) => b.status === 'Completed').length;
   const computedRevenueMinor = filteredBookings
     .filter((b) => b.status === 'Completed' || b.status === 'Confirmed' || b.status === 'InProgress')
-    .reduce((acc, b) => acc + Number(b.priceMinor || 0), 0);
+    .reduce((acc, b) => acc + Number(b.priceMinor ?? 0), 0);
   const revenueMinor = report.revenueMinor && report.revenueMinor > 0 ? report.revenueMinor : computedRevenueMinor;
 
   const topServices = useMemo(() => {
@@ -1249,7 +1252,7 @@ export function SC08Screen({ code = 'SC08' }) {
     const sourceBookings = filteredBookings.length > 0 ? filteredBookings : bookings;
     for (const b of sourceBookings) {
       const label = b.serviceName || services.find((s) => String(s.id) === String(b.serviceId))?.name || (isAr ? 'خدمة' : 'Service');
-      countsByService[label] = (countsByService[label] || 0) + 1;
+      countsByService[label] = (countsByService[label] ?? 0) + 1;
     }
     for (const s of services) {
       if (countsByService[s.name] === undefined) {
@@ -1271,9 +1274,9 @@ export function SC08Screen({ code = 'SC08' }) {
   const completionPct = totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : 100;
 
   const tabs = [
-    { id: 'week', label: isAr ? 'هذا الأسبوع' : 'week' },
-    { id: 'month', label: isAr ? 'هذا الشهر' : 'month' },
-    { id: 'custom', label: isAr ? 'مخصص' : 'custom' }
+    { id: 'week', label: isAr ? 'هذا الأسبوع' : 'This week' },
+    { id: 'month', label: isAr ? 'هذا الشهر' : 'This month' },
+    { id: 'custom', label: isAr ? 'مخصص' : 'Custom' }
   ];
 
   return (
@@ -1599,6 +1602,21 @@ export function SC09Screen({ code = 'SC09' }) {
 
         <button
           type="button"
+          data-testid="goto-banks"
+          onClick={() => nav.go('SH14')}
+          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
+        >
+          <div className="flex items-center gap-2.5">
+            <CreditCard size={16} className="text-red-500" />
+            <span className={`text-xs font-extrabold ${colors.text}`}>
+              {isAr ? 'الحسابات البنكية والتحويلات' : 'Bank Accounts & Payouts'}
+            </span>
+          </div>
+          <ForwardChevron size={14} className={colors.secondaryText} />
+        </button>
+
+        <button
+          type="button"
           data-testid="goto-settings"
           onClick={() => nav.go('SH06')}
           className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
@@ -1778,7 +1796,7 @@ export function SC10Screen({ code = 'SC10' }) {
                 </p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
                   {b.code} · {b.customerName || (isAr ? 'عميل' : 'Customer')} ·{' '}
-                  {fmtNumber(b.durationMinutes || 45, lang)} {isAr ? 'د' : 'min'} · {b.status}
+                  {fmtNumber(b.durationMinutes ?? 45, lang)} {isAr ? 'د' : 'min'} · {b.status}
                 </p>
               </div>
               <ForwardChevron size={14} className="text-red-500" />
@@ -1826,9 +1844,12 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
     bookings.find((x) => x.status === 'Confirmed') ||
     bookings[0];
 
-  const [checks, setChecks] = useState([true, true]);
+  const [checks, setChecks] = useState([false, false]);
+  const [startedNow, setStartedNow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  const isInProgress = booking?.status === 'InProgress' || startedNow;
 
   const checklistLabels = [
     isAr ? 'تم تسجيل وصول العميل والمركبة' : 'Customer and vehicle checked in',
@@ -1841,13 +1862,18 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
 
   async function handleStartService() {
     if (!booking?.id) return;
+    if (isInProgress) {
+      nav.go('SC12', { id: booking.id });
+      return;
+    }
     setError('');
     setBusy(true);
     try {
       await post(`/center-admin/bookings/${booking.id}/start`, {});
+      setStartedNow(true);
       await queryClient.invalidateQueries({ queryKey: ['bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['center-admin', 'work-orders'] });
-      nav.go('SC12', { id: booking.id });
+      await singleQ.refetch?.();
     } catch (err) {
       setError(err.message || (isAr ? 'تعذر بدء الخدمة.' : 'Could not start service.'));
     } finally {
@@ -1871,7 +1897,7 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
         {booking && (
           <>
             <div>
-              <StatusBadge status={booking.status} />
+              <StatusBadge status={isInProgress ? 'InProgress' : booking.status} />
             </div>
 
             <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1.5 text-xs`}>
@@ -1881,17 +1907,19 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
               {booking.vehicleLabel && (
                 <p className={`text-[11px] ${colors.secondaryText}`}>{booking.vehicleLabel}</p>
               )}
-              <div className="flex justify-between pt-1">
-                <span className={colors.secondaryText}>
-                  {isAr ? 'هاتف العميل' : 'Customer phone'}
-                </span>
-                <a
-                  href={`tel:${booking.customerPhone || '+201000000000'}`}
-                  className={`font-bold ${colors.text}`}
-                >
-                  {booking.customerPhone || '+201000000000'}
-                </a>
-              </div>
+              {booking.customerPhone && (
+                <div className="flex justify-between pt-1">
+                  <span className={colors.secondaryText}>
+                    {isAr ? 'هاتف العميل' : 'Customer phone'}
+                  </span>
+                  <a
+                    href={`tel:${booking.customerPhone}`}
+                    className={`font-bold ${colors.text}`}
+                  >
+                    {booking.customerPhone}
+                  </a>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className={colors.secondaryText}>{isAr ? 'الخدمة' : 'Service'}</span>
                 <span className={`font-bold ${colors.text}`}>
@@ -1941,15 +1969,18 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
 
             <button
               type="button"
-              onClick={() => nav.go('SC12', { id: booking.id })}
-              className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start`}
+              disabled={!isInProgress}
+              onClick={() => isInProgress && nav.go('SC12', { id: booking.id })}
+              className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start ${!isInProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <div>
                 <p className={`text-xs font-extrabold ${colors.text}`}>
                   {isAr ? 'إتمام الخدمة' : 'Complete Service'}
                 </p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
-                  {isAr ? 'متاح بعد بدء الخدمة' : 'Available after service starts'}
+                  {isInProgress
+                    ? (isAr ? 'الخدمة جارية الآن — اضغط لإصدار الفاتورة' : 'Service is in progress — tap to complete & invoice')
+                    : (isAr ? 'متاح بعد بدء الخدمة' : 'Available after service starts')}
                 </p>
               </div>
               <ForwardChevron size={15} className={colors.secondaryText} />
@@ -1961,6 +1992,8 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
               <PrimaryButton onClick={handleStartService} disabled={busy} testId="screen-primary">
                 {busy
                   ? (isAr ? 'جارٍ البدء…' : 'Starting…')
+                  : isInProgress
+                  ? (isAr ? 'المتابعة لإتمام الخدمة والفاتورة' : 'Proceed to Complete Service & Invoice')
                   : (isAr ? 'بدء الخدمة' : 'Start Service')}
               </PrimaryButton>
               <SecondaryButton onClick={() => nav.go('SC06', { id: booking.id })}>
@@ -1992,7 +2025,7 @@ export function SC12Screen({ id, params, code = 'SC12' }) {
     bookings.find((x) => x.status === 'InProgress' || x.status === 'Confirmed') ||
     bookings[0];
 
-  const [checks, setChecks] = useState([true, true, true, true]);
+  const [checks, setChecks] = useState([false, false, false, false]);
   const [extraDescription, setExtraDescription] = useState('');
   const [extraAmountEgp, setExtraAmountEgp] = useState('');
   const [notes, setNotes] = useState('');
@@ -2007,8 +2040,10 @@ export function SC12Screen({ id, params, code = 'SC12' }) {
     isAr ? 'المركبة جاهزة لاستلام العميل' : 'Vehicle ready for customer collection'
   ];
 
-  const extraMinor = Math.max(0, Math.round((Number(extraAmountEgp) || 0) * 100));
-  const totalMinor = (booking?.priceMinor || 0) + extraMinor;
+  const parsedExtraEgp = Number(extraAmountEgp);
+  const extraMinor = Math.max(0, Math.round((Number.isFinite(parsedExtraEgp) ? parsedExtraEgp : 0) * 100));
+  const baseMinor = booking?.basePriceMinor ?? booking?.priceMinor ?? 0;
+  const totalMinor = baseMinor + extraMinor;
 
   async function handleComplete(e) {
     if (e) e.preventDefault();
@@ -2016,8 +2051,16 @@ export function SC12Screen({ id, params, code = 'SC12' }) {
     setError('');
     setBusy(true);
     try {
-      await post(`/center-admin/bookings/${booking.id}/complete`, {});
+      if (booking.status === 'Confirmed') {
+        await post(`/center-admin/bookings/${booking.id}/start`, {}).catch(() => {});
+      }
+      await post(`/center-admin/bookings/${booking.id}/complete`, {
+        extraDescription: extraDescription.trim() || null,
+        extraMinor,
+        notes: notes.trim() || null
+      });
       await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['center-admin', 'work-orders'] });
       await queryClient.invalidateQueries({ queryKey: ['center-admin', 'reports'] });
       setCompleted(true);
     } catch (err) {
@@ -2076,7 +2119,7 @@ export function SC12Screen({ id, params, code = 'SC12' }) {
               {booking?.serviceName || (isAr ? 'الخدمة الأساسية' : 'Base service')}
             </span>
             <span className={`font-bold ${colors.text}`}>
-              {fmtMoney(booking?.priceMinor || 0, lang)}
+              {fmtMoney(baseMinor, lang)}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 pt-1">
@@ -2365,7 +2408,7 @@ export function SC14Screen({ id, params, code = 'SC14' }) {
     workOrders.find((w) => String(w.id) === String(targetId)) ||
     workOrders[0];
 
-  const [checks, setChecks] = useState([true, true, true]);
+  const [checks, setChecks] = useState([false, false, false]);
   const [supervisorReviewed, setSupervisorReviewed] = useState(false);
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
@@ -2868,7 +2911,7 @@ export function SC17Screen({ code = 'SC17' }) {
     try {
       await post('/center-admin/technicians', {
         name: techName.trim(),
-        phone: techPhone.trim() || '+201000000000'
+        phone: techPhone.trim()
       });
       setTechName('');
       setTechPhone('');

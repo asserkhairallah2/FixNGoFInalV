@@ -18,7 +18,10 @@ public sealed class ReviewService(IAppDbContext db, IClock clock)
             var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
                 ?? throw new DomainException("request.not_found", "Request not found.");
             if (r.CustomerId != authorId) throw new DomainException("auth.forbidden", "Only the customer may review.");
-            if (r.Status != RequestStatus.Completed) throw new DomainException("review.request_incomplete", "Request is not completed.");
+            if (r.Status is not (RequestStatus.Completed or RequestStatus.AwaitingPayment or RequestStatus.QuoteApproved or RequestStatus.Working))
+                throw new DomainException("review.request_incomplete", "Request is not completed.");
+            if (target == ReviewTargetType.Provider && r.AssignedProviderId is not null)
+                targetId = r.AssignedProviderId.Value;
             if (await db.Reviews.AnyAsync(x => x.RequestId == requestId && x.AuthorId == authorId, ct))
                 throw new DomainException("review.duplicate", "You already reviewed this job.");
         }
@@ -28,6 +31,8 @@ public sealed class ReviewService(IAppDbContext db, IClock clock)
                 ?? throw new DomainException("booking.not_found", "Booking not found.");
             if (b.CustomerId != authorId) throw new DomainException("auth.forbidden", "Only the customer may review.");
             if (b.Status != BookingStatus.Completed) throw new DomainException("review.booking_incomplete", "Booking is not completed.");
+            if (target == ReviewTargetType.Center)
+                targetId = b.CenterId;
             if (await db.Reviews.AnyAsync(x => x.BookingId == bookingId && x.AuthorId == authorId, ct))
                 throw new DomainException("review.duplicate", "You already reviewed this visit.");
         }
@@ -39,6 +44,7 @@ public sealed class ReviewService(IAppDbContext db, IClock clock)
             Stars = req.Stars, Text = req.Text, Recommend = req.Recommend, CreatedAt = clock.UtcNow
         };
         db.Reviews.Add(review);
+        await db.SaveChangesAsync(ct);
         await RefreshAggregateAsync(target, targetId, ct);
         await db.SaveChangesAsync(ct);
         return Mappings.Review(review);
@@ -46,7 +52,7 @@ public sealed class ReviewService(IAppDbContext db, IClock clock)
 
     private async Task RefreshAggregateAsync(ReviewTargetType target, Guid id, CancellationToken ct)
     {
-        var reviews = await db.Reviews.Where(r => target == ReviewTargetType.Provider ? r.ProviderId == id : r.CenterId == id).ToListAsync(ct);
+        var reviews = await db.Reviews.Where(r => !r.IsHidden && (target == ReviewTargetType.Provider ? r.ProviderId == id : r.CenterId == id)).ToListAsync(ct);
         var count = reviews.Count;
         var avg = count == 0 ? 0 : (decimal)reviews.Sum(r => r.Stars) / count;
         var recommend = count == 0 ? 0 : (int)Math.Round(100.0 * reviews.Count(r => r.Recommend) / count);

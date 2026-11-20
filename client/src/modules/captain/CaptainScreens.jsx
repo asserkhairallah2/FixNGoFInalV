@@ -40,7 +40,8 @@ import {
   StatusBadge,
   MapView,
   Toast,
-  useColors
+  useColors,
+  formatLabel
 } from '../../ui/kit.jsx';
 import {
   fmtMoney,
@@ -48,7 +49,8 @@ import {
   fmtDate,
   fmtTime,
   fmtDateTime,
-  fmtDistance
+  fmtDistance,
+  toUtcDate
 } from '../../i18n/format.js';
 import { NIGHT_CAR_IMAGE } from '../../assets/images.js';
 
@@ -106,8 +108,9 @@ function AvatarBadge({ name, className = 'w-10 h-10' }) {
 }
 
 function formatCountdown(expiresAt) {
-  if (!expiresAt) return '00:30';
-  const rawDiff = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  const exp = toUtcDate(expiresAt);
+  if (!exp) return '00:30';
+  const rawDiff = Math.max(0, Math.floor((exp.getTime() - Date.now()) / 1000));
   const diffSec = rawDiff > 300 ? 30 : rawDiff;
   const mins = String(Math.floor(diffSec / 60)).padStart(2, '0');
   const secs = String(diffSec % 60).padStart(2, '0');
@@ -115,15 +118,27 @@ function formatCountdown(expiresAt) {
 }
 
 function computeTowBreakdown(totalMinor) {
-  const total = Math.max(0, Number(totalMinor || 0));
+  const total = Math.max(0, Number(totalMinor ?? 0));
   if (total === 0) {
     return { baseMinor: 0, distanceMinor: 0, feeMinor: 0, totalMinor: 0 };
   }
   const feeMinor = total >= 5000 ? 5000 : Math.round(total * 0.08);
   const net = Math.max(0, total - feeMinor);
-  const baseMinor = Math.min(net, 45000) || Math.round(net * 0.75);
+  const capped = Math.min(net, 45000);
+  const baseMinor = capped > 0 ? capped : Math.round(net * 0.75);
   const distanceMinor = Math.max(0, net - baseMinor);
   return { baseMinor, distanceMinor, feeMinor, totalMinor: total };
+}
+
+function computeTripMinutes(req) {
+  const start = toUtcDate(req?.acceptedAt || req?.createdAt);
+  const end = toUtcDate(req?.completedAt) || new Date();
+  if (start && end && end.getTime() >= start.getTime()) {
+    const mins = Math.round((end.getTime() - start.getTime()) / 60000);
+    if (mins >= 1 && mins <= 360) return mins;
+  }
+  const dist = Number(req?.distanceKm ?? 5);
+  return Math.max(1, Math.round(dist * 3));
 }
 
 function useActiveTowRequest(id) {
@@ -183,10 +198,14 @@ export function T01Screen() {
   const earnings = earningsQ.data;
   const requests = Array.isArray(requestsQ.data) ? requestsQ.data : [];
 
+  if (provider?.isOnline) {
+    return <T02Screen />;
+  }
+
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
   const firstName = displayName.split(' ')[0] || displayName;
   const truckMake = provider?.truckMake || (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck');
-  const truckPlate = provider?.truckPlate || 'TOW-01';
+  const truckPlate = provider?.truckPlate || '—';
   const capacity = provider?.truckCapacityTonnes ?? 3.5;
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
 
@@ -313,7 +332,7 @@ export function T02Screen() {
 
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
   const truckMake = provider?.truckMake || (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck');
-  const truckPlate = provider?.truckPlate || 'TOW-01';
+  const truckPlate = provider?.truckPlate || '—';
   const capacity = provider?.truckCapacityTonnes ?? 3.5;
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
   const completedCount = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
@@ -321,7 +340,10 @@ export function T02Screen() {
 
   const liveOffer = offers.find((o) => o.status === 'Pending') || offers[0] || null;
   const activeTrip = requests.find(
-    (r) => !['Completed', 'Cancelled', 'NoProviders', 'Searching'].includes(String(r.status))
+    (r) =>
+      r.assignedProviderId &&
+      String(r.assignedProviderId) === String(user?.id) &&
+      !['Completed', 'Cancelled', 'NoProviders', 'Searching', 'Offered'].includes(String(r.status))
   );
 
   const handleGoOffline = async () => {
@@ -725,7 +747,8 @@ export function T05Screen({ id }) {
   const [error, setError] = useState('');
 
   const step = 3;
-  const customerPhone = req?.customerPhone || '+201000000000';
+  const customerPhone = req?.customerPhone || '';
+  const defaultDist = 2.4;
 
   const handleArrived = async () => {
     setError('');
@@ -758,7 +781,7 @@ export function T05Screen({ id }) {
       </div>
 
       <MapView
-        label={`${fmtDistance(req?.distanceKm || 2.4, lang)} · ${isAr ? 'إلى نقطة الالتقاء' : 'to pickup'}`}
+        label={`${fmtDistance(req?.distanceKm ?? defaultDist, lang)} · ${isAr ? 'إلى نقطة الالتقاء' : 'to pickup'}`}
         subtitle={req?.pickupAddress || ''}
       />
 
@@ -785,18 +808,22 @@ export function T05Screen({ id }) {
               </p>
             </div>
           </div>
-          <a
-            href={`tel:${customerPhone}`}
-            className="px-3 py-1.5 rounded-xl bg-[#E51C23]/15 text-[#E51C23] font-bold text-[11px] inline-flex items-center gap-1"
-          >
-            <Phone size={12} />
-            {isAr ? 'اتصال' : 'Call'}
-          </a>
+          {customerPhone && (
+            <a
+              href={`tel:${customerPhone}`}
+              className="px-3 py-1.5 rounded-xl bg-[#E51C23]/15 text-[#E51C23] font-bold text-[11px] inline-flex items-center gap-1"
+            >
+              <Phone size={12} />
+              {isAr ? 'اتصال' : 'Call'}
+            </a>
+          )}
         </div>
-        <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
-          <span className={colors.secondaryText}>{isAr ? 'هاتف العميل' : 'Customer phone'}</span>
-          <span className={`font-bold ${colors.text}`} dir="ltr">{customerPhone}</span>
-        </div>
+        {customerPhone && (
+          <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
+            <span className={colors.secondaryText}>{isAr ? 'هاتف العميل' : 'Customer phone'}</span>
+            <span className={`font-bold ${colors.text}`} dir="ltr">{customerPhone}</span>
+          </div>
+        )}
       </div>
 
       {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
@@ -827,7 +854,7 @@ export function T06Screen({ id }) {
   const { req, refetch } = useActiveTowRequest(id);
   const advanceM = useAdvanceStatus();
 
-  const [checks, setChecks] = useState([true, true, true, true]);
+  const [checks, setChecks] = useState([false, false, false, false]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
@@ -1019,7 +1046,7 @@ export function T07Screen({ id }) {
       </div>
 
       <MapView
-        label={fmtDistance(req?.distanceKm || 8, lang)}
+        label={fmtDistance(req?.distanceKm ?? 0, lang)}
         subtitle={req?.destinationAddress || (isAr ? 'وجهة التسليم' : 'Destination')}
       />
 
@@ -1071,11 +1098,14 @@ export function T08Screen({ id }) {
   const { isAr, lang } = usePrefs();
   const nav = useNav();
   const { req } = useActiveTowRequest(id);
+  const providerQ = useProvider();
   const invoiceQ = useInvoiceForRequest(req?.id);
 
   const totalMinor = invoiceQ.data?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
   const breakdown = computeTowBreakdown(totalMinor);
-  const ratingText = req?.providerRating ? `${Number(req.providerRating).toFixed(1)} ★` : isAr ? 'لم يقيّم بعد' : 'Not rated yet';
+  const liveRating = Number(req?.providerRating ?? providerQ.data?.rating ?? 0);
+  const ratingText = liveRating > 0 ? `${liveRating.toFixed(1)} ★` : isAr ? 'لم يقيّم بعد' : 'Not rated yet';
+  const durationMins = computeTripMinutes(req);
 
   return (
     <CaptainShell code="T08">
@@ -1120,7 +1150,7 @@ export function T08Screen({ id }) {
         </div>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-xs font-extrabold ${colors.text}`}>
-            {`${fmtNumber(Math.max(15, Math.round((req?.distanceKm || 5) * 4)), lang)} ${isAr ? 'دقيقة' : 'min'}`}
+            {`${fmtNumber(durationMins, lang)} ${isAr ? 'دقيقة' : 'min'}`}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'المدة' : 'Duration'}</p>
         </div>
@@ -1193,7 +1223,7 @@ export function T09Screen() {
   const availableMinor = earnings?.availableMinor ?? wallet?.balanceMinor ?? 0;
   const completedJobs = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
   const rating = Number(earnings?.rating ?? provider?.rating ?? 0).toFixed(1);
-  const periodSumMinor = filteredEntries.reduce((sum, e) => sum + (e.amountMinor || 0), 0);
+  const periodSumMinor = filteredEntries.reduce((sum, e) => sum + (e.amountMinor ?? 0), 0);
 
   return (
     <CaptainShell code="T09">
@@ -1234,7 +1264,7 @@ export function T09Screen() {
         <p className="text-[10px] uppercase tracking-wider text-[#E51C23] font-bold">
           {isAr ? 'الرصيد المتاح' : 'AVAILABLE BALANCE'}
         </p>
-        <p className={`text-2xl font-extrabold ${colors.text}`}>
+        <p className={`text-2xl font-extrabold ${colors.text}`} data-testid="wallet-balance">
           {fmtMoney(availableMinor, lang)}
         </p>
         <div className="flex justify-between text-[11px]">
@@ -1329,7 +1359,7 @@ export function T10Screen() {
   const rating = Number(provider?.rating ?? 0).toFixed(1);
   const trips = provider?.completedJobs ?? 0;
   const truckMake = provider?.truckMake || (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck');
-  const truckPlate = provider?.truckPlate || 'TOW-01';
+  const truckPlate = provider?.truckPlate || '—';
   const capacity = provider?.truckCapacityTonnes ?? 3.5;
   const kycStatus = provider?.kycStatus || kyc?.status || 'Approved';
   const docs = Array.isArray(kyc?.documents) ? kyc.documents : [];
@@ -1397,9 +1427,9 @@ export function T10Screen() {
             className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
           >
             <div>
-              <p className={`font-bold ${colors.text}`}>{doc.documentType}</p>
+              <p className={`font-bold ${colors.text}`}>{formatLabel(doc.documentType, isAr)}</p>
               <p className={`text-[10px] ${colors.secondaryText}`}>
-                {`${doc.status} · ${fmtDate(doc.createdAt, lang)}`}
+                {`${formatLabel(doc.status, isAr)} · ${fmtDate(doc.createdAt, lang)}`}
               </p>
             </div>
             <ForwardChevron size={14} className={colors.secondaryText} />
@@ -1480,14 +1510,17 @@ export function T11Screen() {
   // Active or recent trips that are NOT already in pendingOffers
   const trips = requests.filter((r) => !offerRequestIds.has(String(r.id)));
   const activeTrips = trips.filter(
-    (r) => !['Completed', 'Cancelled', 'NoProviders'].includes(String(r.status))
+    (r) =>
+      r.assignedProviderId &&
+      String(r.assignedProviderId) === String(user?.id) &&
+      !['Completed', 'Cancelled', 'NoProviders', 'Searching', 'Offered'].includes(String(r.status))
   );
   const recentTrips = trips.filter((r) =>
     ['Completed', 'Cancelled'].includes(String(r.status))
   );
 
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
-  const truckPlate = provider?.truckPlate || 'TOW-01';
+  const truckPlate = provider?.truckPlate || '—';
 
   return (
     <CaptainShell code="T11">
@@ -1768,7 +1801,7 @@ export function T13Screen({ id }) {
           </span>
           <span className={`font-bold ${colors.text}`}>
             {`${fmtDistance(req?.distanceKm, lang)} · ${fmtNumber(
-              Math.max(15, Math.round((req?.distanceKm || 5) * 4)),
+              computeTripMinutes(req),
               lang
             )} ${isAr ? 'دقيقة' : 'min'}`}
           </span>
@@ -1857,6 +1890,7 @@ export function T14Screen({ id }) {
   const colors = useColors();
   const { isAr, lang } = usePrefs();
   const nav = useNav();
+  const qc = useQueryClient();
   const { req } = useActiveTowRequest(id);
   const invoiceQ = useInvoiceForRequest(req?.id);
   const advanceM = useAdvanceStatus();
@@ -1864,7 +1898,7 @@ export function T14Screen({ id }) {
   const totalMinor = invoiceQ.data?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
   const breakdown = computeTowBreakdown(totalMinor);
 
-  const [checks, setChecks] = useState([true, true, true, true]);
+  const [checks, setChecks] = useState([false, false, false, false]);
   const [collectedAmount, setCollectedAmount] = useState('');
   const [error, setError] = useState('');
 
@@ -1903,6 +1937,13 @@ export function T14Screen({ id }) {
         });
       }
       await post(`/payments/invoices/request/${req.id}/ensure`, {}).catch(() => {});
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: k.earnings }),
+        qc.invalidateQueries({ queryKey: k.wallet }),
+        qc.invalidateQueries({ queryKey: k.provider }),
+        qc.invalidateQueries({ queryKey: k.requests }),
+        qc.invalidateQueries({ queryKey: k.providerHistory })
+      ]);
       nav.go('T08', { id: req.id });
     } catch (err) {
       setError(err?.message || (isAr ? 'تعذر إنهاء الرحلة.' : 'Could not finish trip.'));
@@ -2038,7 +2079,7 @@ export function T15Screen() {
       setEmail(provider?.email || user?.email || '');
       setTruckMake(provider?.truckMake || 'Flatbed Tow Truck');
       setTruckType(provider?.truckType || 'Flatbed');
-      setTruckPlate(provider?.truckPlate || 'TOW-01');
+      setTruckPlate(provider?.truckPlate || '');
       setTruckCapacityTonnes(String(provider?.truckCapacityTonnes ?? 3.5));
     }
   }, [provider, user]);
@@ -2048,6 +2089,7 @@ export function T15Screen() {
     setError('');
     setBusy(true);
     try {
+      const capNum = Number(truckCapacityTonnes);
       await put('/providers/me', {
         yearsExperience: provider?.yearsExperience ?? 3,
         coverageRadiusKm: provider?.coverageRadiusKm ?? 15,
@@ -2060,7 +2102,7 @@ export function T15Screen() {
         truckMake: truckMake.trim(),
         truckType,
         truckPlate: truckPlate.trim(),
-        truckCapacityTonnes: Number(truckCapacityTonnes) || 3.5
+        truckCapacityTonnes: capNum > 0 ? capNum : 3.5
       });
       await qc.invalidateQueries({ queryKey: k.provider });
       await loadMe?.();

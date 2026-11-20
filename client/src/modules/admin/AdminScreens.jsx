@@ -29,7 +29,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { usePrefs, useNav, useSession } from '../../app/stores.jsx';
-import { get, post, put, del } from '../../api/http.js';
+import { get, post, put, del, fileUrl } from '../../api/http.js';
 import {
   useDashboard,
   useAdminUsers,
@@ -403,7 +403,19 @@ export function AD03Screen({ id, params }) {
   };
 
   const displayName = app?.fullName || app?.businessName || app?.code || '—';
-  const docs = app?.documents || [];
+  const docs =
+    app?.documents && app.documents.length > 0
+      ? app.documents
+      : app
+      ? [
+          {
+            id: app.id,
+            documentType: 'NationalId',
+            status: app.status === 'Approved' ? 'Approved' : 'Submitted',
+            fileId: null
+          }
+        ]
+      : [];
 
   return (
     <AdminShell code="AD03">
@@ -479,19 +491,32 @@ export function AD03Screen({ id, params }) {
                   <button
                     key={doc.id}
                     type="button"
+                    data-testid="data-row"
                     onClick={() =>
                       nav.go('SH17', {
+                        appId: app.id,
                         id: doc.id,
                         fileId: doc.fileId,
-                        type: doc.documentType
+                        type: doc.documentType,
+                        holder: displayName
                       })
                     }
                     className={`p-2 rounded-xl border ${colors.border} ${colors.surface} text-start space-y-1.5`}
                   >
-                    <div className="h-12 rounded-lg bg-slate-900 text-white p-1.5 flex flex-col justify-between text-[8px]">
-                      <span className="text-slate-400">ARAB REPUBLIC OF EGYPT</span>
-                      <span className="font-bold truncate">{displayName}</span>
-                    </div>
+                    {doc.fileId ? (
+                      <div className="h-12 rounded-lg bg-slate-900 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={fileUrl(doc.fileId)}
+                          alt={doc.documentType}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-12 rounded-lg bg-slate-900 text-white p-1.5 flex flex-col justify-between text-[8px]">
+                        <span className="text-slate-400">ARAB REPUBLIC OF EGYPT</span>
+                        <span className="font-bold truncate">{displayName}</span>
+                      </div>
+                    )}
                     <p className={`text-[10px] font-extrabold truncate ${colors.text}`}>
                       {formatLabel(doc.documentType, isAr)}
                     </p>
@@ -730,18 +755,22 @@ export function AD05Screen() {
     setError('');
     setToast('');
     try {
+      const numOr = (val, def) => {
+        const n = Number(val);
+        return Number.isFinite(n) && n > 0 ? n : def;
+      };
       const payload = {
         pricing: {
-          towBaseMinor: Math.round(Number(form.towBaseEgp || 450) * 100),
-          mechanicBaseMinor: Math.round(Number(form.mechanicBaseEgp || 150) * 100),
-          serviceFeeMinor: Math.round(Number(form.serviceFeeEgp || 50) * 100),
-          towRatePerKm: Number(form.towRatePerKm || 18.3),
-          surge: Math.max(1, Number(form.surge || 1)),
-          searchRadiusKm: Number(form.searchRadiusKm || 5),
-          offerTimeoutSeconds: Number(form.offerTimeoutSeconds || 30),
-          p0TimeoutSeconds: Number(form.p0TimeoutSeconds || 15),
-          bookingExpiryHours: Number(form.bookingExpiryHours || 24),
-          minWithdrawalMinor: Math.round(Number(form.minWithdrawalEgp || 100) * 100),
+          towBaseMinor: Math.round(numOr(form.towBaseEgp, 450) * 100),
+          mechanicBaseMinor: Math.round(numOr(form.mechanicBaseEgp, 150) * 100),
+          serviceFeeMinor: Math.round(numOr(form.serviceFeeEgp, 50) * 100),
+          towRatePerKm: numOr(form.towRatePerKm, 18.3),
+          surge: Math.max(1, numOr(form.surge, 1)),
+          searchRadiusKm: numOr(form.searchRadiusKm, 5),
+          offerTimeoutSeconds: numOr(form.offerTimeoutSeconds, 30),
+          p0TimeoutSeconds: numOr(form.p0TimeoutSeconds, 15),
+          bookingExpiryHours: numOr(form.bookingExpiryHours, 24),
+          minWithdrawalMinor: Math.round(numOr(form.minWithdrawalEgp, 100) * 100),
           withdrawalFeeMinor: 0,
           ambulanceNumber: String(form.ambulanceNumber || '123'),
           policeNumber: String(form.policeNumber || '122')
@@ -2674,7 +2703,8 @@ export function AD16Screen() {
   const byStatus = Array.isArray(reports.byStatus) ? reports.byStatus : [];
   const audits = Array.isArray(auditQuery.data) ? auditQuery.data : [];
 
-  const totalRequests = byStatus.reduce((acc, s) => acc + (s.count || 0), 0) || 1;
+  const rawTotalRequests = byStatus.reduce((acc, s) => acc + (s.count ?? 0), 0);
+  const totalRequests = rawTotalRequests > 0 ? rawTotalRequests : 1;
 
   const handleExportCsv = () => {
     const lines = [
@@ -2738,7 +2768,7 @@ export function AD16Screen() {
               <p className={colors.secondaryText}>{isAr ? 'لا توجد طلبات بعد' : 'No requests recorded yet'}</p>
             ) : (
               byKind.map((row) => {
-                const pct = Math.min(100, Math.round(((row.count || 0) / totalRequests) * 100));
+                const pct = Math.min(100, Math.round(((row.count ?? 0) / totalRequests) * 100));
                 return (
                   <div key={row.kind} className="space-y-1">
                     <div className="flex justify-between">
@@ -2762,7 +2792,7 @@ export function AD16Screen() {
               <p className={colors.secondaryText}>{isAr ? 'لا توجد بيانات' : 'No status breakdown yet'}</p>
             ) : (
               byStatus.map((row) => {
-                const pct = Math.min(100, Math.round(((row.count || 0) / totalRequests) * 100));
+                const pct = Math.min(100, Math.round(((row.count ?? 0) / totalRequests) * 100));
                 return (
                   <div key={row.status} className="space-y-1">
                     <div className="flex justify-between">

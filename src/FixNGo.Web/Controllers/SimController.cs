@@ -53,7 +53,7 @@ public sealed class SimController(ISimulatorService sim) : ControllerBase
 
     [HttpPost("push/{id:guid}/read")]
     public async Task<IActionResult> MarkPushRead(Guid id, CancellationToken ct = default) =>
-        Ok(await sim.MarkPushesReadAsync(new SimMarkReadRequest([id], "push"), ct));
+        Ok(await sim.MarkPushesReadAsync(new SimMarkReadRequest([id], null), ct));
 
     // ---- Panel 2: fake payment gateway ----
 

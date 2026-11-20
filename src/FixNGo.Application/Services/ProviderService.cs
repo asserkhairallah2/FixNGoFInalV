@@ -219,7 +219,7 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
 
     public async Task<KycApplicationDto> ReviewKycAsync(Guid adminId, Guid appId, ReviewKycRequest req, CancellationToken ct = default)
     {
-        var app = await db.KycApplications.Include(a => a.Documents).FirstOrDefaultAsync(a => a.Id == appId, ct)
+        var app = await db.KycApplications.Include(a => a.Documents).Include(a => a.User).FirstOrDefaultAsync(a => a.Id == appId, ct)
             ?? throw new DomainException("kyc.not_found", "KYC application not found.");
         if (app.Status is not (KycStatus.Submitted or KycStatus.UnderReview or KycStatus.ChangesNeeded))
             throw new DomainException("kyc.already_reviewed", "Application is already reviewed.");
@@ -227,8 +227,53 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
         app.ReviewerNote = req.Note;
         app.ReviewedBy = adminId;
         app.ReviewedAt = clock.UtcNow;
-        var u = await db.Users.FirstAsync(x => x.Id == app.UserId, ct);
+        var u = app.User ?? await db.Users.FirstAsync(x => x.Id == app.UserId, ct);
         u.KycStatus = app.Status;
+        foreach (var doc in app.Documents)
+        {
+            if (req.Decision == KycStatus.Approved)
+                doc.Status = DocumentStatus.Approved;
+            else if (req.Decision == KycStatus.Rejected && doc.Status == DocumentStatus.Pending)
+                doc.Status = DocumentStatus.Rejected;
+            if (!string.IsNullOrWhiteSpace(req.Note))
+                doc.ReviewNote = req.Note;
+        }
+        if (u.Role == Role.ServiceCenter && req.Decision == KycStatus.Approved)
+        {
+            var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.OwnerId == u.Id, ct);
+            if (center is null)
+            {
+                center = new ServiceCenter
+                {
+                    OwnerId = u.Id,
+                    Name = app.BusinessName ?? u.FullName,
+                    Address = app.Address ?? u.AreaLabel ?? "Cairo, Egypt",
+                    Phone = u.Phone ?? string.Empty,
+                    Latitude = app.Latitude ?? u.Latitude,
+                    Longitude = app.Longitude ?? u.Longitude
+                };
+                db.ServiceCenters.Add(center);
+                await db.SaveChangesAsync(ct);
+            }
+            if (!await db.WorkingHours.AnyAsync(h => h.CenterId == center.Id, ct))
+            {
+                for (var dow = 0; dow < 7; dow++)
+                {
+                    db.WorkingHours.Add(new WorkingHours
+                    {
+                        CenterId = center.Id,
+                        DayOfWeek = dow,
+                        IsClosed = dow == 5, // Friday closed by default in Egypt
+                        OpenTime = TimeSpan.FromHours(9),
+                        CloseTime = TimeSpan.FromHours(17)
+                    });
+                }
+            }
+            if (!await db.Bays.AnyAsync(b => b.CenterId == center.Id, ct))
+            {
+                db.Bays.Add(new Bay { CenterId = center.Id, Name = "Bay 1", IsActive = true });
+            }
+        }
         await db.SaveChangesAsync(ct);
         var type = req.Decision switch
         {
@@ -236,7 +281,18 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
             KycStatus.ChangesNeeded => NotificationType.KycChangesNeeded,
             _ => NotificationType.KycDecision
         };
-        await notifier.NotifyUserAsync(app.UserId, type, $"KYC {req.Decision}", req.Note ?? $"Application {app.Code}: {req.Decision}.", $"kyc:{app.Id}", ct);
+        var defaultApprovedBody = u.Role switch
+        {
+            Role.TowCaptain => "Your tow captain application was approved. You can now go online and accept trips.",
+            Role.ServiceCenter => "Your service center application was approved. You can now manage services and bookings.",
+            _ => "Your mechanic application was approved. You can now go online and accept jobs."
+        };
+        var body = !string.IsNullOrWhiteSpace(req.Note)
+            ? req.Note!
+            : req.Decision == KycStatus.Approved
+                ? defaultApprovedBody
+                : $"Application {app.Code}: {req.Decision}.";
+        await notifier.NotifyUserAsync(app.UserId, type, $"KYC {req.Decision}", body, $"kyc:{app.Id}", ct);
         return Mappings.Kyc(app);
     }
 

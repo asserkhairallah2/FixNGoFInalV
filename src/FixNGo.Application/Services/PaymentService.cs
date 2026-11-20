@@ -97,13 +97,14 @@ public sealed class PaymentService(
         if (existing is not null) return Mappings.Invoice(existing);
         var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
             ?? throw new DomainException("request.not_found", "Request not found.");
-        var subtotal = r.QuoteMinor ?? r.EstimateMinor ?? 0;
+        var total = r.QuoteMinor ?? r.EstimateMinor ?? 0;
         var (s, _) = await settings.CurrentAsync(ct);
-        var fee = subtotal >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0;
+        var fee = total >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0;
+        var subtotal = Math.Max(0, total - fee);
         var inv = new Invoice
         {
             Number = await Codes.NextAsync(db, "INV", ct), RequestId = requestId, CustomerId = r.CustomerId,
-            SubtotalMinor = subtotal, ServiceFeeMinor = fee, TotalMinor = subtotal,
+            SubtotalMinor = subtotal, ServiceFeeMinor = fee, TotalMinor = total,
             LinesJson = JsonSerializer.Serialize(new[] { new { label = "service", amountMinor = subtotal } })
         };
         db.Invoices.Add(inv);
@@ -181,14 +182,22 @@ public sealed class PaymentService(
         return Mappings.Payment(payment);
     }
 
-    private async Task CreditProviderAsync(Invoice inv, Payment payment, CancellationToken ct)
+    private async Task CreditProviderAsync(Invoice inv, Payment? payment, CancellationToken ct)
     {
         var r = inv.RequestId is null ? null : await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == inv.RequestId, ct);
         if (r?.AssignedProviderId is null) return;
         var wallet = await db.Wallets.FirstOrDefaultAsync(w => w.UserId == r.AssignedProviderId, ct);
-        if (wallet is null) { wallet = new Wallet { UserId = r.AssignedProviderId.Value }; db.Wallets.Add(wallet); }
+        if (wallet is null)
+        {
+            wallet = new Wallet { UserId = r.AssignedProviderId.Value };
+            db.Wallets.Add(wallet);
+            await db.SaveChangesAsync(ct);
+        }
+        if (await db.WalletEntries.AnyAsync(e => e.WalletId == wallet.Id && e.Type == WalletEntryType.JobEarning && e.Reference == inv.Number, ct))
+            return;
         var (s, _) = await settings.CurrentAsync(ct);
-        var net = payment.AmountMinor - (payment.AmountMinor >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0);
+        var gross = payment?.AmountMinor ?? inv.TotalMinor;
+        var net = inv.SubtotalMinor > 0 ? inv.SubtotalMinor : Math.Max(0, gross - (gross >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0));
         db.WalletEntries.Add(new WalletEntry
         {
             WalletId = wallet.Id, Type = WalletEntryType.JobEarning, AmountMinor = net,
@@ -202,8 +211,26 @@ public sealed class PaymentService(
             ?? throw new DomainException("payment.invoice_not_found", "Invoice not found.");
         if (inv.CustomerId != customerId) throw new DomainException("auth.forbidden", "This invoice is not yours.");
         inv.CustomerCashConfirmed = true;
+        inv.Method ??= PaymentMethodType.Cash;
+        inv.Status = InvoiceStatus.Paid;
+        if (inv.RequestId is not null)
+        {
+            var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == inv.RequestId, ct);
+            if (r is not null)
+            {
+                r.CustomerCashConfirmed = true;
+                r.PaymentMethod ??= PaymentMethodType.Cash;
+            }
+            var pendingPayment = await db.Payments.FirstOrDefaultAsync(p => p.RequestId == inv.RequestId && p.Status == PaymentStatus.Pending, ct);
+            if (pendingPayment is not null)
+            {
+                pendingPayment.Status = PaymentStatus.Succeeded;
+                pendingPayment.SettledAt = clock.UtcNow;
+            }
+        }
         var review = await db.PaymentReviews.FirstOrDefaultAsync(p => p.RequestId == inv.RequestId && p.Status == PaymentReviewStatus.Pending, ct);
         if (review is not null) review.CustomerConfirmedMinor = inv.TotalMinor;
+        await CreditProviderAsync(inv, null, ct);
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(customerId, NotificationType.CashConfirmed, "Cash confirmed",
             $"You confirmed cash payment for {inv.Number}.", $"invoice:{inv.Id}", ct);

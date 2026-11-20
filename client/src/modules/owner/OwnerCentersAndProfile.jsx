@@ -33,6 +33,8 @@ import {
   useRequests, useReviews, useNotifications, useMarkRead, k
 } from '../../api/hooks.js';
 import { post, put } from '../../api/http.js';
+import { fmtDate, fmtTime12, fmtDateTime } from '../../i18n/format.js';
+import { resolveDeepLink } from '../../app/stores.jsx';
 
 function getUpcomingDays(count = 7, isAr = false) {
   const days = [];
@@ -44,20 +46,14 @@ function getUpcomingDays(count = 7, isAr = false) {
       ? (isAr ? 'اليوم' : 'Today')
       : i === 1
       ? (isAr ? 'غداً' : 'Tomorrow')
-      : d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      : d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Africa/Cairo' });
     days.push({ iso, label });
   }
   return days;
 }
 
 function formatSlotTime(isoStr, isAr = false) {
-  const d = new Date(isoStr);
-  if (Number.isNaN(d.getTime())) return String(isoStr);
-  return d.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  return fmtTime12(isoStr, isAr ? 'ar' : 'en');
 }
 
 // ---------------------------------------------------------------------------
@@ -81,7 +77,7 @@ export function C17() {
       );
     }
     if (filter === 'top') {
-      list = list.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
+      list = list.sort((a, b) => Number(b.rating ?? 0) - Number(a.rating ?? 0));
     }
     return list;
   }, [centers, search, filter]);
@@ -136,10 +132,10 @@ export function C17() {
                   <div className="text-xs mt-0.5" style={{ color: c.text2 }}>📍 {center.address}</div>
                   <div className="flex items-center gap-2 mt-1.5 text-xs" style={{ color: c.text2 }}>
                     <span className="font-bold" style={{ color: c.accent }}>
-                      ⭐ {Number(center.rating || 4.8).toFixed(1)}
+                      ⭐ {Number(center.rating ?? 0).toFixed(1)}
                     </span>
-                    <span>({center.ratingCount || 35} {t('reviews', 'تقييم')})</span>
-                    <span>• 👍 {center.recommendPercent || 96}%</span>
+                    <span>({center.ratingCount ?? 0} {t('reviews', 'تقييم')})</span>
+                    <span>• 👍 {center.recommendPercent ?? 0}%</span>
                   </div>
                 </div>
               </div>
@@ -180,27 +176,30 @@ export function C18({ params }) {
 
   const center = centerDetail || centers.find((x) => x.id === centerId) || centers[0] || null;
 
+  const defaultLat = 30.0444;
+  const defaultLon = 31.2357;
+
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar title={center?.name || t('Service Center Details', 'تفاصيل مركز الخدمة')} onBack={back} />
       <div className="px-4 pt-3 space-y-3">
         <MapView
           height={150}
-          markers={[{ lat: center?.latitude || 30.0444, lng: center?.longitude || 31.2357, label: center?.name || 'Center' }]}
+          markers={[{ lat: center?.latitude ?? defaultLat, lng: center?.longitude ?? defaultLon, label: center?.name || 'Center' }]}
         />
 
         <Card>
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-base font-extrabold" style={{ color: c.text }}>
-                {center?.name || t('FixNGo Certified Auto Center', 'مركز خدمة فيكس آند جو المعتمد')}
+                {center?.name || t('Service Center', 'مركز الخدمة')}
               </h2>
               <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
-                📍 {center?.address || t('90th Street, New Cairo', 'شارع التسعين، القاهرة الجديدة')}
+                📍 {center?.address || '—'}
               </div>
               <div className="flex items-center gap-3 mt-2 text-xs">
                 <span className="font-bold" style={{ color: c.accent }}>
-                  ⭐ {Number(center?.rating || 4.8).toFixed(1)} ({center?.ratingCount || 48})
+                  ⭐ {Number(center?.rating ?? 0).toFixed(1)} ({center?.ratingCount ?? 0})
                 </span>
                 <button
                   type="button"
@@ -300,9 +299,9 @@ export function C19({ params }) {
 
   const slots = useMemo(() => {
     if (availability.length > 0) return availability;
-    // Fallback generated slots on the chosen day if availability is still loading
-    return [9, 10, 11, 12, 14, 15, 16].map((hr) => {
-      const start = new Date(`${selectedDay}T${String(hr).padStart(2, '0')}:00:00Z`);
+    // Fallback generated slots on the chosen day if availability is still loading (Cairo local hours 09:00..16:00 = UTC 07:00..14:00)
+    return [7, 8, 9, 10, 12, 13, 14].map((utcHr) => {
+      const start = new Date(`${selectedDay}T${String(utcHr).padStart(2, '0')}:00:00Z`);
       const end = new Date(start.getTime() + 60 * 60000);
       return { slotStart: start.toISOString(), slotEnd: end.toISOString(), available: true };
     });
@@ -329,7 +328,7 @@ export function C19({ params }) {
         vehicleId: vehicleId || null,
         note: note || null,
       });
-      go('C36', { id: created.id, booking: created });
+      go('C36', { id: created.id });
     } catch (ex) {
       setErr(ex.message || t('Could not create booking for this slot', 'تعذر تأكيد الحجز لهذا الموعد'));
     }
@@ -449,7 +448,9 @@ export function C36({ params }) {
   const { go } = useNav();
   const c = useColors();
   const { data: bookings = [] } = useBookings();
-  const booking = params?.booking || bookings.find((b) => b.id === params?.id) || bookings[0] || null;
+  const targetId = params?.id || bookings[0]?.id;
+  const { data: detail } = useBooking(targetId);
+  const booking = detail || bookings.find((b) => b.id === targetId) || bookings[0] || null;
 
   return (
     <div className="flex flex-col min-h-full pb-24 justify-center px-4" style={{ backgroundColor: c.bg }}>
@@ -468,16 +469,16 @@ export function C36({ params }) {
           <div className="mt-4 p-3 rounded-xl text-start text-xs space-y-1.5" style={{ backgroundColor: c.surface2 }}>
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Center', 'المركز')}</span>
-              <span className="font-bold" style={{ color: c.text }}>{booking.centerName || t('Verified Service Center', 'مركز خدمة معتمد')}</span>
+              <span className="font-bold" style={{ color: c.text }}>{booking.centerName || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Service', 'الخدمة')}</span>
-              <span className="font-bold" style={{ color: c.text }}>{booking.serviceName || t('Periodic Maintenance', 'صيانة دورية')}</span>
+              <span className="font-bold" style={{ color: c.text }}>{booking.serviceName || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Scheduled Slot', 'الموعد')}</span>
               <span className="font-bold" style={{ color: c.text }}>
-                {new Date(booking.slotStart).toLocaleString(isAr ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                {fmtDateTime(booking.slotStart, isAr ? 'ar' : 'en')} ({formatSlotTime(booking.slotStart, isAr)})
               </span>
             </div>
             <div className="flex justify-between">
@@ -562,10 +563,10 @@ export function C37() {
                 <StatusBadge status={b.status} />
               </div>
               <div className="text-sm font-extrabold" style={{ color: c.text }}>
-                {b.centerName || t('Verified Auto Center', 'مركز خدمة معتمد')}
+                {b.centerName || '—'}
               </div>
               <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
-                {b.serviceName || t('Maintenance Package', 'باقة صيانة')} • {new Date(b.slotStart).toLocaleString(isAr ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                {b.serviceName || '—'} • {fmtDateTime(b.slotStart, isAr ? 'ar' : 'en')}
               </div>
               <div className="flex items-center justify-between mt-2 pt-2 border-t text-xs" style={{ borderColor: c.border }}>
                 <span className="font-extrabold" style={{ color: c.accent }}>{egp(b.priceMinor, isAr)}</span>
@@ -586,9 +587,15 @@ export function C38({ params }) {
   const { t, isAr } = usePrefs();
   const { go, back } = useNav();
   const c = useColors();
-  const { data: bookings = [] } = useBookings();
+  const { data: bookings = [], refetch: refetchList } = useBookings();
   const targetId = params?.id || bookings[0]?.id;
-  const { data: detail } = useBooking(targetId);
+  const { data: detail, refetch: refetchDetail } = useBooking(targetId);
+
+  useEffect(() => {
+    refetchList?.();
+    if (targetId) refetchDetail?.();
+  }, [targetId]);
+
   const booking = detail || bookings.find((b) => b.id === targetId) || bookings[0] || null;
 
   return (
@@ -605,16 +612,16 @@ export function C38({ params }) {
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span style={{ color: c.text2 }}>{t('Service Center', 'مركز الخدمة')}</span>
-                  <span className="font-bold" style={{ color: c.text }}>{booking.centerName || 'FixNGo Service Center'}</span>
+                  <span className="font-bold" style={{ color: c.text }}>{booking.centerName || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span style={{ color: c.text2 }}>{t('Package', 'الخدمة')}</span>
-                  <span className="font-bold" style={{ color: c.text }}>{booking.serviceName || 'Maintenance Service'}</span>
+                  <span className="font-bold" style={{ color: c.text }}>{booking.serviceName || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span style={{ color: c.text2 }}>{t('Appointment Slot', 'الموعد المحدد')}</span>
                   <span className="font-bold" style={{ color: c.text }}>
-                    {new Date(booking.slotStart).toLocaleString(isAr ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {fmtDateTime(booking.slotStart, isAr ? 'ar' : 'en')} ({formatSlotTime(booking.slotStart, isAr)})
                   </span>
                 </div>
                 {booking.vehicleLabel && (
@@ -623,9 +630,27 @@ export function C38({ params }) {
                     <span className="font-bold" style={{ color: c.text }}>{booking.vehicleLabel}</span>
                   </div>
                 )}
+                {booking.note && (
+                  <div className="flex justify-between">
+                    <span style={{ color: c.text2 }}>{t('Notes', 'ملاحظات')}</span>
+                    <span className="font-semibold text-end max-w-[180px]" style={{ color: c.text }}>{booking.note}</span>
+                  </div>
+                )}
                 <Divider className="my-2" />
+                {booking.extraMinor > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span style={{ color: c.text2 }}>{booking.serviceName || t('Base Package', 'الباقة الأساسية')}</span>
+                      <span className="font-semibold" style={{ color: c.text }}>{egp(booking.basePriceMinor ?? (booking.priceMinor - booking.extraMinor), isAr)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span style={{ color: c.text2 }}>{booking.extraDescription || t('Additional parts / labor', 'قطع غيار أو أعمال إضافية')}</span>
+                      <span className="font-semibold" style={{ color: c.text }}>{egp(booking.extraMinor, isAr)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm font-extrabold">
-                  <span style={{ color: c.text }}>{t('Package Fare', 'سعر الباقة')}</span>
+                  <span style={{ color: c.text }}>{booking.status === 'Completed' ? t('Total Settled', 'الإجمالي المسدد') : t('Package Fare', 'سعر الباقة')}</span>
                   <span style={{ color: c.accent }}>{egp(booking.priceMinor, isAr)}</span>
                 </div>
               </div>
@@ -645,9 +670,11 @@ export function C38({ params }) {
               <SecondaryButton onClick={() => go('SH01', { bookingId: booking.id })}>
                 {t('Message Service Center 💬', 'مراسلة مركز الخدمة 💬')}
               </SecondaryButton>
-              <SecondaryButton onClick={() => go('C40', { centerId: booking.centerId, bookingId: booking.id })}>
-                {t('Rate & Review Service Center ⭐', 'تقييم مركز الخدمة ⭐')}
-              </SecondaryButton>
+              {booking.status === 'Completed' && (
+                <PrimaryButton onClick={() => go('C40', { centerId: booking.centerId, bookingId: booking.id })}>
+                  {t('Rate & Review Service Center ⭐', 'تقييم مركز الخدمة ⭐')}
+                </PrimaryButton>
+              )}
             </div>
           </>
         ) : (
@@ -797,7 +824,7 @@ export function C43({ params }) {
         {err && <Banner tone="danger" title={err} />}
         <Card>
           <div className="text-sm font-bold mb-2" style={{ color: c.text }}>
-            {booking?.centerName || t('Service Center Appointment', 'موعد مركز الخدمة')} ({booking?.code || 'BK-101'})
+            {booking?.centerName || t('Service Center Appointment', 'موعد مركز الخدمة')} {booking?.code ? `(${booking.code})` : ''}
           </div>
           <SelectField
             label={t('Reason for Cancellation', 'سبب الإلغاء')}
@@ -955,10 +982,10 @@ export function C20() {
 
               <div className="flex items-center justify-between mt-2.5 pt-2 border-t text-xs" style={{ borderColor: c.border }}>
                 <span style={{ color: c.text3 }}>
-                  {new Date(r.createdAt).toLocaleString(isAr ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                  {fmtDateTime(r.createdAt, isAr ? 'ar' : 'en')}
                 </span>
                 <span className="font-extrabold" style={{ color: c.accent }}>
-                  {egp(r.quoteMinor || r.estimateMinor || 45000, isAr)}
+                  {egp(r.quoteMinor ?? r.estimateMinor ?? 0, isAr)}
                 </span>
               </div>
             </Card>
@@ -978,6 +1005,8 @@ export function C21({ params }) {
   const c = useColors();
   const { data: requests = [] } = useRequests();
   const req = requests.find((r) => r.id === params?.id) || requests[0] || null;
+  const defaultPickLat = 30.0276;
+  const defaultPickLon = 31.4913;
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
@@ -985,12 +1014,12 @@ export function C21({ params }) {
       <div className="px-4 pt-4 space-y-4">
         <MapView
           height={160}
-          markers={[{ lat: req?.pickupLatitude || 30.0276, lng: req?.pickupLongitude || 31.4913, label: req?.code || 'Trip' }]}
+          markers={[{ lat: req?.pickupLatitude ?? defaultPickLat, lng: req?.pickupLongitude ?? defaultPickLon, label: req?.code || 'Trip' }]}
         />
 
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <span className="font-mono text-sm font-extrabold" style={{ color: c.text }}>{req?.code || 'FG-1042'}</span>
+            <span className="font-mono text-sm font-extrabold" style={{ color: c.text }}>{req?.code || '—'}</span>
             <StatusBadge status={req?.status || 'Completed'} />
           </div>
           <div className="space-y-2 text-xs">
@@ -1001,7 +1030,7 @@ export function C21({ params }) {
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Pickup Location', 'موقع الالتقاط')}</span>
               <span className="font-bold text-end max-w-[190px]" style={{ color: c.text }}>
-                {req?.pickupAddress || '90th Street, New Cairo'}
+                {req?.pickupAddress || '—'}
               </span>
             </div>
             {req?.destinationAddress && (
@@ -1019,7 +1048,7 @@ export function C21({ params }) {
             <Divider className="my-2" />
             <div className="flex justify-between text-sm font-extrabold">
               <span style={{ color: c.text }}>{t('Total Amount', 'إجمالي التكلفة')}</span>
-              <span style={{ color: c.accent }}>{egp(req?.quoteMinor || req?.estimateMinor || 45000, isAr)}</span>
+              <span style={{ color: c.accent }}>{egp(req?.quoteMinor ?? req?.estimateMinor ?? 0, isAr)}</span>
             </div>
           </div>
         </Card>
@@ -1042,7 +1071,8 @@ export function C21({ params }) {
 
 export function C22() {
   const { t, isAr } = usePrefs();
-  const { back } = useNav();
+  const { go, back } = useNav();
+  const { user } = useSession();
   const c = useColors();
   const qc = useQueryClient();
   const { data: notifications = [] } = useNotifications();
@@ -1052,6 +1082,14 @@ export function C22() {
     await post('/notifications/read-all', {});
     qc.invalidateQueries({ queryKey: k.notifications });
     qc.invalidateQueries({ queryKey: k.unread });
+  };
+
+  const handleOpenNotification = (n) => {
+    if (!n.isRead) markReadMut.mutate([n.id]);
+    if (n.deepLink) {
+      const resolved = resolveDeepLink(n.deepLink, user?.role);
+      if (resolved?.code) go(resolved.code, resolved.params);
+    }
   };
 
   return (
@@ -1083,7 +1121,7 @@ export function C22() {
           notifications.map((n) => (
             <Card
               key={n.id}
-              onClick={() => !n.isRead && markReadMut.mutate([n.id])}
+              onClick={() => handleOpenNotification(n)}
               style={{
                 borderLeft: !n.isRead ? `4px solid ${c.accent}` : undefined,
               }}
@@ -1091,7 +1129,7 @@ export function C22() {
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-extrabold" style={{ color: c.text }}>{n.title}</span>
                 <span className="text-[10px]" style={{ color: c.text3 }}>
-                  {new Date(n.createdAt).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit' })}
+                  {formatSlotTime(n.createdAt, isAr)}
                 </span>
               </div>
               <p className="text-xs" style={{ color: c.text2 }}>{n.body}</p>
@@ -1110,7 +1148,7 @@ export function C23() {
   const c = useColors();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
-  const [phone, setPhone] = useState(user?.phone || '+201012345678');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [preferredLang, setPreferredLang] = useState(user?.language || lang || 'en');
   const [preferredTheme, setPreferredTheme] = useState(user?.theme || theme || 'light');
   const [otpOnLogin, setOtpOnLogin] = useState(!!user?.otpOnLogin);
@@ -1121,7 +1159,7 @@ export function C23() {
   useEffect(() => {
     if (user) {
       setFullName(user.fullName || '');
-      setPhone(user.phone || '+201012345678');
+      setPhone(user.phone || '');
     }
   }, [user?.id]);
 
@@ -1185,7 +1223,7 @@ export function C23() {
                   {user?.fullName || t('Car Owner', 'مالك السيارة')}
                 </div>
                 <div className="text-xs" style={{ color: c.text2 }}>{user?.email || ''}</div>
-                <div className="text-xs" style={{ color: c.text3 }}>{user?.phone || '+201012345678'}</div>
+                <div className="text-xs" style={{ color: c.text3 }}>{user?.phone || ''}</div>
               </div>
             </div>
             <StatusBadge status={user?.status || 'Active'} />

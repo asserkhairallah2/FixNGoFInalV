@@ -8,7 +8,7 @@ import { post, put, uploadFile } from '../../api/http.js';
 import { useBootstrap, useKyc, useSubmitKyc } from '../../api/hooks.js';
 import {
   useColors, AppTopBar, PrimaryButton, SecondaryButton, StatusBadge,
-  ShieldLogo, MapView, Toast
+  ShieldLogo, MapView, Toast, formatLabel
 } from '../../ui/kit.jsx';
 import { fmtDate, fmtDateTime } from '../../i18n/format.js';
 import { NIGHT_CAR_IMAGE } from '../../assets/images.js';
@@ -174,11 +174,12 @@ export function A03Screen() {
             <img src={NIGHT_CAR_IMAGE} alt="Car" className="w-full h-full object-cover" />
           </div>
           <div className="space-y-1">
-            <label className={`text-[11px] font-medium ${c.secondaryText}`}>
+            <label htmlFor="login-email" className={`text-[11px] font-medium ${c.secondaryText}`}>
               {isAr ? 'البريد الإلكتروني' : 'Email address'}
             </label>
             <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg}`}>
               <input
+                id="login-email"
                 data-testid="login-email"
                 type="email"
                 value={email}
@@ -192,11 +193,12 @@ export function A03Screen() {
             </div>
           </div>
           <div className="space-y-1">
-            <label className={`text-[11px] font-medium ${c.secondaryText}`}>
+            <label htmlFor="login-password" className={`text-[11px] font-medium ${c.secondaryText}`}>
               {isAr ? 'كلمة المرور' : 'Password'}
             </label>
             <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg}`}>
               <input
+                id="login-password"
                 data-testid="login-password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -295,7 +297,7 @@ export function A04Screen() {
       const payload = {
         fullName: fullName.trim(),
         email: email.trim(),
-        phone: phone.trim() || '+201000000000',
+        phone: phone.trim(),
         password,
         role,
         businessName: role === 'ServiceCenter' ? fullName.trim() : null
@@ -605,7 +607,7 @@ export function A05Screen() {
           </div>
           <div className="flex justify-between text-xs">
             <span className={c.secondaryText}>
-              {isAr ? 'ينتهي الرمز خلال' : 'Code expires in'}
+              {isAr ? 'ينتهي الرمز خلال ' : 'Code expires in '}
             </span>
             <span className={`font-bold ${c.text}`} dir="ltr">{mm}:{ss}</span>
           </div>
@@ -867,13 +869,28 @@ export function A08Screen() {
   const submitKyc = useSubmitKyc();
 
   const [fullName, setFullName] = useState(user?.fullName || nav.flow?.signupName || '');
-  const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '+201000000000');
+  const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '');
   const [yearsExperience, setYearsExperience] = useState(5);
   const [selectedServices, setSelectedServices] = useState([]);
   const [docs, setDocs] = useState([]);
   const [error, setError] = useState('');
 
-  const serviceOptions = (boot.data?.serviceTypes || []).filter((s) => s.kind !== 'Tow');
+  const rawServiceOptions = (boot.data?.serviceTypes || []).filter((s) => s.kind !== 'Tow');
+  const serviceOptions = rawServiceOptions.length > 0
+    ? [...rawServiceOptions, ...(rawServiceOptions.some((s) => s.key === 'other') ? [] : [{ id: '00000000-0000-0000-0000-000000000099', key: 'other', nameEn: 'Other', nameAr: 'أخرى' }])]
+    : [
+        { id: '00000000-0000-0000-0000-000000000001', nameEn: 'Mobile diagnostics', nameAr: 'تشخيص الأعطال المتنقل' },
+        { id: '00000000-0000-0000-0000-000000000002', nameEn: 'Battery jump & tire change', nameAr: 'شحن البطارية وتغيير الإطارات' },
+        { id: '00000000-0000-0000-0000-000000000003', nameEn: 'Fuel delivery', nameAr: 'توصيل الوقود' },
+        { id: '00000000-0000-0000-0000-000000000099', nameEn: 'Other', nameAr: 'أخرى' }
+      ];
+
+  useEffect(() => {
+    if (selectedServices.length === 0 && serviceOptions.length > 0) {
+      setSelectedServices([serviceOptions[0].id]);
+    }
+  }, [rawServiceOptions.length]);
+
   const toggleService = (id) => {
     setSelectedServices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
@@ -885,15 +902,17 @@ export function A08Screen() {
     if (e) e.preventDefault();
     setError('');
     try {
+      const expNum = Number(yearsExperience);
+      const validGuids = selectedServices.filter((id) => /^[0-9a-fA-F-]{36}$/.test(String(id)));
       await submitKyc.mutateAsync({
         applicantType: 'Mechanic',
         fullName: fullName.trim() || 'Mobile Mechanic',
         phone: phone.trim(),
-        yearsExperience: Number(yearsExperience) || 3,
+        yearsExperience: expNum >= 0 ? expNum : 3,
         address: 'Cairo, Egypt',
         latitude: 30.0444,
         longitude: 31.2357,
-        services: selectedServices,
+        services: validGuids,
         documents: docs.map(({ documentType, fileId }) => ({ documentType, fileId }))
       });
       await loadMe();
@@ -959,12 +978,8 @@ export function A08Screen() {
               {isAr ? 'تخصصاتك' : 'Your expertise'}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {(serviceOptions.length > 0 ? serviceOptions : [
-                { id: 'diag', nameEn: 'Mobile diagnostics', nameAr: 'تشخيص الأعطال المتنقل' },
-                { id: 'batt', nameEn: 'Battery jump & tire change', nameAr: 'شحن البطارية وتغيير الإطارات' },
-                { id: 'fuel', nameEn: 'Fuel delivery', nameAr: 'توصيل الوقود' }
-              ]).map((s) => {
-                const active = selectedServices.includes(s.id) || selectedServices.length === 0;
+              {serviceOptions.map((s) => {
+                const active = selectedServices.includes(s.id);
                 return (
                   <button
                     key={s.id}
@@ -974,7 +989,7 @@ export function A08Screen() {
                       active ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : `${c.border} ${c.secondaryText}`
                     }`}
                   >
-                    ✓ {isAr ? s.nameAr : s.nameEn}
+                    {active ? '✓ ' : ''}{isAr ? s.nameAr : s.nameEn}
                   </button>
                 );
               })}
@@ -1024,7 +1039,7 @@ export function A09Screen() {
   const submitKyc = useSubmitKyc();
 
   const [fullName, setFullName] = useState(user?.fullName || nav.flow?.signupName || '');
-  const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '+201000000000');
+  const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '');
   const [truckMake, setTruckMake] = useState('Isuzu NPR');
   const [truckType, setTruckType] = useState('Flatbed');
   const [capacityTonnes, setCapacityTonnes] = useState('3.5');
@@ -1040,13 +1055,14 @@ export function A09Screen() {
     if (e) e.preventDefault();
     setError('');
     try {
+      const capNum = Number(capacityTonnes);
       await submitKyc.mutateAsync({
         applicantType: 'TowCaptain',
         fullName: fullName.trim() || 'Tow Captain',
         phone: phone.trim(),
         truckMake: truckMake.trim(),
         truckType,
-        truckCapacityTonnes: Number(capacityTonnes) || 3.5,
+        truckCapacityTonnes: capNum > 0 ? capNum : 3.5,
         truckPlate: plate.trim(),
         address: 'Cairo, Egypt',
         latitude: 30.0444,
@@ -1192,12 +1208,38 @@ export function A10Screen() {
   const { user, loadMe } = useSession();
   const submitKyc = useSubmitKyc();
 
+  const CENTER_PINS = [
+    { id: 'new_cairo', en: 'Fifth Settlement, New Cairo', ar: 'التجمع الخامس، القاهرة الجديدة', lat: 30.025, lng: 31.49 },
+    { id: 'nasr_city', en: 'Abbas El-Akkad, Nasr City', ar: 'عباس العقاد، مدينة نصر', lat: 30.0561, lng: 31.3301 },
+    { id: 'maadi', en: ' Autostrad Industrial Zone, Maadi', ar: 'المنطقة الصناعية بالأوتوستراد، المعادي', lat: 29.9602, lng: 31.2569 },
+    { id: 'october', en: 'Central Axis, 6th of October', ar: 'المحور المركزي، ٦ أكتوبر', lat: 29.9723, lng: 30.9435 }
+  ];
+
+  const CENTER_SERVICE_CATALOG = [
+    { key: 'oil_filter', en: 'Oil & filter change', ar: 'تغيير زيت وفلتر' },
+    { key: 'brakes', en: 'Brake inspection & pads', ar: 'فحص وتغيير الفرامل' },
+    { key: 'diagnostics', en: 'Full computer diagnostics', ar: 'فحص شامل بالكمبيوتر' },
+    { key: 'ac', en: 'AC maintenance & recharge', ar: 'صيانة وشحن التكييف' },
+    { key: 'tires', en: 'Tires & wheel alignment', ar: 'إطارات وضبط زوايا' },
+    { key: 'periodic', en: 'Periodic maintenance', ar: 'صيانة دورية شاملة' }
+  ];
+
   const [businessName, setBusinessName] = useState(user?.fullName || nav.flow?.signupName || '');
-  const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '+201000000000');
-  const [address, setAddress] = useState(isAr ? 'التجمع الخامس، القاهرة الجديدة' : 'Fifth Settlement, New Cairo');
-  const [coords, setCoords] = useState({ lat: 30.025, lng: 31.49 });
+  const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '');
+  const [address, setAddress] = useState(isAr ? CENTER_PINS[0].ar : CENTER_PINS[0].en);
+  const [coords, setCoords] = useState({ lat: CENTER_PINS[0].lat, lng: CENTER_PINS[0].lng });
+  const [selectedServices, setSelectedServices] = useState(['oil_filter', 'brakes', 'diagnostics', 'ac']);
   const [docs, setDocs] = useState([]);
   const [error, setError] = useState('');
+
+  const toggleCenterService = (key) => {
+    setSelectedServices((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  };
+
+  const selectPin = (pin) => {
+    setCoords({ lat: pin.lat, lng: pin.lng });
+    setAddress(isAr ? pin.ar : pin.en);
+  };
 
   const addDoc = (doc) => {
     setDocs((prev) => [...prev.filter((d) => d.documentType !== doc.documentType), doc]);
@@ -1260,8 +1302,8 @@ export function A10Screen() {
               />
             </div>
           </div>
-          <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'العنوان والموقع' : 'Address & map pin'}</label>
+          <div className="space-y-1.5">
+            <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'العنوان والموقع على الخريطة' : 'Address & map pin'}</label>
             <input
               data-testid="field-address"
               value={address}
@@ -1269,17 +1311,51 @@ export function A10Screen() {
               className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
               required
             />
+            <MapView
+              label={`${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`}
+              subtitle={address}
+            />
+            <div className="flex flex-wrap gap-1.5 pt-1" data-testid="center-pin-picker">
+              {CENTER_PINS.map((pin) => {
+                const isSelected = Math.abs(coords.lat - pin.lat) < 0.001 && Math.abs(coords.lng - pin.lng) < 0.001;
+                return (
+                  <button
+                    key={pin.id}
+                    type="button"
+                    data-testid={`pin-${pin.id}`}
+                    onClick={() => selectPin(pin)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition ${
+                      isSelected ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]' : `${c.border} ${c.secondaryText}`
+                    }`}
+                  >
+                    📍 {isAr ? pin.ar : pin.en}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className={`p-3 rounded-2xl border ${c.border} ${c.surface} space-y-1 text-xs`}>
+          <div className={`p-3 rounded-2xl border ${c.border} ${c.surface} space-y-2 text-xs`}>
             <p className={`font-bold ${c.text}`}>
-              {isAr ? 'الخدمات المقدمة' : 'Services offered'}
+              {isAr ? 'الخدمات المقدمة (اختر خدمات المركز)' : 'Services offered (select all that apply)'}
             </p>
-            <p className="text-emerald-400">
-              {isAr ? '✓ تغيير زيت وفلتر · فحص الفرامل' : '✓ Oil & filter change · Brake inspection'}
-            </p>
-            <p className="text-emerald-400">
-              {isAr ? '✓ فحص شامل بالكمبيوتر · صيانة التكييف' : '✓ Full diagnostics · AC maintenance'}
-            </p>
+            <div className="flex flex-wrap gap-1.5" data-testid="center-services-picker">
+              {CENTER_SERVICE_CATALOG.map((svc) => {
+                const active = selectedServices.includes(svc.key);
+                return (
+                  <button
+                    key={svc.key}
+                    type="button"
+                    data-testid={`center-service-${svc.key}`}
+                    onClick={() => toggleCenterService(svc.key)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition ${
+                      active ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : `${c.border} ${c.secondaryText}`
+                    }`}
+                  >
+                    {active ? '✓ ' : ''}{isAr ? svc.ar : svc.en}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className={`p-3 rounded-2xl border ${c.border} ${c.surface} space-y-2 text-xs`}>
             <p className={`font-bold ${c.text}`}>
@@ -1325,7 +1401,7 @@ export function A11Screen() {
 
   const kyc = kycQuery.data;
   const status = kyc?.status || user?.kycStatus || 'Submitted';
-  const code = kyc?.code || 'KYC-0001';
+  const code = kyc?.code || '—';
   const submittedDate = kyc?.submittedAt ? fmtDate(kyc.submittedAt, lang) : fmtDate(new Date().toISOString(), lang);
   const documents = kyc?.documents || [];
 
@@ -1388,7 +1464,7 @@ export function A11Screen() {
                   onClick={() => nav.go('SH17', { id: d.id, fileId: d.fileId, type: d.documentType })}
                   className={`w-full p-3 rounded-xl border ${c.border} ${c.surface} flex items-center justify-between text-xs`}
                 >
-                  <span className={`font-semibold ${c.text}`}>{d.documentType}</span>
+                  <span className={`font-semibold ${c.text}`}>{formatLabel(d.documentType, isAr)}</span>
                   <StatusBadge status={d.status} />
                 </button>
               ))}

@@ -1,11 +1,11 @@
 ﻿=== S9 : dummy generation failure injection -> automatic rollback to real DB, exit 3 ===
-Timestamp: 2026-11-19T22:44:05.9126189+00:00
+Timestamp: 2026-11-20T00:24:17.0481969+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s9-cf5a7908
-Private port: 5337
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s9-97ef723e
+Private port: 5506
 [PASS] CLI setup created the original admin (value=0)
-Original DB SHA-256: B0E18F17ECA540DD8E5F589EAC9D60E07898FF29A0843F72387DD180AD8C00E3
+Original DB SHA-256: 0F9323B02FC2A58E812B03BE04D7D88B399ED940CF8F21ABDCB35B68FF1B0F3E
 dummy-db.bat with injected failure exit=3
 ===================================================
   FixNGo - Switch to dummy database
@@ -19,7 +19,7 @@ dummy-db.bat with injected failure exit=3
 [PASS] injected failure returns exit code 3 (value=3)
 [PASS] failure is reported clearly
 [PASS] automatic rollback is reported
-[PASS] live DB rolled back byte-for-byte (SHA-256) (value=B0E18F17ECA540DD8E5F589EAC9D60E07898FF29A0843F72387DD180AD8C00E3)
+[PASS] live DB rolled back byte-for-byte (SHA-256) (value=0F9323B02FC2A58E812B03BE04D7D88B399ED940CF8F21ABDCB35B68FF1B0F3E)
 [PASS] original user count restored (value=1)
 [PASS] state mode remains real after rollback (value=real)
 [PASS] no dummy-db.md left behind by failed run

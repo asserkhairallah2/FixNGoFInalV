@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Sun,
@@ -758,7 +758,7 @@ export function SH05Screen({ params }) {
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
             {activeDoc?.updatedAt
-              ? `${isAr ? 'آخر تحديث · ' : 'Last updated · '}${fmtDate(activeDoc.updatedAt, lang)} · v${activeDoc.version || 1}`
+              ? `${isAr ? 'آخر تحديث · ' : 'Last updated · '}${fmtDate(activeDoc.updatedAt, lang)} · v${activeDoc.version ?? 1}`
               : (isAr ? 'آخر تحديث · الإصدار ١' : 'Last updated · Version 1')}
           </p>
         </div>
@@ -1991,43 +1991,53 @@ export function SH13Screen() {
             </p>
           )}
           <p className={`text-xs ${colors.secondaryText}`}>
-            {isAr
+            {user?.role === 'Admin'
+              ? isAr
+                ? 'سيتم إنهاء جلسة المشرف الحالية على هذا الجهاز. تظل إعدادات المنصة وسجلات التدقيق محفوظة بأمان.'
+                : 'Your active administrator session on this device will end. Platform settings and audit logs remain safely recorded.'
+              : isAr
               ? 'ستحتاج إلى بريدك الإلكتروني وكلمة المرور لتسجيل الدخول مجدداً. تظل مركباتك وحجوزاتك وإيصالاتك محفوظة في حسابك.'
               : "You'll need your email and password to sign back in. Saved vehicles, bookings and receipts stay in your account."}
           </p>
         </div>
 
-        <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1.5 text-xs`}>
-          <p className={`font-extrabold ${colors.text}`}>
-            {isAr ? 'قبل المغادرة' : 'Before you leave'}
-          </p>
-          <p className={`text-[11px] ${colors.secondaryText}`}>
-            {isAr
-              ? 'تسجيل الخروج لا يلغي طلباً نشطاً أو موعداً مؤكداً. عد إلى الرحلة النشطة إذا كنت لا تزال بحاجة للمساعدة.'
-              : 'Logging out does not cancel an active request or appointment. Return to the active trip if you still need assistance.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => nav.back()}
-            className="w-full flex justify-between items-center pt-1.5 border-t border-slate-500/10"
-          >
-            <span className={`font-bold ${colors.text}`}>
-              {isAr ? 'العودة للطلب النشط' : 'Return to Active Request'}
-            </span>
-            <ForwardChevron size={14} className={colors.secondaryText} />
-          </button>
-        </div>
+        {user?.role !== 'Admin' && (
+          <>
+            <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1.5 text-xs`}>
+              <p className={`font-extrabold ${colors.text}`}>
+                {isAr ? 'قبل المغادرة' : 'Before you leave'}
+              </p>
+              <p className={`text-[11px] ${colors.secondaryText}`}>
+                {isAr
+                  ? 'تسجيل الخروج لا يلغي طلباً نشطاً أو موعداً مؤكداً. عد إلى الرحلة النشطة إذا كنت لا تزال بحاجة للمساعدة.'
+                  : 'Logging out does not cancel an active request or appointment. Return to the active trip if you still need assistance.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => nav.back()}
+                className="w-full flex justify-between items-center pt-1.5 border-t border-slate-500/10"
+              >
+                <span className={`font-bold ${colors.text}`}>
+                  {isAr ? 'العودة للطلب النشط' : 'Return to Active Request'}
+                </span>
+                <ForwardChevron size={14} className={colors.secondaryText} />
+              </button>
+            </div>
 
-        <div className="p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] space-y-0.5">
-          <p className="font-bold text-amber-500">
-            {isAr ? 'أمان مقدمي الخدمة' : 'Provider safety'}
-          </p>
-          <p className={colors.secondaryText}>
-            {isAr
-              ? 'يجب على الميكانيكيين والكباتن إنهاء المهمة النشطة أو تسليمها بأمان قبل تسجيل الخروج.'
-              : 'Mechanics and captains must finish or safely hand over an active job before signing out. Set availability offline to stop new requests.'}
-          </p>
-        </div>
+            {['Mechanic', 'TowCaptain'].includes(user?.role) && (
+              <div className="p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] space-y-0.5">
+                <p className="font-bold text-amber-500">
+                  {isAr ? 'أمان مقدمي الخدمة' : 'Provider safety'}
+                </p>
+                <p className={colors.secondaryText}>
+                  {isAr
+                    ? 'يجب على الميكانيكيين والكباتن إنهاء المهمة النشطة أو تسليمها بأمان قبل تسجيل الخروج.'
+                    : 'Mechanics and captains must finish or safely hand over an active job before signing out. Set availability offline to stop new requests.'}
+                </p>
+              </div>
+            )}
+          </>
+        )}
 
         <div className="space-y-2">
           <PrimaryButton onClick={handleConfirmLogout} disabled={busy} testId="screen-primary">
@@ -2132,16 +2142,18 @@ export function SH14Screen() {
           </p>
         </div>
 
-        <div className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-[11px] space-y-0.5">
-          <p className="font-bold text-emerald-500">
-            {isAr ? 'تم حفظ وجهة السحب' : 'Payout destination saved'}
-          </p>
-          <p className={colors.secondaryText}>
-            {isAr
-              ? 'تستخدم طلبات السحب المستقبلية حسابك المختار.'
-              : 'Future withdrawal reviews use your selected account. Pending payouts keep their original destination.'}
-          </p>
-        </div>
+        {banks.length > 0 && (
+          <div className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-[11px] space-y-0.5">
+            <p className="font-bold text-emerald-500">
+              {isAr ? 'تم حفظ وجهة السحب' : 'Payout destination saved'}
+            </p>
+            <p className={colors.secondaryText}>
+              {isAr
+                ? 'تستخدم طلبات السحب المستقبلية حسابك المختار.'
+                : 'Future withdrawal reviews use your selected account. Pending payouts keep their original destination.'}
+            </p>
+          </div>
+        )}
 
         <PrimaryButton onClick={() => nav.go('SH20')} testId="screen-primary">
           {isAr ? '+ إضافة حساب بنكي' : '+ Add Bank Account'}
@@ -2171,20 +2183,24 @@ export function SH15Screen() {
   const feeMinor = bootstrapQuery.data?.pricing?.withdrawalFeeMinor ?? 0;
   const minWithdrawalMinor = bootstrapQuery.data?.pricing?.minWithdrawalMinor ?? 10000;
 
-  const [amountEgp, setAmountEgp] = useState('100');
+  const [amountEgp, setAmountEgp] = useState('0');
   const [confirmed, setConfirmed] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (balanceMinor > 0 && amountEgp === '100') {
+    if (balanceMinor > 0) {
       const defaultEgp = Math.max(100, Math.min(500, Math.floor(balanceMinor / 100)));
       setAmountEgp(String(defaultEgp));
+    } else {
+      setAmountEgp('0');
     }
   }, [balanceMinor]);
 
-  const requestedMinor = Math.max(0, Math.round((Number(amountEgp) || 0) * 100));
+  const parsedAmount = Number(amountEgp);
+  const requestedMinor = Math.max(0, Math.round((Number.isFinite(parsedAmount) ? parsedAmount : 0) * 100));
   const netMinor = Math.max(0, requestedMinor - feeMinor);
   const remainingMinor = Math.max(0, balanceMinor - requestedMinor);
+  const canWithdraw = balanceMinor >= minWithdrawalMinor && !!defaultBank;
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
@@ -2313,15 +2329,22 @@ export function SH15Screen() {
             data-testid="confirm-withdrawal"
             className="rounded border-slate-400 text-[#E51C23] focus:ring-[#E51C23]"
           />
-          <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
           <span className={colors.text}>
             {isAr ? 'أؤكد المبلغ والحساب البنكي المستلم' : 'I confirm the amount and bank destination'}
           </span>
         </label>
 
+        {balanceMinor < minWithdrawalMinor && (
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {isAr
+              ? `يلزم توفر رصيد لا يقل عن ${fmtMoney(minWithdrawalMinor, lang)} لطلب السحب.`
+              : `You need an available balance of at least ${fmtMoney(minWithdrawalMinor, lang)} to request a withdrawal.`}
+          </p>
+        )}
+
         {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
 
-        <PrimaryButton type="submit" disabled={withdrawMutation.isPending} testId="screen-primary">
+        <PrimaryButton type="submit" disabled={withdrawMutation.isPending || !canWithdraw} testId="screen-primary">
           {isAr ? 'طلب السحب' : 'Request Withdrawal'}
         </PrimaryButton>
       </form>
@@ -2468,24 +2491,59 @@ export function SH17Screen({ id, params }) {
   const { isAr, lang } = usePrefs();
   const nav = useNav();
   const { user } = useSession();
+  const isAdmin = user?.role === 'Admin';
 
-  const myKycQuery = useKyc();
+  const myKycQuery = useQuery({
+    queryKey: k.kyc,
+    queryFn: () => get('/providers/kyc/me'),
+    enabled: !isAdmin && !params?.appId
+  });
   const adminKycQuery = useQuery({
     queryKey: ['admin', 'kyc', params?.appId],
     queryFn: () => get(`/admin/kyc/${params.appId}`),
     enabled: !!params?.appId
   });
+  const adminQueueQuery = useQuery({
+    queryKey: ['admin', 'kyc', 'queue'],
+    queryFn: () => get('/admin/kyc/queue'),
+    enabled: isAdmin
+  });
 
-  const kyc = params?.appId ? adminKycQuery.data : myKycQuery.data;
-  const documents = Array.isArray(kyc?.documents) ? kyc.documents : [];
   const targetKey = id || params?.id || params?.docId || params?.fileId || params?.type || null;
+  const kyc = useMemo(() => {
+    if (params?.appId && adminKycQuery.data) return adminKycQuery.data;
+    if (isAdmin) {
+      const queue = Array.isArray(adminQueueQuery.data) ? adminQueueQuery.data : [];
+      if (params?.appId) {
+        const byApp = queue.find((a) => String(a.id) === String(params.appId));
+        if (byApp) return byApp;
+      }
+      if (targetKey) {
+        const byDoc = queue.find((a) =>
+          Array.isArray(a.documents) &&
+          a.documents.some((d) => d.id === targetKey || d.fileId === targetKey)
+        );
+        if (byDoc) return byDoc;
+      }
+      return queue[0] || null;
+    }
+    return myKycQuery.data;
+  }, [params?.appId, adminKycQuery.data, isAdmin, adminQueueQuery.data, targetKey, myKycQuery.data]);
+
+  const documents = Array.isArray(kyc?.documents) ? kyc.documents : [];
 
   const doc = (targetKey && documents.find(
     (d) => d.id === targetKey || d.fileId === targetKey || d.documentType === targetKey
   )) || documents[0] || null;
 
-  const hasUploadedFile = !!doc?.fileId && doc.fileId !== '00000000-0000-0000-0000-000000000000';
-  const holderName = kyc?.fullName || user?.fullName || (isAr ? 'مقدم الخدمة' : 'Provider');
+  const previewFileId = doc?.fileId || params?.fileId || null;
+  const hasUploadedFile = !!previewFileId && previewFileId !== '00000000-0000-0000-0000-000000000000';
+  const holderName =
+    kyc?.fullName ||
+    kyc?.businessName ||
+    params?.holder ||
+    (isAdmin ? (isAr ? 'مقدم الطلب' : 'Applicant') : user?.fullName) ||
+    (isAr ? 'مقدم الخدمة' : 'Provider');
   const docType = doc?.documentType || params?.type || 'NationalId';
 
   return (
@@ -2509,14 +2567,14 @@ export function SH17Screen({ id, params }) {
             <div className="space-y-2">
               <div className="w-full rounded-xl overflow-hidden border border-slate-500/20 bg-black/5 flex items-center justify-center min-h-[160px]">
                 <img
-                  src={fileUrl(doc.fileId)}
+                  src={fileUrl(previewFileId)}
                   alt={docType}
                   data-testid="document-preview-image"
                   className="max-h-56 w-auto object-contain"
                 />
               </div>
               <a
-                href={fileUrl(doc.fileId)}
+                href={fileUrl(previewFileId)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-block text-[11px] font-bold text-[#E51C23] underline"
@@ -2525,7 +2583,7 @@ export function SH17Screen({ id, params }) {
               </a>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2" data-testid="document-preview-image">
               <FileText size={22} className={colors.secondaryText} />
               <p className={`text-xs font-extrabold ${colors.text}`}>
                 {isAr ? 'مستند التوثيق' : 'VERIFICATION DOCUMENT'}
@@ -2557,7 +2615,7 @@ export function SH17Screen({ id, params }) {
                   key={d.id}
                   type="button"
                   data-testid="data-row"
-                  onClick={() => nav.replace('SH17', { id: d.id, appId: params?.appId })}
+                  onClick={() => nav.replace('SH17', { id: d.id, fileId: d.fileId, type: d.documentType, appId: kyc?.id || params?.appId, holder: holderName })}
                   className={`w-full p-2.5 rounded-xl border text-start flex items-center justify-between text-xs ${
                     d.id === doc?.id ? 'border-[#E51C23] bg-[#E51C23]/10' : `${colors.border} ${colors.surface}`
                   }`}
@@ -2599,15 +2657,17 @@ export function SH17Screen({ id, params }) {
         </div>
 
         <div className="space-y-2">
-          <PrimaryButton
-            onClick={() => {
-              nav.updateFlow({ replaceDocType: docType });
-              nav.go('SH18', { type: docType });
-            }}
-            testId="screen-primary"
-          >
-            {isAr ? 'استبدال المستند / رفع جديد' : 'Replace Document / Upload New'}
-          </PrimaryButton>
+          {!isAdmin && (
+            <PrimaryButton
+              onClick={() => {
+                nav.updateFlow({ replaceDocType: docType });
+                nav.go('SH18', { type: docType });
+              }}
+              testId="screen-primary"
+            >
+              {isAr ? 'استبدال المستند / رفع جديد' : 'Replace Document / Upload New'}
+            </PrimaryButton>
+          )}
           <SecondaryButton onClick={() => nav.back()}>
             {isAr ? 'إغلاق المعاينة' : 'Close Preview'}
           </SecondaryButton>

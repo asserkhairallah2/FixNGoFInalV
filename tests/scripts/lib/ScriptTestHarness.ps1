@@ -317,7 +317,13 @@ function Get-DbUserCount {
 function Get-TestSha256 {
     param([string]$Path)
     if (-not (Test-Path $Path)) { return '' }
-    return (Get-FileHash -Path $Path -Algorithm SHA256).Hash
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path $Path).Path)
+        return ([System.BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-', '').ToUpperInvariant()
+    } finally {
+        $sha.Dispose()
+    }
 }
 
 function Get-ScriptLog {

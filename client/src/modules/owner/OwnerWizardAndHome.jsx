@@ -35,6 +35,7 @@ import {
   useAddCard, usePay, useConfirmCash, useBookings, useUnreadCount, useSos, k
 } from '../../api/hooks.js';
 import { post, put, uploadFile, fileUrl } from '../../api/http.js';
+import { fmtDateTime } from '../../i18n/format.js';
 
 function useActiveRequest(params) {
   const { flow } = useNav();
@@ -65,9 +66,9 @@ function luhnCheck(numStr) {
 }
 
 // ---------------------------------------------------------------------------
-// C01 & C02 — CAR OWNER HOME DASHBOARD (WITH ACTIVE REQUEST BANNER ON C02)
+// C01 & C02 — CAR OWNER HOME DASHBOARD (WITH ACTIVE REQUEST BANNER WHEN PRESENT)
 // ---------------------------------------------------------------------------
-function HomeScreen({ forceBanner = false }) {
+function HomeScreen() {
   const { t, isAr } = usePrefs();
   const { go, updateFlow } = useNav();
   const { user } = useSession();
@@ -78,8 +79,7 @@ function HomeScreen({ forceBanner = false }) {
   const { data: unread } = useUnreadCount();
 
   const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
-  const activeReq = requests.find((r) => !['Completed', 'Cancelled'].includes(r.status)) ||
-    (forceBanner ? requests[0] : null);
+  const activeReq = requests.find((r) => !['Completed', 'Cancelled'].includes(r.status)) || null;
   const nextBooking = bookings.find((b) => ['Pending', 'Confirmed', 'InProgress'].includes(b.status)) || bookings[0] || null;
   const firstName = (user?.fullName || t('Driver', 'سائق')).split(' ')[0];
   const unreadCount = unread?.count ?? 0;
@@ -142,8 +142,8 @@ function HomeScreen({ forceBanner = false }) {
       </div>
 
       <div className="px-4 pt-4 space-y-4">
-        {/* Active Request Live Banner (always rendered on C02 or when an active request exists) */}
-        {(activeReq || forceBanner) && (
+        {/* Active Request Live Banner (only rendered when an active request exists) */}
+        {activeReq && (
           <div
             data-testid="active-request-banner"
             className="rounded-2xl p-4 shadow-md transition-all"
@@ -157,23 +157,23 @@ function HomeScreen({ forceBanner = false }) {
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: c.accent }} />
                 <span className="text-xs font-bold uppercase tracking-wider" style={{ color: c.accent }}>
-                  {t('Active Request', 'طلب نشط')} • {activeReq?.code || 'FG-1042'}
+                  {t('Active Request', 'طلب نشط')} • {activeReq.code}
                 </span>
               </div>
-              <StatusBadge status={activeReq?.status || 'EnRoute'} />
+              <StatusBadge status={activeReq.status} />
             </div>
             <div className="text-sm font-bold mb-1">
-              {activeReq?.providerName
+              {activeReq.providerName
                 ? t(`${activeReq.providerName} is assigned`, `تم تعيين ${activeReq.providerName}`)
                 : t('Matching nearby verified providers...', 'جارٍ مطابقة مقدمي الخدمة القريبين...')}
             </div>
             <div className="text-xs text-slate-300 mb-3">
-              {activeReq?.pickupAddress || t('90th Street, New Cairo', 'شارع التسعين، القاهرة الجديدة')}
+              {activeReq.pickupAddress}
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => go(activeReq?.kind === 'Mechanic' ? 'C12' : 'C11', { id: activeReq?.id })}
+                onClick={() => go(activeReq.kind === 'Mechanic' ? 'C12' : 'C11', { id: activeReq.id })}
                 className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-950"
                 style={{ backgroundColor: c.accent }}
               >
@@ -181,7 +181,7 @@ function HomeScreen({ forceBanner = false }) {
               </button>
               <button
                 type="button"
-                onClick={() => go('SH01', { requestId: activeReq?.id })}
+                onClick={() => go('SH01', { requestId: activeReq.id })}
                 className="py-2 px-3 rounded-xl text-xs font-semibold bg-slate-800 text-slate-100 border border-slate-700"
               >
                 {t('Chat', 'محادثة')}
@@ -229,7 +229,7 @@ function HomeScreen({ forceBanner = false }) {
               </div>
               <button
                 type="button"
-                onClick={() => go('C24', { id: primaryVehicle.id, vehicle: primaryVehicle })}
+                onClick={() => go('C24', { id: primaryVehicle.id })}
                 className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
                 style={{ backgroundColor: c.surface2, color: c.text2 }}
               >
@@ -337,10 +337,10 @@ function HomeScreen({ forceBanner = false }) {
             >
               <div>
                 <div className="text-sm font-bold" style={{ color: c.text }}>
-                  {nextBooking.centerName || t('El-alamia Auto Center', 'المركز العالمي للسيارات')}
+                  {nextBooking.centerName || t('Service Center', 'مركز الخدمة')}
                 </div>
                 <div className="text-xs" style={{ color: c.text2 }}>
-                  {nextBooking.serviceName || t('Periodic Maintenance', 'صيانة دورية')} • {new Date(nextBooking.slotStart).toLocaleString(isAr ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                  {nextBooking.serviceName || t('Periodic Maintenance', 'صيانة دورية')} • {fmtDateTime(nextBooking.slotStart, isAr ? 'ar' : 'en')}
                 </div>
               </div>
               <StatusBadge status={nextBooking.status} />
@@ -366,8 +366,8 @@ function HomeScreen({ forceBanner = false }) {
   );
 }
 
-export const C01 = () => <HomeScreen forceBanner={false} />;
-export const C02 = () => <HomeScreen forceBanner={true} />;
+export const C01 = () => <HomeScreen />;
+export const C02 = () => <HomeScreen />;
 
 // ---------------------------------------------------------------------------
 // C03 — EMERGENCY SOS SCREEN
@@ -599,7 +599,7 @@ export function C04() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => go('C24', { id: v.id, vehicle: v })}
+                    onClick={() => go('C24', { id: v.id })}
                     className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                     style={{ backgroundColor: c.surface2, color: c.text }}
                   >
@@ -653,9 +653,10 @@ function VehicleFormScreen({ isEdit = false, params }) {
     ];
   }, [bootstrap]);
 
+  const defaultYear = 2022;
   const [make, setMake] = useState(existing?.make || makesList[0]?.name || 'Toyota');
   const [model, setModel] = useState(existing?.model || 'Corolla');
-  const [year, setYear] = useState(String(existing?.year || 2022));
+  const [year, setYear] = useState(String(existing?.year ?? defaultYear));
   const [plate, setPlate] = useState(existing?.plate || '');
   const [color, setColor] = useState(existing?.color || 'Silver');
   const [fuel, setFuel] = useState(existing?.fuel || 'Petrol');
@@ -695,11 +696,12 @@ function VehicleFormScreen({ isEdit = false, params }) {
       return;
     }
     try {
+      const parsedYear = Number(year);
       await saveVehicle.mutateAsync({
         id: isEdit ? (existing?.id || params?.id) : undefined,
         make: make.trim(),
         model: model.trim(),
-        year: Number(year) || 2022,
+        year: parsedYear > 1950 ? parsedYear : defaultYear,
         plate: plate.trim(),
         color: color.trim() || 'Silver',
         fuel,
@@ -926,11 +928,16 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
     return serviceTypes.find((s) => s.kind === defaultKind) || serviceTypes[0] || null;
   }, [serviceTypes, params?.serviceTypeId, flow?.serviceTypeId, defaultKind]);
 
+  const defaultDistKm = 8.5;
+  const defaultPickLat = 30.0276;
+  const defaultPickLon = 31.4913;
+  const defaultDestLat = 30.0595;
+  const defaultDestLon = 31.4950;
   const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
   const [vehicleId, setVehicleId] = useState(flow?.vehicleId || primaryVehicle?.id || '');
   const [pickupAddress, setPickupAddress] = useState(flow?.pickupAddress || '90th Street, 5th Settlement, New Cairo');
   const [destAddress, setDestAddress] = useState(flow?.destinationAddress || 'Al-Rehab Gate 6 Service Zone, New Cairo');
-  const [distanceKm, setDistanceKm] = useState(flow?.distanceKm || 8.5);
+  const [distanceKm, setDistanceKm] = useState(flow?.distanceKm ?? defaultDistKm);
   const [note, setNote] = useState(flow?.note || '');
   const [answers, setAnswers] = useState(flow?.answers || {});
   const [photoIds, setPhotoIds] = useState(flow?.photoFileIds || []);
@@ -944,8 +951,9 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   useEffect(() => {
     if (chosenType?.id) {
+      const dist = Number(distanceKm) > 0 ? Number(distanceKm) : defaultDistKm;
       estimateMut.mutate(
-        { serviceTypeId: chosenType.id, distanceKm: Number(distanceKm) || 8.5 },
+        { serviceTypeId: chosenType.id, distanceKm: dist },
         { onSuccess: (data) => setEstimate(data) }
       );
     }
@@ -972,19 +980,20 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const saveDraftToFlow = () => {
     const escalated = questions.some((q) => q.escalatesToP0WhenYes && answers[q.key] === 'yes');
+    const dist = Number(distanceKm) > 0 ? Number(distanceKm) : defaultDistKm;
     const draft = {
       vehicleId: vehicleId || primaryVehicle?.id || null,
       serviceTypeId: chosenType?.id,
       serviceTypeKey: chosenType?.key,
       serviceTypeName: isAr ? chosenType?.nameAr : chosenType?.nameEn,
       kind: chosenType?.kind || defaultKind,
-      pickupLatitude: flow?.pickupLatitude || 30.0276,
-      pickupLongitude: flow?.pickupLongitude || 31.4913,
+      pickupLatitude: flow?.pickupLatitude ?? defaultPickLat,
+      pickupLongitude: flow?.pickupLongitude ?? defaultPickLon,
       pickupAddress,
-      destinationLatitude: (chosenType?.kind || defaultKind) === 'Tow' ? 30.0595 : null,
-      destinationLongitude: (chosenType?.kind || defaultKind) === 'Tow' ? 31.4950 : null,
+      destinationLatitude: (chosenType?.kind || defaultKind) === 'Tow' ? defaultDestLat : null,
+      destinationLongitude: (chosenType?.kind || defaultKind) === 'Tow' ? defaultDestLon : null,
       destinationAddress: (chosenType?.kind || defaultKind) === 'Tow' ? destAddress : null,
-      distanceKm: Number(distanceKm) || 8.5,
+      distanceKm: dist,
       problem: isAr ? chosenType?.nameAr : chosenType?.nameEn,
       answers,
       note,
@@ -997,8 +1006,8 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
   };
 
   const handleReviewEstimate = () => {
-    const draft = saveDraftToFlow();
-    go('C08', draft);
+    saveDraftToFlow();
+    go('C08');
   };
 
   const handleDirectSubmit = async () => {
@@ -1105,7 +1114,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                 label={t('Estimated Distance (km)', 'المسافة التقديرية (كم)')}
                 type="number"
                 value={String(distanceKm)}
-                onChange={(v) => setDistanceKm(Number(v) || 5)}
+                onChange={(v) => setDistanceKm(Number(v) > 0 ? Number(v) : defaultDistKm)}
                 testId="field-distanceKm"
               />
             </>
@@ -1120,28 +1129,55 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
             </div>
             <div className="space-y-3">
               {questions.map((q) => {
-                const val = answers[q.key] || 'no';
+                let choices = null;
+                if (q.choicesJson) {
+                  try {
+                    const parsed = JSON.parse(q.choicesJson);
+                    if (Array.isArray(parsed) && parsed.length > 0) choices = parsed;
+                  } catch {}
+                }
+                const isChoice = q.answerType === 'choice' && choices;
+                const val = answers[q.key] || (isChoice ? choices[0] : 'no');
                 return (
-                  <div key={q.id || q.key} className="flex items-center justify-between gap-2">
+                  <div key={q.id || q.key} className={isChoice ? 'space-y-1.5' : 'flex items-center justify-between gap-2'}>
                     <div className="text-xs font-medium" style={{ color: c.text }}>
                       {isAr ? q.questionAr : q.questionEn}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {['yes', 'no'].map((choice) => (
-                        <button
-                          key={choice}
-                          type="button"
-                          onClick={() => setAnswers((prev) => ({ ...prev, [q.key]: choice }))}
-                          className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
-                          style={{
-                            backgroundColor: val === choice ? c.accent : c.surface2,
-                            color: val === choice ? '#0F172A' : c.text2,
-                          }}
-                        >
-                          {choice === 'yes' ? t('Yes', 'نعم') : t('No', 'لا')}
-                        </button>
-                      ))}
-                    </div>
+                    {isChoice ? (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {choices.map((choice) => (
+                          <button
+                            key={choice}
+                            type="button"
+                            onClick={() => setAnswers((prev) => ({ ...prev, [q.key]: choice }))}
+                            className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                            style={{
+                              backgroundColor: val === choice ? c.accent : c.surface2,
+                              color: val === choice ? '#0F172A' : c.text2,
+                            }}
+                          >
+                            {choice}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {['yes', 'no'].map((choice) => (
+                          <button
+                            key={choice}
+                            type="button"
+                            onClick={() => setAnswers((prev) => ({ ...prev, [q.key]: choice }))}
+                            className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
+                            style={{
+                              backgroundColor: val === choice ? c.accent : c.surface2,
+                              color: val === choice ? '#0F172A' : c.text2,
+                            }}
+                          >
+                            {choice === 'yes' ? t('Yes', 'نعم') : t('No', 'لا')}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1308,14 +1344,20 @@ export function C08() {
   const [estimate, setEstimate] = useState(flow?.estimate || null);
   const [err, setErr] = useState('');
 
+  const defaultDistKm = 8.5;
+  const defaultPickLat = 30.0276;
+  const defaultPickLon = 31.4913;
+  const defaultDestLat = 30.0595;
+  const defaultDestLon = 31.4950;
   const serviceTypes = bootstrap?.serviceTypes || [];
   const chosenType = serviceTypes.find((s) => s.id === flow?.serviceTypeId || s.key === flow?.serviceTypeKey) || serviceTypes[0] || null;
   const vehicle = vehicles.find((v) => v.id === flow?.vehicleId) || vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
 
   useEffect(() => {
     if (!estimate && chosenType?.id) {
+      const dist = Number(flow?.distanceKm) > 0 ? Number(flow.distanceKm) : defaultDistKm;
       estimateMut.mutate(
-        { serviceTypeId: chosenType.id, distanceKm: Number(flow?.distanceKm) || 8.5 },
+        { serviceTypeId: chosenType.id, distanceKm: dist },
         { onSuccess: (data) => setEstimate(data) }
       );
     }
@@ -1328,16 +1370,17 @@ export function C08() {
       return;
     }
     try {
+      const dist = Number(flow?.distanceKm) > 0 ? Number(flow.distanceKm) : defaultDistKm;
       const created = await createMut.mutateAsync({
         vehicleId: vehicle?.id || null,
         serviceTypeId: chosenType.id,
-        pickupLatitude: flow?.pickupLatitude || 30.0276,
-        pickupLongitude: flow?.pickupLongitude || 31.4913,
+        pickupLatitude: flow?.pickupLatitude ?? defaultPickLat,
+        pickupLongitude: flow?.pickupLongitude ?? defaultPickLon,
         pickupAddress: flow?.pickupAddress || '90th Street, 5th Settlement, New Cairo',
-        destinationLatitude: flow?.destinationLatitude || 30.0595,
-        destinationLongitude: flow?.destinationLongitude || 31.4950,
+        destinationLatitude: flow?.destinationLatitude ?? defaultDestLat,
+        destinationLongitude: flow?.destinationLongitude ?? defaultDestLon,
         destinationAddress: flow?.destinationAddress || 'Al-Rehab Service Zone, New Cairo',
-        distanceKm: Number(flow?.distanceKm) || 8.5,
+        distanceKm: dist,
         problem: flow?.problem || (isAr ? chosenType.nameAr : chosenType.nameEn),
         answersJson: JSON.stringify(flow?.answers || {}),
         note: flow?.note || null,
@@ -1365,7 +1408,7 @@ export function C08() {
           <div className="text-2xl font-extrabold" style={{ color: c.accent }}>
             {estimate
               ? `${egp(estimate.lowMinor, isAr)} – ${egp(estimate.highMinor, isAr)}`
-              : `${egp(35000, isAr)} – ${egp(55000, isAr)}`}
+              : t('Calculating fare...', 'جارٍ حساب التكلفة...')}
           </div>
           <p className="text-xs mt-1" style={{ color: c.text2 }}>
             {t('Includes callout base fare, distance calculation and platform safety guarantee.', 'تشمل رسوم الانتقال الأساسية وحساب المسافة وضمان أمان المنصة.')}
@@ -1580,8 +1623,8 @@ function OffersListScreen({ isMechanic = false, params }) {
                       )}
                     </div>
                     <div className="text-xs flex items-center gap-2 mt-0.5" style={{ color: c.text2 }}>
-                      <span>⭐ {Number(cand.rating || 4.8).toFixed(1)} ({cand.ratingCount || 42})</span>
-                      <span>• {cand.distanceKm} km</span>
+                      <span>⭐ {Number(cand.rating ?? 0).toFixed(1)} ({cand.ratingCount ?? 0})</span>
+                      <span>• {Number(cand.distanceKm ?? 0).toFixed(1)} km</span>
                       <span>• {cand.etaMinutes} {t('min', 'دقيقة')}</span>
                     </div>
                     {cand.truckMake && (
@@ -1626,9 +1669,17 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
 
-  const step = Math.min(7, Math.max(1, req?.step || (mode === 'arrived' ? 4 : 3)));
+  const defaultStep = mode === 'arrived' ? 4 : 3;
+  const step = Math.min(7, Math.max(1, req?.step ?? defaultStep));
   const progressPct = Math.round((step / 7) * 100);
-  const providerPhone = req?.providerPhone || '+201012345678';
+  const providerPhone = req?.providerPhone || '';
+  const defaultPickLat = 30.0276;
+  const defaultPickLon = 31.4913;
+  const statusStr = String(req?.status || (mode === 'arrived' ? 'Arrived' : 'EnRoute'));
+  const canReviewQuote = ['Arrived', 'QuotePending', 'Disputed'].includes(statusStr) || mode === 'arrived';
+  const canPay = ['QuoteApproved', 'Working', 'AwaitingPayment', 'Completed'].includes(statusStr) ||
+    (req?.kind === 'Tow' && ['Arrived', 'Working', 'AwaitingPayment', 'Completed'].includes(statusStr));
+  const canCancel = ['Searching', 'Offered', 'Accepted', 'EnRoute'].includes(statusStr);
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
@@ -1641,14 +1692,14 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
             : t('Tow Captain Live Tracking', 'تتبع ونش الإنقاذ المباشر')
         }
         onBack={back}
-        right={<StatusBadge status={req?.status || (mode === 'arrived' ? 'Arrived' : 'EnRoute')} />}
+        right={<StatusBadge status={statusStr} />}
       />
 
       <div className="px-4 pt-3 space-y-3">
         <MapView
           height={190}
           markers={[
-            { lat: req?.pickupLatitude || 30.0276, lng: req?.pickupLongitude || 31.4913, label: t('Pickup', 'موقعك') },
+            { lat: req?.pickupLatitude ?? defaultPickLat, lng: req?.pickupLongitude ?? defaultPickLon, label: t('Pickup', 'موقعك') },
           ]}
         />
 
@@ -1656,7 +1707,7 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
         <Card>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-extrabold" style={{ color: c.text }}>
-              {formatLabel(req?.status || (mode === 'arrived' ? 'Arrived' : 'EnRoute'), isAr)}
+              {formatLabel(statusStr, isAr)}
             </span>
             <span className="text-xs font-bold" style={{ color: c.accent }}>
               {t(`Step ${step} of 7`, `خطوة ${step} من ٧`)}
@@ -1669,7 +1720,7 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
             />
           </div>
           <div className="flex items-center justify-between mt-2 text-[11px]" style={{ color: c.text2 }}>
-            <span>{req?.code || 'FG-1042'}</span>
+            <span>{req?.code || '—'}</span>
             <button
               type="button"
               onClick={() => go('C42', { id: reqId })}
@@ -1685,13 +1736,13 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Avatar name={req?.providerName || t('Specialist', 'مختص')} size={46} />
+              <Avatar name={req?.providerName || t('Provider', 'مقدم خدمة')} size={46} />
               <div>
                 <div className="text-sm font-bold" style={{ color: c.text }}>
-                  {req?.providerName || t('Verified FixNGo Specialist', 'مختص فيكس آند جو المعتمد')}
+                  {req?.providerName || t('Awaiting provider response...', 'بانتظار رد مقدم الخدمة...')}
                 </div>
                 <div className="text-xs" style={{ color: c.text2 }}>
-                  ⭐ {Number(req?.providerRating || 4.9).toFixed(1)} • {req?.providerTruckMake || t('Flatbed Rescue Unit', 'وحدة إنقاذ مجهزة')}
+                  ⭐ {Number(req?.providerRating ?? 0).toFixed(1)} • {req?.providerTruckMake || formatLabel(req?.kind || 'Tow', isAr)}
                 </div>
                 {req?.providerTruckPlate && (
                   <div className="text-[11px] font-mono font-bold mt-0.5" style={{ color: c.accent }}>
@@ -1702,15 +1753,17 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <a
-                href={`tel:${providerPhone}`}
-                aria-label={t('Call Provider', 'اتصال بمقدم الخدمة')}
-                className="px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"
-                style={{ backgroundColor: c.successBg, color: c.success }}
-              >
-                <span>📞</span>
-                <span>{t('Call', 'اتصال')}</span>
-              </a>
+              {providerPhone && (
+                <a
+                  href={`tel:${providerPhone}`}
+                  aria-label={t('Call Provider', 'اتصال بمقدم الخدمة')}
+                  className="px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1"
+                  style={{ backgroundColor: c.successBg, color: c.success }}
+                >
+                  <span>📞</span>
+                  <span>{t('Call', 'اتصال')}</span>
+                </a>
+              )}
               <button
                 type="button"
                 onClick={() => go('SH01', { requestId: reqId })}
@@ -1725,13 +1778,22 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
         </Card>
 
         {/* Next Contextual Actions */}
-        <div className="grid grid-cols-2 gap-2">
-          <PrimaryButton onClick={() => go('C13', { id: reqId })}>
-            {t('Review Repair Quote', 'مراجعة عرض السعر')}
-          </PrimaryButton>
-          <SecondaryButton onClick={() => go('C14', { id: reqId })}>
-            {t('Proceed to Payment', 'الانتقال للدفع')}
-          </SecondaryButton>
+        <div className="space-y-2">
+          {canReviewQuote && (
+            <PrimaryButton onClick={() => go('C13', { id: reqId })}>
+              {t('Review Repair Quote', 'مراجعة عرض السعر')}
+            </PrimaryButton>
+          )}
+          {canPay && (
+            <PrimaryButton onClick={() => go('C14', { id: reqId })}>
+              {t('Proceed to Payment', 'الانتقال للدفع')}
+            </PrimaryButton>
+          )}
+          {canCancel && (
+            <SecondaryButton onClick={() => go('C29', { id: reqId })}>
+              {t('Cancel Request', 'إلغاء الطلب')}
+            </SecondaryButton>
+          )}
         </div>
       </div>
     </div>
@@ -1751,19 +1813,23 @@ export function C13({ params }) {
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
   const { data: quotes = [] } = useQuotes(reqId);
+  const { data: bootstrap } = useBootstrap();
   const approveMut = useApproveQuote(reqId);
   const [err, setErr] = useState('');
 
+  const estTotal = req?.quoteMinor ?? req?.estimateMinor ?? 0;
+  const estFee = estTotal > 0 ? Math.min(estTotal, bootstrap?.pricing?.serviceFeeMinor ?? 0) : 0;
+  const estCallout = Math.max(0, estTotal - estFee);
   const latestQuote = quotes[0] || {
     id: null,
     version: 1,
-    status: 'Pending',
-    calloutMinor: 15000,
-    laborMinor: 25000,
-    partsMinor: 10000,
-    serviceFeeMinor: 5000,
-    totalMinor: req?.quoteMinor || req?.estimateMinor || 55000,
-    diagnosis: t('On-site inspection completed: battery & alternator belt replacement.', 'تم الفحص الميداني: استبدال سير الدينامو وفحص البطارية.'),
+    status: req?.status === 'QuoteApproved' ? 'Approved' : 'Pending',
+    calloutMinor: estCallout,
+    laborMinor: 0,
+    partsMinor: 0,
+    serviceFeeMinor: estFee,
+    totalMinor: estTotal,
+    diagnosis: req?.problem || t('Upfront service estimate based on selected service and distance.', 'التكلفة التقديرية بناءً على الخدمة والمسافة المحددة.'),
   };
 
   const handleApprove = async () => {
@@ -1788,7 +1854,7 @@ export function C13({ params }) {
         <Card>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: c.text3 }}>
-              {t(`Quote v${latestQuote.version || 1}`, `عرض السعر رقم ${latestQuote.version || 1}`)}
+              {t(`Quote v${latestQuote.version ?? 1}`, `عرض السعر رقم ${latestQuote.version ?? 1}`)}
             </span>
             <StatusBadge status={latestQuote.status || 'Pending'} />
           </div>
@@ -1908,7 +1974,7 @@ export function C14({ params }) {
     if (!selectedCardId && methods[0]?.id) setSelectedCardId(methods[0].id);
   }, [methods]);
 
-  const totalMinor = invoice?.totalMinor || req?.quoteMinor || req?.estimateMinor || 45000;
+  const totalMinor = invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
 
   const handlePayNow = async () => {
     setErr('');
@@ -1997,7 +2063,7 @@ export function C14({ params }) {
                     color: c.text,
                   }}
                 >
-                  <span>💳 {m.brand || 'Visa'} •••• {m.last4 || '4242'}</span>
+                  <span>💳 {m.brand || 'Visa'} •••• {m.last4 || '----'}</span>
                   <span>{m.expMonth}/{m.expYear}</span>
                 </button>
               ))}
@@ -2043,10 +2109,12 @@ export function C33({ params }) {
       return;
     }
     try {
+      const parsedMonth = Number(expMonth);
+      const parsedYear = Number(expYear);
       await addCardMut.mutateAsync({
         number: number.replace(/\D/g, ''),
-        expMonth: Number(expMonth) || 12,
-        expYear: Number(expYear) || 2028,
+        expMonth: parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : 12,
+        expYear: parsedYear >= 2025 ? parsedYear : 2028,
         label,
         isDefault,
       });
@@ -2118,7 +2186,7 @@ export function C34({ params }) {
   const payMut = usePay(invoice?.id);
   const [err, setErr] = useState('');
 
-  const totalMinor = invoice?.totalMinor || req?.quoteMinor || req?.estimateMinor || 45000;
+  const totalMinor = invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
   const defaultCard = methods.find((m) => m.isDefault) || methods[0] || null;
 
   const setDefault = async (id) => {
@@ -2264,9 +2332,14 @@ export function C15({ params }) {
   const confirmCashMut = useConfirmCash(invoice?.id);
   const [cashConfirmed, setCashConfirmed] = useState(false);
 
-  const subtotal = invoice?.subtotalMinor || req?.quoteMinor || req?.estimateMinor || 40000;
-  const fee = invoice?.serviceFeeMinor || 5000;
-  const total = invoice?.totalMinor || (subtotal + fee);
+  useEffect(() => {
+    if (reqId) refetch?.();
+  }, [reqId]);
+
+  const total = invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
+  const fee = invoice?.serviceFeeMinor ?? 0;
+  const subtotal = invoice?.subtotalMinor ?? Math.max(0, total - fee);
+  const isPaid = invoice?.status === 'Paid' || invoice?.customerCashConfirmed || cashConfirmed;
 
   const handleConfirmCash = async () => {
     if (invoice?.id) {
@@ -2289,10 +2362,12 @@ export function C15({ params }) {
                 {t('Tax Receipt', 'إيصال ضريبي')}
               </div>
               <div className="text-base font-extrabold font-mono" style={{ color: c.text }}>
-                {invoice?.number || 'INV-2026-0104'}
+                {invoice?.number || '—'}
               </div>
             </div>
-            <StatusBadge status={invoice?.status || 'Paid'} />
+            <span data-testid="invoice-status">
+              <StatusBadge status={isPaid ? 'Paid' : (invoice?.status || 'Unpaid')} />
+            </span>
           </div>
 
           <Divider className="my-3" />
@@ -2300,7 +2375,7 @@ export function C15({ params }) {
           <div className="space-y-2 text-xs">
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Request Code', 'رقم الطلب')}</span>
-              <span className="font-mono font-bold" style={{ color: c.text }}>{req?.code || 'FG-1042'}</span>
+              <span className="font-mono font-bold" style={{ color: c.text }}>{req?.code || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Service Charges', 'تكلفة الخدمة')}</span>
@@ -2312,20 +2387,20 @@ export function C15({ params }) {
             </div>
             <Divider className="my-2" />
             <div className="flex justify-between text-sm font-extrabold">
-              <span style={{ color: c.text }}>{t('Total Settled', 'الإجمالي المسدد')}</span>
+              <span style={{ color: c.text }}>{isPaid ? t('Total Settled', 'الإجمالي المسدد') : t('Total Due', 'الإجمالي المستحق')}</span>
               <span style={{ color: c.accent }}>{egp(total, isAr)}</span>
             </div>
           </div>
         </Card>
 
-        {(invoice?.method === 'Cash' || !invoice?.customerCashConfirmed) && !cashConfirmed && (
+        {!isPaid && (
           <SecondaryButton onClick={handleConfirmCash} disabled={confirmCashMut.isPending}>
             {confirmCashMut.isPending ? t('Confirming...', 'جارٍ التأكيد...') : t('Confirm Cash Handed to Provider', 'تأكيد تسليم المبلغ نقداً لمقدم الخدمة')}
           </SecondaryButton>
         )}
 
-        {(cashConfirmed || invoice?.customerCashConfirmed) && (
-          <Banner tone="success" title={t('Cash handover confirmed', 'تم تأكيد تسليم المبلغ النقدي بنجاح')} />
+        {isPaid && (
+          <Banner tone="success" title={t('Payment settled', 'تم سداد الفاتورة بنجاح')} />
         )}
 
         <PrimaryButton testId="screen-primary" onClick={() => go('C16', { id: reqId, providerId: req?.assignedProviderId })}>
@@ -2412,7 +2487,7 @@ export function C16({ params }) {
               {t('How was your service today?', 'كيف كانت خدمة الإنقاذ اليوم؟')}
             </div>
             <div className="text-xs mt-0.5 mb-3" style={{ color: c.text2 }}>
-              {req?.providerName || t('Your FixNGo Specialist', 'مختص فيكس آند جو')} • {req?.code || 'FG-1042'}
+              {req?.providerName || t('Assigned Provider', 'مقدم الخدمة')} {req?.code ? `• ${req.code}` : ''}
             </div>
 
             {/* Interactive 1-5 Star Buttons */}
@@ -2439,30 +2514,31 @@ export function C16({ params }) {
 
             <div className="mt-4">
               <PrimaryButton testId="screen-primary" onClick={handleRateSubmit} disabled={submitting}>
-                {submitting ? t('Submitting Review...', 'جارٍ إرسال التقييم...') : t('Submit 5-Star Review', 'إرسال التقييم')}
+                {submitting ? t('Submitting Review...', 'جارٍ إرسال التقييم...') : t(`Submit ${stars}-Star Review`, `إرسال تقييم (${stars} نجوم)`)}
               </PrimaryButton>
             </div>
           </Card>
         )}
 
-        {/* Cancellation Reasons Section */}
-        <Card>
-          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
-            {t('Need to Cancel a Request Instead?', 'هل ترغب في إلغاء الطلب؟')}
-          </div>
-          <SelectField
-            label={t('Cancellation Reason', 'سبب الإلغاء')}
-            value={cancelReason}
-            onChange={setCancelReason}
-            options={cancelReasons.map((r) => ({
-              value: r.key,
-              label: isAr ? r.labelAr : r.labelEn,
-            }))}
-          />
-          <SecondaryButton onClick={handleCancelRequest} disabled={cancelMut.isPending}>
-            {cancelMut.isPending ? t('Cancelling...', 'جارٍ الإلغاء...') : t('Confirm Cancellation', 'تأكيد إلغاء الطلب')}
-          </SecondaryButton>
-        </Card>
+        {isCancelMode && (
+          <Card>
+            <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
+              {t('Cancel Roadside Request', 'إلغاء طلب المساعدة')}
+            </div>
+            <SelectField
+              label={t('Cancellation Reason', 'سبب الإلغاء')}
+              value={cancelReason}
+              onChange={setCancelReason}
+              options={cancelReasons.map((r) => ({
+                value: r.key,
+                label: isAr ? r.labelAr : r.labelEn,
+              }))}
+            />
+            <SecondaryButton onClick={handleCancelRequest} disabled={cancelMut.isPending}>
+              {cancelMut.isPending ? t('Cancelling...', 'جارٍ الإلغاء...') : t('Confirm Cancellation', 'تأكيد إلغاء الطلب')}
+            </SecondaryButton>
+          </Card>
+        )}
       </div>
     </div>
   );
@@ -2535,7 +2611,7 @@ export function C29({ params }) {
         {err && <Banner tone="danger" title={err} />}
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <span className="font-mono text-sm font-extrabold" style={{ color: c.text }}>{req?.code || 'FG-1042'}</span>
+            <span className="font-mono text-sm font-extrabold" style={{ color: c.text }}>{req?.code || '—'}</span>
             <StatusBadge status={req?.status || 'Searching'} />
           </div>
           <SelectField
@@ -2581,7 +2657,7 @@ export function C30({ params }) {
           {t('Request Cancelled', 'تم إلغاء الطلب')}
         </h2>
         <p className="text-xs mt-1 mb-5" style={{ color: c.text2 }}>
-          {t(`Request ${params?.code || req?.code || 'FG-1042'} has been cancelled with 0 EGP fee.`, `تم إلغاء الطلب ${params?.code || req?.code || 'FG-1042'} بدون أي رسوم.`)}
+          {t(`Request ${params?.code || req?.code || ''} has been cancelled with 0 EGP fee.`, `تم إلغاء الطلب ${params?.code || req?.code || ''} بدون أي رسوم.`)}
         </p>
         <div className="space-y-2">
           <PrimaryButton onClick={() => go('C02')}>
@@ -2619,7 +2695,7 @@ export function C42({ params }) {
       <div className="px-4 pt-4 space-y-3">
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-extrabold font-mono" style={{ color: c.text }}>{req?.code || 'FG-1042'}</span>
+            <span className="text-sm font-extrabold font-mono" style={{ color: c.text }}>{req?.code || '—'}</span>
             <StatusBadge status={req?.status || 'Searching'} />
           </div>
           <div className="space-y-4">
@@ -2635,7 +2711,7 @@ export function C42({ params }) {
                   </div>
                   {ev.note && <div className="text-[11px]" style={{ color: c.text2 }}>{ev.note}</div>}
                   <div className="text-[10px] mt-0.5" style={{ color: c.text3 }}>
-                    {new Date(ev.at).toLocaleString(isAr ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {fmtDateTime(ev.at, isAr ? 'ar' : 'en')}
                   </div>
                 </div>
               </div>
