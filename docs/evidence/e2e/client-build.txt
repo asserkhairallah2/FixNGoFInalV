@@ -3,10 +3,10 @@ transforming...
 [32m✓[39m 1719 modules transformed.
 rendering chunks...
 computing gzip size...
-[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-cuAMSG/wwwroot/[22m[32mindex.html                 [39m[1m[2m    3.59 kB[22m[1m[22m[2m │ gzip:   1.38 kB[22m
-[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-cuAMSG/wwwroot/[22m[35massets/index-CjEX4NU8.css  [39m[1m[2m   35.30 kB[22m[1m[22m[2m │ gzip:   7.67 kB[22m
-[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-cuAMSG/wwwroot/[22m[36massets/index-D0flIftF.js   [39m[1m[33m1,054.69 kB[39m[22m[2m │ gzip: 265.97 kB[22m
-[32m✓ built in 6.91s[39m
+[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-PFwnTx/wwwroot/[22m[32mindex.html                 [39m[1m[2m    3.59 kB[22m[1m[22m[2m │ gzip:   1.38 kB[22m
+[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-PFwnTx/wwwroot/[22m[35massets/index-CkO3YAHy.css  [39m[1m[2m   36.26 kB[22m[1m[22m[2m │ gzip:   7.81 kB[22m
+[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-PFwnTx/wwwroot/[22m[36massets/index-DfgC7QPj.js   [39m[1m[33m1,055.88 kB[39m[22m[2m │ gzip: 266.14 kB[22m
+[32m✓ built in 6.71s[39m
 [33mnode_modules/@microsoft/signalr/dist/esm/Utils.js (189:0): A comment
 
 "/*#__PURE__*/"

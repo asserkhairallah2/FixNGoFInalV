@@ -1307,18 +1307,20 @@ export function C23() {
       <AppTopBar title={t('Profile & Settings', 'الملف الشخصي والإعدادات')} />
       <div className="px-4 pt-4 space-y-4">
         <Card>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0">
               <Avatar name={user?.fullName || t('Car Owner', 'مالك السيارة')} size={52} />
-              <div>
-                <div className="text-base font-extrabold" style={{ color: c.text }}>
+            </div>
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-base font-extrabold truncate" style={{ color: c.text }}>
                   {user?.fullName || t('Car Owner', 'مالك السيارة')}
                 </div>
-                <div className="text-xs" dir="ltr" style={{ color: c.text2 }}>{user?.email || ''}</div>
-                <div className="text-xs" dir="ltr" style={{ color: c.text3 }}>{user?.phone || ''}</div>
+                <StatusBadge status={user?.status || 'Active'} />
               </div>
+              <div className="text-xs truncate" dir="ltr" style={{ color: c.text2 }}>{user?.email || ''}</div>
+              <div className="text-xs truncate" dir="ltr" style={{ color: c.text3 }}>{user?.phone || ''}</div>
             </div>
-            <StatusBadge status={user?.status || 'Active'} />
           </div>
         </Card>
 

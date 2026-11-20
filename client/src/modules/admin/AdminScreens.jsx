@@ -552,14 +552,14 @@ export function AD03Screen({ id, params }) {
       ) : (
         <>
           <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-extrabold text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-extrabold text-xs">
                   {initialsOf(displayName)}
                 </div>
-                <div>
-                  <p className={`font-extrabold ${colors.text}`}>{displayName}</p>
-                  <p className={`text-[11px] ${colors.secondaryText}`}>
+                <div className="min-w-0">
+                  <p className={`font-extrabold truncate ${colors.text}`}>{displayName}</p>
+                  <p className={`text-[11px] truncate ${colors.secondaryText}`}>
                     {formatLabel(app.applicantType, isAr)}
                     {app.address ? ` · ${app.address}` : ''}
                   </p>
@@ -1195,13 +1195,13 @@ export function AD06Screen() {
       </div>
 
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-red-600/15 text-red-500 flex items-center justify-center font-extrabold text-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 shrink-0 rounded-xl bg-red-600/15 text-red-500 flex items-center justify-center font-extrabold text-xs">
             {initialsOf(user?.fullName)}
           </div>
-          <div>
-            <p className={`font-extrabold ${colors.text}`}>{user?.fullName || (isAr ? 'المشرف' : 'Administrator')}</p>
-            <p className={`text-[11px] ${colors.secondaryText}`} dir="ltr">{user?.email || '—'}</p>
+          <div className="min-w-0 flex-1">
+            <p className={`font-extrabold truncate ${colors.text}`}>{user?.fullName || (isAr ? 'المشرف' : 'Administrator')}</p>
+            <p className={`text-[11px] truncate ${colors.secondaryText}`} dir="ltr">{user?.email || '—'}</p>
           </div>
         </div>
         <div className="flex justify-between pt-1 border-t border-slate-500/10">

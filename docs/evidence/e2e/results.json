@@ -6,7 +6,7 @@
       "test",
       "e2e/screens.spec.js",
       "-g",
-      "light-en: admin|dark-ar: admin"
+      "light-en: owner|dark-ar: owner"
     ],
     "configFile": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\playwright.config.js",
     "rootDir": "C:/Users/xprenspel/Desktop/FixNGoFinal/client/e2e",
@@ -122,7 +122,7 @@
           "column": 8,
           "specs": [
             {
-              "title": "light-en: admin — 18 screens",
+              "title": "light-en: owner — 71 screens",
               "ok": true,
               "tags": [],
               "tests": [
@@ -137,12 +137,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6294,
+                      "duration": 20920,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T11:14:59.700Z",
+                      "startTime": "2026-11-20T11:27:45.915Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -150,7 +150,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e58ca2a3cb798687116-5ea878ba47fcb6e9bcaf",
+              "id": "4e58ca2a3cb798687116-f1a24404b54809416c18",
               "file": "screens.spec.js",
               "line": 72,
               "column": 7
@@ -164,7 +164,7 @@
           "column": 8,
           "specs": [
             {
-              "title": "dark-ar: admin — 18 screens",
+              "title": "dark-ar: owner — 71 screens",
               "ok": true,
               "tags": [],
               "tests": [
@@ -179,12 +179,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5970,
+                      "duration": 20610,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T11:15:06.183Z",
+                      "startTime": "2026-11-20T11:28:06.996Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -192,7 +192,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "4e58ca2a3cb798687116-8c8db19e254d0a4237ee",
+              "id": "4e58ca2a3cb798687116-fc186794bfdb50c1bbbd",
               "file": "screens.spec.js",
               "line": 72,
               "column": 7
@@ -204,8 +204,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-20T11:14:31.129Z",
-    "duration": 41422.995,
+    "startTime": "2026-11-20T11:27:19.483Z",
+    "duration": 68486.333,
     "expected": 2,
     "skipped": 0,
     "unexpected": 0,
