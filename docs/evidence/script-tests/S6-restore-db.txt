@@ -1,11 +1,11 @@
 ﻿=== S6 : restore-db.bat -> byte-identical restore, original admin login, backup archived ===
-Timestamp: 2026-11-20T00:23:15.6151083+00:00
+Timestamp: 2026-11-20T02:16:31.6266237+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s6-6fe1e0ec
-Private port: 5681
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s6-00109cab
+Private port: 5404
 [PASS] CLI setup created the original admin (value=0)
-Original DB SHA-256: 5CF0FAB0995930E5279723ED2E3668B72ECCF13A8EDDC172FA3E9F373098B97B
+Original DB SHA-256: 99CB9D727A19BB2224213DF0382B8DC552C19EA9A575D05C66482A4F2B7A46F7
 [PASS] dummy-db.bat created the sandbox (value=0)
 [PASS] dummy-db.md exists while in dummy mode
 restore-db.bat exit=0
@@ -20,7 +20,7 @@ restore-db.bat exit=0
 [PASS] restore-db.log created in isolated log dir
 [PASS] restore-db.log is non-empty
 [PASS] restore-db.log contains no plaintext passwords
-[PASS] restored DB is byte-identical (SHA-256) to the pre-dummy DB (value=5CF0FAB0995930E5279723ED2E3668B72ECCF13A8EDDC172FA3E9F373098B97B)
+[PASS] restored DB is byte-identical (SHA-256) to the pre-dummy DB (value=99CB9D727A19BB2224213DF0382B8DC552C19EA9A575D05C66482A4F2B7A46F7)
 [PASS] restored user count equals the original (value=1)
 [PASS] dummy-db.md deleted by restore
 [PASS] state mode is real after restore (value=real)

@@ -1,18 +1,18 @@
 ﻿=== S1 : start.bat on empty data dir -> first-run setup -> healthy server -> exactly 1 admin ===
-Timestamp: 2026-11-20T00:21:55.0438550+00:00
+Timestamp: 2026-11-20T02:15:10.1084792+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s1-bbda424d
-Private port: 5837
-check-setup before: exit=10 {"setupComplete":false,"firstRun":true,"userCount":0,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-bbda424d\\fixngo.db","dbExists":false,"mode":"real"}
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s1-3a5d4e45
+Private port: 5779
+check-setup before: exit=10 {"setupComplete":false,"firstRun":true,"userCount":0,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-3a5d4e45\\fixngo.db","dbExists":false,"mode":"real"}
 [PASS] check-setup reports first run (exit 10) before start.bat (value=10)
 [PASS] server answers /health after start.bat triggered first-run setup
 [PASS] start.bat serves the SPA index.html (HTTP 200 with #root) on GET /
-check-setup after: exit=0 {"setupComplete":true,"firstRun":false,"userCount":1,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-bbda424d\\fixngo.db","dbExists":true,"mode":"real"}
+check-setup after: exit=0 {"setupComplete":true,"firstRun":false,"userCount":1,"dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo-s1-3a5d4e45\\fixngo.db","dbExists":true,"mode":"real"}
 [PASS] check-setup reports set up (exit 0) after start.bat (value=0)
 [PASS] exactly one user (the first admin) exists (value=1)
 [PASS] server.port written to the temp FIXNGO_DATA_DIR (not the real data folder)
-[PASS] server.port contains the private test port (value=5837)
+[PASS] server.port contains the private test port (value=5779)
 [PASS] server.pid written to the temp FIXNGO_DATA_DIR
 [PASS] start.log created in isolated log dir
 [PASS] start.log is non-empty

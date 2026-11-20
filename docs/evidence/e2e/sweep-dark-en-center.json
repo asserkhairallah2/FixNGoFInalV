@@ -11,7 +11,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 512
+      "chars": 604
     },
     "console": []
   },
@@ -27,14 +27,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 564
+      "chars": 767
     },
     "console": []
   },
   {
     "code": "SC03",
     "role": "center",
-    "hash": "#/SC03?id=0a133689-35ea-40bf-96ad-889022ca1ea6",
+    "hash": "#/SC03?id=8a6f25a7-b728-4d0d-a844-44c8f08752cf",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC03.png",
     "diagnostics": {
       "bad": [],
@@ -43,7 +43,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 481
+      "chars": 572
     },
     "console": []
   },
@@ -59,7 +59,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 375
+      "chars": 466
     },
     "console": []
   },
@@ -75,7 +75,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 413
+      "chars": 504
     },
     "console": []
   },
@@ -91,14 +91,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 553
+      "chars": 769
     },
     "console": []
   },
   {
     "code": "SC07",
     "role": "center",
-    "hash": "#/SC07?id=4edb67ff-8a1c-4081-a4d1-d5a8afaaead0",
+    "hash": "#/SC07?id=f2fc51cd-2cdd-459f-b01a-533cb129666e",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC07.png",
     "diagnostics": {
       "bad": [],
@@ -107,7 +107,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 381
+      "chars": 482
     },
     "console": []
   },
@@ -123,7 +123,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 451
+      "chars": 546
     },
     "console": []
   },
@@ -139,7 +139,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 564
+      "chars": 683
     },
     "console": []
   },
@@ -155,14 +155,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 611
+      "chars": 701
     },
     "console": []
   },
   {
     "code": "SC11",
     "role": "center",
-    "hash": "#/SC11?id=0a133689-35ea-40bf-96ad-889022ca1ea6",
+    "hash": "#/SC11?id=8a6f25a7-b728-4d0d-a844-44c8f08752cf",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC11.png",
     "diagnostics": {
       "bad": [],
@@ -171,14 +171,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 588
+      "chars": 679
     },
     "console": []
   },
   {
     "code": "SC12",
     "role": "center",
-    "hash": "#/SC12?id=0a133689-35ea-40bf-96ad-889022ca1ea6",
+    "hash": "#/SC12?id=8a6f25a7-b728-4d0d-a844-44c8f08752cf",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC12.png",
     "diagnostics": {
       "bad": [],
@@ -187,14 +187,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 557
+      "chars": 646
     },
     "console": []
   },
   {
     "code": "SC13",
     "role": "center",
-    "hash": "#/SC13?id=1cac9776-1319-4bf8-97d2-44f730c6cb72",
+    "hash": "#/SC13?id=a0393d87-721c-4941-87fc-a50b94c8b412",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC13.png",
     "diagnostics": {
       "bad": [],
@@ -203,14 +203,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 484
+      "chars": 608
     },
     "console": []
   },
   {
     "code": "SC14",
     "role": "center",
-    "hash": "#/SC14?id=1cac9776-1319-4bf8-97d2-44f730c6cb72",
+    "hash": "#/SC14?id=a0393d87-721c-4941-87fc-a50b94c8b412",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC14.png",
     "diagnostics": {
       "bad": [],
@@ -219,7 +219,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 534
+      "chars": 623
     },
     "console": []
   },
@@ -235,7 +235,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 384
+      "chars": 473
     },
     "console": []
   },
@@ -251,7 +251,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 470
+      "chars": 558
     },
     "console": []
   },
@@ -267,7 +267,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 340
+      "chars": 429
     },
     "console": []
   }

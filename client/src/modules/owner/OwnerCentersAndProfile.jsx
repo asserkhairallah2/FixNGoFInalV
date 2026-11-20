@@ -96,7 +96,7 @@ function formatSlotTime(isoStr, isAr = false) {
 // C17 — SERVICE CENTERS DIRECTORY
 // ---------------------------------------------------------------------------
 export function C17() {
-  const { t } = usePrefs();
+  const { t, isAr } = usePrefs();
   const { go, back } = useNav();
   const c = useColors();
   const { data: centers = [], isLoading } = useCenters();

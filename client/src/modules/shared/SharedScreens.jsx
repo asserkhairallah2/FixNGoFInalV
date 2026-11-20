@@ -1254,7 +1254,7 @@ export function SH07Screen() {
 /* =====================================================================
  * SH08: New support ticket
  * ===================================================================== */
-export function SH08Screen() {
+export function SH08Screen({ params }) {
   const colors = useColors();
   const { isAr } = usePrefs();
   const nav = useNav();
@@ -1269,7 +1269,7 @@ export function SH08Screen() {
   const [category, setCategory] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
-  const [refId, setRefId] = useState('');
+  const [refId, setRefId] = useState(() => params?.requestId || params?.bookingId || '');
   const [attachment, setAttachment] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1321,12 +1321,17 @@ export function SH08Screen() {
     try {
       const selectedReq = requests.find((r) => r.id === refId);
       const selectedBook = bookings.find((b) => b.id === refId);
+      const effectiveType = selectedReq || (refId && params?.requestId === refId)
+        ? 'Request'
+        : selectedBook || (refId && params?.bookingId === refId)
+        ? 'Booking'
+        : null;
       const created = await post('/support/tickets', {
         category,
         subject: finalSubject,
         description: finalDescription,
-        referenceType: selectedReq ? 'Request' : selectedBook ? 'Booking' : null,
-        referenceId: selectedReq?.id || selectedBook?.id || null,
+        referenceType: effectiveType,
+        referenceId: effectiveType ? refId : null,
         attachmentFileId: attachment?.id || null
       });
       await qc.invalidateQueries({ queryKey: k.tickets });
@@ -1394,6 +1399,7 @@ export function SH08Screen() {
             </label>
             <select
               value={refId}
+              data-testid="field-refId"
               onChange={(e) => setRefId(e.target.value)}
               className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
             >

@@ -11,7 +11,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 480
+      "chars": 520
     },
     "console": []
   },
@@ -27,7 +27,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 669
+      "chars": 692
     },
     "console": []
   },
@@ -43,14 +43,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 669
+      "chars": 692
     },
     "console": []
   },
   {
     "code": "M03",
     "role": "mechanic",
-    "hash": "#/M03?id=afe29f43-2f7d-4c3f-bfd7-61daab967292",
+    "hash": "#/M03?id=22c605e3-64dd-4728-a0a8-e48d663edb00",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M03.png",
     "diagnostics": {
       "bad": [],
@@ -59,14 +59,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 530
+      "chars": 564
     },
     "console": []
   },
   {
     "code": "M04",
     "role": "mechanic",
-    "hash": "#/M04?id=264e7d7d-d1ec-4e28-a5d0-632d053dab2c",
+    "hash": "#/M04?id=613ef7b3-0eb0-40ad-873d-b428b291484e",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M04.png",
     "diagnostics": {
       "bad": [],
@@ -75,14 +75,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 468
+      "chars": 497
     },
     "console": []
   },
   {
     "code": "M05",
     "role": "mechanic",
-    "hash": "#/M05?id=264e7d7d-d1ec-4e28-a5d0-632d053dab2c",
+    "hash": "#/M05?id=613ef7b3-0eb0-40ad-873d-b428b291484e",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M05.png",
     "diagnostics": {
       "bad": [],
@@ -91,14 +91,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 485
+      "chars": 531
     },
     "console": []
   },
   {
     "code": "M06",
     "role": "mechanic",
-    "hash": "#/M06?id=264e7d7d-d1ec-4e28-a5d0-632d053dab2c",
+    "hash": "#/M06?id=613ef7b3-0eb0-40ad-873d-b428b291484e",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M06.png",
     "diagnostics": {
       "bad": [],
@@ -107,7 +107,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 702
+      "chars": 736
     },
     "console": []
   },
@@ -123,7 +123,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 508
+      "chars": 542
     },
     "console": []
   },
@@ -139,7 +139,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 437
+      "chars": 471
     },
     "console": []
   },
@@ -155,7 +155,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 521
+      "chars": 555
     },
     "console": []
   },
@@ -171,14 +171,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 514
+      "chars": 546
     },
     "console": []
   },
   {
     "code": "M11",
     "role": "mechanic",
-    "hash": "#/M11?id=264e7d7d-d1ec-4e28-a5d0-632d053dab2c",
+    "hash": "#/M11?id=613ef7b3-0eb0-40ad-873d-b428b291484e",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M11.png",
     "diagnostics": {
       "bad": [],
@@ -187,14 +187,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 515
+      "chars": 571
     },
     "console": []
   },
   {
     "code": "M12",
     "role": "mechanic",
-    "hash": "#/M12?id=264e7d7d-d1ec-4e28-a5d0-632d053dab2c",
+    "hash": "#/M12?id=613ef7b3-0eb0-40ad-873d-b428b291484e",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M12.png",
     "diagnostics": {
       "bad": [],
@@ -203,14 +203,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 564
+      "chars": 596
     },
     "console": []
   },
   {
     "code": "M13",
     "role": "mechanic",
-    "hash": "#/M13?id=264e7d7d-d1ec-4e28-a5d0-632d053dab2c",
+    "hash": "#/M13?id=613ef7b3-0eb0-40ad-873d-b428b291484e",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\M13.png",
     "diagnostics": {
       "bad": [],
@@ -219,7 +219,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 569
+      "chars": 601
     },
     "console": []
   },
@@ -235,7 +235,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 428
+      "chars": 442
     },
     "console": []
   },
@@ -251,7 +251,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 417
+      "chars": 449
     },
     "console": []
   },
@@ -267,7 +267,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 467
+      "chars": 499
     },
     "console": []
   },
@@ -283,7 +283,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 559
+      "chars": 591
     },
     "console": []
   },
@@ -299,7 +299,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 565
+      "chars": 597
     },
     "console": []
   },
@@ -315,7 +315,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 602
+      "chars": 645
     },
     "console": []
   },
@@ -331,7 +331,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 613
+      "chars": 645
     },
     "console": []
   },
@@ -347,7 +347,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 608
+      "chars": 662
     },
     "console": []
   }

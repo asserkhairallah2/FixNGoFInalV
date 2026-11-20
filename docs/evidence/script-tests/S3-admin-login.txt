@@ -1,9 +1,9 @@
 ﻿=== S3 : admin login via API with setup credentials -> 200 Admin; wrong password -> 401 ===
-Timestamp: 2026-11-20T00:22:19.7965918+00:00
+Timestamp: 2026-11-20T02:15:35.5089437+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s3-b4a8cae5
-Private port: 5857
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s3-45b2aa1e
+Private port: 5582
 CLI setup exit=0 === FixNGo first-time setup ===
 Create the first Super Administrator.
 
