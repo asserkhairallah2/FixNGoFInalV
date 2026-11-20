@@ -165,7 +165,7 @@ const EN_STATUS = {
   Escalated: 'Escalated', Resolved: 'Resolved', None: 'Not submitted',
   CarOwner: 'Car Owner', Mechanic: 'Mobile Mechanic', TowCaptain: 'Tow Captain',
   ServiceCenter: 'Service Center', Admin: 'Admin',
-  Tow: 'Flatbed Tow', Normal: 'Standard', P0: 'Priority P0',
+  Tow: 'Tow Service', Normal: 'Standard', P0: 'Priority P0',
   NationalId: 'National ID', DrivingLicense: 'Driving License',
   TruckRegistration: 'Truck Registration', ProfessionalCertificate: 'Professional Certificate',
   CommercialLicense: 'Commercial License', TaxId: 'Tax ID Card', CenterPhoto: 'Facility Photo',
@@ -242,7 +242,11 @@ export function formatLabel(key, isAr = false) {
   const s = String(key);
   if (isAr && AR_STATUS[s]) return AR_STATUS[s];
   if (!isAr && EN_STATUS[s]) return EN_STATUS[s];
-  return s.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+  const radiusMatch = s.match(/^radius\.(\d+)km$/i);
+  if (radiusMatch) {
+    return isAr ? `تم توسيع نطاق البحث إلى ${radiusMatch[1]} كم` : `Search radius expanded to ${radiusMatch[1]} km`;
+  }
+  return s.replace(/[._]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 export function pluralCount(n, singularEn, pluralEn, oneAr, fewAr, manyAr, isAr = false) {
   const count = Number(n ?? 0);
@@ -374,9 +378,9 @@ export function Field({ label, children, hint, error }) {
 }
 export function inputClass() { const c = useColors(); return `w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`; }
 
-export function Toggle({ checked, onChange, label }) {
+export function Toggle({ checked, onChange, label, testId }) {
   return (
-    <button type="button" role="switch" aria-checked={!!checked} onClick={() => onChange(!checked)}
+    <button type="button" role="switch" data-testid={testId} aria-checked={!!checked} onClick={() => onChange(!checked)}
       className={`w-11 h-6 rounded-full p-0.5 transition flex items-center ${checked ? 'bg-[#E51C23] justify-end' : 'bg-slate-300 justify-start'}`}>
       <span className="w-5 h-5 rounded-full bg-white shadow" />{label && <span className="sr-only">{label}</span>}
     </button>
@@ -441,7 +445,7 @@ export function SectionHeader({ title, subtitle, action }) {
   );
 }
 
-export function InputField({ label, value, onChange, type = 'text', placeholder = '', disabled = false, testId }) {
+export function InputField({ label, value, onChange, type = 'text', placeholder = '', disabled = false, testId, dir, hint }) {
   const c = useColors();
   return (
     <label className="block space-y-1 mb-2.5">
@@ -452,9 +456,11 @@ export function InputField({ label, value, onChange, type = 'text', placeholder 
         disabled={disabled}
         placeholder={placeholder}
         data-testid={testId}
+        dir={dir}
         onChange={(e) => onChange?.(e.target.value)}
         className={`w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text} disabled:opacity-60`}
       />
+      {hint && <span className={`block text-[10px] ${c.secondaryText}`}>{hint}</span>}
     </label>
   );
 }

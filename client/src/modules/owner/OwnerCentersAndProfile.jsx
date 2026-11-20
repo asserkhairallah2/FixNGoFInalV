@@ -4,7 +4,7 @@ import {
   usePrefs, useNav, useSession,
   AppTopBar, Card, SectionHeader, StatusBadge, Chip, PrimaryButton, SecondaryButton,
   InputField, SelectField, ToggleSwitch, EmptyState, Banner, Divider, Avatar,
-  StarRating, MapView, egp, formatLabel
+  StarRating, MapView, Skeleton, egp, formatLabel, pluralCount
 } from '../../ui/kit.jsx';
 
 function useColors() {
@@ -39,17 +39,53 @@ import { resolveDeepLink } from '../../app/stores.jsx';
 function getUpcomingDays(count = 7, isAr = false) {
   const days = [];
   const base = new Date();
+  const isoFmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
   for (let i = 0; i < count; i++) {
     const d = new Date(base.getTime() + i * 86400000);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = isoFmt.format(d);
+    const weekday = new Date(`${iso}T12:00:00Z`).getUTCDay();
     const label = i === 0
       ? (isAr ? 'اليوم' : 'Today')
       : i === 1
       ? (isAr ? 'غداً' : 'Tomorrow')
       : d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Africa/Cairo' });
-    days.push({ iso, label });
+    days.push({ iso, label, weekday });
   }
   return days;
+}
+
+function localizeNotificationText(n, isAr) {
+  if (!isAr || !n) return { title: n?.title || '', body: n?.body || '' };
+  let title = String(n.title || '');
+  let body = String(n.body || '');
+  const titleMap = {
+    'Request update': 'تحديث حالة الطلب',
+    'Request cancelled': 'تم إلغاء الطلب',
+    'New service offer': 'عرض خدمة جديد',
+    'Offer accepted': 'تم قبول العرض',
+    'Offer declined': 'تم الاعتذار عن العرض',
+    'Estimate submitted': 'تم إرسال عرض السعر',
+    'Quote submitted': 'تم إرسال عرض السعر',
+    'Estimate approved': 'تم اعتماد عرض السعر',
+    'Quote approved': 'تم اعتماد عرض السعر',
+    'Booking confirmed': 'تم تأكيد الحجز',
+    'Booking completed': 'اكتمل موعد الصيانة',
+    'Booking cancelled': 'تم إلغاء الحجز',
+    'Payment received': 'تم استلام الدفعة',
+    'Support reply': 'رد جديد من الدعم الفني',
+    'KYC status update': 'تحديث حالة التوثيق',
+    'New message': 'رسالة جديدة',
+  };
+  if (titleMap[title]) title = titleMap[title];
+  body = body
+    .replace(/^Request\s+([A-Z0-9-]+)\s+was cancelled\.?$/i, 'تم إلغاء الطلب $1.')
+    .replace(/^([A-Z0-9-]+):\s*(\w+)$/, (_, code, st) => `${code}: ${formatLabel(st, true)}`);
+  return { title, body };
 }
 
 function formatSlotTime(isoStr, isAr = false) {
@@ -134,7 +170,7 @@ export function C17() {
                     <span className="font-bold" style={{ color: c.accent }}>
                       ⭐ {Number(center.rating ?? 0).toFixed(1)}
                     </span>
-                    <span>({center.ratingCount ?? 0} {t('reviews', 'تقييم')})</span>
+                    <span>({pluralCount(center.ratingCount ?? 0, 'review', 'reviews', 'تقييم', 'تقييمات', 'تقييماً', isAr)})</span>
                     <span>• 👍 {center.recommendPercent ?? 0}%</span>
                   </div>
                 </div>
@@ -280,8 +316,12 @@ export function C19({ params }) {
   const createBookingMut = useCreateBooking();
 
   const days = useMemo(() => getUpcomingDays(7, isAr), [isAr]);
+  const defaultOpenDay = useMemo(
+    () => days.find((d, idx) => idx >= 1 && d.weekday !== 5)?.iso || days[0]?.iso || '',
+    [days]
+  );
   const [selectedServiceId, setSelectedServiceId] = useState(params?.serviceId || services[0]?.id || '');
-  const [selectedDay, setSelectedDay] = useState(days[1]?.iso || days[0]?.iso);
+  const [selectedDay, setSelectedDay] = useState(defaultOpenDay);
   const [selectedSlot, setSelectedSlot] = useState('');
   const [vehicleId, setVehicleId] = useState(vehicles.find((v) => v.isPrimary)?.id || vehicles[0]?.id || '');
   const [note, setNote] = useState('');
@@ -289,30 +329,21 @@ export function C19({ params }) {
 
   useEffect(() => {
     if (!selectedServiceId && services[0]?.id) setSelectedServiceId(services[0].id);
-  }, [services]);
+  }, [services, selectedServiceId]);
 
   useEffect(() => {
     if (!vehicleId && vehicles[0]?.id) setVehicleId(vehicles[0].id);
-  }, [vehicles]);
+  }, [vehicles, vehicleId]);
 
-  const { data: availability = [] } = useAvailability(centerId, selectedServiceId, selectedDay);
-
-  const slots = useMemo(() => {
-    if (availability.length > 0) return availability;
-    // Fallback generated slots on the chosen day if availability is still loading (Cairo local hours 09:00..16:00 = UTC 07:00..14:00)
-    return [7, 8, 9, 10, 12, 13, 14].map((utcHr) => {
-      const start = new Date(`${selectedDay}T${String(utcHr).padStart(2, '0')}:00:00Z`);
-      const end = new Date(start.getTime() + 60 * 60000);
-      return { slotStart: start.toISOString(), slotEnd: end.toISOString(), available: true };
-    });
-  }, [availability, selectedDay]);
+  const { data: slots = [], isLoading: slotsLoading } = useAvailability(centerId, selectedServiceId, selectedDay);
 
   useEffect(() => {
     const firstAvail = slots.find((s) => s.available);
-    if (firstAvail) setSelectedSlot(firstAvail.slotStart);
+    setSelectedSlot(firstAvail ? firstAvail.slotStart : '');
   }, [slots]);
 
   const chosenService = services.find((s) => s.id === selectedServiceId) || services[0] || null;
+  const hasAvailableSlot = slots.some((s) => s.available);
 
   const handleConfirmBooking = async () => {
     setErr('');
@@ -326,7 +357,7 @@ export function C19({ params }) {
         serviceId: chosenService.id,
         slotStart: selectedSlot,
         vehicleId: vehicleId || null,
-        note: note || null,
+        note: note.trim() || null,
       });
       go('C36', { id: created.id });
     } catch (ex) {
@@ -374,14 +405,14 @@ export function C19({ params }) {
           <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
             {t('1. Select Day', '١. اختر اليوم')}
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1" data-testid="booking-day-picker">
+          <div className="flex flex-wrap items-center gap-1.5" data-testid="booking-day-picker">
             {days.map((d) => (
               <Chip
                 key={d.iso}
                 active={selectedDay === d.iso}
                 onClick={() => setSelectedDay(d.iso)}
               >
-                {d.label}
+                <span data-day-iso={d.iso} data-day-weekday={d.weekday}>{d.label}</span>
               </Chip>
             ))}
           </div>
@@ -389,35 +420,51 @@ export function C19({ params }) {
           <div className="text-xs font-bold uppercase tracking-wider mt-4 mb-2" style={{ color: c.text3 }}>
             {t('2. Select Available Time Slot', '٢. اختر الساعة المتاحة')}
           </div>
-          <div className="grid grid-cols-3 gap-2" data-testid="booking-slot-picker">
-            {slots.map((slot) => {
-              const isSelected = selectedSlot === slot.slotStart;
-              return (
-                <button
-                  key={slot.slotStart}
-                  type="button"
-                  disabled={!slot.available}
-                  onClick={() => setSelectedSlot(slot.slotStart)}
-                  className="py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center"
-                  style={{
-                    backgroundColor: !slot.available
-                      ? c.surface2
-                      : isSelected
-                      ? c.accent
-                      : c.surface,
-                    color: !slot.available
-                      ? c.text3
-                      : isSelected
-                      ? '#0F172A'
-                      : c.text,
-                    border: `1.5px solid ${isSelected ? c.accent : c.border}`,
-                    opacity: slot.available ? 1 : 0.45,
-                  }}
-                >
-                  {formatSlotTime(slot.slotStart, isAr)}
-                </button>
-              );
-            })}
+          <div data-testid="booking-slot-picker">
+            {slotsLoading ? (
+              <Skeleton rows={2} />
+            ) : slots.length === 0 || !hasAvailableSlot ? (
+              <div
+                data-testid="closed-day-state"
+                className="rounded-xl p-4 text-center text-xs font-semibold border"
+                style={{ backgroundColor: c.surface2, borderColor: c.border, color: c.text2 }}
+              >
+                {slots.length === 0
+                  ? t('Closed on this day — no available slots', 'المركز مغلق في هذا اليوم — لا توجد مواعيد متاحة')
+                  : t('All slots are fully booked on this day', 'جميع المواعيد محجوزة في هذا اليوم')}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {slots.map((slot) => {
+                  const isSelected = selectedSlot === slot.slotStart;
+                  return (
+                    <button
+                      key={slot.slotStart}
+                      type="button"
+                      disabled={!slot.available}
+                      onClick={() => setSelectedSlot(slot.slotStart)}
+                      className="py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center"
+                      style={{
+                        backgroundColor: !slot.available
+                          ? c.surface2
+                          : isSelected
+                          ? c.accent
+                          : c.surface,
+                        color: !slot.available
+                          ? c.text3
+                          : isSelected
+                          ? '#0F172A'
+                          : c.text,
+                        border: `1.5px solid ${isSelected ? c.accent : c.border}`,
+                        opacity: slot.available ? 1 : 0.45,
+                      }}
+                    >
+                      {formatSlotTime(slot.slotStart, isAr)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </Card>
 
@@ -430,7 +477,7 @@ export function C19({ params }) {
           />
         </Card>
 
-        <PrimaryButton testId="screen-primary" onClick={handleConfirmBooking} disabled={createBookingMut.isPending}>
+        <PrimaryButton testId="screen-primary" onClick={handleConfirmBooking} disabled={createBookingMut.isPending || !selectedSlot}>
           {createBookingMut.isPending
             ? t('Confirming Slot...', 'جارٍ تأكيد الموعد...')
             : `${t('Confirm Booking', 'تأكيد الحجز')} ${chosenService ? `(${egp(chosenService.priceMinor, isAr)})` : ''}`}
@@ -517,7 +564,7 @@ export function C37() {
     return ['Pending', 'Confirmed', 'InProgress'].includes(b.status);
   });
 
-  const displayList = filtered.length > 0 ? filtered : bookings;
+  const displayList = filtered;
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
@@ -607,7 +654,14 @@ export function C38({ params }) {
             <Card>
               <div className="flex items-center justify-between mb-3">
                 <span className="font-mono text-sm font-extrabold" style={{ color: c.text }}>{booking.code}</span>
-                <StatusBadge status={booking.status} />
+                <div className="flex items-center gap-1.5">
+                  {(booking.status === 'Completed' || booking.invoiceStatus) && (
+                    <span data-testid="booking-payment-status">
+                      <StatusBadge status={booking.invoiceStatus || 'Paid'} />
+                    </span>
+                  )}
+                  <StatusBadge status={booking.status} />
+                </div>
               </div>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
@@ -701,26 +755,22 @@ export function C39({ params }) {
   const booking = bookings.find((b) => b.id === params?.id) || bookings[0] || null;
 
   const days = useMemo(() => getUpcomingDays(7, isAr), [isAr]);
-  const [selectedDay, setSelectedDay] = useState(days[2]?.iso || days[1]?.iso);
+  const defaultOpenDay = useMemo(
+    () => days.find((d, idx) => idx >= 1 && d.weekday !== 5)?.iso || days[0]?.iso || '',
+    [days]
+  );
+  const [selectedDay, setSelectedDay] = useState(defaultOpenDay);
   const centerId = params?.centerId || booking?.centerId;
   const serviceId = params?.serviceId || booking?.serviceId;
-  const { data: availability = [] } = useAvailability(centerId, serviceId, selectedDay);
+  const { data: slots = [], isLoading: slotsLoading } = useAvailability(centerId, serviceId, selectedDay);
 
-  const slots = useMemo(() => {
-    if (availability.length > 0) return availability;
-    return [10, 11, 13, 15, 16].map((hr) => {
-      const start = new Date(`${selectedDay}T${String(hr).padStart(2, '0')}:00:00Z`);
-      return { slotStart: start.toISOString(), slotEnd: new Date(start.getTime() + 3600000).toISOString(), available: true };
-    });
-  }, [availability, selectedDay]);
-
-  const [selectedSlot, setSelectedSlot] = useState(slots[0]?.slotStart || '');
+  const [selectedSlot, setSelectedSlot] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     const first = slots.find((s) => s.available);
-    if (first) setSelectedSlot(first.slotStart);
+    setSelectedSlot(first ? first.slotStart : '');
   }, [slots]);
 
   const handleReschedule = async () => {
@@ -747,7 +797,7 @@ export function C39({ params }) {
           <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
             {t('Pick New Date', 'اختر اليوم الجديد')}
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center gap-1.5">
             {days.map((d) => (
               <Chip key={d.iso} active={selectedDay === d.iso} onClick={() => setSelectedDay(d.iso)}>
                 {d.label}
@@ -758,29 +808,38 @@ export function C39({ params }) {
           <div className="text-xs font-bold uppercase tracking-wider mt-4 mb-2" style={{ color: c.text3 }}>
             {t('Pick New Time Slot', 'اختر الساعة الجديدة')}
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {slots.map((slot) => {
-              const active = selectedSlot === slot.slotStart;
-              return (
-                <button
-                  key={slot.slotStart}
-                  type="button"
-                  disabled={!slot.available}
-                  onClick={() => setSelectedSlot(slot.slotStart)}
-                  className="py-2.5 px-2 rounded-xl text-xs font-bold"
-                  style={{
-                    backgroundColor: active ? c.accent : c.surface,
-                    color: active ? '#0F172A' : c.text,
-                    border: `1.5px solid ${active ? c.accent : c.border}`,
-                  }}
-                >
-                  {formatSlotTime(slot.slotStart, isAr)}
-                </button>
-              );
-            })}
-          </div>
+          {slotsLoading ? (
+            <Skeleton rows={2} />
+          ) : slots.length === 0 || !slots.some((s) => s.available) ? (
+            <div className="rounded-xl p-4 text-center text-xs font-semibold border" style={{ backgroundColor: c.surface2, borderColor: c.border, color: c.text2 }}>
+              {t('Closed on this day — no available slots', 'المركز مغلق في هذا اليوم — لا توجد مواعيد متاحة')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {slots.map((slot) => {
+                const active = selectedSlot === slot.slotStart;
+                return (
+                  <button
+                    key={slot.slotStart}
+                    type="button"
+                    disabled={!slot.available}
+                    onClick={() => setSelectedSlot(slot.slotStart)}
+                    className="py-2.5 px-2 rounded-xl text-xs font-bold"
+                    style={{
+                      backgroundColor: active ? c.accent : c.surface,
+                      color: active ? '#0F172A' : c.text,
+                      border: `1.5px solid ${active ? c.accent : c.border}`,
+                      opacity: slot.available ? 1 : 0.45,
+                    }}
+                  >
+                    {formatSlotTime(slot.slotStart, isAr)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </Card>
-        <PrimaryButton onClick={handleReschedule} disabled={saving}>
+        <PrimaryButton onClick={handleReschedule} disabled={saving || !selectedSlot}>
           {saving ? t('Updating Slot...', 'جارٍ تحديث الموعد...') : t('Confirm New Time Slot', 'تأكيد الموعد الجديد')}
         </PrimaryButton>
       </div>
@@ -795,12 +854,16 @@ export function C43({ params }) {
   const qc = useQueryClient();
   const { data: bookings = [] } = useBookings();
   const booking = bookings.find((b) => b.id === params?.id) || bookings[0] || null;
-  const [reason, setReason] = useState('Schedule conflict');
+  const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const handleCancel = async () => {
     setErr('');
+    if (!reason) {
+      setErr(t('Please select a cancellation reason.', 'يرجى اختيار سبب الإلغاء.'));
+      return;
+    }
     if (!booking?.id) {
       go('C37');
       return;
@@ -830,14 +893,16 @@ export function C43({ params }) {
             label={t('Reason for Cancellation', 'سبب الإلغاء')}
             value={reason}
             onChange={setReason}
+            testId="field-cancelReason"
             options={[
+              { value: '', label: t('Select a reason...', 'اختر سبب الإلغاء...') },
               { value: 'Schedule conflict', label: t('Schedule conflict', 'تعارض في المواعيد') },
               { value: 'Booked wrong date/service', label: t('Booked wrong date or service', 'تم حجز موعد أو خدمة بالخطأ') },
               { value: 'Problem already resolved', label: t('Vehicle issue already resolved', 'تم إصلاح السيارة بالفعل') },
             ]}
           />
         </Card>
-        <PrimaryButton tone="danger" onClick={handleCancel} disabled={saving}>
+        <PrimaryButton tone="danger" testId="screen-primary" onClick={handleCancel} disabled={saving || !reason}>
           {saving ? t('Cancelling...', 'جارٍ الإلغاء...') : t('Confirm Booking Cancellation', 'تأكيد إلغاء الحجز')}
         </PrimaryButton>
       </div>
@@ -852,47 +917,66 @@ export function C40({ params }) {
   const qc = useQueryClient();
   const { data: centers = [] } = useCenters();
   const { data: bookings = [] } = useBookings();
-  const centerId = params?.centerId || centers[0]?.id;
-  const bookingId = params?.bookingId || bookings.find((b) => b.centerId === centerId)?.id || bookings[0]?.id;
+  const centerId = params?.centerId || params?.id || centers[0]?.id;
+  const bookingId = params?.bookingId || bookings.find((b) => b.centerId === centerId && b.status === 'Completed')?.id || bookings.find((b) => b.centerId === centerId)?.id || bookings[0]?.id;
   const { data: reviews = [] } = useReviews('center', centerId);
 
-  const [stars, setStars] = useState(5);
+  const [stars, setStars] = useState(0);
   const [text, setText] = useState('');
+  const [recommend, setRecommend] = useState(false);
   const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
 
   const handlePostReview = async () => {
+    setErr('');
+    if (stars < 1) {
+      setErr(t('Please select a star rating (1–5).', 'يرجى اختيار تقييم بالنجوم (من ١ إلى ٥).'));
+      return;
+    }
     if (centerId && bookingId) {
       try {
         await post(`/reviews/center/${centerId}?bookingId=${bookingId}`, {
           stars,
-          text: text || t('Professional workshop and punctual bay service.', 'مركز خدمة محترف ومواعيد دقيقة.'),
-          recommend: stars >= 4,
+          text: text.trim() || null,
+          recommend,
         });
         qc.invalidateQueries({ queryKey: k.reviews('center', centerId) });
-      } catch {}
+        qc.invalidateQueries({ queryKey: k.centers });
+        qc.invalidateQueries({ queryKey: ['centers', centerId] });
+        setSent(true);
+      } catch (ex) {
+        setErr(ex.message || t('Could not submit review', 'تعذر إرسال التقييم'));
+      }
     }
-    setSent(true);
   };
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar title={t('Service Center Reviews', 'تقييمات مركز الخدمة')} onBack={back} />
       <div className="px-4 pt-4 space-y-4">
+        {err && <Banner tone="danger" title={err} />}
         <Card>
           <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
             {t('Rate Your Workshop Visit', 'قيّم زيارتك لمركز الخدمة')}
           </div>
-          <div className="my-2">
+          <div className="my-2" data-testid="star-rating-picker">
             <StarRating value={stars} onChange={setStars} size={28} />
           </div>
           <InputField
-            label={t('Your Review', 'تعليقك')}
+            label={t('Your Review (Optional)', 'تعليقك (اختياري)')}
             value={text}
             onChange={setText}
+            testId="field-reviewText"
             placeholder={t('Genuine parts, transparent diagnostics...', 'قطع غيار أصلية وفحص دقيق...')}
           />
+          <div className="flex items-center justify-between pt-1 pb-3">
+            <span className="text-xs font-semibold" style={{ color: c.text }}>
+              {t('Would you recommend this workshop?', 'هل توصي بمركز الخدمة هذا؟')}
+            </span>
+            <ToggleSwitch checked={recommend} onChange={setRecommend} testId="toggle-recommend" />
+          </div>
           {sent && <Banner tone="success" title={t('Thank you! Your review has been recorded.', 'شكراً لك! تم تسجيل تقييمك.')} />}
-          <PrimaryButton onClick={handlePostReview}>
+          <PrimaryButton testId="screen-primary" onClick={handlePostReview} disabled={stars < 1}>
             {t('Submit Workshop Review', 'إرسال تقييم المركز')}
           </PrimaryButton>
         </Card>
@@ -906,7 +990,11 @@ export function C40({ params }) {
                 {new Date(r.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-GB')}
               </span>
             </div>
-            <p className="text-xs" style={{ color: c.text }}>{r.text || t('Recommended workshop service.', 'خدمة ممتازة وموصى بها.')}</p>
+            {r.text ? (
+              <p className="text-xs" style={{ color: c.text }}>{r.text}</p>
+            ) : (
+              <p className="text-xs italic" style={{ color: c.text3 }}>{t('Rated without written comment.', 'تقييم بدون تعليق نصي.')}</p>
+            )}
           </Card>
         ))}
       </div>
@@ -1118,23 +1206,27 @@ export function C22() {
             subtitle={t('Real-time updates on offers, provider arrival, quotes and bookings appear here.', 'تظهر هنا التحديثات الفورية للعروض ووصول مقدم الخدمة والفواتير.')}
           />
         ) : (
-          notifications.map((n) => (
-            <Card
-              key={n.id}
-              onClick={() => handleOpenNotification(n)}
-              style={{
-                borderLeft: !n.isRead ? `4px solid ${c.accent}` : undefined,
-              }}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-extrabold" style={{ color: c.text }}>{n.title}</span>
-                <span className="text-[10px]" style={{ color: c.text3 }}>
-                  {formatSlotTime(n.createdAt, isAr)}
-                </span>
-              </div>
-              <p className="text-xs" style={{ color: c.text2 }}>{n.body}</p>
-            </Card>
-          ))
+          notifications.map((n) => {
+            const loc = localizeNotificationText(n, isAr);
+            return (
+              <Card
+                key={n.id}
+                onClick={() => handleOpenNotification(n)}
+                style={{
+                  borderLeft: !n.isRead && !isAr ? `4px solid ${c.accent}` : undefined,
+                  borderRight: !n.isRead && isAr ? `4px solid ${c.accent}` : undefined,
+                }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-extrabold" style={{ color: c.text }}>{loc.title}</span>
+                  <span className="text-[10px]" style={{ color: c.text3 }}>
+                    {formatSlotTime(n.createdAt, isAr)}
+                  </span>
+                </div>
+                <p className="text-xs" style={{ color: c.text2 }}>{loc.body}</p>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>
@@ -1222,8 +1314,8 @@ export function C23() {
                 <div className="text-base font-extrabold" style={{ color: c.text }}>
                   {user?.fullName || t('Car Owner', 'مالك السيارة')}
                 </div>
-                <div className="text-xs" style={{ color: c.text2 }}>{user?.email || ''}</div>
-                <div className="text-xs" style={{ color: c.text3 }}>{user?.phone || ''}</div>
+                <div className="text-xs" dir="ltr" style={{ color: c.text2 }}>{user?.email || ''}</div>
+                <div className="text-xs" dir="ltr" style={{ color: c.text3 }}>{user?.phone || ''}</div>
               </div>
             </div>
             <StatusBadge status={user?.status || 'Active'} />
@@ -1250,6 +1342,7 @@ export function C23() {
               value={phone}
               onChange={setPhone}
               testId="field-phone"
+              dir="ltr"
               placeholder="+201012345678"
             />
             <div className="flex items-center justify-between pt-2 mb-3">

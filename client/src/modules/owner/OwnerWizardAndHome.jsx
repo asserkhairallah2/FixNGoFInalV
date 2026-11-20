@@ -4,7 +4,7 @@ import {
   usePrefs, useNav, useSession,
   AppTopBar, Card, SectionHeader, StatusBadge, Chip, PrimaryButton, SecondaryButton,
   InputField, SelectField, ToggleSwitch, EmptyState, Banner, Divider, Avatar,
-  StarRating, MapView, BottomSheet, egp, formatLabel
+  StarRating, MapView, BottomSheet, Skeleton, egp, formatLabel, pluralCount
 } from '../../ui/kit.jsx';
 
 function useColors() {
@@ -39,13 +39,15 @@ import { fmtDateTime } from '../../i18n/format.js';
 
 function useActiveRequest(params) {
   const { flow } = useNav();
-  const { data: requests = [] } = useRequests();
-  const targetId = params?.id || params?.requestId || flow?.requestId ||
+  const { data: requests = [], isLoading: listLoading } = useRequests();
+  const explicitId = params?.id || params?.requestId || flow?.requestId || null;
+  const targetId = explicitId ||
     requests.find((r) => !['Completed', 'Cancelled'].includes(r.status))?.id ||
     requests[0]?.id;
   const single = useRequest(targetId);
-  const req = single.data || requests.find((r) => r.id === targetId) || requests[0] || null;
-  return { req, reqId: req?.id || targetId, refetch: single.refetch, requests };
+  const req = single.data || requests.find((r) => r.id === targetId) || (!explicitId ? requests[0] : null) || null;
+  const isLoading = (Boolean(targetId) && single.isLoading && !req) || (!targetId && listLoading);
+  return { req, reqId: req?.id || targetId, isLoading, refetch: single.refetch, requests };
 }
 
 function luhnCheck(numStr) {
@@ -70,7 +72,7 @@ function luhnCheck(numStr) {
 // ---------------------------------------------------------------------------
 function HomeScreen() {
   const { t, isAr } = usePrefs();
-  const { go, updateFlow } = useNav();
+  const { go, flow, updateFlow } = useNav();
   const { user } = useSession();
   const c = useColors();
   const { data: vehicles = [] } = useVehicles();
@@ -80,7 +82,7 @@ function HomeScreen() {
 
   const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
   const activeReq = requests.find((r) => !['Completed', 'Cancelled'].includes(r.status)) || null;
-  const nextBooking = bookings.find((b) => ['Pending', 'Confirmed', 'InProgress'].includes(b.status)) || bookings[0] || null;
+  const nextBooking = bookings.find((b) => ['Pending', 'Confirmed', 'InProgress'].includes(b.status)) || null;
   const firstName = (user?.fullName || t('Driver', 'سائق')).split(' ')[0];
   const unreadCount = unread?.count ?? 0;
 
@@ -88,9 +90,10 @@ function HomeScreen() {
     updateFlow({
       kind,
       problemKey: problemKey || null,
+      serviceTypeKey: problemKey || null,
       vehicleId: primaryVehicle?.id || null,
     });
-    go('C06', { kind, problemKey });
+    go('C06', { kind, ...(problemKey ? { problemKey } : {}) });
   };
 
   return (
@@ -105,7 +108,9 @@ function HomeScreen() {
             style={{ backgroundColor: c.surface2, color: c.text, border: `1px solid ${c.border}` }}
           >
             <span style={{ color: c.accent }}>📍</span>
-            <span className="truncate max-w-[180px]">{t('New Cairo, 5th Settlement', 'القاهرة الجديدة، التجمع الخامس')}</span>
+            <span className="truncate max-w-[180px]">
+              {flow?.pickupAddress || activeReq?.pickupAddress || t('Set pickup location', 'حدد موقعك الحالي')}
+            </span>
             <span style={{ color: c.text3 }}>▾</span>
           </button>
 
@@ -388,7 +393,7 @@ export function C03({ params }) {
       const created = await post('/support/sos', {
         latitude: 30.0444,
         longitude: 31.2357,
-        note: note || t('Emergency roadside assistance needed immediately', 'مطلوب مساعدة طوارئ فورية على الطريق')
+        note: note.trim() || null
       });
       setSentAlert(created);
       qc.invalidateQueries({ queryKey: k.sos });
@@ -638,7 +643,7 @@ function VehicleFormScreen({ isEdit = false, params }) {
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
   const { data: vehicles = [] } = useVehicles();
-  const existing = params?.vehicle || vehicles.find((v) => v.id === params?.id) || null;
+  const existing = isEdit ? (params?.vehicle || vehicles.find((v) => v.id === params?.id) || null) : null;
   const saveVehicle = useSaveVehicle();
 
   const makesList = useMemo(() => {
@@ -653,34 +658,39 @@ function VehicleFormScreen({ isEdit = false, params }) {
     ];
   }, [bootstrap]);
 
-  const defaultYear = 2022;
-  const [make, setMake] = useState(existing?.make || makesList[0]?.name || 'Toyota');
-  const [model, setModel] = useState(existing?.model || 'Corolla');
-  const [year, setYear] = useState(String(existing?.year ?? defaultYear));
+  const [make, setMake] = useState(existing?.make || '');
+  const [model, setModel] = useState(existing?.model || '');
+  const [year, setYear] = useState(existing?.year ? String(existing.year) : '');
   const [plate, setPlate] = useState(existing?.plate || '');
-  const [color, setColor] = useState(existing?.color || 'Silver');
-  const [fuel, setFuel] = useState(existing?.fuel || 'Petrol');
-  const [isPrimary, setIsPrimary] = useState(existing ? !!existing.isPrimary : vehicles.length === 0);
+  const [color, setColor] = useState(existing?.color || '');
+  const [fuel, setFuel] = useState(existing?.fuel || '');
+  const [isPrimary, setIsPrimary] = useState(existing ? !!existing.isPrimary : false);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     if (existing) {
-      setMake(existing.make);
-      setModel(existing.model);
-      setYear(String(existing.year));
-      setPlate(existing.plate);
-      setColor(existing.color);
-      setFuel(existing.fuel || 'Petrol');
+      setMake(existing.make || '');
+      setModel(existing.model || '');
+      setYear(existing.year ? String(existing.year) : '');
+      setPlate(existing.plate || '');
+      setColor(existing.color || '');
+      setFuel(existing.fuel || '');
       setIsPrimary(!!existing.isPrimary);
     }
   }, [existing?.id]);
 
   const selectedMakeObj = makesList.find((m) => m.name.toLowerCase() === String(make).toLowerCase());
-  const modelOptions = selectedMakeObj?.models?.length
-    ? selectedMakeObj.models.map((m) => ({ value: m.name, label: m.name }))
-    : [{ value: model || 'Corolla', label: model || 'Corolla' }, { value: 'Sedan', label: 'Sedan' }, { value: 'SUV', label: 'SUV' }];
+  const modelOptions = [
+    { value: '', label: t('Select model...', 'اختر الموديل...') },
+    ...(selectedMakeObj?.models?.length
+      ? selectedMakeObj.models.map((m) => ({ value: m.name, label: m.name }))
+      : model
+      ? [{ value: model, label: model }]
+      : []),
+  ];
 
   const fuelOptions = [
+    { value: '', label: t('Select fuel type...', 'اختر نوع الوقود...') },
     { value: 'Petrol', label: t('Petrol (Benzine)', 'بنزين (Petrol)') },
     { value: 'Diesel', label: t('Diesel (Solar)', 'سولار / ديزل (Diesel)') },
     { value: 'Hybrid', label: t('Hybrid', 'هايبرد / هجين (Hybrid)') },
@@ -688,22 +698,44 @@ function VehicleFormScreen({ isEdit = false, params }) {
     { value: 'Gas', label: t('Natural Gas (CNG)', 'غاز طبيعي (Gas)') },
   ];
 
+  const normalisedPlate = useMemo(
+    () => String(plate || '').replace(/[^a-zA-Z0-9\u0600-\u06FF\u0660-\u0669]/g, '').toUpperCase(),
+    [plate]
+  );
+
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     setErr('');
-    if (!plate.trim()) {
-      setErr(t('Please enter the license plate number', 'يرجى إدخال رقم لوحة السيارة'));
+    const parsedYear = Number(year);
+    const maxYear = new Date().getUTCFullYear() + 1;
+    if (!make.trim() || !model.trim()) {
+      setErr(t('Please select vehicle make and model.', 'يرجى اختيار ماركة وموديل السيارة.'));
+      return;
+    }
+    if (!year || Number.isNaN(parsedYear) || parsedYear < 1950 || parsedYear > maxYear) {
+      setErr(t(`Please enter a valid model year (1950–${maxYear}).`, `يرجى إدخال سنة صنع صحيحة (١٩٥٠–${maxYear}).`));
+      return;
+    }
+    if (!color.trim()) {
+      setErr(t('Please enter the vehicle color.', 'يرجى إدخال لون السيارة.'));
+      return;
+    }
+    if (!normalisedPlate) {
+      setErr(t('Please enter the license plate number.', 'يرجى إدخال رقم لوحة السيارة.'));
+      return;
+    }
+    if (!fuel) {
+      setErr(t('Please select the fuel type.', 'يرجى اختيار نوع الوقود.'));
       return;
     }
     try {
-      const parsedYear = Number(year);
       await saveVehicle.mutateAsync({
         id: isEdit ? (existing?.id || params?.id) : undefined,
         make: make.trim(),
         model: model.trim(),
-        year: parsedYear > 1950 ? parsedYear : defaultYear,
+        year: parsedYear,
         plate: plate.trim(),
-        color: color.trim() || 'Silver',
+        color: color.trim(),
         fuel,
         isPrimary,
       });
@@ -725,17 +757,21 @@ function VehicleFormScreen({ isEdit = false, params }) {
           <SelectField
             label={t('Make / Brand', 'ماركة السيارة')}
             value={make}
+            testId="field-make"
             onChange={(val) => {
               setMake(val);
-              const found = makesList.find((m) => m.name === val);
-              if (found?.models?.[0]) setModel(found.models[0].name);
+              setModel('');
             }}
-            options={makesList.map((m) => ({ value: m.name, label: m.name }))}
+            options={[
+              { value: '', label: t('Select make...', 'اختر الماركة...') },
+              ...makesList.map((m) => ({ value: m.name, label: m.name })),
+            ]}
           />
           <SelectField
             label={t('Model', 'الموديل')}
             value={model}
             onChange={setModel}
+            testId="field-model"
             options={modelOptions}
           />
           <div className="grid grid-cols-2 gap-3">
@@ -744,13 +780,16 @@ function VehicleFormScreen({ isEdit = false, params }) {
               type="number"
               value={year}
               onChange={setYear}
+              testId="field-year"
+              dir="ltr"
               placeholder="2022"
             />
             <InputField
               label={t('Color', 'اللون')}
               value={color}
               onChange={setColor}
-              placeholder={t('Silver', 'فضي')}
+              testId="field-color"
+              placeholder={t('E.g. Silver', 'مثال: فضي')}
             />
           </div>
           <InputField
@@ -758,7 +797,13 @@ function VehicleFormScreen({ isEdit = false, params }) {
             value={plate}
             onChange={setPlate}
             testId="field-plate"
+            dir="ltr"
             placeholder={t('ABC-1234 or أ ب ج ١٢٣٤', 'أ ب ج ١٢٣٤ أو ABC-1234')}
+            hint={
+              plate.trim() && plate.trim() !== normalisedPlate
+                ? t(`Saved normalized as: ${normalisedPlate}`, `سيتم حفظها بصيغة موحدة: ${normalisedPlate}`)
+                : undefined
+            }
           />
           <SelectField
             label={t('Fuel Type', 'نوع الوقود')}
@@ -772,7 +817,7 @@ function VehicleFormScreen({ isEdit = false, params }) {
               <div className="text-sm font-semibold" style={{ color: c.text }}>{t('Set as Primary Vehicle', 'تعيين كمركبة أساسية')}</div>
               <div className="text-xs" style={{ color: c.text2 }}>{t('Pre-selected when requesting roadside help', 'يتم اختيارها تلقائياً عند طلب المساعدة')}</div>
             </div>
-            <ToggleSwitch checked={isPrimary} onChange={setIsPrimary} />
+            <ToggleSwitch checked={isPrimary} onChange={setIsPrimary} testId="toggle-isPrimary" />
           </div>
         </Card>
 
@@ -799,23 +844,29 @@ export function C06({ params }) {
   const { data: bootstrap } = useBootstrap();
 
   const serviceTypes = bootstrap?.serviceTypes || [];
-  const [selectedKey, setSelectedKey] = useState(params?.problemKey || flow?.serviceTypeKey || serviceTypes[0]?.key || 'tow_flatbed');
+  const [selectedKey, setSelectedKey] = useState(params?.problemKey || flow?.serviceTypeKey || '');
   const [isP0, setIsP0] = useState(params?.priority === 'P0' || flow?.priority === 'P0');
+  const [err, setErr] = useState('');
 
-  const chosenType = serviceTypes.find((s) => s.key === selectedKey) || serviceTypes[0] || null;
+  const chosenType = serviceTypes.find((s) => s.key === selectedKey || s.id === selectedKey) || null;
 
   const handleContinue = () => {
-    const kind = chosenType?.kind || (String(selectedKey).includes('tow') ? 'Tow' : 'Mechanic');
+    setErr('');
+    if (!chosenType) {
+      setErr(t('Please select a service or breakdown type first.', 'يرجى اختيار نوع العطل أو الخدمة أولاً.'));
+      return;
+    }
+    const kind = chosenType.kind || (String(selectedKey).includes('tow') ? 'Tow' : 'Mechanic');
     updateFlow({
-      serviceTypeId: chosenType?.id,
-      serviceTypeKey: chosenType?.key || selectedKey,
-      serviceTypeName: isAr ? (chosenType?.nameAr || chosenType?.nameEn) : (chosenType?.nameEn || 'Roadside Service'),
+      serviceTypeId: chosenType.id,
+      serviceTypeKey: chosenType.key,
+      serviceTypeName: isAr ? (chosenType.nameAr || chosenType.nameEn) : chosenType.nameEn,
       kind,
       priority: isP0 ? 'P0' : 'Normal',
     });
     go(kind === 'Tow' ? 'C07' : 'C26', {
-      serviceTypeId: chosenType?.id,
-      serviceTypeKey: chosenType?.key || selectedKey,
+      serviceTypeId: chosenType.id,
+      serviceTypeKey: chosenType.key,
       kind,
       priority: isP0 ? 'P0' : 'Normal',
     });
@@ -844,23 +895,20 @@ export function C06({ params }) {
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar title={t('What Happened?', 'ما هي المشكلة؟')} onBack={back} />
       <div className="px-4 pt-4 space-y-4">
+        {err && <Banner tone="danger" title={err} />}
         <SectionHeader
           title={t('1. Choose Service / Breakdown Type', '١. اختر نوع العطل أو الخدمة')}
           subtitle={t('We match the right equipment and specialist for your situation', 'نقوم بمطابقة المعدات والفني المناسب لحالتك')}
         />
 
         <div className="grid grid-cols-2 gap-3">
-          {(serviceTypes.length > 0 ? serviceTypes : [
-            { id: 'tow', key: 'tow_flatbed', nameEn: 'Flatbed Tow Truck', nameAr: 'ونش إنقاذ سطحة', kind: 'Tow' },
-            { id: 'mech', key: 'mobile_mechanic', nameEn: 'Mobile Mechanic', nameAr: 'ميكانيكي متنقل', kind: 'Mechanic' },
-            { id: 'bat', key: 'battery_jump', nameEn: 'Battery Jump / Replace', nameAr: 'شحن أو تغيير بطارية', kind: 'Mechanic' },
-            { id: 'tire', key: 'flat_tire', nameEn: 'Flat Tire Change', nameAr: 'تغيير إطار مثقوب', kind: 'Mechanic' },
-          ]).map((st) => {
+          {serviceTypes.map((st) => {
             const active = st.key === selectedKey || st.id === selectedKey;
             return (
               <button
                 key={st.id || st.key}
                 type="button"
+                data-testid={`service-card-${st.key}`}
                 onClick={() => setSelectedKey(st.key)}
                 className="p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between"
                 style={{
@@ -874,7 +922,7 @@ export function C06({ params }) {
                     className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: c.surface2, color: c.text2 }}
                   >
-                    {formatLabel(st.kind, isAr)}
+                    {st.kind === 'Tow' ? t('Tow Service', 'خدمة ونش') : t('Roadside', 'مساعدة طريق')}
                   </span>
                 </div>
                 <div className="text-sm font-bold" style={{ color: c.text }}>
@@ -901,7 +949,7 @@ export function C06({ params }) {
           </div>
         </Card>
 
-        <PrimaryButton testId="screen-primary" onClick={handleContinue}>
+        <PrimaryButton testId="screen-primary" onClick={handleContinue} disabled={!chosenType}>
           {t('Continue to Details →', 'المتابعة للتفاصيل ←')}
         </PrimaryButton>
       </div>
@@ -928,16 +976,15 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
     return serviceTypes.find((s) => s.kind === defaultKind) || serviceTypes[0] || null;
   }, [serviceTypes, params?.serviceTypeId, flow?.serviceTypeId, defaultKind]);
 
-  const defaultDistKm = 8.5;
-  const defaultPickLat = 30.0276;
-  const defaultPickLon = 31.4913;
+  const defaultPickLat = 30.0444;
+  const defaultPickLon = 31.2357;
   const defaultDestLat = 30.0595;
   const defaultDestLon = 31.4950;
   const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
   const [vehicleId, setVehicleId] = useState(flow?.vehicleId || primaryVehicle?.id || '');
-  const [pickupAddress, setPickupAddress] = useState(flow?.pickupAddress || '90th Street, 5th Settlement, New Cairo');
-  const [destAddress, setDestAddress] = useState(flow?.destinationAddress || 'Al-Rehab Gate 6 Service Zone, New Cairo');
-  const [distanceKm, setDistanceKm] = useState(flow?.distanceKm ?? defaultDistKm);
+  const [pickupAddress, setPickupAddress] = useState(flow?.pickupAddress || '');
+  const [destAddress, setDestAddress] = useState(flow?.destinationAddress || '');
+  const [distanceKm, setDistanceKm] = useState(flow?.distanceKm ? String(flow.distanceKm) : '');
   const [note, setNote] = useState(flow?.note || '');
   const [answers, setAnswers] = useState(flow?.answers || {});
   const [photoIds, setPhotoIds] = useState(flow?.photoFileIds || []);
@@ -945,19 +992,26 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
   const [estimate, setEstimate] = useState(flow?.estimate || null);
   const [err, setErr] = useState('');
 
+  const isTowKind = (chosenType?.kind || defaultKind) === 'Tow';
+
   useEffect(() => {
     if (!vehicleId && primaryVehicle?.id) setVehicleId(primaryVehicle.id);
-  }, [primaryVehicle?.id]);
+  }, [primaryVehicle?.id, vehicleId]);
 
   useEffect(() => {
     if (chosenType?.id) {
-      const dist = Number(distanceKm) > 0 ? Number(distanceKm) : defaultDistKm;
+      const parsedDist = Number(distanceKm);
+      if (isTowKind && (!distanceKm || Number.isNaN(parsedDist) || parsedDist <= 0)) {
+        setEstimate(null);
+        return;
+      }
+      const dist = isTowKind ? parsedDist : 0;
       estimateMut.mutate(
         { serviceTypeId: chosenType.id, distanceKm: dist },
         { onSuccess: (data) => setEstimate(data) }
       );
     }
-  }, [chosenType?.id, distanceKm]);
+  }, [chosenType?.id, distanceKm, isTowKind]);
 
   const questions = chosenType?.questions || [];
 
@@ -980,7 +1034,8 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const saveDraftToFlow = () => {
     const escalated = questions.some((q) => q.escalatesToP0WhenYes && answers[q.key] === 'yes');
-    const dist = Number(distanceKm) > 0 ? Number(distanceKm) : defaultDistKm;
+    const parsedDist = Number(distanceKm);
+    const dist = isTowKind ? (parsedDist > 0 ? parsedDist : 0) : 0;
     const draft = {
       vehicleId: vehicleId || primaryVehicle?.id || null,
       serviceTypeId: chosenType?.id,
@@ -989,14 +1044,14 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
       kind: chosenType?.kind || defaultKind,
       pickupLatitude: flow?.pickupLatitude ?? defaultPickLat,
       pickupLongitude: flow?.pickupLongitude ?? defaultPickLon,
-      pickupAddress,
-      destinationLatitude: (chosenType?.kind || defaultKind) === 'Tow' ? defaultDestLat : null,
-      destinationLongitude: (chosenType?.kind || defaultKind) === 'Tow' ? defaultDestLon : null,
-      destinationAddress: (chosenType?.kind || defaultKind) === 'Tow' ? destAddress : null,
+      pickupAddress: pickupAddress.trim(),
+      destinationLatitude: isTowKind ? (flow?.destinationLatitude ?? defaultDestLat) : null,
+      destinationLongitude: isTowKind ? (flow?.destinationLongitude ?? defaultDestLon) : null,
+      destinationAddress: isTowKind ? (destAddress.trim() || null) : null,
       distanceKm: dist,
       problem: isAr ? chosenType?.nameAr : chosenType?.nameEn,
       answers,
-      note,
+      note: note.trim(),
       priority: escalated || flow?.priority === 'P0' ? 'P0' : 'Normal',
       photoFileIds: photoIds,
       estimate,
@@ -1005,13 +1060,34 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
     return draft;
   };
 
+  const validateDetails = () => {
+    if (!pickupAddress.trim()) {
+      setErr(t('Please enter or pin your pickup location.', 'يرجى إدخال أو تحديد موقع السيارة الحالي.'));
+      return false;
+    }
+    if (isTowKind) {
+      if (!destAddress.trim()) {
+        setErr(t('Please enter the drop-off destination.', 'يرجى إدخال وجهة التوصيل.'));
+        return false;
+      }
+      if (!distanceKm || Number(distanceKm) <= 0) {
+        setErr(t('Please enter the estimated trip distance in km.', 'يرجى إدخال المسافة التقديرية بالكيلومتر.'));
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleReviewEstimate = () => {
+    setErr('');
+    if (!validateDetails()) return;
     saveDraftToFlow();
     go('C08');
   };
 
   const handleDirectSubmit = async () => {
     setErr('');
+    if (!validateDetails()) return;
     const draft = saveDraftToFlow();
     if (!draft.serviceTypeId) {
       setErr(t('Service types are still loading', 'جارٍ تحميل أنواع الخدمة'));
@@ -1101,6 +1177,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
             value={pickupAddress}
             onChange={setPickupAddress}
             testId="field-pickupAddress"
+            placeholder={t('Enter street, district or landmark...', 'أدخل اسم الشارع أو المنطقة أو علامة مميزة...')}
           />
           {(chosenType?.kind || defaultKind) === 'Tow' && (
             <>
@@ -1109,13 +1186,16 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                 value={destAddress}
                 onChange={setDestAddress}
                 testId="field-destinationAddress"
+                placeholder={t('Enter workshop or drop-off address...', 'أدخل عنوان مركز الصيانة أو وجهة التوصيل...')}
               />
               <InputField
                 label={t('Estimated Distance (km)', 'المسافة التقديرية (كم)')}
                 type="number"
-                value={String(distanceKm)}
-                onChange={(v) => setDistanceKm(Number(v) > 0 ? Number(v) : defaultDistKm)}
+                value={distanceKm}
+                onChange={setDistanceKm}
+                dir="ltr"
                 testId="field-distanceKm"
+                placeholder="8.5"
               />
             </>
           )}
@@ -1258,7 +1338,7 @@ export const C26 = (props) => <RequestDetailsScreen defaultKind="Mechanic" {...p
 // C25 — MAP LOCATION PICKER
 // ---------------------------------------------------------------------------
 export function C25() {
-  const { t } = usePrefs();
+  const { t, isAr } = usePrefs();
   const { back, flow, updateFlow } = useNav();
   const c = useColors();
 
@@ -1269,14 +1349,36 @@ export function C25() {
     { nameEn: '26th of July Corridor, Sheikh Zayed', nameAr: 'محور ٢٦ يوليو، الشيخ زايد', lat: 30.0381, lon: 31.0124 },
   ];
 
-  const [selected, setSelected] = useState(landmarks[0]);
-  const [customAddress, setCustomAddress] = useState(flow?.pickupAddress || landmarks[0].nameEn);
+  const [pin, setPin] = useState(() =>
+    flow?.pickupLatitude && flow?.pickupLongitude
+      ? { lat: flow.pickupLatitude, lng: flow.pickupLongitude }
+      : null
+  );
+  const [customAddress, setCustomAddress] = useState(flow?.pickupAddress || '');
+  const [err, setErr] = useState('');
+
+  const handleMapPick = ({ lat, lng }) => {
+    setPin({ lat, lng });
+    if (!customAddress.trim()) {
+      setCustomAddress(
+        isAr
+          ? `موقع محدد على الخريطة (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+          : `Pinned Cairo Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+      );
+    }
+  };
 
   const handleConfirm = () => {
+    setErr('');
+    if (!customAddress.trim() && !pin) {
+      setErr(t('Tap the map to drop a pin or enter your pickup address.', 'اضغط على الخريطة لتحديد الموقع أو أدخل العنوان.'));
+      return;
+    }
+    const finalAddr = customAddress.trim() || (pin ? `Pinned Location (${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)})` : '');
     updateFlow({
-      pickupAddress: customAddress,
-      pickupLatitude: selected.lat,
-      pickupLongitude: selected.lon,
+      pickupAddress: finalAddr,
+      pickupLatitude: pin?.lat ?? 30.0444,
+      pickupLongitude: pin?.lng ?? 31.2357,
     });
     back();
   };
@@ -1285,44 +1387,54 @@ export function C25() {
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar title={t('Confirm Pickup Location', 'تأكيد موقع الالتقاط')} onBack={back} />
       <div className="px-4 pt-4 space-y-4">
+        {err && <Banner tone="danger" title={err} />}
         <MapView
           height={210}
-          markers={[{ lat: selected.lat, lng: selected.lon, label: t('Your Car', 'سيارتك') }]}
+          pin={pin}
+          onPick={handleMapPick}
+          interactive
+          label={pin ? `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}` : undefined}
         />
 
         <Card>
           <InputField
-            label={t('Selected Pickup Address', 'عنوان الالتقاط المحدد')}
+            label={t('Pickup Street / Address', 'عنوان موقع السيارة')}
             value={customAddress}
             onChange={setCustomAddress}
+            testId="field-pickupAddress"
+            placeholder={t('Tap map above or type your street & district...', 'اضغط على الخريطة أعلاه أو اكتب اسم الشارع والمنطقة...')}
           />
           <div className="text-xs font-bold mb-2" style={{ color: c.text2 }}>
-            {t('Nearby Landmarks in Greater Cairo', 'معالم قريبة في القاهرة الكبرى')}
+            {t('Quick Landmarks in Greater Cairo', 'معالم سريعة في القاهرة الكبرى')}
           </div>
           <div className="space-y-2">
-            {landmarks.map((lm) => (
-              <button
-                key={lm.nameEn}
-                type="button"
-                onClick={() => {
-                  setSelected(lm);
-                  setCustomAddress(lm.nameEn);
-                }}
-                className="w-full p-2.5 rounded-xl text-start text-xs font-semibold flex items-center justify-between"
-                style={{
-                  backgroundColor: customAddress === lm.nameEn ? c.accentBg : c.surface2,
-                  color: c.text,
-                  border: `1px solid ${customAddress === lm.nameEn ? c.accent : c.border}`,
-                }}
-              >
-                <span>📍 {t(lm.nameEn, lm.nameAr)}</span>
-                <span className="text-[10px] font-mono" style={{ color: c.text3 }}>{lm.lat.toFixed(3)}, {lm.lon.toFixed(3)}</span>
-              </button>
-            ))}
+            {landmarks.map((lm) => {
+              const labelStr = isAr ? lm.nameAr : lm.nameEn;
+              const isSelected = customAddress === lm.nameEn || customAddress === lm.nameAr;
+              return (
+                <button
+                  key={lm.nameEn}
+                  type="button"
+                  onClick={() => {
+                    setPin({ lat: lm.lat, lng: lm.lon });
+                    setCustomAddress(labelStr);
+                  }}
+                  className="w-full p-2.5 rounded-xl text-start text-xs font-semibold flex items-center justify-between"
+                  style={{
+                    backgroundColor: isSelected ? c.accentBg : c.surface2,
+                    color: c.text,
+                    border: `1px solid ${isSelected ? c.accent : c.border}`,
+                  }}
+                >
+                  <span>📍 {labelStr}</span>
+                  <span className="text-[10px] font-mono" dir="ltr" style={{ color: c.text3 }}>{lm.lat.toFixed(3)}, {lm.lon.toFixed(3)}</span>
+                </button>
+              );
+            })}
           </div>
         </Card>
 
-        <PrimaryButton onClick={handleConfirm}>
+        <PrimaryButton testId="screen-primary" onClick={handleConfirm}>
           {t('Confirm Pin Location', 'تأكيد هذا الموقع')}
         </PrimaryButton>
       </div>
@@ -1344,18 +1456,18 @@ export function C08() {
   const [estimate, setEstimate] = useState(flow?.estimate || null);
   const [err, setErr] = useState('');
 
-  const defaultDistKm = 8.5;
-  const defaultPickLat = 30.0276;
-  const defaultPickLon = 31.4913;
+  const defaultPickLat = 30.0444;
+  const defaultPickLon = 31.2357;
   const defaultDestLat = 30.0595;
   const defaultDestLon = 31.4950;
   const serviceTypes = bootstrap?.serviceTypes || [];
   const chosenType = serviceTypes.find((s) => s.id === flow?.serviceTypeId || s.key === flow?.serviceTypeKey) || serviceTypes[0] || null;
   const vehicle = vehicles.find((v) => v.id === flow?.vehicleId) || vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
+  const isTowKind = chosenType?.kind === 'Tow';
 
   useEffect(() => {
     if (!estimate && chosenType?.id) {
-      const dist = Number(flow?.distanceKm) > 0 ? Number(flow.distanceKm) : defaultDistKm;
+      const dist = Number(flow?.distanceKm) > 0 ? Number(flow.distanceKm) : 0;
       estimateMut.mutate(
         { serviceTypeId: chosenType.id, distanceKm: dist },
         { onSuccess: (data) => setEstimate(data) }
@@ -1369,17 +1481,21 @@ export function C08() {
       setErr(t('Service configuration still loading', 'جارٍ تحميل إعدادات الخدمة'));
       return;
     }
+    if (!flow?.pickupAddress?.trim()) {
+      setErr(t('Please go back and enter your pickup location.', 'يرجى العودة وإدخال موقع الالتقاط.'));
+      return;
+    }
     try {
-      const dist = Number(flow?.distanceKm) > 0 ? Number(flow.distanceKm) : defaultDistKm;
+      const dist = Number(flow?.distanceKm) > 0 ? Number(flow.distanceKm) : 0;
       const created = await createMut.mutateAsync({
         vehicleId: vehicle?.id || null,
         serviceTypeId: chosenType.id,
         pickupLatitude: flow?.pickupLatitude ?? defaultPickLat,
         pickupLongitude: flow?.pickupLongitude ?? defaultPickLon,
-        pickupAddress: flow?.pickupAddress || '90th Street, 5th Settlement, New Cairo',
-        destinationLatitude: flow?.destinationLatitude ?? defaultDestLat,
-        destinationLongitude: flow?.destinationLongitude ?? defaultDestLon,
-        destinationAddress: flow?.destinationAddress || 'Al-Rehab Service Zone, New Cairo',
+        pickupAddress: flow.pickupAddress.trim(),
+        destinationLatitude: isTowKind ? (flow?.destinationLatitude ?? defaultDestLat) : null,
+        destinationLongitude: isTowKind ? (flow?.destinationLongitude ?? defaultDestLon) : null,
+        destinationAddress: isTowKind ? (flow?.destinationAddress?.trim() || null) : null,
         distanceKm: dist,
         problem: flow?.problem || (isAr ? chosenType.nameAr : chosenType.nameEn),
         answersJson: JSON.stringify(flow?.answers || {}),
@@ -1435,7 +1551,7 @@ export function C08() {
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Pickup', 'موقع الالتقاط')}</span>
               <span className="font-bold text-end max-w-[200px]" style={{ color: c.text }}>
-                {flow?.pickupAddress || '90th Street, New Cairo'}
+                {flow?.pickupAddress || '—'}
               </span>
             </div>
             {flow?.destinationAddress && (
@@ -1663,23 +1779,57 @@ export const C27 = (props) => <OffersListScreen isMechanic={true} {...props} />;
 // ---------------------------------------------------------------------------
 // C11 (LIVE TRACKING TOW), C12 (LIVE TRACKING MECHANIC), C31 (PROVIDER ARRIVED)
 // ---------------------------------------------------------------------------
-function LiveTrackingScreen({ mode = 'tow', params }) {
+function LiveTrackingScreen({ mode = 'tow', params, code }) {
   const { t, isAr } = usePrefs();
-  const { go, back } = useNav();
+  const { go, back, updateFlow } = useNav();
   const c = useColors();
-  const { req, reqId } = useActiveRequest(params);
+  const { req, reqId, isLoading } = useActiveRequest(params);
+  const { data: invoice } = useInvoiceForRequest(reqId);
 
-  const defaultStep = mode === 'arrived' ? 4 : 3;
+  useEffect(() => {
+    if (req?.id) {
+      updateFlow({ requestId: req.id });
+      if (!params?.id) {
+        const screenCode = code || (mode === 'arrived' ? 'C31' : mode === 'mechanic' ? 'C12' : 'C11');
+        try {
+          window.history.replaceState(null, '', `#/${screenCode}?id=${req.id}`);
+        } catch {}
+      }
+    }
+  }, [req?.id, params?.id, code, mode, updateFlow]);
+
+  if (isLoading && !req) {
+    return (
+      <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
+        <AppTopBar title={t('Live Tracking', 'التتبع المباشر')} onBack={back} />
+        <Skeleton rows={4} />
+      </div>
+    );
+  }
+
+  const defaultStep = mode === 'arrived' ? 4 : 1;
   const step = Math.min(7, Math.max(1, req?.step ?? defaultStep));
   const progressPct = Math.round((step / 7) * 100);
   const providerPhone = req?.providerPhone || '';
-  const defaultPickLat = 30.0276;
-  const defaultPickLon = 31.4913;
-  const statusStr = String(req?.status || (mode === 'arrived' ? 'Arrived' : 'EnRoute'));
-  const canReviewQuote = ['Arrived', 'QuotePending', 'Disputed'].includes(statusStr) || mode === 'arrived';
-  const canPay = ['QuoteApproved', 'Working', 'AwaitingPayment', 'Completed'].includes(statusStr) ||
-    (req?.kind === 'Tow' && ['Arrived', 'Working', 'AwaitingPayment', 'Completed'].includes(statusStr));
+  const defaultPickLat = 30.0444;
+  const defaultPickLon = 31.2357;
+  const statusStr = String(req?.status || (mode === 'arrived' ? 'Arrived' : 'Searching'));
+  const isTow = (req?.kind || (mode === 'mechanic' ? 'Mechanic' : 'Tow')) === 'Tow';
+  const isPaid = invoice?.status === 'Paid';
+
+  const canReviewQuote = !isTow
+    ? ['Arrived', 'QuotePending', 'Disputed'].includes(statusStr) || mode === 'arrived'
+    : ['QuotePending', 'Disputed'].includes(statusStr);
+  const canPay = !isPaid && ['AwaitingPayment', 'Completed'].includes(statusStr);
+  const canViewReceipt = isPaid || statusStr === 'Completed';
   const canCancel = ['Searching', 'Offered', 'Accepted', 'EnRoute'].includes(statusStr);
+
+  const mapMarkers = [
+    { lat: req?.pickupLatitude ?? defaultPickLat, lng: req?.pickupLongitude ?? defaultPickLon, label: t('Pickup', 'موقعك') },
+    ...(typeof req?.providerLatitude === 'number' && typeof req?.providerLongitude === 'number'
+      ? [{ lat: req.providerLatitude, lng: req.providerLongitude, label: req?.providerName || t('Provider', 'مقدم الخدمة') }]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
@@ -1687,29 +1837,33 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
         title={
           mode === 'arrived'
             ? t('Provider Has Arrived', 'وصل مقدم الخدمة')
-            : mode === 'mechanic'
+            : mode === 'mechanic' || req?.kind === 'Mechanic'
             ? t('Mechanic Live Tracking', 'تتبع الميكانيكي المباشر')
             : t('Tow Captain Live Tracking', 'تتبع ونش الإنقاذ المباشر')
         }
         onBack={back}
-        right={<StatusBadge status={statusStr} />}
+        right={<span data-testid="tracking-status-badge"><StatusBadge status={statusStr} /></span>}
       />
 
       <div className="px-4 pt-3 space-y-3">
         <MapView
           height={190}
-          markers={[
-            { lat: req?.pickupLatitude ?? defaultPickLat, lng: req?.pickupLongitude ?? defaultPickLon, label: t('Pickup', 'موقعك') },
-          ]}
+          mode={statusStr === 'Arrived' || mode === 'arrived' ? 'arrived' : 'route'}
+          markers={mapMarkers}
+          label={
+            typeof req?.pickupDistanceKm === 'number' && ['Accepted', 'EnRoute'].includes(statusStr)
+              ? t(`${req.pickupDistanceKm.toFixed(1)} km from your pickup`, `يبعد ${req.pickupDistanceKm.toFixed(1)} كم عن موقعك`)
+              : undefined
+          }
         />
 
         {/* 7-Step Progress Tracker */}
         <Card>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-extrabold" style={{ color: c.text }}>
+            <span className="text-xs font-extrabold" data-testid="tracking-status-label" style={{ color: c.text }}>
               {formatLabel(statusStr, isAr)}
             </span>
-            <span className="text-xs font-bold" style={{ color: c.accent }}>
+            <span className="text-xs font-bold" data-testid="tracking-step-label" style={{ color: c.accent }}>
               {t(`Step ${step} of 7`, `خطوة ${step} من ٧`)}
             </span>
           </div>
@@ -1720,7 +1874,7 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
             />
           </div>
           <div className="flex items-center justify-between mt-2 text-[11px]" style={{ color: c.text2 }}>
-            <span>{req?.code || '—'}</span>
+            <span data-testid="tracking-request-code" className="font-mono font-bold">{req?.code || '—'}</span>
             <button
               type="button"
               onClick={() => go('C42', { id: reqId })}
@@ -1738,14 +1892,14 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
             <div className="flex items-center gap-3">
               <Avatar name={req?.providerName || t('Provider', 'مقدم خدمة')} size={46} />
               <div>
-                <div className="text-sm font-bold" style={{ color: c.text }}>
+                <div className="text-sm font-bold" data-testid="tracking-provider-name" style={{ color: c.text }}>
                   {req?.providerName || t('Awaiting provider response...', 'بانتظار رد مقدم الخدمة...')}
                 </div>
                 <div className="text-xs" style={{ color: c.text2 }}>
                   ⭐ {Number(req?.providerRating ?? 0).toFixed(1)} • {req?.providerTruckMake || formatLabel(req?.kind || 'Tow', isAr)}
                 </div>
                 {req?.providerTruckPlate && (
-                  <div className="text-[11px] font-mono font-bold mt-0.5" style={{ color: c.accent }}>
+                  <div className="text-[11px] font-mono font-bold mt-0.5" dir="ltr" style={{ color: c.accent }}>
                     {req.providerTruckPlate}
                   </div>
                 )}
@@ -1781,12 +1935,17 @@ function LiveTrackingScreen({ mode = 'tow', params }) {
         <div className="space-y-2">
           {canReviewQuote && (
             <PrimaryButton onClick={() => go('C13', { id: reqId })}>
-              {t('Review Repair Quote', 'مراجعة عرض السعر')}
+              {isTow ? t('Review Tow Fare Estimate', 'مراجعة تسعيرة الونش') : t('Review Repair Quote', 'مراجعة عرض السعر')}
             </PrimaryButton>
           )}
           {canPay && (
             <PrimaryButton onClick={() => go('C14', { id: reqId })}>
               {t('Proceed to Payment', 'الانتقال للدفع')}
+            </PrimaryButton>
+          )}
+          {canViewReceipt && !canPay && (
+            <PrimaryButton onClick={() => go('C15', { id: reqId })}>
+              {t('View Paid Receipt & Rate Trip →', 'عرض الإيصال المسدد وتقييم الرحلة ←')}
             </PrimaryButton>
           )}
           {canCancel && (
@@ -1817,6 +1976,7 @@ export function C13({ params }) {
   const approveMut = useApproveQuote(reqId);
   const [err, setErr] = useState('');
 
+  const isTow = req?.kind === 'Tow';
   const estTotal = req?.quoteMinor ?? req?.estimateMinor ?? 0;
   const estFee = estTotal > 0 ? Math.min(estTotal, bootstrap?.pricing?.serviceFeeMinor ?? 0) : 0;
   const estCallout = Math.max(0, estTotal - estFee);
@@ -1829,52 +1989,68 @@ export function C13({ params }) {
     partsMinor: 0,
     serviceFeeMinor: estFee,
     totalMinor: estTotal,
-    diagnosis: req?.problem || t('Upfront service estimate based on selected service and distance.', 'التكلفة التقديرية بناءً على الخدمة والمسافة المحددة.'),
+    diagnosis: req?.problem || '',
   };
 
   const handleApprove = async () => {
     setErr('');
-    if (latestQuote.id && reqId) {
+    if (latestQuote.id && reqId && latestQuote.status !== 'Approved') {
       try {
         await approveMut.mutateAsync(latestQuote.id);
       } catch (ex) {
-        setErr(ex.message || t('Could not approve quote', 'تعذر اعتماد عرض السعر'));
+        setErr(ex.message || t('Could not approve estimate', 'تعذر اعتماد التسعيرة'));
         return;
       }
     }
-    go('C14', { id: reqId });
+    if (['AwaitingPayment', 'Completed'].includes(req?.status)) {
+      go('C14', { id: reqId });
+    } else {
+      go(isTow ? 'C11' : 'C12', { id: reqId });
+    }
   };
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('On-Site Repair Estimate', 'المقايسة وعرض سعر الإصلاح')} onBack={back} />
+      <AppTopBar
+        title={isTow ? t('Tow Fare Estimate', 'تفاصيل تسعيرة الونش') : t('On-Site Repair Estimate', 'المقايسة وعرض سعر الإصلاح')}
+        onBack={back}
+      />
       <div className="px-4 pt-4 space-y-4">
         {err && <Banner tone="danger" title={err} />}
 
         <Card>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: c.text3 }}>
-              {t(`Quote v${latestQuote.version ?? 1}`, `عرض السعر رقم ${latestQuote.version ?? 1}`)}
+              {t(`Estimate v${latestQuote.version ?? 1}`, `عرض السعر رقم ${latestQuote.version ?? 1}`)}
             </span>
             <StatusBadge status={latestQuote.status || 'Pending'} />
           </div>
           <p className="text-xs mb-3" style={{ color: c.text2 }}>
-            {latestQuote.diagnosis || t('Provider submitted itemized breakdown for your approval before starting work.', 'قدم الفني تفاصيل التكلفة لاعتمادها قبل بدء الإصلاح.')}
+            {latestQuote.diagnosis ||
+              (isTow
+                ? t('Itemized tow dispatch and distance fare breakdown.', 'تفاصيل تكلفة الانتقال ومسافة السحب.')
+                : t('Provider submitted itemized breakdown for your approval before starting work.', 'قدم الفني تفاصيل التكلفة لاعتمادها قبل بدء الإصلاح.'))}
           </p>
 
           <div className="space-y-2 text-xs">
             <div className="flex justify-between">
-              <span style={{ color: c.text2 }}>{t('Callout & Inspection Fee', 'رسوم الانتقال والفحص')}</span>
+              <span style={{ color: c.text2 }}>
+                {isTow ? t('Base Tow & Dispatch Fare', 'رسوم الانتقال وفتح العداد') : t('Callout & Inspection Fee', 'رسوم الانتقال والفحص')}
+              </span>
               <span className="font-semibold" style={{ color: c.text }}>{egp(latestQuote.calloutMinor, isAr)}</span>
             </div>
             <div className="flex justify-between">
-              <span style={{ color: c.text2 }}>{t('Labor Charges', 'مصنعية الإصلاح')}</span>
+              <span style={{ color: c.text2 }}>
+                {isTow ? t('Winching & Distance Adjustment', 'تكلفة الرفع والمسافة الإضافية') : t('Labor Charges', 'مصنعية الإصلاح')}
+              </span>
               <span className="font-semibold" style={{ color: c.text }}>{egp(latestQuote.laborMinor, isAr)}</span>
             </div>
-            <div className="flex justify-between">
-              <span style={{ color: c.text2 }}>{t('Spare Parts & Consumables', 'قطع الغيار والمستهلكات')}</span>
-              <span className="font-semibold" style={{ color: c.text }}>{egp(latestQuote.partsMinor, isAr)}</span>
-            </div>
+            {(!isTow || latestQuote.partsMinor > 0) && (
+              <div className="flex justify-between">
+                <span style={{ color: c.text2 }}>{t('Spare Parts & Consumables', 'قطع الغيار والمستهلكات')}</span>
+                <span className="font-semibold" style={{ color: c.text }}>{egp(latestQuote.partsMinor, isAr)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span style={{ color: c.text2 }}>{t('Platform Service Fee', 'رسوم خدمة المنصة')}</span>
               <span className="font-semibold" style={{ color: c.text }}>{egp(latestQuote.serviceFeeMinor, isAr)}</span>
@@ -1889,7 +2065,11 @@ export function C13({ params }) {
 
         <div className="space-y-2">
           <PrimaryButton testId="screen-primary" onClick={handleApprove} disabled={approveMut.isPending}>
-            {approveMut.isPending ? t('Approving...', 'جارٍ الاعتماد...') : t('Approve Estimate & Start Repair', 'اعتماد المقايسة وبدء الإصلاح')}
+            {approveMut.isPending
+              ? t('Approving...', 'جارٍ الاعتماد...')
+              : isTow
+              ? t('Approve Tow Estimate', 'اعتماد تسعيرة الونش')
+              : t('Approve Estimate & Start Repair', 'اعتماد المقايسة وبدء الإصلاح')}
           </PrimaryButton>
           <SecondaryButton onClick={() => go('C32', { id: reqId })}>
             {t('Dispute or Request Revision', 'الاعتراض أو طلب تعديل السعر')}
@@ -1904,17 +2084,22 @@ export function C32({ params }) {
   const { t } = usePrefs();
   const { go, back } = useNav();
   const c = useColors();
-  const { reqId } = useActiveRequest(params);
+  const { req, reqId } = useActiveRequest(params);
   const disputeMut = useDispute(reqId);
-  const [reason, setReason] = useState('Spare parts price higher than expected');
+  const [reason, setReason] = useState('');
   const [resolution, setResolution] = useState('');
   const [err, setErr] = useState('');
+  const isTow = req?.kind === 'Tow';
 
   const handleSubmit = async () => {
     setErr('');
+    if (!reason) {
+      setErr(t('Please select a dispute reason.', 'يرجى اختيار سبب الاعتراض.'));
+      return;
+    }
     if (reqId) {
       try {
-        await disputeMut.mutateAsync({ reason, proposedResolution: resolution || null });
+        await disputeMut.mutateAsync({ reason, proposedResolution: resolution.trim() || null });
       } catch (ex) {
         setErr(ex.message || t('Could not submit dispute', 'تعذر إرسال الاعتراض'));
         return;
@@ -1925,7 +2110,7 @@ export function C32({ params }) {
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('Dispute Repair Estimate', 'الاعتراض على عرض السعر')} onBack={back} />
+      <AppTopBar title={isTow ? t('Dispute Tow Estimate', 'الاعتراض على تسعيرة الونش') : t('Dispute Repair Estimate', 'الاعتراض على عرض السعر')} onBack={back} />
       <div className="px-4 pt-4 space-y-4">
         {err && <Banner tone="danger" title={err} />}
         <Card>
@@ -1933,20 +2118,22 @@ export function C32({ params }) {
             label={t('Reason for Dispute', 'سبب الاعتراض')}
             value={reason}
             onChange={setReason}
+            testId="field-disputeReason"
             options={[
-              { value: 'Spare parts price higher than expected', label: t('Spare parts price higher than expected', 'سعر قطع الغيار أعلى من المتوقع') },
-              { value: 'Labor hours seem excessive', label: t('Labor hours seem excessive', 'تكلفة المصنعية مرتفعة') },
-              { value: 'Unnecessary repair item included', label: t('Unnecessary repair item included', 'بند إصلاح غير ضروري') },
+              { value: '', label: t('Select dispute reason...', 'اختر سبب الاعتراض...') },
+              { value: 'Spare parts price higher than expected', label: t('Parts / surcharge higher than expected', 'سعر البنود الإضافية أعلى من المتوقع') },
+              { value: 'Labor hours seem excessive', label: t('Service or distance charges seem excessive', 'تكلفة الخدمة أو المسافة مرتفعة') },
+              { value: 'Unnecessary repair item included', label: t('Unnecessary item included', 'بند غير ضروري في التسعيرة') },
             ]}
           />
           <InputField
             label={t('Proposed Resolution / Target Price', 'الحل المقترح أو السعر المناسب')}
             value={resolution}
             onChange={setResolution}
-            placeholder={t('E.g. I will supply the battery myself, only charge labor...', 'مثال: سأقوم بتوفير قطعة الغيار بنفسي...')}
+            placeholder={t('Describe your concern or expected amount...', 'وضح ملاحظتك أو السعر المتوقع...')}
           />
         </Card>
-        <PrimaryButton onClick={handleSubmit} disabled={disputeMut.isPending}>
+        <PrimaryButton testId="screen-primary" onClick={handleSubmit} disabled={disputeMut.isPending || !reason}>
           {disputeMut.isPending ? t('Submitting...', 'جارٍ الإرسال...') : t('Submit Dispute to Provider', 'إرسال الاعتراض لمقدم الخدمة')}
         </PrimaryButton>
       </div>
@@ -1962,7 +2149,7 @@ export function C14({ params }) {
   const { go, back } = useNav();
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
-  const { data: invoice } = useInvoiceForRequest(reqId);
+  const { data: invoice, refetch: refetchInvoice } = useInvoiceForRequest(reqId);
   const { data: methods = [] } = useMethods();
   const payMut = usePay(invoice?.id);
 
@@ -1971,15 +2158,20 @@ export function C14({ params }) {
   const [err, setErr] = useState('');
 
   useEffect(() => {
+    if (reqId) refetchInvoice?.();
+  }, [reqId]);
+
+  useEffect(() => {
     if (!selectedCardId && methods[0]?.id) setSelectedCardId(methods[0].id);
-  }, [methods]);
+  }, [methods, selectedCardId]);
 
   const totalMinor = invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
+  const isPaid = invoice?.status === 'Paid';
 
   const handlePayNow = async () => {
     setErr('');
-    if (!invoice?.id) {
-      go('C15', { id: reqId });
+    if (!invoice?.id || isPaid) {
+      go('C15', { id: reqId, invoiceId: invoice?.id });
       return;
     }
     try {
@@ -1993,6 +2185,11 @@ export function C14({ params }) {
       }
       go('C15', { id: reqId, invoiceId: invoice.id });
     } catch (ex) {
+      if (ex?.status === 409 || /paid|settled/i.test(String(ex?.message || ''))) {
+        await refetchInvoice?.();
+        go('C15', { id: reqId, invoiceId: invoice.id });
+        return;
+      }
       setErr(ex.message || t('Payment could not be completed', 'تعذر إتمام عملية الدفع'));
     }
   };
@@ -2004,86 +2201,108 @@ export function C14({ params }) {
         {err && <Banner tone="danger" title={err} />}
 
         <Card>
-          <div className="text-xs font-bold uppercase tracking-wider" style={{ color: c.text3 }}>
-            {t('Amount Due', 'المبلغ المستحق')}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: c.text3 }}>
+                {isPaid ? t('Total Settled', 'الإجمالي المسدد') : t('Amount Due', 'المبلغ المستحق')}
+              </div>
+              <div className="text-2xl font-extrabold mt-1" style={{ color: c.accent }}>
+                {egp(totalMinor, isAr)}
+              </div>
+            </div>
+            <span data-testid="invoice-status">
+              <StatusBadge status={isPaid ? 'Paid' : (invoice?.status || 'Unpaid')} />
+            </span>
           </div>
-          <div className="text-2xl font-extrabold mt-1" style={{ color: c.accent }}>
-            {egp(totalMinor, isAr)}
-          </div>
-          <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
+          <div className="text-xs mt-1" style={{ color: c.text2 }}>
             {invoice?.number ? `${t('Invoice', 'فاتورة')} ${invoice.number}` : t('Includes VAT & platform protection', 'شامل الضريبة وحماية المنصة')}
           </div>
         </Card>
 
-        <Card>
-          <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: c.text3 }}>
-            {t('Choose How to Pay', 'اختر طريقة السداد')}
-          </div>
-          <div className="space-y-2">
-            {[
-              { id: 'Cash', icon: '💵', titleEn: 'Cash to Provider', titleAr: 'نقداً لمقدم الخدمة (كاش)', subEn: 'Pay directly upon completion', subAr: 'ادفع نقداً بعد انتهاء الخدمة' },
-              { id: 'Card', icon: '💳', titleEn: 'Credit / Debit Card (Meza / Visa / MC)', titleAr: 'بطاقة بنكية (ميزة / فيزا / ماستركارد)', subEn: 'Instant encrypted settlement', subAr: 'سداد إلكتروني فوري ومؤمن' },
-              { id: 'ApplePay', icon: '', titleEn: 'Apple Pay / Digital Wallet', titleAr: 'آبل باي / محفظة رقمية', subEn: 'One-tap biometric checkout', subAr: 'دفع سريع بلمسة واحدة' },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setMethodType(opt.id)}
-                className="w-full p-3 rounded-xl text-start flex items-center justify-between transition-all"
-                style={{
-                  backgroundColor: methodType === opt.id ? c.accentBg : c.surface2,
-                  border: `1.5px solid ${methodType === opt.id ? c.accent : c.border}`,
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{opt.icon}</span>
-                  <div>
-                    <div className="text-xs font-bold" style={{ color: c.text }}>{t(opt.titleEn, opt.titleAr)}</div>
-                    <div className="text-[11px]" style={{ color: c.text2 }}>{t(opt.subEn, opt.subAr)}</div>
-                  </div>
+        {isPaid ? (
+          <>
+            <Banner
+              tone="success"
+              title={t('Invoice Already Paid', 'تم سداد هذه الفاتورة بالفعل')}
+              subtitle={t('Payment has been settled. Open your digital receipt below.', 'تم تسوية المبلغ بنجاح. يمكنك عرض الإيصال الضريبي أدناه.')}
+            />
+            <PrimaryButton testId="screen-primary" onClick={() => go('C15', { id: reqId, invoiceId: invoice?.id })}>
+              {t('View Paid Receipt →', 'عرض الإيصال المسدد ←')}
+            </PrimaryButton>
+          </>
+        ) : (
+          <>
+            <Card>
+              <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: c.text3 }}>
+                {t('Choose How to Pay', 'اختر طريقة السداد')}
+              </div>
+              <div className="space-y-2">
+                {[
+                  { id: 'Cash', icon: '💵', titleEn: 'Cash to Provider', titleAr: 'نقداً لمقدم الخدمة (كاش)', subEn: 'Pay directly upon completion', subAr: 'ادفع نقداً بعد انتهاء الخدمة' },
+                  { id: 'Card', icon: '💳', titleEn: 'Credit / Debit Card (Meza / Visa / MC)', titleAr: 'بطاقة بنكية (ميزة / فيزا / ماستركارد)', subEn: 'Instant encrypted settlement', subAr: 'سداد إلكتروني فوري ومؤمن' },
+                  { id: 'ApplePay', icon: '', titleEn: 'Apple Pay / Digital Wallet', titleAr: 'آبل باي / محفظة رقمية', subEn: 'One-tap biometric checkout', subAr: 'دفع سريع بلمسة واحدة' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setMethodType(opt.id)}
+                    className="w-full p-3 rounded-xl text-start flex items-center justify-between transition-all"
+                    style={{
+                      backgroundColor: methodType === opt.id ? c.accentBg : c.surface2,
+                      border: `1.5px solid ${methodType === opt.id ? c.accent : c.border}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{opt.icon}</span>
+                      <div>
+                        <div className="text-xs font-bold" style={{ color: c.text }}>{t(opt.titleEn, opt.titleAr)}</div>
+                        <div className="text-[11px]" style={{ color: c.text2 }}>{t(opt.subEn, opt.subAr)}</div>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold" style={{ color: methodType === opt.id ? c.accent : c.text3 }}>
+                      {methodType === opt.id ? '●' : '○'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {methodType === 'Card' && (
+                <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: c.border }}>
+                  {methods.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setSelectedCardId(m.id)}
+                      className="w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-semibold"
+                      style={{
+                        backgroundColor: selectedCardId === m.id ? c.accentBg : c.surface,
+                        border: `1px solid ${selectedCardId === m.id ? c.accent : c.border}`,
+                        color: c.text,
+                      }}
+                    >
+                      <span>💳 {m.brand || 'Visa'} •••• {m.last4 || '----'}</span>
+                      <span dir="ltr">{m.expMonth}/{m.expYear}</span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => go('C33', { id: reqId })}
+                    className="text-xs font-bold"
+                    style={{ color: c.accent }}
+                  >
+                    {t('+ Add New Bank Card', '+ إضافة بطاقة بنكية جديدة')}
+                  </button>
                 </div>
-                <span className="text-xs font-bold" style={{ color: methodType === opt.id ? c.accent : c.text3 }}>
-                  {methodType === opt.id ? '●' : '○'}
-                </span>
-              </button>
-            ))}
-          </div>
+              )}
+            </Card>
 
-          {methodType === 'Card' && (
-            <div className="mt-3 pt-3 border-t space-y-2" style={{ borderColor: c.border }}>
-              {methods.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setSelectedCardId(m.id)}
-                  className="w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-semibold"
-                  style={{
-                    backgroundColor: selectedCardId === m.id ? c.accentBg : c.surface,
-                    border: `1px solid ${selectedCardId === m.id ? c.accent : c.border}`,
-                    color: c.text,
-                  }}
-                >
-                  <span>💳 {m.brand || 'Visa'} •••• {m.last4 || '----'}</span>
-                  <span>{m.expMonth}/{m.expYear}</span>
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => go('C33', { id: reqId })}
-                className="text-xs font-bold"
-                style={{ color: c.accent }}
-              >
-                {t('+ Add New Bank Card', '+ إضافة بطاقة بنكية جديدة')}
-              </button>
-            </div>
-          )}
-        </Card>
-
-        <PrimaryButton testId="screen-primary" onClick={handlePayNow} disabled={payMut.isPending}>
-          {payMut.isPending
-            ? t('Processing Payment...', 'جارٍ معالجة الدفع...')
-            : `${t('Confirm & Pay', 'تأكيد وسداد')} ${egp(totalMinor, isAr)}`}
-        </PrimaryButton>
+            <PrimaryButton testId="screen-primary" onClick={handlePayNow} disabled={payMut.isPending}>
+              {payMut.isPending
+                ? t('Processing Payment...', 'جارٍ معالجة الدفع...')
+                : `${t('Confirm & Pay', 'تأكيد وسداد')} ${egp(totalMinor, isAr)}`}
+            </PrimaryButton>
+          </>
+        )}
       </div>
     </div>
   );
@@ -2095,10 +2314,10 @@ export function C33({ params }) {
   const c = useColors();
   const addCardMut = useAddCard();
   const [number, setNumber] = useState('');
-  const [expMonth, setExpMonth] = useState('12');
-  const [expYear, setExpYear] = useState('2028');
-  const [label, setLabel] = useState('CIB Visa Platinum');
-  const [isDefault, setIsDefault] = useState(true);
+  const [expMonth, setExpMonth] = useState('');
+  const [expYear, setExpYear] = useState('');
+  const [label, setLabel] = useState('');
+  const [isDefault, setIsDefault] = useState(false);
   const [err, setErr] = useState('');
 
   const handleSaveCard = async (e) => {
@@ -2108,14 +2327,23 @@ export function C33({ params }) {
       setErr(t('Please enter a valid 16-digit card number (Luhn check failed).', 'يرجى إدخال رقم بطاقة بنكية صحيح مكون من ١٦ رقماً.'));
       return;
     }
+    const parsedMonth = Number(expMonth);
+    const parsedYear = Number(expYear);
+    const currentYear = new Date().getUTCFullYear();
+    if (!expMonth || Number.isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      setErr(t('Please enter a valid expiry month (1–12).', 'يرجى إدخال شهر انتهاء صحيح (١–١٢).'));
+      return;
+    }
+    if (!expYear || Number.isNaN(parsedYear) || parsedYear < currentYear || parsedYear > currentYear + 20) {
+      setErr(t(`Please enter a valid 4-digit expiry year (${currentYear}+).`, `يرجى إدخال سنة انتهاء صحيحة (${currentYear}+).`));
+      return;
+    }
     try {
-      const parsedMonth = Number(expMonth);
-      const parsedYear = Number(expYear);
       await addCardMut.mutateAsync({
         number: number.replace(/\D/g, ''),
-        expMonth: parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : 12,
-        expYear: parsedYear >= 2025 ? parsedYear : 2028,
-        label,
+        expMonth: parsedMonth,
+        expYear: parsedYear,
+        label: label.trim() || null,
         isDefault,
       });
       go('C34', params);
@@ -2135,6 +2363,7 @@ export function C33({ params }) {
             value={number}
             onChange={setNumber}
             testId="field-Number"
+            dir="ltr"
             placeholder="4532 0151 1283 0366"
           />
           <div className="grid grid-cols-2 gap-3">
@@ -2144,7 +2373,8 @@ export function C33({ params }) {
               value={expMonth}
               onChange={setExpMonth}
               testId="field-ExpMonth"
-              placeholder="12"
+              dir="ltr"
+              placeholder="MM"
             />
             <InputField
               label={t('Expiry Year', 'سنة الانتهاء')}
@@ -2152,19 +2382,20 @@ export function C33({ params }) {
               value={expYear}
               onChange={setExpYear}
               testId="field-ExpYear"
-              placeholder="2028"
+              dir="ltr"
+              placeholder="YYYY"
             />
           </div>
           <InputField
-            label={t('Card Nickname', 'اسم البطاقة المميز')}
+            label={t('Card Nickname (Optional)', 'اسم البطاقة المميز (اختياري)')}
             value={label}
             onChange={setLabel}
             testId="field-Label"
-            placeholder="CIB Visa"
+            placeholder={t('E.g. Personal Card', 'مثال: بطاقتي الشخصية')}
           />
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs font-semibold" style={{ color: c.text }}>{t('Set as default payment method', 'تعيين كوسيلة دفع افتراضية')}</span>
-            <ToggleSwitch checked={isDefault} onChange={setIsDefault} />
+            <ToggleSwitch checked={isDefault} onChange={setIsDefault} testId="toggle-isDefault" />
           </div>
         </Card>
         <PrimaryButton type="submit" testId="screen-primary" disabled={addCardMut.isPending}>
@@ -2180,14 +2411,16 @@ export function C34({ params }) {
   const { go, back } = useNav();
   const c = useColors();
   const qc = useQueryClient();
-  const { req, reqId } = useActiveRequest(params);
-  const { data: invoice } = useInvoiceForRequest(reqId);
+  const hasCheckoutContext = Boolean(params?.id);
+  const { req, reqId } = useActiveRequest(hasCheckoutContext ? params : {});
+  const { data: invoice, refetch: refetchInvoice } = useInvoiceForRequest(hasCheckoutContext ? reqId : null);
   const { data: methods = [] } = useMethods();
   const payMut = usePay(invoice?.id);
   const [err, setErr] = useState('');
 
   const totalMinor = invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
   const defaultCard = methods.find((m) => m.isDefault) || methods[0] || null;
+  const isPaid = invoice?.status === 'Paid';
 
   const setDefault = async (id) => {
     await post(`/payments/methods/${id}/default`, {});
@@ -2196,8 +2429,8 @@ export function C34({ params }) {
 
   const handlePayNow = async () => {
     setErr('');
-    if (!invoice?.id) {
-      go('C15', { id: reqId });
+    if (!invoice?.id || isPaid) {
+      go('C15', { id: reqId, invoiceId: invoice?.id });
       return;
     }
     try {
@@ -2211,29 +2444,41 @@ export function C34({ params }) {
       }
       go('C15', { id: reqId, invoiceId: invoice.id });
     } catch (ex) {
+      if (ex?.status === 409 || /paid|settled/i.test(String(ex?.message || ''))) {
+        await refetchInvoice?.();
+        go('C15', { id: reqId, invoiceId: invoice.id });
+        return;
+      }
       setErr(ex.message || t('Payment could not be completed', 'تعذر إتمام عملية الدفع'));
     }
   };
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('Review & Pay', 'المراجعة والدفع')} onBack={back} />
+      <AppTopBar
+        title={hasCheckoutContext ? t('Review & Pay', 'المراجعة والدفع') : t('Saved Payment Methods', 'وسائل الدفع المحفوظة')}
+        onBack={back}
+      />
       <div className="px-4 pt-4 space-y-3">
         {err && <Banner tone="danger" title={err} />}
 
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: c.text3 }}>
-                {invoice?.number || t('Invoice Summary', 'ملخص الفاتورة')}
+        {hasCheckoutContext && (
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider" style={{ color: c.text3 }}>
+                  {invoice?.number || t('Invoice Summary', 'ملخص الفاتورة')}
+                </div>
+                <div className="text-xl font-extrabold mt-0.5" style={{ color: c.accent }}>
+                  {egp(totalMinor, isAr)}
+                </div>
               </div>
-              <div className="text-xl font-extrabold mt-0.5" style={{ color: c.accent }}>
-                {egp(totalMinor, isAr)}
-              </div>
+              <span data-testid="invoice-status">
+                <StatusBadge status={isPaid ? 'Paid' : (invoice?.status || 'Unpaid')} />
+              </span>
             </div>
-            <StatusBadge status={invoice?.status || 'Unpaid'} />
-          </div>
-        </Card>
+          </Card>
+        )}
 
         <Card>
           <div className="flex items-center justify-between">
@@ -2258,7 +2503,7 @@ export function C34({ params }) {
                     {m.label || m.brand || 'Card'} {m.last4 ? `•••• ${m.last4}` : ''}
                   </div>
                   <div className="text-xs" style={{ color: c.text2 }}>
-                    {m.expMonth && m.expYear ? `${t('Expires', 'تنتهي')} ${m.expMonth}/${m.expYear}` : formatLabel(m.type)}
+                    {m.expMonth && m.expYear ? `${t('Expires', 'تنتهي')} ${m.expMonth}/${m.expYear}` : formatLabel(m.type, isAr)}
                   </div>
                 </div>
               </div>
@@ -2281,12 +2526,19 @@ export function C34({ params }) {
         ))}
 
         <div className="space-y-2 pt-1">
-          <PrimaryButton onClick={handlePayNow} disabled={payMut.isPending}>
-            {payMut.isPending
-              ? t('Processing Payment...', 'جارٍ معالجة الدفع...')
-              : `${t('Pay Now', 'ادفع الآن')} (${egp(totalMinor, isAr)})`}
-          </PrimaryButton>
-          <SecondaryButton onClick={() => go('C33', { id: reqId })}>
+          {hasCheckoutContext && isPaid && (
+            <PrimaryButton testId="screen-primary" onClick={() => go('C15', { id: reqId, invoiceId: invoice?.id })}>
+              {t('View Paid Receipt →', 'عرض الإيصال المسدد ←')}
+            </PrimaryButton>
+          )}
+          {hasCheckoutContext && !isPaid && invoice && (
+            <PrimaryButton testId="screen-primary" onClick={handlePayNow} disabled={payMut.isPending}>
+              {payMut.isPending
+                ? t('Processing Payment...', 'جارٍ معالجة الدفع...')
+                : `${t('Pay Now', 'ادفع الآن')} (${egp(totalMinor, isAr)})`}
+            </PrimaryButton>
+          )}
+          <SecondaryButton onClick={() => go('C33', hasCheckoutContext ? { id: reqId } : { from: 'profile' })}>
             {t('+ Add New Card', '+ إضافة بطاقة جديدة')}
           </SecondaryButton>
         </div>
@@ -2418,14 +2670,15 @@ export function C16({ params }) {
   const { t, isAr } = usePrefs();
   const { go, back } = useNav();
   const c = useColors();
+  const qc = useQueryClient();
   const { req, reqId } = useActiveRequest(params);
   const { data: bootstrap } = useBootstrap();
   const cancelMut = useCancelRequest();
 
-  const [stars, setStars] = useState(5);
+  const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
-  const [recommend, setRecommend] = useState(true);
-  const [cancelReason, setCancelReason] = useState('changed_mind');
+  const [recommend, setRecommend] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
 
@@ -2438,15 +2691,20 @@ export function C16({ params }) {
 
   const handleRateSubmit = async () => {
     setErr('');
+    if (stars < 1) {
+      setErr(t('Please select a star rating (1–5).', 'يرجى اختيار تقييم بالنجوم (من ١ إلى ٥).'));
+      return;
+    }
     setSubmitting(true);
     try {
       const providerId = params?.providerId || req?.assignedProviderId;
       if (providerId && reqId) {
         await post(`/reviews/provider/${providerId}?requestId=${reqId}`, {
           stars,
-          text: comment || t('Great fast roadside assistance!', 'خدمة ممتازة وسريعة على الطريق!'),
+          text: comment.trim() || null,
           recommend,
         });
+        qc.invalidateQueries({ queryKey: k.reviews('provider', providerId) });
       }
       go('C41', { id: reqId, stars });
     } catch (ex) {
@@ -2459,12 +2717,16 @@ export function C16({ params }) {
 
   const handleCancelRequest = async () => {
     setErr('');
+    if (!cancelReason) {
+      setErr(t('Please select a cancellation reason.', 'يرجى اختيار سبب الإلغاء.'));
+      return;
+    }
     if (!reqId) {
       go('C01');
       return;
     }
     try {
-      await cancelMut.mutateAsync({ id: reqId, reasonKey: cancelReason, note: comment || null });
+      await cancelMut.mutateAsync({ id: reqId, reasonKey: cancelReason, note: comment.trim() || null });
       go('C01');
     } catch (ex) {
       setErr(ex.message || t('Could not cancel request', 'تعذر إلغاء الطلب'));
@@ -2495,13 +2757,18 @@ export function C16({ params }) {
               <StarRating value={stars} onChange={setStars} size={32} />
             </div>
             <div className="text-xs font-bold mb-3" style={{ color: c.accent }}>
-              {stars === 5 ? t('Excellent (5/5)', 'ممتاز (٥/٥)') : `${stars} / 5`}
+              {stars === 0
+                ? t('Tap a star to rate', 'اضغط على النجوم للتقييم')
+                : stars === 5
+                ? t('Excellent (5/5)', 'ممتاز (٥/٥)')
+                : `${stars} / 5`}
             </div>
 
             <InputField
-              label={t('Share Your Feedback', 'شاركنا رأيك وملاحظاتك')}
+              label={t('Share Your Feedback (Optional)', 'شاركنا رأيك وملاحظاتك (اختياري)')}
               value={comment}
               onChange={setComment}
+              testId="field-comment"
               placeholder={t('Fast arrival, professional equipment and polite service...', 'وصول سريع، معدات احترافية وتعامل راقٍ...')}
             />
 
@@ -2509,12 +2776,16 @@ export function C16({ params }) {
               <span className="text-xs font-semibold" style={{ color: c.text }}>
                 {t('Would you recommend this provider?', 'هل توصي بمقدم الخدمة هذا؟')}
               </span>
-              <ToggleSwitch checked={recommend} onChange={setRecommend} />
+              <ToggleSwitch checked={recommend} onChange={setRecommend} testId="toggle-recommend" />
             </div>
 
             <div className="mt-4">
-              <PrimaryButton testId="screen-primary" onClick={handleRateSubmit} disabled={submitting}>
-                {submitting ? t('Submitting Review...', 'جارٍ إرسال التقييم...') : t(`Submit ${stars}-Star Review`, `إرسال تقييم (${stars} نجوم)`)}
+              <PrimaryButton testId="screen-primary" onClick={handleRateSubmit} disabled={submitting || stars < 1}>
+                {submitting
+                  ? t('Submitting Review...', 'جارٍ إرسال التقييم...')
+                  : stars > 0
+                  ? t(`Submit ${stars}-Star Review`, `إرسال تقييم (${stars} نجوم)`)
+                  : t('Submit Review', 'إرسال التقييم')}
               </PrimaryButton>
             </div>
           </Card>
@@ -2529,12 +2800,15 @@ export function C16({ params }) {
               label={t('Cancellation Reason', 'سبب الإلغاء')}
               value={cancelReason}
               onChange={setCancelReason}
-              options={cancelReasons.map((r) => ({
-                value: r.key,
-                label: isAr ? r.labelAr : r.labelEn,
-              }))}
+              options={[
+                { value: '', label: t('Select a reason...', 'اختر سبب الإلغاء...') },
+                ...cancelReasons.map((r) => ({
+                  value: r.key,
+                  label: isAr ? r.labelAr : r.labelEn,
+                })),
+              ]}
             />
-            <SecondaryButton onClick={handleCancelRequest} disabled={cancelMut.isPending}>
+            <SecondaryButton onClick={handleCancelRequest} disabled={cancelMut.isPending || !cancelReason}>
               {cancelMut.isPending ? t('Cancelling...', 'جارٍ الإلغاء...') : t('Confirm Cancellation', 'تأكيد إلغاء الطلب')}
             </SecondaryButton>
           </Card>
@@ -2586,18 +2860,22 @@ export function C29({ params }) {
     { key: 'wrong_location', labelEn: 'Entered wrong pickup location', labelAr: 'أدخلت موقع التقاط خاطئ' },
   ];
 
-  const [reasonKey, setReasonKey] = useState(cancelReasons[0]?.key || 'changed_mind');
+  const [reasonKey, setReasonKey] = useState('');
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
 
   const handleCancel = async () => {
     setErr('');
+    if (!reasonKey) {
+      setErr(t('Please select a cancellation reason.', 'يرجى اختيار سبب الإلغاء.'));
+      return;
+    }
     if (!reqId) {
       go('C30');
       return;
     }
     try {
-      await cancelMut.mutateAsync({ id: reqId, reasonKey, note: note || null });
+      await cancelMut.mutateAsync({ id: reqId, reasonKey, note: note.trim() || null });
       go('C30', { id: reqId, code: req?.code });
     } catch (ex) {
       setErr(ex.message || t('Could not cancel request', 'تعذر إلغاء الطلب'));
@@ -2618,10 +2896,14 @@ export function C29({ params }) {
             label={t('Reason for Cancellation', 'سبب الإلغاء')}
             value={reasonKey}
             onChange={setReasonKey}
-            options={cancelReasons.map((r) => ({
-              value: r.key,
-              label: isAr ? r.labelAr : r.labelEn,
-            }))}
+            testId="field-reasonKey"
+            options={[
+              { value: '', label: t('Select a reason...', 'اختر سبب الإلغاء...') },
+              ...cancelReasons.map((r) => ({
+                value: r.key,
+                label: isAr ? r.labelAr : r.labelEn,
+              })),
+            ]}
           />
           <InputField
             label={t('Additional Note (Optional)', 'ملاحظات إضافية (اختياري)')}
@@ -2633,7 +2915,7 @@ export function C29({ params }) {
             {t('Cancellation fee: 0 EGP before provider arrival.', 'رسوم الإلغاء: ٠ ج.م قبل وصول مقدم الخدمة.')}
           </div>
         </Card>
-        <PrimaryButton tone="danger" onClick={handleCancel} disabled={cancelMut.isPending}>
+        <PrimaryButton tone="danger" testId="screen-primary" onClick={handleCancel} disabled={cancelMut.isPending || !reasonKey}>
           {cancelMut.isPending ? t('Cancelling...', 'جارٍ الإلغاء...') : t('Confirm Request Cancellation', 'تأكيد إلغاء الطلب')}
         </PrimaryButton>
       </div>
@@ -2709,7 +2991,11 @@ export function C42({ params }) {
                   <div className="text-xs font-bold" style={{ color: c.text }}>
                     {formatLabel(ev.status, isAr)}
                   </div>
-                  {ev.note && <div className="text-[11px]" style={{ color: c.text2 }}>{ev.note}</div>}
+                  {ev.note && (
+                    <div className="text-[11px]" style={{ color: c.text2 }}>
+                      {/^[a-z0-9_.-]+$/i.test(String(ev.note).trim()) ? formatLabel(String(ev.note).trim(), isAr) : ev.note}
+                    </div>
+                  )}
                   <div className="text-[10px] mt-0.5" style={{ color: c.text3 }}>
                     {fmtDateTime(ev.at, isAr ? 'ar' : 'en')}
                   </div>
