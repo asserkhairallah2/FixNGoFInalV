@@ -47,6 +47,7 @@ import {
   SecondaryButton,
   StatusBadge,
   formatLabel,
+  pluralCount,
   StarRating,
   Skeleton,
   ErrorState,
@@ -57,6 +58,107 @@ import {
 import { fmtMoney, fmtNumber, fmtDate, fmtDateTime } from '../../i18n/format.js';
 
 export const ADMIN_MAIN_SCREENS = ['AD01', 'AD02', 'AD04', 'AD05', 'AD06'];
+
+const RAW_HTTP_TITLES = new Set([
+  'Conflict', 'Bad Request', 'Unauthorized', 'Forbidden', 'Not Found',
+  'Internal Server Error', 'Unprocessable Entity'
+]);
+
+function friendlyError(err, isAr, fallbackEn, fallbackAr) {
+  const fallback = isAr ? (fallbackAr || fallbackEn) : fallbackEn;
+  if (!err) return fallback;
+  const code = err.code || '';
+  if (code === 'admin.superadmin_protected') {
+    return isAr ? 'لا يمكن إيقاف حساب المشرف العام.' : 'A super admin account cannot be suspended.';
+  }
+  if (code === 'payment_review.resolved') {
+    return isAr ? 'تمت تسوية هذه الدفعة بالفعل.' : 'This payment review is already resolved.';
+  }
+  if (code === 'ticket.message_required') {
+    return isAr ? 'يرجى كتابة نص الرد أولاً.' : 'Please enter a reply message.';
+  }
+  const msg = String(err.message || '').trim();
+  if (!msg || RAW_HTTP_TITLES.has(msg) || /^HTTP \d+$/.test(msg)) {
+    return fallback;
+  }
+  return msg;
+}
+
+const EXTRA_AUDIT_EN = {
+  'payment_review.resolve': 'Resolved cash payment review',
+  'withdrawal.process': 'Processed withdrawal request',
+  'session.revoke': 'Revoked active session',
+  'kyc.review': 'Reviewed KYC application'
+};
+const EXTRA_AUDIT_AR = {
+  'payment_review.resolve': 'تسوية مراجعة دفعة نقدية',
+  'withdrawal.process': 'معالجة طلب سحب أرباح',
+  'session.revoke': 'إلغاء جلسة نشطة',
+  'kyc.review': 'مراجعة طلب توثيق'
+};
+const ENTITY_AR = {
+  PlatformSettings: 'إعدادات المنصة',
+  User: 'مستخدم',
+  PaymentReview: 'مراجعة دفع',
+  Withdrawal: 'طلب سحب',
+  Session: 'جلسة',
+  KycApplication: 'طلب توثيق',
+  SafetyReport: 'بلاغ أمان',
+  Review: 'تقييم',
+  SupportTicket: 'تذكرة دعم'
+};
+
+function formatAuditAction(action, isAr) {
+  if (!action) return '—';
+  const key = String(action);
+  if (isAr && EXTRA_AUDIT_AR[key]) return EXTRA_AUDIT_AR[key];
+  if (!isAr && EXTRA_AUDIT_EN[key]) return EXTRA_AUDIT_EN[key];
+  return formatLabel(key, isAr);
+}
+
+function formatEntityType(entityType, isAr) {
+  if (!entityType) return '';
+  const key = String(entityType);
+  if (isAr && ENTITY_AR[key]) return ENTITY_AR[key];
+  return formatLabel(key, isAr);
+}
+
+function isImageAttachment(message) {
+  const ct = String(message?.fileContentType || '').toLowerCase();
+  if (ct.startsWith('image/')) return true;
+  return /\.(png|jpe?g|webp|gif)$/i.test(String(message?.fileName || ''));
+}
+
+function TicketAttachment({ message, isAr }) {
+  if (!message?.fileId) return null;
+  const url = fileUrl(message.fileId);
+  const label = message.fileName || (isAr ? 'مرفق التذكرة' : 'Ticket attachment');
+  return (
+    <div className="mt-2 space-y-1.5" data-testid="ticket-attachment">
+      {isImageAttachment(message) && (
+        <a href={url} target="_blank" rel="noreferrer" className="block">
+          <img
+            src={url}
+            alt={label}
+            data-testid="ticket-attachment-image"
+            className="max-h-40 rounded-xl border border-slate-500/20 object-contain bg-black/5"
+          />
+        </a>
+      )}
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        download={message.fileName || undefined}
+        data-testid="ticket-attachment-link"
+        className="inline-flex items-center gap-1.5 text-[11px] font-bold underline"
+      >
+        <FileText size={12} />
+        <span dir="ltr">{label}</span>
+      </a>
+    </div>
+  );
+}
 
 function AdminShell({ code, title, children }) {
   const colors = useColors();
@@ -171,25 +273,43 @@ export function AD01Screen() {
             {[
               {
                 icon: CheckCircle2,
-                title: isAr
-                  ? `${fmtNumber(data.pendingKyc ?? 0, lang)} طلب توثيق`
-                  : `${fmtNumber(data.pendingKyc ?? 0, lang)} verification applications`,
+                title: pluralCount(
+                  data.pendingKyc ?? 0,
+                  'verification application',
+                  'verification applications',
+                  'طلب توثيق',
+                  'طلبات توثيق',
+                  'طلب توثيق',
+                  isAr
+                ),
                 sub: isAr ? 'مراجعة مستندات مقدمي الخدمة والمراكز' : 'Review provider and center documents',
                 target: 'AD02'
               },
               {
                 icon: CreditCard,
-                title: isAr
-                  ? `${fmtNumber(data.pendingPaymentReviews ?? 0, lang)} مراجعات دفع`
-                  : `${fmtNumber(data.pendingPaymentReviews ?? 0, lang)} payment reviews`,
+                title: pluralCount(
+                  data.pendingPaymentReviews ?? 0,
+                  'payment review',
+                  'payment reviews',
+                  'مراجعة دفع',
+                  'مراجعات دفع',
+                  'مراجعة دفع',
+                  isAr
+                ),
                 sub: isAr ? 'تسوية نقدية قيد الانتظار' : 'Cash reconciliation pending',
                 target: 'AD07'
               },
               {
                 icon: Shield,
-                title: isAr
-                  ? `${fmtNumber(data.openSafetyReports ?? 0, lang)} بلاغات أمان`
-                  : `${fmtNumber(data.openSafetyReports ?? 0, lang)} safety reports`,
+                title: pluralCount(
+                  data.openSafetyReports ?? 0,
+                  'safety report',
+                  'safety reports',
+                  'بلاغ أمان',
+                  'بلاغات أمان',
+                  'بلاغ أمان',
+                  isAr
+                ),
                 sub: isAr ? 'مراجعة بلاغات الأمان' : 'Review safety reports',
                 target: 'AD09'
               },
@@ -269,8 +389,8 @@ export function AD02Screen() {
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
           {isAr
-            ? `${fmtNumber(pendingCount, lang)} طلباً بانتظار المراجعة`
-            : `${fmtNumber(pendingCount, lang)} applications waiting for review`}
+            ? `${pluralCount(pendingCount, '', '', 'طلب توثيق', 'طلبات توثيق', 'طلب توثيق', true)} بانتظار المراجعة`
+            : `${pluralCount(pendingCount, 'verification application', 'verification applications', '', '', '', false)} waiting for review`}
         </p>
       </div>
 
@@ -312,9 +432,7 @@ export function AD02Screen() {
             const docSummary =
               app.documents && app.documents.length > 0
                 ? app.documents.map((d) => formatLabel(d.documentType, isAr)).join(' · ')
-                : isAr
-                ? `${fmtNumber(docCount, lang)} مستندات`
-                : `${fmtNumber(docCount, lang)} documents`;
+                : pluralCount(docCount, 'document', 'documents', 'مستند', 'مستندات', 'مستنداً', isAr);
             return (
               <button
                 key={app.id}
@@ -344,8 +462,8 @@ export function AD02Screen() {
                     <p className={`text-xs font-extrabold ${colors.text}`}>{displayName}</p>
                     <p className={`text-[11px] ${colors.secondaryText}`}>
                       {isAr
-                        ? `${fmtNumber(docCount, lang)} مستندات مرفوعة`
-                        : `${fmtNumber(docCount, lang)} documents submitted`}
+                        ? pluralCount(docCount, '', '', 'مستند مرفوع', 'مستندات مرفوعة', 'مستنداً مرفوعاً', true)
+                        : `${pluralCount(docCount, 'document', 'documents', '', '', '', false)} submitted`}
                     </p>
                   </div>
                 </div>
@@ -463,11 +581,11 @@ export function AD03Screen({ id, params }) {
             </div>
             <div className="flex justify-between">
               <span className={colors.secondaryText}>{isAr ? 'البريد الإلكتروني' : 'Email'}</span>
-              <span className={`font-bold ${colors.text}`}>{app.email || '—'}</span>
+              <span className={`font-bold ${colors.text}`} dir="ltr">{app.email || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span className={colors.secondaryText}>{isAr ? 'الهاتف' : 'Phone'}</span>
-              <span className={`font-bold ${colors.text}`}>{app.phone || '—'}</span>
+              <span className={`font-bold ${colors.text}`} dir="ltr">{app.phone || '—'}</span>
             </div>
             {app.address && (
               <div className="flex justify-between">
@@ -608,8 +726,8 @@ export function AD04Screen() {
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
           {isAr
-            ? `${fmtNumber(users.length, lang)} حساب عبر المنصة`
-            : `${fmtNumber(users.length, lang)} accounts across the platform`}
+            ? `${pluralCount(users.length, '', '', 'حساب', 'حسابات', 'حساباً', true)} عبر المنصة`
+            : `${pluralCount(users.length, 'account', 'accounts', '', '', '', false)} across the platform`}
         </p>
       </div>
 
@@ -667,7 +785,7 @@ export function AD04Screen() {
                 <p className={`font-extrabold ${colors.text}`}>{u.fullName}</p>
                 <StatusBadge status={u.status} />
               </div>
-              <p className={`text-[11px] ${colors.secondaryText}`}>{u.email}</p>
+              <p className={`text-[11px] ${colors.secondaryText}`} dir="ltr">{u.email}</p>
               <div className="flex justify-between items-center pt-1">
                 <span className={colors.secondaryText}>{formatLabel(u.role, isAr)}</span>
                 {!u.isSuperAdmin && (
@@ -700,57 +818,65 @@ export function AD04Screen() {
 /* =====================================================================
  * AD05: Pricing & settings (FIX B7 400 BUG)
  * ===================================================================== */
+function pricingToForm(data) {
+  if (!data) return null;
+  const p = data.pricing || data;
+  return {
+    towBaseEgp: String((p.towBaseMinor ?? 0) / 100),
+    mechanicBaseEgp: String((p.mechanicBaseMinor ?? 0) / 100),
+    serviceFeeEgp: String((p.serviceFeeMinor ?? 0) / 100),
+    towRatePerKm: String(p.towRatePerKm ?? 0),
+    surge: String(p.surge ?? 1),
+    searchRadiusKm: String(p.searchRadiusKm ?? 0),
+    offerTimeoutSeconds: String(p.offerTimeoutSeconds ?? 0),
+    p0TimeoutSeconds: String(p.p0TimeoutSeconds ?? 0),
+    bookingExpiryHours: String(p.bookingExpiryHours ?? 0),
+    minWithdrawalEgp: String((p.minWithdrawalMinor ?? 0) / 100),
+    withdrawalFeeMinor: Number(p.withdrawalFeeMinor ?? 0),
+    ambulanceNumber: String(p.ambulanceNumber ?? ''),
+    policeNumber: String(p.policeNumber ?? '')
+  };
+}
+
 export function AD05Screen() {
   const colors = useColors();
   const { isAr } = usePrefs();
   const { user } = useSession();
   const queryClient = useQueryClient();
-  const query = useAdminSettings();
-
-  const [form, setForm] = useState({
-    towBaseEgp: '450',
-    mechanicBaseEgp: '150',
-    serviceFeeEgp: '50',
-    towRatePerKm: '18.30',
-    surge: '1.0',
-    searchRadiusKm: '5',
-    offerTimeoutSeconds: '30',
-    p0TimeoutSeconds: '15',
-    bookingExpiryHours: '24',
-    minWithdrawalEgp: '100',
-    ambulanceNumber: '123',
-    policeNumber: '122'
+  const query = useQuery({
+    queryKey: ['admin', 'settings'],
+    queryFn: () => get('/admin/settings'),
+    staleTime: 0,
+    refetchOnMount: 'always'
   });
-  const [version, setVersion] = useState(1);
+
+  const [form, setForm] = useState(() => pricingToForm(query.data));
+  const [version, setVersion] = useState(() => query.data?.version ?? null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (query.status === 'pending' && query.fetchStatus === 'idle') {
+      query.refetch();
+    }
+  }, [query.status, query.fetchStatus, query]);
+
+  useEffect(() => {
     if (query.data) {
-      const p = query.data.pricing || query.data;
-      setForm({
-        towBaseEgp: String((p.towBaseMinor ?? 45000) / 100),
-        mechanicBaseEgp: String((p.mechanicBaseMinor ?? 15000) / 100),
-        serviceFeeEgp: String((p.serviceFeeMinor ?? 5000) / 100),
-        towRatePerKm: String(p.towRatePerKm ?? 18.3),
-        surge: String(p.surge ?? 1.0),
-        searchRadiusKm: String(p.searchRadiusKm ?? 5),
-        offerTimeoutSeconds: String(p.offerTimeoutSeconds ?? 30),
-        p0TimeoutSeconds: String(p.p0TimeoutSeconds ?? 15),
-        bookingExpiryHours: String(p.bookingExpiryHours ?? 24),
-        minWithdrawalEgp: String((p.minWithdrawalMinor ?? 10000) / 100),
-        ambulanceNumber: String(p.ambulanceNumber ?? '123'),
-        policeNumber: String(p.policeNumber ?? '122')
-      });
+      setForm(pricingToForm(query.data));
       if (query.data.version) setVersion(query.data.version);
     }
   }, [query.data]);
 
-  const setField = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+  const activeForm = form || pricingToForm(query.data);
+  const activeVersion = version ?? query.data?.version ?? null;
+  const setField = (key, val) =>
+    setForm((prev) => ({ ...(prev || pricingToForm(query.data) || {}), [key]: val }));
 
   const handleSave = async (e) => {
     if (e) e.preventDefault();
+    if (!activeForm) return;
     setBusy(true);
     setError('');
     setToast('');
@@ -761,28 +887,32 @@ export function AD05Screen() {
       };
       const payload = {
         pricing: {
-          towBaseMinor: Math.round(numOr(form.towBaseEgp, 450) * 100),
-          mechanicBaseMinor: Math.round(numOr(form.mechanicBaseEgp, 150) * 100),
-          serviceFeeMinor: Math.round(numOr(form.serviceFeeEgp, 50) * 100),
-          towRatePerKm: numOr(form.towRatePerKm, 18.3),
-          surge: Math.max(1, numOr(form.surge, 1)),
-          searchRadiusKm: numOr(form.searchRadiusKm, 5),
-          offerTimeoutSeconds: numOr(form.offerTimeoutSeconds, 30),
-          p0TimeoutSeconds: numOr(form.p0TimeoutSeconds, 15),
-          bookingExpiryHours: numOr(form.bookingExpiryHours, 24),
-          minWithdrawalMinor: Math.round(numOr(form.minWithdrawalEgp, 100) * 100),
-          withdrawalFeeMinor: 0,
-          ambulanceNumber: String(form.ambulanceNumber || '123'),
-          policeNumber: String(form.policeNumber || '122')
+          towBaseMinor: Math.round(numOr(activeForm.towBaseEgp, 0) * 100),
+          mechanicBaseMinor: Math.round(numOr(activeForm.mechanicBaseEgp, 0) * 100),
+          serviceFeeMinor: Math.round(numOr(activeForm.serviceFeeEgp, 0) * 100),
+          towRatePerKm: numOr(activeForm.towRatePerKm, 1),
+          surge: Math.max(1, numOr(activeForm.surge, 1)),
+          searchRadiusKm: numOr(activeForm.searchRadiusKm, 1),
+          offerTimeoutSeconds: numOr(activeForm.offerTimeoutSeconds, 15),
+          p0TimeoutSeconds: numOr(activeForm.p0TimeoutSeconds, 10),
+          bookingExpiryHours: numOr(activeForm.bookingExpiryHours, 24),
+          minWithdrawalMinor: Math.round(numOr(activeForm.minWithdrawalEgp, 0) * 100),
+          withdrawalFeeMinor: Number(activeForm.withdrawalFeeMinor ?? 0),
+          ambulanceNumber: String(activeForm.ambulanceNumber || '').trim() || '123',
+          policeNumber: String(activeForm.policeNumber || '').trim() || '122'
         }
       };
       const res = await put('/admin/settings', payload);
-      if (res?.version) setVersion(res.version);
+      if (res) {
+        queryClient.setQueryData(['admin', 'settings'], res);
+        setForm(pricingToForm(res));
+        if (res.version) setVersion(res.version);
+      }
       queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] });
       queryClient.invalidateQueries({ queryKey: ['bootstrap'] });
-      setToast(isAr ? 'تم حفظ الإعدادات (Settings saved)' : 'Settings saved');
+      setToast(isAr ? 'تم حفظ الإعدادات' : 'Settings saved');
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر حفظ الإعدادات' : 'Failed to save settings'));
+      setError(friendlyError(err, isAr, 'Failed to save settings', 'تعذر حفظ الإعدادات'));
     } finally {
       setBusy(false);
     }
@@ -803,11 +933,13 @@ export function AD05Screen() {
           data-testid="settings-version"
           className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#E51C23]/15 text-[#E51C23]"
         >
-          v{version}
+          {activeVersion ? `v${activeVersion}` : '…'}
         </span>
       </div>
 
-      {query.isLoading ? (
+      {!activeForm && query.isError ? (
+        <ErrorState error={query.error} retry={query.refetch} />
+      ) : !activeForm ? (
         <Skeleton rows={4} />
       ) : (
         <form onSubmit={handleSave} className="space-y-3.5">
@@ -824,8 +956,9 @@ export function AD05Screen() {
                 <input
                   type="number"
                   step="1"
+                  dir="ltr"
                   data-testid="field-towBaseEgp"
-                  value={form.towBaseEgp}
+                  value={activeForm.towBaseEgp}
                   onChange={(e) => setField('towBaseEgp', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -840,8 +973,9 @@ export function AD05Screen() {
                 <input
                   type="number"
                   step="1"
+                  dir="ltr"
                   data-testid="field-mechanicBaseEgp"
-                  value={form.mechanicBaseEgp}
+                  value={activeForm.mechanicBaseEgp}
                   onChange={(e) => setField('mechanicBaseEgp', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -857,8 +991,9 @@ export function AD05Screen() {
                   type="number"
                   step="0.1"
                   min="1"
+                  dir="ltr"
                   data-testid="field-surge"
-                  value={form.surge}
+                  value={activeForm.surge}
                   onChange={(e) => setField('surge', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -873,8 +1008,9 @@ export function AD05Screen() {
                 <input
                   type="number"
                   step="1"
+                  dir="ltr"
                   data-testid="field-serviceFeeEgp"
-                  value={form.serviceFeeEgp}
+                  value={activeForm.serviceFeeEgp}
                   onChange={(e) => setField('serviceFeeEgp', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -891,8 +1027,9 @@ export function AD05Screen() {
               <input
                 type="number"
                 step="0.1"
+                dir="ltr"
                 data-testid="field-towRatePerKm"
-                value={form.towRatePerKm}
+                value={activeForm.towRatePerKm}
                 onChange={(e) => setField('towRatePerKm', e.target.value)}
                 className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
               />
@@ -911,8 +1048,9 @@ export function AD05Screen() {
               <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface}`}>
                 <input
                   type="number"
+                  dir="ltr"
                   data-testid="field-searchRadiusKm"
-                  value={form.searchRadiusKm}
+                  value={activeForm.searchRadiusKm}
                   onChange={(e) => setField('searchRadiusKm', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -925,8 +1063,9 @@ export function AD05Screen() {
               <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface}`}>
                 <input
                   type="number"
+                  dir="ltr"
                   data-testid="field-offerTimeoutSeconds"
-                  value={form.offerTimeoutSeconds}
+                  value={activeForm.offerTimeoutSeconds}
                   onChange={(e) => setField('offerTimeoutSeconds', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -939,8 +1078,9 @@ export function AD05Screen() {
               <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface}`}>
                 <input
                   type="number"
+                  dir="ltr"
                   data-testid="field-p0TimeoutSeconds"
-                  value={form.p0TimeoutSeconds}
+                  value={activeForm.p0TimeoutSeconds}
                   onChange={(e) => setField('p0TimeoutSeconds', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -953,8 +1093,9 @@ export function AD05Screen() {
               <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface}`}>
                 <input
                   type="number"
+                  dir="ltr"
                   data-testid="field-minWithdrawalEgp"
-                  value={form.minWithdrawalEgp}
+                  value={activeForm.minWithdrawalEgp}
                   onChange={(e) => setField('minWithdrawalEgp', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -973,8 +1114,9 @@ export function AD05Screen() {
               <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
                 <input
                   type="text"
+                  dir="ltr"
                   data-testid="field-ambulanceNumber"
-                  value={form.ambulanceNumber}
+                  value={activeForm.ambulanceNumber}
                   onChange={(e) => setField('ambulanceNumber', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -988,8 +1130,9 @@ export function AD05Screen() {
               <div className={`px-3 py-2 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
                 <input
                   type="text"
+                  dir="ltr"
                   data-testid="field-policeNumber"
-                  value={form.policeNumber}
+                  value={activeForm.policeNumber}
                   onChange={(e) => setField('policeNumber', e.target.value)}
                   className={`w-full bg-transparent outline-none text-xs font-bold ${colors.text}`}
                 />
@@ -1007,7 +1150,7 @@ export function AD05Screen() {
             <div className="flex justify-between pt-1">
               <span className={colors.secondaryText}>{isAr ? 'الإصدار النشط' : 'Active version'}</span>
               <span className={`font-bold ${colors.text}`}>
-                v{version} · {user?.fullName || (isAr ? 'المشرف' : 'Admin')}
+                v{activeVersion ?? 1} · {user?.fullName || (isAr ? 'المشرف' : 'Admin')}
               </span>
             </div>
           </div>
@@ -1066,7 +1209,7 @@ export function AD06Screen() {
           </div>
           <div>
             <p className={`font-extrabold ${colors.text}`}>{user?.fullName || (isAr ? 'المشرف' : 'Administrator')}</p>
-            <p className={`text-[11px] ${colors.secondaryText}`}>{user?.email || '—'}</p>
+            <p className={`text-[11px] ${colors.secondaryText}`} dir="ltr">{user?.email || '—'}</p>
           </div>
         </div>
         <div className="flex justify-between pt-1 border-t border-slate-500/10">
@@ -1074,10 +1217,10 @@ export function AD06Screen() {
           <span className={`font-bold ${colors.text}`}>
             {user?.isSuperAdmin
               ? isAr
-                ? 'مشرف عام (Super Admin)'
+                ? 'مشرف عام'
                 : 'Super Admin'
               : isAr
-              ? 'مشرف (Administrator)'
+              ? 'مشرف المنصة'
               : 'Administrator'}
           </span>
         </div>
@@ -1179,8 +1322,8 @@ export function AD07Screen() {
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
           {isAr
-            ? `${fmtNumber(pendingCount, lang)} عناصر تسوية معلقة`
-            : `${fmtNumber(pendingCount, lang)} pending reconciliation items`}
+            ? pluralCount(pendingCount, '', '', 'مراجعة دفع معلقة', 'مراجعات دفع معلقة', 'مراجعة دفع معلقة', true)
+            : pluralCount(pendingCount, 'pending payment review', 'pending payment reviews', '', '', '', false)}
         </p>
       </div>
 
@@ -1309,7 +1452,7 @@ export function AD08Screen({ id, params }) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] });
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر حفظ التسوية' : 'Could not reconcile payment'));
+      setError(friendlyError(err, isAr, 'Could not reconcile payment', 'تعذر حفظ التسوية'));
     } finally {
       setBusy(false);
     }
@@ -1491,8 +1634,8 @@ export function AD09Screen() {
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
           {isAr
-            ? `${fmtNumber(openCount, lang)} بلاغات مفتوحة · راجع قبل اتخاذ إجراء`
-            : `${fmtNumber(openCount, lang)} open reports · Review before acting`}
+            ? `${pluralCount(openCount, '', '', 'بلاغ أمان مفتوح', 'بلاغات أمان مفتوحة', 'بلاغ أمان مفتوح', true)} · راجع قبل اتخاذ إجراء`
+            : `${pluralCount(openCount, 'open safety report', 'open safety reports', '', '', '', false)} · Review before acting`}
         </p>
       </div>
 
@@ -1615,7 +1758,7 @@ export function AD10Screen({ id, params }) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'safety'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر تحديث البلاغ' : 'Could not update report'));
+      setError(friendlyError(err, isAr, 'Could not update report', 'تعذر تحديث البلاغ'));
     } finally {
       setBusy(false);
     }
@@ -1777,7 +1920,7 @@ export function AD11Screen({ id, params }) {
             <p className={`font-extrabold ${colors.text}`}>
               {isAr ? 'الحساب والتواصل' : 'Account & contact'}
             </p>
-            <p className={`text-[11px] ${colors.secondaryText}`}>{u.email}</p>
+            <p className={`text-[11px] ${colors.secondaryText}`} dir="ltr">{u.email}</p>
             <div className="flex justify-between pt-1">
               <span className={colors.secondaryText}>{isAr ? 'الدور' : 'Role'}</span>
               <span className={`font-bold ${colors.text}`}>{formatLabel(u.role, isAr)}</span>
@@ -1806,7 +1949,7 @@ export function AD11Screen({ id, params }) {
                   {isAr ? 'عرض الجلسات النشطة' : 'View active sessions'}
                 </p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
-                  {fmtNumber(u.sessions ?? 0, lang)} {isAr ? 'جلسات' : 'sessions'}
+                  {pluralCount(u.sessions ?? 0, 'session', 'sessions', 'جلسة', 'جلسات', 'جلسة', isAr)}
                 </p>
               </div>
               <ForwardChevron size={14} className={colors.secondaryText} />
@@ -1890,9 +2033,9 @@ export function AD12Screen({ id, params }) {
     null;
 
   const [accessMode, setAccessMode] = useState('Suspend');
-  const [reason, setReason] = useState('Policy violation');
+  const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
-  const [confirmed, setConfirmed] = useState(true);
+  const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState('');
   const [error, setError] = useState('');
@@ -1904,16 +2047,20 @@ export function AD12Screen({ id, params }) {
     }
   }, [targetUser?.id, targetUser?.status]);
 
+  const canConfirm = !!targetUser && confirmed && reason.trim().length > 0;
+
   const handleConfirm = async (e) => {
     if (e) e.preventDefault();
-    if (!targetUser) return;
+    if (!canConfirm) return;
     setBusy(true);
     setError('');
     setBanner('');
     try {
+      const trimmedNote = note.trim();
+      const fullReason = trimmedNote ? `${reason} — ${trimmedNote}` : reason;
       if (accessMode === 'Suspend') {
         await post(`/admin/users/${targetUser.id}/suspend`, {
-          reason: reason ? `${reason}${note ? ` — ${note}` : ''}` : 'Administrative review'
+          reason: fullReason
         });
       } else {
         await post(`/admin/users/${targetUser.id}/restore`, {});
@@ -1931,7 +2078,7 @@ export function AD12Screen({ id, params }) {
       );
       setTimeout(() => nav.go('AD11', { id: targetUser.id }), 300);
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر حفظ القرار' : 'Could not update account access'));
+      setError(friendlyError(err, isAr, 'Could not update account access', 'تعذر حفظ القرار'));
     } finally {
       setBusy(false);
     }
@@ -2012,16 +2159,18 @@ export function AD12Screen({ id, params }) {
               onChange={(e) => setReason(e.target.value)}
               className={inputClass()}
             >
+              <option value="">{isAr ? 'اختر السبب...' : 'Select a reason...'}</option>
               <option value="Policy violation">{isAr ? 'مخالفة السياسات' : 'Policy violation'}</option>
               <option value="Fraudulent activity">{isAr ? 'نشاط احتيالي' : 'Fraudulent activity'}</option>
               <option value="Safety concern">{isAr ? 'مخاوف تتعلق بالأمان' : 'Safety concern'}</option>
               <option value="Administrative review">{isAr ? 'مراجعة إدارية' : 'Administrative review'}</option>
+              <option value="Verification completed">{isAr ? 'اكتملت مراجعة الحساب' : 'Verification completed'}</option>
             </select>
           </div>
 
           <div className="space-y-1">
             <label className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'ملاحظة التدقيق الداخلي · مطلوبة' : 'Internal audit note · Required'}
+              {isAr ? 'ملاحظة التدقيق الداخلي' : 'Internal audit note'}
             </label>
             <textarea
               rows={2}
@@ -2041,13 +2190,13 @@ export function AD12Screen({ id, params }) {
             <p className={`font-extrabold ${colors.text}`}>
               {isAr ? 'قبل التأكيد' : 'Before you confirm'}
             </p>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2.5 cursor-pointer">
               <input
                 type="checkbox"
                 data-testid="field-confirmed"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                className="rounded accent-[#E51C23]"
+                className="w-4 h-4 rounded accent-[#E51C23] shrink-0"
               />
               <span className={colors.text}>
                 {isAr
@@ -2075,7 +2224,7 @@ export function AD12Screen({ id, params }) {
           )}
 
           <div className="space-y-2">
-            <PrimaryButton type="submit" testId="screen-primary" disabled={busy || !confirmed}>
+            <PrimaryButton type="submit" testId="screen-primary" disabled={busy || !canConfirm}>
               {busy
                 ? isAr
                   ? 'جاري الحفظ...'
@@ -2183,7 +2332,13 @@ export function AD13Screen() {
           {isAr ? 'الأمان والمصادقة الثنائية' : 'Security & two-factor'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {user?.fullName || (isAr ? 'المشرف' : 'Administrator')} · {user?.email || ''}
+          {user?.fullName || (isAr ? 'المشرف' : 'Administrator')}
+          {user?.email ? (
+            <>
+              {' · '}
+              <span dir="ltr">{user.email}</span>
+            </>
+          ) : null}
         </p>
       </div>
 
@@ -2445,7 +2600,7 @@ export function AD14Screen({ id, params }) {
               </div>
               <div className="flex justify-between">
                 <span className={colors.secondaryText}>{isAr ? 'عنوان IP' : 'IP address'}</span>
-                <span className={`font-mono font-bold ${colors.text}`}>{s.ipAddress || '127.0.0.1'}</span>
+                <span className={`font-mono font-bold ${colors.text}`} dir="ltr">{s.ipAddress || '127.0.0.1'}</span>
               </div>
               <div className="flex justify-between">
                 <span className={colors.secondaryText}>{isAr ? 'تنتهي في' : 'Expires'}</span>
@@ -2525,32 +2680,31 @@ export function AD15Screen({ id, params }) {
 
   const [decision, setDecision] = useState(initialDecision);
   const [note, setNote] = useState(nav.flow?.kycNote || '');
-  const [checks, setChecks] = useState({ identity: true, credentials: true });
+  const [checks, setChecks] = useState({ identity: false, credentials: false });
   const [busy, setBusy] = useState(false);
   const [savedBanner, setSavedBanner] = useState(false);
   const [error, setError] = useState('');
 
   const displayName = app?.fullName || app?.businessName || app?.code || '—';
+  const allChecked = checks.identity && checks.credentials;
+  const needsReason = decision === 'Rejected' || decision === 'ChangesNeeded';
+  const canConfirm = !!app && allChecked && (!needsReason || note.trim().length > 0);
 
   const handleConfirm = async () => {
-    if (!app) return;
+    if (!canConfirm) return;
     setBusy(true);
     setError('');
     try {
       await post(`/admin/kyc/${app.id}/review`, {
         decision,
-        note:
-          note ||
-          (decision === 'Approved'
-            ? 'Identity and documents verified.'
-            : 'Please update and resubmit your verification documents.')
+        note: note.trim() || 'Identity and documents verified.'
       });
       setSavedBanner(true);
       await queryClient.invalidateQueries({ queryKey: ['admin', 'kyc'] });
       await queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
       setTimeout(() => nav.go('AD02'), 300);
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر حفظ القرار' : 'Could not submit decision'));
+      setError(friendlyError(err, isAr, 'Could not submit decision', 'تعذر حفظ القرار'));
     } finally {
       setBusy(false);
     }
@@ -2593,29 +2747,33 @@ export function AD15Screen({ id, params }) {
         <p className={`font-extrabold ${colors.text}`}>
           {isAr ? 'قائمة مراجعة المتقدم' : 'Applicant review checklist'}
         </p>
-        <button
-          type="button"
-          onClick={() => setChecks((c) => ({ ...c, identity: !c.identity }))}
-          className="w-full flex items-center gap-2 text-start"
-        >
-          <CheckCircle2 size={14} className={checks.identity ? 'text-emerald-500' : colors.secondaryText} />
+        <label className="w-full flex items-center gap-2.5 text-start cursor-pointer">
+          <input
+            type="checkbox"
+            data-testid="check-identity"
+            checked={checks.identity}
+            onChange={(e) => setChecks((c) => ({ ...c, identity: e.target.checked }))}
+            className="w-4 h-4 rounded accent-[#E51C23] shrink-0"
+          />
           <span className={colors.text}>
             {isAr ? 'تم فحص بيانات الهوية والتواصل' : 'Identity and contact details checked'}
           </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setChecks((c) => ({ ...c, credentials: !c.credentials }))}
-          className="w-full flex items-center gap-2 text-start"
-        >
-          <CheckCircle2 size={14} className={checks.credentials ? 'text-emerald-500' : colors.secondaryText} />
+        </label>
+        <label className="w-full flex items-center gap-2.5 text-start cursor-pointer">
+          <input
+            type="checkbox"
+            data-testid="check-credentials"
+            checked={checks.credentials}
+            onChange={(e) => setChecks((c) => ({ ...c, credentials: e.target.checked }))}
+            className="w-4 h-4 rounded accent-[#E51C23] shrink-0"
+          />
           <span className={colors.text}>
             {isAr ? 'تمت مراجعة التراخيص والمستندات المهنية' : 'Licenses and professional documents reviewed'}
           </span>
-        </button>
+        </label>
         <button
           type="button"
-          onClick={() => nav.go('SH17')}
+          onClick={() => nav.go('SH17', app?.id ? { appId: app.id, holder: displayName } : {})}
           className="w-full flex justify-between items-center pt-1.5 border-t border-slate-500/10 text-start"
         >
           <div>
@@ -2632,7 +2790,13 @@ export function AD15Screen({ id, params }) {
 
       <div className="space-y-1">
         <label className={`text-[10px] ${colors.secondaryText}`}>
-          {isAr ? 'سبب القرار / ملاحظة المراجع' : 'Decision reason / reviewer note'}
+          {needsReason
+            ? isAr
+              ? 'سبب القرار / ملاحظة المراجع · مطلوب'
+              : 'Decision reason / reviewer note · Required'
+            : isAr
+            ? 'ملاحظة المراجع (اختياري)'
+            : 'Reviewer note (optional)'}
         </label>
         <textarea
           rows={2}
@@ -2640,9 +2804,13 @@ export function AD15Screen({ id, params }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={
-            isAr
-              ? 'تم التحقق من بيانات الهوية والمستندات.'
-              : 'Identity and credentials verified.'
+            needsReason
+              ? isAr
+                ? 'اكتب سبب الرفض أو التعديلات المطلوبة للمتقدم...'
+                : 'Describe the required changes or reason for rejection...'
+              : isAr
+              ? 'أضف ملاحظة اختيارية للمتقدم...'
+              : 'Optional note for the applicant...'
           }
           className={`w-full p-3 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
         />
@@ -2678,7 +2846,7 @@ export function AD15Screen({ id, params }) {
       )}
 
       <div className="space-y-2">
-        <PrimaryButton testId="screen-primary" disabled={busy || !app} onClick={handleConfirm}>
+        <PrimaryButton testId="screen-primary" disabled={busy || !canConfirm} onClick={handleConfirm}>
           {busy ? (isAr ? 'جاري الإرسال...' : 'Submitting...') : isAr ? 'تأكيد القرار' : 'Confirm Decision'}
         </PrimaryButton>
         <SecondaryButton onClick={() => nav.go('AD03', { id: app?.id })}>
@@ -2826,12 +2994,12 @@ export function AD16Screen() {
                 data-testid="audit-row"
                 className="py-1.5 border-b border-slate-500/10 last:border-0 space-y-0.5"
               >
-                <div className="flex justify-between">
-                  <span className={`font-mono font-bold ${colors.text}`}>{a.action}</span>
-                  <span className={`text-[10px] ${colors.secondaryText}`}>{fmtDateTime(a.createdAt, lang)}</span>
+                <div className="flex justify-between gap-2">
+                  <span className={`font-bold ${colors.text}`}>{formatAuditAction(a.action, isAr)}</span>
+                  <span className={`text-[10px] shrink-0 ${colors.secondaryText}`}>{fmtDateTime(a.createdAt, lang)}</span>
                 </div>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
-                  {a.entityType} {a.entityId ? `· ${String(a.entityId).slice(0, 8)}` : ''}
+                  {formatEntityType(a.entityType, isAr)} {a.entityId ? `· ${String(a.entityId).slice(0, 8)}` : ''}
                   {a.reason ? ` — ${a.reason}` : ''}
                 </p>
               </div>
@@ -2874,9 +3042,7 @@ export function AD17Screen() {
           {isAr ? 'التقييمات والشكاوى' : 'Reviews & complaints'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {isAr
-            ? `${fmtNumber(reviews.length, lang)} تقييم مسجل`
-            : `${fmtNumber(reviews.length, lang)} driver reviews`}
+          {pluralCount(reviews.length, 'driver review', 'driver reviews', 'تقييم مسجل', 'تقييمات مسجلة', 'تقييماً مسجلاً', isAr)}
         </p>
       </div>
 
@@ -2978,7 +3144,7 @@ export function AD18Screen({ id, params }) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'tickets'] });
       setStatusMsg(isAr ? 'تم إرسال الرد' : 'Reply sent');
     } catch (err) {
-      setReplyError(friendlyError(err, isAr, isAr ? 'تعذر إرسال الرد' : 'Could not send the reply'));
+      setReplyError(friendlyError(err, isAr, 'Could not send the reply', 'تعذر إرسال الرد'));
     } finally {
       setBusy(false);
     }
@@ -2995,7 +3161,7 @@ export function AD18Screen({ id, params }) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'tickets'] });
       setStatusMsg(isAr ? 'تم إغلاق التذكرة' : 'Ticket closed');
     } catch (err) {
-      setReplyError(friendlyError(err, isAr, isAr ? 'تعذر إغلاق التذكرة' : 'Could not close the ticket'));
+      setReplyError(friendlyError(err, isAr, 'Could not close the ticket', 'تعذر إغلاق التذكرة'));
     } finally {
       setBusy(false);
     }
@@ -3008,7 +3174,7 @@ export function AD18Screen({ id, params }) {
           {isAr ? 'صندوق الدعم الفني' : 'Support inbox'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {countLabel(tickets.length, lang, 'support ticket', 'support tickets', 'تذكرة دعم', 'تذاكر دعم')}
+          {pluralCount(tickets.length, 'support ticket', 'support tickets', 'تذكرة دعم', 'تذاكر دعم', 'تذكرة دعم', isAr)}
         </p>
       </div>
 
@@ -3090,33 +3256,44 @@ export function AD18Screen({ id, params }) {
                   <span className={`font-bold font-mono ${colors.text}`} data-testid="ticket-reference">
                     {activeTicket.referenceCode
                       ? `${activeTicket.referenceType === 'Booking' ? (isAr ? 'حجز' : 'Booking') : (isAr ? 'طلب' : 'Trip')} · ${activeTicket.referenceCode}`
-                      : (isAr ? 'بدون مرجع' : 'None')}
+                      : '—'}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-2 max-h-72 overflow-y-auto">
-                {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    data-testid="ticket-message"
-                    className={`p-2.5 rounded-xl ${
-                      m.fromSupport ? 'bg-[#E51C23]/15 text-[#E51C23] ms-4' : `${colors.elevated} ${colors.text} me-4`
-                    }`}
-                  >
-                    <div className="flex justify-between gap-2 text-[10px] opacity-80 mb-0.5">
-                      <span className="font-bold">
-                        {m.fromSupport
-                          ? `${isAr ? 'الدعم' : 'Support'}${m.authorName ? ` · ${m.authorName}` : ''}`
-                          : m.authorName || activeTicket.customerName || (isAr ? 'العميل' : 'Customer')}
-                      </span>
-                      <span>{fmtDateTime(m.createdAt, lang)}</span>
+                {messages.map((m) => {
+                  const customerAuthor =
+                    (m.authorName && m.authorName !== 'You' ? m.authorName : '') ||
+                    activeTicket.customerName ||
+                    (isAr ? 'العميل' : 'Customer');
+                  const supportAuthor = m.authorName || (isAr ? 'دعم FixNGo' : 'FixNGo Support');
+                  return (
+                    <div
+                      key={m.id}
+                      data-testid="ticket-message"
+                      className={`p-2.5 rounded-xl ${
+                        m.fromSupport ? 'bg-[#E51C23]/15 text-[#E51C23] ms-4' : `${colors.elevated} ${colors.text} me-4`
+                      }`}
+                    >
+                      <div className="flex justify-between gap-2 text-[10px] opacity-80 mb-0.5">
+                        <span className="font-bold">
+                          {m.fromSupport ? supportAuthor : customerAuthor}
+                        </span>
+                        <span>{fmtDateTime(m.createdAt, lang)}</span>
+                      </div>
+                      <p className="text-xs whitespace-pre-wrap">{m.text}</p>
+                      {m.fileId && <TicketAttachment message={m} isAr={isAr} />}
                     </div>
-                    <p className="text-xs whitespace-pre-wrap">{m.text}</p>
-                    {m.fileId && <TicketAttachment message={m} isAr={isAr} />}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {replyError && (
+                <p role="alert" className="text-xs font-bold text-rose-500">
+                  {replyError}
+                </p>
+              )}
 
               {statusMsg && (
                 <p role="status" className="text-xs font-bold text-emerald-500">

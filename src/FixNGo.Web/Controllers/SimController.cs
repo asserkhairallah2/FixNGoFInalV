@@ -48,8 +48,8 @@ public sealed class SimController(ISimulatorService sim) : ControllerBase
         Ok(await sim.SendPushAsync(this.UserId(), req, ct));
 
     [HttpPost("push/read-all")]
-    public async Task<IActionResult> MarkAllPushRead(CancellationToken ct = default) =>
-        Ok(await sim.MarkAllPushesReadAsync(this.UserId(), ct));
+    public async Task<IActionResult> MarkAllPushRead([FromQuery] bool all = false, CancellationToken ct = default) =>
+        Ok(await sim.MarkAllPushesReadAsync(all ? Guid.Empty : this.UserId(), ct));
 
     [HttpPost("push/{id:guid}/read")]
     public async Task<IActionResult> MarkPushRead(Guid id, CancellationToken ct = default) =>
