@@ -190,7 +190,9 @@ const EN_STATUS = {
   'kyc.changes_needed': 'Requested KYC changes', 'kyc.changes': 'Requested KYC changes',
   'payment.reconcile': 'Reconciled cash payment', 'safety.escalate': 'Escalated safety report',
   'safety.dismiss': 'Dismissed safety report', 'review.hide': 'Hidden customer review',
-  'review.keep': 'Kept customer review', 'ticket.reply': 'Replied to support ticket'
+  'review.keep': 'Kept customer review', 'ticket.reply': 'Replied to support ticket',
+  General: 'General', Payment: 'Payment & receipt', Request: 'Roadside request',
+  Booking: 'Center booking', Account: 'Account & profile', Safety: 'Safety & conduct'
 };
 const AR_STATUS = {
   Completed: 'مكتمل', Online: 'متصل', Offline: 'غير متصل', Active: 'نشط',
@@ -235,7 +237,9 @@ const AR_STATUS = {
   'kyc.changes_needed': 'طلب تعديل مستندات التوثيق', 'kyc.changes': 'طلب تعديل مستندات التوثيق',
   'payment.reconcile': 'مطابقة دفعة نقدية', 'safety.escalate': 'تصعيد بلاغ أمان',
   'safety.dismiss': 'حفظ بلاغ أمان', 'review.hide': 'إخفاء تقييم عميل',
-  'review.keep': 'الإبقاء على تقييم عميل', 'ticket.reply': 'الرد على تذكرة دعم'
+  'review.keep': 'الإبقاء على تقييم عميل', 'ticket.reply': 'الرد على تذكرة دعم',
+  General: 'عام', Payment: 'الدفع والإيصال', Request: 'طلب مساعدة على الطريق',
+  Booking: 'حجز مركز خدمة', Account: 'الحساب والملف الشخصي', Safety: 'السلامة والسلوك'
 };
 export function formatLabel(key, isAr = false) {
   if (key === null || key === undefined) return '—';

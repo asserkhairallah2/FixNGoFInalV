@@ -148,3 +148,18 @@
 {"at":"2026-11-20T02:19:42.284Z","name":"F13 live SignalR tracking on C11 + reload retention","status":"PASS","requestId":"497a1e98-66d8-4469-a020-fd114c36a4cf","code":"FG-0007"}
 {"at":"2026-11-20T02:19:43.930Z","name":"F14 C14/C34 Paid + C19 closed Friday + C40 empty review + C38 Paid badge","status":"PASS","requestId":"3028885b-be39-4706-a470-b6ae6950b199","bookingId":"2c4b96b1-21c6-4d70-8bd1-5cd9b40b1e0b"}
 {"at":"2026-11-20T02:19:45.524Z","name":"F15 unticked confirmations + empty A09/A10/SH20 + AD05 reload","status":"PASS"}
+{"at":"2026-11-20T02:31:22.671Z","name":"F01 login->C02 + dark/RTL","status":"PASS","hash":"#/C02","console":[]}
+{"at":"2026-11-20T02:31:24.005Z","name":"F02 vehicle + request wizard (UI)","status":"PASS","before":5,"after":6,"console":[]}
+{"at":"2026-11-20T02:31:25.750Z","name":"F03 multi-role offer accept + complete + Paid invoice + wallet + 5-star review","status":"PASS","requestId":"249a02c8-cda9-48b1-8ee2-382f832f48d6","offerId":"f8f84818-9594-4d67-b61c-62648b518881","offerStatus":"Accepted","availableMinor":71150,"completedJobs":1,"rating":5}
+{"at":"2026-11-20T02:31:27.687Z","name":"F04 slot-based booking (C19->C36->SC11 InProgress->SC12 extra item->C38)","status":"PASS","bookingId":"ba73d837-24d9-4272-9aef-3b6fb75b7747","console":[]}
+{"at":"2026-11-20T02:31:28.450Z","name":"F05 card add (UI C33 form)","status":"PASS","last4":"4444","console":[]}
+{"at":"2026-11-20T02:31:29.366Z","name":"F06 chat send (UI)","status":"PASS","threadId":"feb51344-2278-449a-9731-10f64a7517e3","console":[]}
+{"at":"2026-11-20T02:31:30.653Z","name":"F07 signup OTP session kept + A08 KYC + admin approve","status":"PASS","email":"mech.e2e.1795141889512@example.com","applicationId":"e04a6124-5bc4-43ec-8d5e-eea7227c2093"}
+{"at":"2026-11-20T02:31:31.502Z","name":"F08 AD05 pricing save + AD13 TOTP setup","status":"PASS","httpErrors":[]}
+{"at":"2026-11-20T02:31:33.123Z","name":"F09 support ticket + attachment + ?ft= + AD18 author","status":"PASS","subject":"E2E UI ticket 1795141892288","ticketId":"9261acf5-a8a4-4c08-94db-b0b4c39d9c8c","console":[]}
+{"at":"2026-11-20T02:31:33.822Z","name":"F10 SOS (API + UI SH19)","status":"PASS","sosId":"1450ed65-686e-41f4-96ce-7f9803a7904b","telLinks":4,"console":[]}
+{"at":"2026-11-20T02:31:35.039Z","name":"F11 notification deep links + Admin SH17 document viewer","status":"PASS","offerId":"30a413f2-6cf4-4d84-840f-ce79cab30c8f","kycId":"b849a697-de0f-4946-8ed8-3086a77ddca0"}
+{"at":"2026-11-20T02:31:35.248Z","name":"F12 expired/declined offer re-dispatch (200 OK)","status":"PASS","requestId":"997dff26-ccea-49ed-b74a-96a7f9be0cb5","offerId":"1e689369-ffd4-42e8-8416-2632321e6ca9"}
+{"at":"2026-11-20T02:31:51.087Z","name":"F13 live SignalR tracking on C11 + reload retention","status":"PASS","requestId":"bf6ce73e-083f-4430-b914-feec799782c4","code":"FG-0007"}
+{"at":"2026-11-20T02:31:52.579Z","name":"F14 C14/C34 Paid + C19 closed Friday + C40 empty review + C38 Paid badge","status":"PASS","requestId":"f5ecc576-0327-43a0-8a76-56cef01c945e","bookingId":"23e82243-7cdb-4b0d-819b-7fb578530310"}
+{"at":"2026-11-20T02:31:54.098Z","name":"F15 unticked confirmations + empty A09/A10/SH20 + AD05 reload","status":"PASS"}

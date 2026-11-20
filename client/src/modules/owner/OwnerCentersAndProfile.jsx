@@ -383,7 +383,7 @@ export function C19({ params }) {
             testId="field-serviceId"
             options={services.map((s) => ({
               value: s.id,
-              label: `${s.name} — ${egp(s.priceMinor, isAr)} (${s.durationMinutes} min)`,
+              label: `${s.name} — ${egp(s.priceMinor, isAr)} (${s.durationMinutes} ${t('min', 'دقيقة')})`,
             }))}
           />
           {vehicles.length > 0 && (

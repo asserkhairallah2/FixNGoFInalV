@@ -15,15 +15,15 @@ The `EN-light` and `AR-dark` screenshot columns below are representative; each �
 | A05 | OTP | POST /auth/verify-otp | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | A06 | Forgot password | POST /auth/forgot-password | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | A07 | New password | POST /auth/reset-password | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
-| A08 | Mechanic registration | POST /providers/mechanic/application | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
-| A09 | Captain registration | POST /providers/captain/application | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
-| A10 | Center registration | POST /providers/center/application | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
-| A11 | Application status | GET /kyc/applications/me | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
+| A08 | Mechanic registration | POST /providers/kyc, POST /files/upload | ✓ | n/a | ✓ | ✓ | ✓ | e2e/flows.spec.js F07 + screens.spec.js | implemented |
+| A09 | Captain registration | POST /providers/kyc, POST /files/upload | ✓ | n/a | ✓ | ✓ | ✓ | e2e/flows.spec.js F15 + screens.spec.js | implemented |
+| A10 | Center registration | POST /providers/kyc, POST /files/upload | ✓ | n/a | ✓ | ✓ | ✓ | e2e/flows.spec.js F15 + screens.spec.js | implemented |
+| A11 | Application status | GET /providers/kyc/me | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | A12 | Location permission | PUT /me/location | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | A13 | Password updated | — | n/a | n/a | n/a | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | C01 | Home — no vehicle | GET /vehicles | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | C02 | Home — connected car | GET /vehicles, /requests/active, /bookings | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
-| C03 | Role chooser | DELETED (demo control) | n/a | n/a | n/a | — | — | mock-scan | removed |
+| C03 | Emergency SOS (replaced demo role chooser) | POST /support/sos, GET /support/sos | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js + mock-scan | implemented |
 | C04 | My Garage | GET /vehicles | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | C05 | Add vehicle | POST /vehicles, GET /lookups | ✓ | n/a | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |
 | C06 | What's wrong? | GET /lookups/service-types | ✓ | ✓ | ✓ | ✓ | ✓ | e2e/screens.spec.js | implemented |

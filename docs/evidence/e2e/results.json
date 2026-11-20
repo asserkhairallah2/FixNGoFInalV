@@ -127,12 +127,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 751,
+                  "duration": 711,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:47.115Z",
+                  "startTime": "2026-11-20T02:31:18.304Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -161,12 +161,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 767,
+                  "duration": 728,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:48.046Z",
+                  "startTime": "2026-11-20T02:31:19.174Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -195,12 +195,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 606,
+                  "duration": 587,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:48.830Z",
+                  "startTime": "2026-11-20T02:31:19.916Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -229,12 +229,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 637,
+                  "duration": 587,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:49.449Z",
+                  "startTime": "2026-11-20T02:31:20.517Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -263,12 +263,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 592,
+                  "duration": 590,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:50.096Z",
+                  "startTime": "2026-11-20T02:31:21.114Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -305,12 +305,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1113,
+                  "duration": 972,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:50.755Z",
+                  "startTime": "2026-11-20T02:31:21.771Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -339,12 +339,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1453,
+                  "duration": 1327,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:51.884Z",
+                  "startTime": "2026-11-20T02:31:22.753Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -373,12 +373,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1936,
+                  "duration": 1785,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:53.348Z",
+                  "startTime": "2026-11-20T02:31:24.094Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -407,12 +407,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2340,
+                  "duration": 1933,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:55.299Z",
+                  "startTime": "2026-11-20T02:31:25.891Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -441,12 +441,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 914,
+                  "duration": 782,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:57.650Z",
+                  "startTime": "2026-11-20T02:31:27.835Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -475,12 +475,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 807,
+                  "duration": 793,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:58.575Z",
+                  "startTime": "2026-11-20T02:31:28.626Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -509,12 +509,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1318,
+                  "duration": 1282,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:18:59.393Z",
+                  "startTime": "2026-11-20T02:31:29.429Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -543,12 +543,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 875,
+                  "duration": 862,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:00.723Z",
+                  "startTime": "2026-11-20T02:31:30.720Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -563,7 +563,7 @@
         },
         {
           "title": "F09 support ticket with attachment via SH08 UI + scoped ?ft= URL + AD18 author label (B.8, B.12)",
-          "ok": false,
+          "ok": true,
           "tags": [],
           "tests": [
             {
@@ -576,63 +576,18 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 21131,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"ticket-reference\"]')\nExpected substring: \u001b[32m\"FG-0001\"\u001b[39m\nReceived string:    \u001b[31m\"—\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('[data-testid=\"ticket-reference\"]') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"ticket-reference\"]')\u001b[22m\n\u001b[2m    44 × locator resolved to <span data-testid=\"ticket-reference\" class=\"font-bold font-mono text-[#0F172A]\">—</span>\u001b[22m\n\u001b[2m       - unexpected value \"—\"\u001b[22m\n",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"ticket-reference\"]')\nExpected substring: \u001b[32m\"FG-0001\"\u001b[39m\nReceived string:    \u001b[31m\"—\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('[data-testid=\"ticket-reference\"]') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"ticket-reference\"]')\u001b[22m\n\u001b[2m    44 × locator resolved to <span data-testid=\"ticket-reference\" class=\"font-bold font-mono text-[#0F172A]\">—</span>\u001b[22m\n\u001b[2m       - unexpected value \"—\"\u001b[22m\n\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\flows.spec.js:533:68",
-                    "location": {
-                      "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\flows.spec.js",
-                      "column": 68,
-                      "line": 533
-                    },
-                    "snippet": " \u001b[90m 531 |\u001b[39m\n \u001b[90m 532 |\u001b[39m     \u001b[90m// B.8 & B.12: Verify reference shows FG-xxxx (never ticket code TK-xxxx) and attachment renders via ?ft= (never ?access_token=)\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 533 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'[data-testid=\"ticket-reference\"]'\u001b[39m))\u001b[33m.\u001b[39mtoContainText(seeded\u001b[33m.\u001b[39mids\u001b[33m.\u001b[39mrequestCode)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 534 |\u001b[39m     \u001b[36mconst\u001b[39m img \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'[data-testid=\"ticket-attachment-image\"]'\u001b[39m)\u001b[33m.\u001b[39mfirst()\u001b[33m;\u001b[39m\n \u001b[90m 535 |\u001b[39m     \u001b[36mawait\u001b[39m expect(img)\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m15_000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 536 |\u001b[39m     \u001b[36mconst\u001b[39m imgSrc \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m img\u001b[33m.\u001b[39mgetAttribute(\u001b[32m'src'\u001b[39m)\u001b[33m;\u001b[39m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\flows.spec.js",
-                        "column": 68,
-                        "line": 533
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid=\"ticket-reference\"]')\nExpected substring: \u001b[32m\"FG-0001\"\u001b[39m\nReceived string:    \u001b[31m\"—\"\u001b[39m\nTimeout: 20000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('[data-testid=\"ticket-reference\"]') with timeout 20000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"ticket-reference\"]')\u001b[22m\n\u001b[2m    44 × locator resolved to <span data-testid=\"ticket-reference\" class=\"font-bold font-mono text-[#0F172A]\">—</span>\u001b[22m\n\u001b[2m       - unexpected value \"—\"\u001b[22m\n\n\n  531 |\n  532 |     // B.8 & B.12: Verify reference shows FG-xxxx (never ticket code TK-xxxx) and attachment renders via ?ft= (never ?access_token=)\n> 533 |     await expect(page.locator('[data-testid=\"ticket-reference\"]')).toContainText(seeded.ids.requestCode);\n      |                                                                    ^\n  534 |     const img = page.locator('[data-testid=\"ticket-attachment-image\"]').first();\n  535 |     await expect(img).toBeVisible({ timeout: 15_000 });\n  536 |     const imgSrc = await img.getAttribute('src');\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\flows.spec.js:533:68"
-                    }
-                  ],
+                  "status": "passed",
+                  "duration": 1667,
+                  "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:01.609Z",
+                  "startTime": "2026-11-20T02:31:31.593Z",
                   "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\flows-F09-support-ticket-w-2e082-AD18-author-label-B-8-B-12-\\test-failed-1.png"
-                    },
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\flows-F09-support-ticket-w-2e082-AD18-author-label-B-8-B-12-\\test-failed-2.png"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\flows-F09-support-ticket-w-2e082-AD18-author-label-B-8-B-12-\\error-context.md"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\flows-F09-support-ticket-w-2e082-AD18-author-label-B-8-B-12-\\error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\flows.spec.js",
-                    "column": 68,
-                    "line": 533
-                  }
+                  "attachments": []
                 }
               ],
-              "status": "unexpected"
+              "status": "expected"
             }
           ],
           "id": "50593df043d465c1094d-6bc8ea9d838ce8f27143",
@@ -653,15 +608,15 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 1,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 903,
+                  "duration": 614,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:23.493Z",
+                  "startTime": "2026-11-20T02:31:33.271Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -687,15 +642,15 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 1,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1334,
+                  "duration": 1221,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:24.563Z",
+                  "startTime": "2026-11-20T02:31:33.894Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -721,15 +676,15 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 1,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 149,
+                  "duration": 123,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:25.915Z",
+                  "startTime": "2026-11-20T02:31:35.123Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -755,15 +710,15 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 1,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 16269,
+                  "duration": 15915,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:26.079Z",
+                  "startTime": "2026-11-20T02:31:35.255Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -789,15 +744,15 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 1,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1627,
+                  "duration": 1469,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:42.367Z",
+                  "startTime": "2026-11-20T02:31:51.180Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -823,15 +778,15 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 1,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1625,
+                  "duration": 1539,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:19:44.008Z",
+                  "startTime": "2026-11-20T02:31:52.657Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -865,7 +820,7 @@
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 5,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
                   "duration": 2,
@@ -873,7 +828,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-11-20T02:22:52.233Z",
+                  "startTime": "2026-11-20T02:34:48.845Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -896,7 +851,7 @@
           "specs": [
             {
               "title": "light-en: owner — 71 screens",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -907,60 +862,20 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 21587,
-                      "error": {
-                        "message": "Error: light-en/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
-                        "stack": "Error: light-en/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104",
-                        "location": {
-                          "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                          "column": 104,
-                          "line": 108
-                        },
-                        "snippet": " \u001b[90m 106 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mframe\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: phone-frame horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 107 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mdocument\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: document horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 108 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(real\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`\u001b[39m)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 109 |\u001b[39m         }\n \u001b[90m 110 |\u001b[39m\n \u001b[90m 111 |\u001b[39m         writeEvidence(\u001b[32m`sweep-${variant.dir}-${role}.json`\u001b[39m\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(rows\u001b[33m,\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m,\u001b[39m \u001b[35m2\u001b[39m))\u001b[33m;\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                            "column": 104,
-                            "line": 108
-                          },
-                          "message": "Error: light-en/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  106 |           expect.soft(diagnostics.overflow.frame, `${variant.dir}/${code}: phone-frame horizontal overflow`).toBeLessThanOrEqual(2);\n  107 |           expect.soft(diagnostics.overflow.document, `${variant.dir}/${code}: document horizontal overflow`).toBeLessThanOrEqual(2);\n> 108 |           expect.soft(real, `${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`).toEqual([]);\n      |                                                                                                        ^\n  109 |         }\n  110 |\n  111 |         writeEvidence(`sweep-${variant.dir}-${role}.json`, JSON.stringify(rows, null, 2));\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 21252,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:19:45.675Z",
+                      "startTime": "2026-11-20T02:31:54.234Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-light-en-light-en-owner-—-71-screens\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-light-en-light-en-owner-—-71-screens\\error-context.md"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-light-en-light-en-owner-—-71-screens\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                        "column": 104,
-                        "line": 108
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "4e58ca2a3cb798687116-f1a24404b54809416c18",
@@ -981,15 +896,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7043,
+                      "duration": 6637,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:20:08.011Z",
+                      "startTime": "2026-11-20T02:32:15.496Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1015,15 +930,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5018,
+                      "duration": 4801,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:20:15.215Z",
+                      "startTime": "2026-11-20T02:32:22.142Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1049,15 +964,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5427,
+                      "duration": 5255,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:20:20.258Z",
+                      "startTime": "2026-11-20T02:32:26.953Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1083,15 +998,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5957,
+                      "duration": 5633,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:20:25.713Z",
+                      "startTime": "2026-11-20T02:32:32.218Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1114,7 +1029,7 @@
           "specs": [
             {
               "title": "dark-en: owner — 71 screens",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -1125,60 +1040,20 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 2,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 22108,
-                      "error": {
-                        "message": "Error: dark-en/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
-                        "stack": "Error: dark-en/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104",
-                        "location": {
-                          "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                          "column": 104,
-                          "line": 108
-                        },
-                        "snippet": " \u001b[90m 106 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mframe\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: phone-frame horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 107 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mdocument\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: document horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 108 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(real\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`\u001b[39m)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 109 |\u001b[39m         }\n \u001b[90m 110 |\u001b[39m\n \u001b[90m 111 |\u001b[39m         writeEvidence(\u001b[32m`sweep-${variant.dir}-${role}.json`\u001b[39m\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(rows\u001b[33m,\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m,\u001b[39m \u001b[35m2\u001b[39m))\u001b[33m;\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                            "column": 104,
-                            "line": 108
-                          },
-                          "message": "Error: dark-en/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  106 |           expect.soft(diagnostics.overflow.frame, `${variant.dir}/${code}: phone-frame horizontal overflow`).toBeLessThanOrEqual(2);\n  107 |           expect.soft(diagnostics.overflow.document, `${variant.dir}/${code}: document horizontal overflow`).toBeLessThanOrEqual(2);\n> 108 |           expect.soft(real, `${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`).toEqual([]);\n      |                                                                                                        ^\n  109 |         }\n  110 |\n  111 |         writeEvidence(`sweep-${variant.dir}-${role}.json`, JSON.stringify(rows, null, 2));\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 20945,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:20:31.692Z",
+                      "startTime": "2026-11-20T02:32:37.873Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-dark-en-dark-en-owner-—-71-screens\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-dark-en-dark-en-owner-—-71-screens\\error-context.md"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-dark-en-dark-en-owner-—-71-screens\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                        "column": 104,
-                        "line": 108
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "4e58ca2a3cb798687116-97e6ba57985d8990d0d5",
@@ -1199,15 +1074,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6958,
+                      "duration": 6600,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:20:54.689Z",
+                      "startTime": "2026-11-20T02:32:58.829Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1233,15 +1108,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4992,
+                      "duration": 4766,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:01.860Z",
+                      "startTime": "2026-11-20T02:33:05.440Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1267,15 +1142,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5592,
+                      "duration": 5261,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:06.866Z",
+                      "startTime": "2026-11-20T02:33:10.218Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1301,15 +1176,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5655,
+                      "duration": 5593,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:12.473Z",
+                      "startTime": "2026-11-20T02:33:15.491Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1332,7 +1207,7 @@
           "specs": [
             {
               "title": "light-ar: owner — 71 screens",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -1343,60 +1218,20 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 21683,
-                      "error": {
-                        "message": "Error: light-ar/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
-                        "stack": "Error: light-ar/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104",
-                        "location": {
-                          "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                          "column": 104,
-                          "line": 108
-                        },
-                        "snippet": " \u001b[90m 106 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mframe\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: phone-frame horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 107 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mdocument\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: document horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 108 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(real\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`\u001b[39m)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 109 |\u001b[39m         }\n \u001b[90m 110 |\u001b[39m\n \u001b[90m 111 |\u001b[39m         writeEvidence(\u001b[32m`sweep-${variant.dir}-${role}.json`\u001b[39m\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(rows\u001b[33m,\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m,\u001b[39m \u001b[35m2\u001b[39m))\u001b[33m;\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                            "column": 104,
-                            "line": 108
-                          },
-                          "message": "Error: light-ar/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  106 |           expect.soft(diagnostics.overflow.frame, `${variant.dir}/${code}: phone-frame horizontal overflow`).toBeLessThanOrEqual(2);\n  107 |           expect.soft(diagnostics.overflow.document, `${variant.dir}/${code}: document horizontal overflow`).toBeLessThanOrEqual(2);\n> 108 |           expect.soft(real, `${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`).toEqual([]);\n      |                                                                                                        ^\n  109 |         }\n  110 |\n  111 |         writeEvidence(`sweep-${variant.dir}-${role}.json`, JSON.stringify(rows, null, 2));\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 20876,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:18.151Z",
+                      "startTime": "2026-11-20T02:33:21.111Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-light-ar-light-ar-owner-—-71-screens\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-light-ar-light-ar-owner-—-71-screens\\error-context.md"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-light-ar-light-ar-owner-—-71-screens\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                        "column": 104,
-                        "line": 108
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "4e58ca2a3cb798687116-871b0630ce48bdef030d",
@@ -1417,15 +1252,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 4,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7322,
+                      "duration": 6787,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:40.693Z",
+                      "startTime": "2026-11-20T02:33:41.997Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1451,15 +1286,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 4,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5075,
+                      "duration": 4946,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:48.191Z",
+                      "startTime": "2026-11-20T02:33:48.796Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1485,15 +1320,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 4,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5466,
+                      "duration": 5310,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:53.279Z",
+                      "startTime": "2026-11-20T02:33:53.752Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1519,15 +1354,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 4,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5701,
+                      "duration": 5592,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:21:58.758Z",
+                      "startTime": "2026-11-20T02:33:59.074Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1550,7 +1385,7 @@
           "specs": [
             {
               "title": "dark-ar: owner — 71 screens",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -1561,60 +1396,20 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 4,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 21740,
-                      "error": {
-                        "message": "Error: dark-ar/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m",
-                        "stack": "Error: dark-ar/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104",
-                        "location": {
-                          "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                          "column": 104,
-                          "line": 108
-                        },
-                        "snippet": " \u001b[90m 106 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mframe\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: phone-frame horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 107 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(diagnostics\u001b[33m.\u001b[39moverflow\u001b[33m.\u001b[39mdocument\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: document horizontal overflow`\u001b[39m)\u001b[33m.\u001b[39mtoBeLessThanOrEqual(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 108 |\u001b[39m           expect\u001b[33m.\u001b[39msoft(real\u001b[33m,\u001b[39m \u001b[32m`${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`\u001b[39m)\u001b[33m.\u001b[39mtoEqual([])\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                                        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 109 |\u001b[39m         }\n \u001b[90m 110 |\u001b[39m\n \u001b[90m 111 |\u001b[39m         writeEvidence(\u001b[32m`sweep-${variant.dir}-${role}.json`\u001b[39m\u001b[33m,\u001b[39m \u001b[33mJSON\u001b[39m\u001b[33m.\u001b[39mstringify(rows\u001b[33m,\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m,\u001b[39m \u001b[35m2\u001b[39m))\u001b[33m;\u001b[39m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                            "column": 104,
-                            "line": 108
-                          },
-                          "message": "Error: dark-ar/C17: console errors/warnings [{\"type\":\"error\",\"text\":\"ReferenceError: isAr is not defined\\n    at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\\n    at Array.map (<anonymous>)\\n    at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\\n    at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\\n    at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\\n    at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\\n    at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\\n    at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\\n    at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\\n    at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\"url\":\"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\"}]\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\n\u001b[32m- Expected  -  1\u001b[39m\n\u001b[31m+ Received  + 17\u001b[39m\n\n\u001b[32m- Array []\u001b[39m\n\u001b[31m+ Array [\u001b[39m\n\u001b[31m+   Object {\u001b[39m\n\u001b[31m+     \"text\": \"ReferenceError: isAr is not defined\u001b[39m\n\u001b[31m+     at http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136874\u001b[39m\n\u001b[31m+     at Array.map (<anonymous>)\u001b[39m\n\u001b[31m+     at lj (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:443:136274)\u001b[39m\n\u001b[31m+     at Od (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:38:17376)\u001b[39m\n\u001b[31m+     at Yd (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:3158)\u001b[39m\n\u001b[31m+     at Lp (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:45424)\u001b[39m\n\u001b[31m+     at Ip (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40252)\u001b[39m\n\u001b[31m+     at fb (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40180)\u001b[39m\n\u001b[31m+     at Fl (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:40033)\u001b[39m\n\u001b[31m+     at xu (http://127.0.0.1:54173/assets/index-HFlPKdo1.js:40:36328)\",\u001b[39m\n\u001b[31m+     \"type\": \"error\",\u001b[39m\n\u001b[31m+     \"url\": \"http://127.0.0.1:54173/assets/index-HFlPKdo1.js\",\u001b[39m\n\u001b[31m+   },\u001b[39m\n\u001b[31m+ ]\u001b[39m\n\n  106 |           expect.soft(diagnostics.overflow.frame, `${variant.dir}/${code}: phone-frame horizontal overflow`).toBeLessThanOrEqual(2);\n  107 |           expect.soft(diagnostics.overflow.document, `${variant.dir}/${code}: document horizontal overflow`).toBeLessThanOrEqual(2);\n> 108 |           expect.soft(real, `${variant.dir}/${code}: console errors/warnings ${JSON.stringify(real)}`).toEqual([]);\n      |                                                                                                        ^\n  109 |         }\n  110 |\n  111 |         writeEvidence(`sweep-${variant.dir}-${role}.json`, JSON.stringify(rows, null, 2));\n    at C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js:108:104"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 21129,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:22:04.484Z",
+                      "startTime": "2026-11-20T02:34:04.689Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-dark-ar-dark-ar-owner-—-71-screens\\test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-dark-ar-dark-ar-owner-—-71-screens\\error-context.md"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\.artifacts\\screens-screen-sweep-dark-ar-dark-ar-owner-—-71-screens\\error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\e2e\\screens.spec.js",
-                        "column": 104,
-                        "line": 108
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "4e58ca2a3cb798687116-fc186794bfdb50c1bbbd",
@@ -1635,15 +1430,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 5,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7322,
+                      "duration": 6741,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:22:26.988Z",
+                      "startTime": "2026-11-20T02:34:25.835Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1669,15 +1464,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 5,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5255,
+                      "duration": 4878,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:22:34.480Z",
+                      "startTime": "2026-11-20T02:34:32.591Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1703,15 +1498,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 5,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6275,
+                      "duration": 5413,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:22:39.760Z",
+                      "startTime": "2026-11-20T02:34:37.479Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1737,15 +1532,15 @@
                   "projectName": "",
                   "results": [
                     {
-                      "workerIndex": 5,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6134,
+                      "duration": 5916,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T02:22:46.072Z",
+                      "startTime": "2026-11-20T02:34:42.905Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -1765,11 +1560,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-20T02:18:19.322Z",
-    "duration": 273352.404,
-    "expected": 36,
+    "startTime": "2026-11-20T02:30:48.708Z",
+    "duration": 240577.108,
+    "expected": 41,
     "skipped": 0,
-    "unexpected": 5,
+    "unexpected": 0,
     "flaky": 0
   }
 }

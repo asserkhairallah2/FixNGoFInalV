@@ -34,7 +34,7 @@
   {
     "code": "AD03",
     "role": "admin",
-    "hash": "#/AD03?id=02174f16-e200-4e1e-988a-75d84f34de78",
+    "hash": "#/AD03?id=b849a697-de0f-4946-8ed8-3086a77ddca0",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD03.png",
     "diagnostics": {
       "bad": [],
@@ -114,7 +114,7 @@
   {
     "code": "AD08",
     "role": "admin",
-    "hash": "#/AD08?id=3b13a04e-fd55-4614-9f1d-a6e7ea30056b",
+    "hash": "#/AD08?id=37cf11eb-2a1a-4702-9a1f-aa00fea079af",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD08.png",
     "diagnostics": {
       "bad": [],
@@ -146,7 +146,7 @@
   {
     "code": "AD10",
     "role": "admin",
-    "hash": "#/AD10?id=e6e6f1c7-d865-47f0-a99e-d55d506f7191",
+    "hash": "#/AD10?id=91d2a902-c29c-4cfa-a425-1c86e8d1650d",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD10.png",
     "diagnostics": {
       "bad": [],
@@ -162,7 +162,7 @@
   {
     "code": "AD11",
     "role": "admin",
-    "hash": "#/AD11?id=41df37c5-29fb-4c1d-b95d-76e295f8e9c3",
+    "hash": "#/AD11?id=3814fc75-1a92-4429-a22e-785e32e0edf9",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD11.png",
     "diagnostics": {
       "bad": [],
@@ -219,14 +219,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 2464
+      "chars": 2806
     },
     "console": []
   },
   {
     "code": "AD15",
     "role": "admin",
-    "hash": "#/AD15?id=02174f16-e200-4e1e-988a-75d84f34de78",
+    "hash": "#/AD15?id=b849a697-de0f-4946-8ed8-3086a77ddca0",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD15.png",
     "diagnostics": {
       "bad": [],
@@ -274,7 +274,7 @@
   {
     "code": "AD18",
     "role": "admin",
-    "hash": "#/AD18?id=b3a9a7cb-538f-4ede-84ed-c596e3b27f93",
+    "hash": "#/AD18?id=fc9d2d37-c3aa-4943-8f2e-b4e4eb96561f",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD18.png",
     "diagnostics": {
       "bad": [],
@@ -283,7 +283,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 1020
+      "chars": 1022
     },
     "console": []
   }

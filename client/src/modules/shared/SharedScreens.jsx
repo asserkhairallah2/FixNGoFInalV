@@ -2449,7 +2449,7 @@ export function SH15Screen() {
               data-testid="field-amountEgp"
               className={`bg-transparent w-full outline-none text-xs font-bold ${colors.text}`}
             />
-            <span className={`text-[10px] ${colors.secondaryText}`}>EGP</span>
+            <span className={`text-[10px] shrink-0 ps-2 ${colors.secondaryText}`}>{isAr ? 'ج.م' : 'EGP'}</span>
           </div>
         </div>
 
