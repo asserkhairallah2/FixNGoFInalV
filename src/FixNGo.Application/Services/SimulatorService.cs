@@ -72,9 +72,10 @@ public sealed class SimulatorService(
 
     public async Task<SimMarkReadResult> MarkAllPushesReadAsync(Guid callerId, CancellationToken ct = default)
     {
+        var markAllUsers = callerId == Guid.Empty;
         var updated = 0;
-        foreach (var p in db.SimPushes.Where(p => p.UserId == callerId && !p.IsRead)) { p.IsRead = true; updated++; }
-        foreach (var n in db.Notifications.Where(n => n.UserId == callerId && !n.IsRead))
+        foreach (var p in db.SimPushes.Where(p => (markAllUsers || p.UserId == callerId) && !p.IsRead)) { p.IsRead = true; updated++; }
+        foreach (var n in db.Notifications.Where(n => (markAllUsers || n.UserId == callerId) && !n.IsRead))
         { n.IsRead = true; n.ReadAt = clock.UtcNow; updated++; }
         if (updated > 0) await db.SaveChangesAsync(ct);
         return new SimMarkReadResult(updated);

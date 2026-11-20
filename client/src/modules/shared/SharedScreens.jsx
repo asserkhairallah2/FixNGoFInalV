@@ -24,9 +24,10 @@ import {
   ChevronUp,
   Lock,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  X
 } from 'lucide-react';
-import { usePrefs, useNav, useSession, homeForUser } from '../../app/stores.jsx';
+import { usePrefs, useNav, useSession, homeForUser, resolveDeepLink } from '../../app/stores.jsx';
 import { get, post, put, uploadFile, fileUrl } from '../../api/http.js';
 import {
   useBootstrap,
@@ -51,8 +52,10 @@ import {
   StatusBadge,
   ShieldLogo,
   EmergencySOSBar,
+  Skeleton,
   Toast,
-  formatLabel
+  formatLabel,
+  pluralCount
 } from '../../ui/kit.jsx';
 import { fmtMoney, fmtDate, fmtTime, fmtDateTime } from '../../i18n/format.js';
 
@@ -63,6 +66,86 @@ export const SHARED_INTERNAL_FALLBACK_BACK = {
   SH18: 'SH17',
   SH20: 'SH14'
 };
+
+const RAW_HTTP_TITLES = new Set([
+  'Conflict', 'Bad Request', 'Unauthorized', 'Forbidden', 'Not Found',
+  'Internal Server Error', 'Unprocessable Entity'
+]);
+
+const TERMINAL_REQUEST_STATUSES = new Set(['Completed', 'Cancelled', 'NoProviders']);
+const TERMINAL_BOOKING_STATUSES = new Set(['Completed', 'Cancelled', 'Rejected', 'Expired']);
+const TERMINAL_WITHDRAWAL_STATUSES = new Set(['Confirmed', 'Failed']);
+
+function friendlyError(err, isAr, fallbackEn, fallbackAr) {
+  const fallback = isAr ? (fallbackAr || fallbackEn) : fallbackEn;
+  if (!err) return fallback;
+  const code = err.code || '';
+  if (code === 'withdrawal.below_minimum') {
+    return isAr ? 'المبلغ المطلوب أقل من الحد الأدنى للسحب.' : (err.message || fallback);
+  }
+  if (code === 'withdrawal.insufficient') {
+    return isAr ? 'الرصيد المتاح في المحفظة غير كافٍ.' : 'Insufficient available wallet balance.';
+  }
+  if (code === 'withdrawal.bank_required') {
+    return isAr ? 'يلزم وجود حساب بنكي افتراضي موثق لإتمام السحب.' : 'A verified default bank account is required.';
+  }
+  if (code === 'payment.iban_invalid') {
+    return isAr ? 'صيغة رقم IBAN المصري غير صحيحة (٢٩ حرفاً وتبدأ بـ EG).' : 'Invalid Egyptian IBAN (must be 29 characters starting with EG).';
+  }
+  if (code === 'payment.bank_invalid') {
+    return isAr ? 'يرجى اختيار بنك صالح من القائمة.' : 'Please select a valid bank.';
+  }
+  if (code === 'auth.invalid_credentials') {
+    return isAr ? 'كلمة المرور غير صحيحة.' : 'Password is incorrect.';
+  }
+  if (code === 'deletion.blocked') {
+    return isAr
+      ? 'يرجى إنهاء الطلبات أو الحجوزات النشطة أو عمليات السحب المعلقة قبل حذف الحساب.'
+      : 'Resolve active requests, bookings, or pending withdrawals before deleting your account.';
+  }
+  const msg = String(err.message || '').trim();
+  if (!msg || RAW_HTTP_TITLES.has(msg) || /^HTTP \d+$/.test(msg)) {
+    return fallback;
+  }
+  return msg;
+}
+
+function isImageAttachment(message) {
+  const ct = String(message?.fileContentType || '').toLowerCase();
+  if (ct.startsWith('image/')) return true;
+  return /\.(png|jpe?g|webp|gif)$/i.test(String(message?.fileName || ''));
+}
+
+function TicketAttachment({ message, isAr }) {
+  if (!message?.fileId) return null;
+  const url = fileUrl(message.fileId);
+  const label = message.fileName || (isAr ? 'مرفق التذكرة' : 'Attachment');
+  return (
+    <div className="mt-2 space-y-1.5" data-testid="ticket-attachment">
+      {isImageAttachment(message) && (
+        <a href={url} target="_blank" rel="noreferrer" className="block">
+          <img
+            src={url}
+            alt={label}
+            data-testid="ticket-attachment-image"
+            className="max-h-40 rounded-xl border border-slate-500/20 object-contain bg-black/5"
+          />
+        </a>
+      )}
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        download={message.fileName || undefined}
+        data-testid="ticket-attachment-link"
+        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#E51C23] underline"
+      >
+        <FileText size={12} />
+        <span dir="ltr">{label}</span>
+      </a>
+    </div>
+  );
+}
 
 /* =====================================================================
  * SH01: Chat with your provider / customer
@@ -1127,7 +1210,8 @@ export function SH07Screen() {
 
         <div className="space-y-2">
           <p className={`text-xs font-extrabold ${colors.text}`}>
-            {isAr ? 'تذاكر الدعم الخاصة بك' : 'Your support tickets'} ({tickets.length})
+            {isAr ? 'تذاكر الدعم الخاصة بك' : 'Your support tickets'} (
+            {pluralCount(tickets.length, 'support ticket', 'support tickets', 'تذكرة دعم', 'تذاكر دعم', 'تذكرة دعم', isAr)})
           </p>
           {tickets.length === 0 ? (
             <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} text-xs ${colors.secondaryText}`}>
@@ -1147,7 +1231,7 @@ export function SH07Screen() {
                     {t.subject || (isAr ? 'تذكرة دعم' : 'Support ticket')}
                   </p>
                   <p className={`text-[10px] ${colors.secondaryText}`}>
-                    {t.code} · {t.category} · {fmtDate(t.createdAt, lang)}
+                    {t.code} · {formatLabel(t.category, isAr)} · {fmtDate(t.createdAt, lang)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1182,11 +1266,12 @@ export function SH08Screen() {
   const requests = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
   const bookings = Array.isArray(bookingsQuery.data) ? bookingsQuery.data : [];
 
-  const [category, setCategory] = useState('General');
+  const [category, setCategory] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [refId, setRefId] = useState('');
   const [attachment, setAttachment] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -1202,22 +1287,34 @@ export function SH08Screen() {
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    setError('');
+    setUploading(true);
     try {
       const uploaded = await uploadFile(file, 'support');
       setAttachment(uploaded);
-    } catch {
-      setAttachment({ fileName: file.name, sizeBytes: file.size });
+    } catch (err) {
+      setAttachment(null);
+      setError(friendlyError(err, isAr, 'Could not upload attachment.', 'تعذر رفع المرفق.'));
+    } finally {
+      setUploading(false);
     }
   }
+
+  const canSubmit = Boolean(category && subject.trim() && description.trim() && !busy && !uploading);
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    const finalSubject = subject.trim() || category || 'Support Inquiry';
-    const finalDescription = description.trim() || finalSubject;
-    if (!finalSubject) {
-      setError(isAr ? 'يرجى إدخال موضوع التذكرة.' : 'Please enter a subject and description.');
+    if (!category) {
+      setError(isAr ? 'يرجى اختيار فئة التذكرة.' : 'Please select a category.');
+      return;
+    }
+    const finalSubject = subject.trim();
+    const finalDescription = description.trim();
+    if (!finalSubject || !finalDescription) {
+      setError(isAr ? 'يرجى إدخال موضوع التذكرة والوصف.' : 'Please enter both a subject and description.');
       return;
     }
     setBusy(true);
@@ -1225,19 +1322,18 @@ export function SH08Screen() {
       const selectedReq = requests.find((r) => r.id === refId);
       const selectedBook = bookings.find((b) => b.id === refId);
       const created = await post('/support/tickets', {
-        category: category || 'General',
+        category,
         subject: finalSubject,
         description: finalDescription,
         referenceType: selectedReq ? 'Request' : selectedBook ? 'Booking' : null,
-        referenceId: selectedReq?.id || selectedBook?.id || null
+        referenceId: selectedReq?.id || selectedBook?.id || null,
+        attachmentFileId: attachment?.id || null
       });
       await qc.invalidateQueries({ queryKey: k.tickets });
       setDone(true);
-      setTimeout(() => {
-        nav.go('SH09', created?.id ? { id: created.id } : {});
-      }, 300);
+      nav.go('SH09', created?.id ? { id: created.id } : {});
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر إرسال التذكرة' : 'Could not submit ticket'));
+      setError(friendlyError(err, isAr, 'Could not submit ticket', 'تعذر إرسال التذكرة'));
     } finally {
       setBusy(false);
     }
@@ -1260,7 +1356,7 @@ export function SH08Screen() {
 
         <div className="space-y-1">
           <label className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'الفئة' : 'Category'}
+            {isAr ? 'الفئة · مطلوبة' : 'Category · Required'}
           </label>
           <select
             value={category}
@@ -1268,6 +1364,7 @@ export function SH08Screen() {
             data-testid="field-Category"
             className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
           >
+            <option value="">{isAr ? 'اختر الفئة...' : 'Select category...'}</option>
             {categories.map((c) => (
               <option key={c.value} value={c.value}>
                 {isAr ? c.ar : c.en}
@@ -1329,28 +1426,50 @@ export function SH08Screen() {
           />
         </div>
 
-        <label className={`block p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs cursor-pointer`}>
+        <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
           <p className={`font-extrabold ${colors.text}`}>
             {isAr ? 'المرفقات (اختياري)' : 'Attachments (optional)'}
           </p>
-          <div className="flex justify-between items-center">
+          <label className="flex justify-between items-center cursor-pointer hover:opacity-90">
             <div>
               <p className={`font-semibold ${colors.text}`}>
-                {isAr ? 'إضافة صورة أو مستند' : 'Add photo or document'}
+                {uploading
+                  ? (isAr ? 'جاري رفع الملف...' : 'Uploading attachment...')
+                  : (isAr ? 'إضافة صورة أو مستند' : 'Add photo or document')}
               </p>
               <p className={`text-[10px] ${colors.secondaryText}`}>
-                JPG, PNG or PDF · Up to 10 MB each
+                {isAr ? 'JPG أو PNG أو PDF · حتى ١٠ ميجابايت' : 'JPG, PNG or PDF · Up to 10 MB'}
               </p>
             </div>
             <Upload size={14} className={colors.secondaryText} />
-          </div>
-          <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="sr-only" onChange={handleFileChange} />
+            <input
+              type="file"
+              data-testid="field-attachment"
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
+              className="sr-only"
+              onChange={handleFileChange}
+            />
+          </label>
           {attachment && (
-            <p className={`text-[10px] text-emerald-500 font-semibold pt-1`}>
-              {attachment.fileName} · {isAr ? 'مرفق' : 'Attached'}
-            </p>
+            <div
+              data-testid="uploaded-attachment"
+              className={`flex items-center justify-between gap-2 p-2 rounded-xl border ${colors.border} ${colors.elevated}`}
+            >
+              <span className="text-[11px] text-emerald-500 font-semibold truncate" dir="ltr">
+                {attachment.fileName}
+              </span>
+              <button
+                type="button"
+                data-testid="remove-attachment"
+                onClick={() => setAttachment(null)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-rose-500 hover:bg-rose-500/10 shrink-0"
+              >
+                <X size={11} />
+                <span>{isAr ? 'إزالة' : 'Remove'}</span>
+              </button>
+            </div>
           )}
-        </label>
+        </div>
 
         <div className="p-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 text-[11px] space-y-0.5">
           <p className="font-bold text-blue-500">
@@ -1366,8 +1485,8 @@ export function SH08Screen() {
         {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
         {done && <p role="status" className="text-xs text-emerald-500">{isAr ? 'تم الحفظ بنجاح' : 'Saved successfully'}</p>}
 
-        <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
-          {isAr ? 'إرسال التذكرة' : 'Submit Ticket'}
+        <PrimaryButton type="submit" disabled={!canSubmit} testId="screen-primary">
+          {busy ? (isAr ? 'جاري الإرسال...' : 'Submitting...') : (isAr ? 'إرسال التذكرة' : 'Submit Ticket')}
         </PrimaryButton>
       </form>
     </div>
@@ -1389,7 +1508,7 @@ export function SH09Screen({ id, params }) {
   const resolvedId = id || params?.id || tickets[0]?.id || null;
 
   const detailQuery = useQuery({
-    queryKey: ['support', 'ticket', resolvedId],
+    queryKey: ['support', 'tickets', resolvedId],
     queryFn: () => get(`/support/tickets/${resolvedId}`),
     enabled: !!resolvedId
   });
@@ -1416,7 +1535,7 @@ export function SH09Screen({ id, params }) {
         qc.invalidateQueries({ queryKey: k.tickets })
       ]);
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر إرسال الرد' : 'Could not send reply'));
+      setError(friendlyError(err, isAr, 'Could not send reply', 'تعذر إرسال الرد'));
     } finally {
       setBusy(false);
     }
@@ -1446,11 +1565,13 @@ export function SH09Screen({ id, params }) {
             <p className={`font-extrabold ${colors.text}`}>
               {ticket.subject}
             </p>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-2">
               <span className={colors.secondaryText}>{isAr ? 'المرجع' : 'Reference'}</span>
-              <span className={`font-bold font-mono ${colors.text}`}>{ticket.code}</span>
+              <span className={`font-bold font-mono ${colors.text}`} data-testid="ticket-reference">
+                {ticket.referenceCode || '—'}
+              </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-2">
               <span className={colors.secondaryText}>{isAr ? 'الفئة' : 'Category'}</span>
               <span className={`font-bold ${colors.text}`}>{formatLabel(ticket.category, isAr)}</span>
             </div>
@@ -1467,20 +1588,32 @@ export function SH09Screen({ id, params }) {
         )}
 
         <div className="space-y-2.5">
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs`}
-            >
-              <p className={`font-extrabold ${colors.text}`}>
-                {m.fromSupport
-                  ? (isAr ? 'دعم FixNGo' : 'FixNGo Support')
-                  : (user?.fullName || m.authorName || (isAr ? 'أنت' : 'You'))}
-                {m.createdAt ? ` · ${fmtTime(m.createdAt, lang)}` : ''}
-              </p>
-              <p className={`text-[11px] ${colors.secondaryText}`}>{m.text}</p>
-            </div>
-          ))}
+          {messages.map((m) => {
+            const authorLabel = m.fromSupport
+              ? (m.authorName || (isAr ? 'دعم FixNGo' : 'FixNGo Support'))
+              : ((m.authorName && m.authorName !== 'You' ? m.authorName : '') ||
+                  ticket?.customerName ||
+                  user?.fullName ||
+                  '—');
+            return (
+              <div
+                key={m.id}
+                data-testid="ticket-message"
+                className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs`}
+              >
+                <div className="flex justify-between items-center gap-2">
+                  <p className={`font-extrabold ${colors.text}`}>{authorLabel}</p>
+                  {m.createdAt && (
+                    <span className={`text-[10px] shrink-0 ${colors.secondaryText}`}>
+                      {fmtDateTime(m.createdAt, lang)}
+                    </span>
+                  )}
+                </div>
+                <p className={`text-[11px] whitespace-pre-wrap ${colors.secondaryText}`}>{m.text}</p>
+                {m.fileId && <TicketAttachment message={m} isAr={isAr} />}
+              </div>
+            );
+          })}
         </div>
 
         <form onSubmit={handleSendReply} className="space-y-2.5">
@@ -1834,7 +1967,7 @@ export function SH12Screen() {
       setDone(true);
       setToast(isAr ? 'تم حفظ تغييرات الحساب' : 'Account changes saved');
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر حفظ التغييرات' : 'Could not save account changes'));
+      setError(friendlyError(err, isAr, 'Could not save account changes', 'تعذر حفظ التغييرات'));
     } finally {
       setBusy(false);
     }
@@ -1875,6 +2008,7 @@ export function SH12Screen() {
           </label>
           <input
             type="email"
+            dir="ltr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             data-testid="field-email"
@@ -1888,6 +2022,7 @@ export function SH12Screen() {
           </label>
           <input
             type="tel"
+            dir="ltr"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             data-testid="field-phone"
@@ -1956,6 +2091,17 @@ export function SH13Screen() {
   const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
   const [busy, setBusy] = useState(false);
 
+  const canHaveActiveRequest = Boolean(user && ['CarOwner', 'Mechanic', 'TowCaptain'].includes(user.role));
+  const requestsQuery = useQuery({
+    queryKey: k.requests,
+    queryFn: () => get('/requests'),
+    enabled: canHaveActiveRequest
+  });
+  const requests = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
+  const activeReq = canHaveActiveRequest
+    ? requests.find((r) => r?.status && !TERMINAL_REQUEST_STATUSES.has(r.status)) || null
+    : null;
+
   async function handleConfirmLogout() {
     setBusy(true);
     try {
@@ -1965,6 +2111,29 @@ export function SH13Screen() {
       nav.replace('A03');
     }
   }
+
+  function handleReturnToActiveRequest() {
+    if (!activeReq) return;
+    const resolved = resolveDeepLink(`request:${activeReq.id}`, user?.role);
+    if (resolved?.code) nav.go(resolved.code, resolved.params);
+  }
+
+  const sessionBodyCopy =
+    user?.role === 'Admin'
+      ? isAr
+        ? 'سيتم إنهاء جلسة المشرف الحالية على هذا الجهاز. تظل إعدادات المنصة وسجلات التدقيق محفوظة بأمان.'
+        : 'Your active administrator session on this device will end. Platform settings and audit logs remain safely recorded.'
+      : user?.role === 'ServiceCenter'
+      ? isAr
+        ? 'ستحتاج إلى بريدك الإلكتروني وكلمة المرور لتسجيل الدخول مجدداً. تظل حجوزات المركز وأوامر الشغل وقائمة الخدمات محفوظة.'
+        : "You'll need your email and password to sign back in. Center bookings, work orders, and catalog settings remain saved."
+      : ['Mechanic', 'TowCaptain'].includes(user?.role)
+      ? isAr
+        ? 'ستحتاج إلى بريدك الإلكتروني وكلمة المرور لتسجيل الدخول مجدداً. تظل أرباح محفظتك وسجل خدماتك وملفك الشخصي محفوظة.'
+        : "You'll need your email and password to sign back in. Your wallet earnings, service history, and profile stay saved."
+      : isAr
+      ? 'ستحتاج إلى بريدك الإلكتروني وكلمة المرور لتسجيل الدخول مجدداً. تظل مركباتك وحجوزاتك وإيصالاتك محفوظة في حسابك.'
+      : "You'll need your email and password to sign back in. Saved vehicles, bookings and receipts stay in your account.";
 
   return (
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
@@ -1990,53 +2159,44 @@ export function SH13Screen() {
               {user.fullName} ({formatLabel(user.role, isAr)})
             </p>
           )}
-          <p className={`text-xs ${colors.secondaryText}`}>
-            {user?.role === 'Admin'
-              ? isAr
-                ? 'سيتم إنهاء جلسة المشرف الحالية على هذا الجهاز. تظل إعدادات المنصة وسجلات التدقيق محفوظة بأمان.'
-                : 'Your active administrator session on this device will end. Platform settings and audit logs remain safely recorded.'
-              : isAr
-              ? 'ستحتاج إلى بريدك الإلكتروني وكلمة المرور لتسجيل الدخول مجدداً. تظل مركباتك وحجوزاتك وإيصالاتك محفوظة في حسابك.'
-              : "You'll need your email and password to sign back in. Saved vehicles, bookings and receipts stay in your account."}
-          </p>
+          <p className={`text-xs ${colors.secondaryText}`}>{sessionBodyCopy}</p>
         </div>
 
-        {user?.role !== 'Admin' && (
-          <>
-            <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1.5 text-xs`}>
-              <p className={`font-extrabold ${colors.text}`}>
-                {isAr ? 'قبل المغادرة' : 'Before you leave'}
-              </p>
-              <p className={`text-[11px] ${colors.secondaryText}`}>
-                {isAr
-                  ? 'تسجيل الخروج لا يلغي طلباً نشطاً أو موعداً مؤكداً. عد إلى الرحلة النشطة إذا كنت لا تزال بحاجة للمساعدة.'
-                  : 'Logging out does not cancel an active request or appointment. Return to the active trip if you still need assistance.'}
-              </p>
-              <button
-                type="button"
-                onClick={() => nav.back()}
-                className="w-full flex justify-between items-center pt-1.5 border-t border-slate-500/10"
-              >
-                <span className={`font-bold ${colors.text}`}>
-                  {isAr ? 'العودة للطلب النشط' : 'Return to Active Request'}
-                </span>
-                <ForwardChevron size={14} className={colors.secondaryText} />
-              </button>
-            </div>
+        {activeReq && (
+          <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1.5 text-xs`}>
+            <p className={`font-extrabold ${colors.text}`}>
+              {isAr ? 'قبل المغادرة' : 'Before you leave'}
+            </p>
+            <p className={`text-[11px] ${colors.secondaryText}`}>
+              {isAr
+                ? `تسجيل الخروج لا يلغي الطلب النشط (${activeReq.code}). عد إلى الطلب النشط إذا كنت لا تزال بحاجة للمتابعة.`
+                : `Logging out does not cancel your active request (${activeReq.code}). Return to the active request if you still need assistance.`}
+            </p>
+            <button
+              type="button"
+              data-testid="return-active-request-btn"
+              onClick={handleReturnToActiveRequest}
+              className="w-full flex justify-between items-center pt-1.5 border-t border-slate-500/10"
+            >
+              <span className={`font-bold ${colors.text}`}>
+                {isAr ? 'العودة للطلب النشط' : 'Return to Active Request'}
+              </span>
+              <ForwardChevron size={14} className={colors.secondaryText} />
+            </button>
+          </div>
+        )}
 
-            {['Mechanic', 'TowCaptain'].includes(user?.role) && (
-              <div className="p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] space-y-0.5">
-                <p className="font-bold text-amber-500">
-                  {isAr ? 'أمان مقدمي الخدمة' : 'Provider safety'}
-                </p>
-                <p className={colors.secondaryText}>
-                  {isAr
-                    ? 'يجب على الميكانيكيين والكباتن إنهاء المهمة النشطة أو تسليمها بأمان قبل تسجيل الخروج.'
-                    : 'Mechanics and captains must finish or safely hand over an active job before signing out. Set availability offline to stop new requests.'}
-                </p>
-              </div>
-            )}
-          </>
+        {['Mechanic', 'TowCaptain'].includes(user?.role) && (
+          <div className="p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] space-y-0.5">
+            <p className="font-bold text-amber-500">
+              {isAr ? 'أمان مقدمي الخدمة' : 'Provider safety'}
+            </p>
+            <p className={colors.secondaryText}>
+              {isAr
+                ? 'يجب على الميكانيكيين والكباتن إنهاء المهمة النشطة أو تسليمها بأمان قبل تسجيل الخروج.'
+                : 'Mechanics and captains must finish or safely hand over an active job before signing out. Set availability offline to stop new requests.'}
+            </p>
+          </div>
         )}
 
         <div className="space-y-2">
@@ -2079,7 +2239,9 @@ export function SH14Screen() {
           </p>
         </div>
 
-        {banks.length === 0 ? (
+        {banksQuery.isLoading ? (
+          <Skeleton rows={2} />
+        ) : banks.length === 0 ? (
           <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} text-xs ${colors.secondaryText} space-y-1`}>
             <p className={`font-bold ${colors.text}`}>
               {isAr ? 'لا توجد حسابات بنكية محفوظة بعد' : 'No bank accounts saved yet'}
@@ -2114,11 +2276,11 @@ export function SH14Screen() {
               </div>
               <div className="flex justify-between">
                 <span className={colors.secondaryText}>{isAr ? 'رقم الحساب' : 'Account'}</span>
-                <span className={`font-bold font-mono ${colors.text}`}>•••• {b.ibanLast4}</span>
+                <span className={`font-bold font-mono ${colors.text}`} dir="ltr">•••• {b.ibanLast4}</span>
               </div>
               <div className="flex justify-between">
                 <span className={colors.secondaryText}>IBAN</span>
-                <span className={`font-bold font-mono ${colors.text}`}>EG•• •••• •••• {b.ibanLast4}</span>
+                <span className={`font-bold font-mono ${colors.text}`} dir="ltr">EG•• •••• •••• {b.ibanLast4}</span>
               </div>
               <div className="flex items-center gap-1.5 pt-1 text-[11px]">
                 <CheckCircle2 size={13} className="text-emerald-500" />
@@ -2142,8 +2304,11 @@ export function SH14Screen() {
           </p>
         </div>
 
-        {banks.length > 0 && (
-          <div className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-[11px] space-y-0.5">
+        {!banksQuery.isLoading && banks.length > 0 && banks.some((b) => b.isVerified) && (
+          <div
+            data-testid="payout-destination-banner"
+            className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-[11px] space-y-0.5"
+          >
             <p className="font-bold text-emerald-500">
               {isAr ? 'تم حفظ وجهة السحب' : 'Payout destination saved'}
             </p>
@@ -2179,34 +2344,40 @@ export function SH15Screen() {
 
   const balanceMinor = walletQuery.data?.balanceMinor ?? 0;
   const banks = Array.isArray(banksQuery.data) ? banksQuery.data : [];
-  const defaultBank = banks.find((b) => b.isDefault && b.isVerified) || banks[0] || null;
+  const defaultBank = banks.find((b) => b.isDefault && b.isVerified) || banks.find((b) => b.isVerified) || null;
   const feeMinor = bootstrapQuery.data?.pricing?.withdrawalFeeMinor ?? 0;
   const minWithdrawalMinor = bootstrapQuery.data?.pricing?.minWithdrawalMinor ?? 10000;
 
-  const [amountEgp, setAmountEgp] = useState('0');
-  const [confirmed, setConfirmed] = useState(true);
+  const [amountEgp, setAmountEgp] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (balanceMinor > 0) {
-      const defaultEgp = Math.max(100, Math.min(500, Math.floor(balanceMinor / 100)));
-      setAmountEgp(String(defaultEgp));
-    } else {
-      setAmountEgp('0');
+    if (balanceMinor >= minWithdrawalMinor && amountEgp === '') {
+      setAmountEgp(String(Math.floor(balanceMinor / 100)));
     }
-  }, [balanceMinor]);
+  }, [balanceMinor, minWithdrawalMinor, amountEgp]);
 
   const parsedAmount = Number(amountEgp);
   const requestedMinor = Math.max(0, Math.round((Number.isFinite(parsedAmount) ? parsedAmount : 0) * 100));
   const netMinor = Math.max(0, requestedMinor - feeMinor);
   const remainingMinor = Math.max(0, balanceMinor - requestedMinor);
-  const canWithdraw = balanceMinor >= minWithdrawalMinor && !!defaultBank;
+  const canWithdraw =
+    confirmed &&
+    balanceMinor >= minWithdrawalMinor &&
+    requestedMinor >= minWithdrawalMinor &&
+    requestedMinor <= balanceMinor &&
+    !!defaultBank;
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
     if (!confirmed) {
       setError(isAr ? 'يرجى تأكيد المبلغ والحساب البنكي.' : 'Please confirm the amount and bank destination.');
+      return;
+    }
+    if (!defaultBank) {
+      setError(isAr ? 'يلزم وجود حساب بنكي موثق لإتمام السحب.' : 'Please add a verified bank account first.');
       return;
     }
     if (requestedMinor < minWithdrawalMinor) {
@@ -2217,6 +2388,10 @@ export function SH15Screen() {
       );
       return;
     }
+    if (requestedMinor > balanceMinor) {
+      setError(isAr ? 'المبلغ المطلوب يتجاوز الرصيد المتاح.' : 'Requested amount exceeds available balance.');
+      return;
+    }
     try {
       const res = await withdrawMutation.mutateAsync({
         amountMinor: requestedMinor,
@@ -2224,7 +2399,7 @@ export function SH15Screen() {
       });
       nav.go('SH16', res?.id ? { id: res.id } : {});
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر إرسال طلب السحب' : 'Could not submit withdrawal request'));
+      setError(friendlyError(err, isAr, 'Could not submit withdrawal request', 'تعذر إرسال طلب السحب'));
     }
   }
 
@@ -2261,6 +2436,8 @@ export function SH15Screen() {
               type="number"
               min="1"
               step="1"
+              dir="ltr"
+              placeholder={String(minWithdrawalMinor / 100)}
               value={amountEgp}
               onChange={(e) => setAmountEgp(e.target.value)}
               data-testid="field-amountEgp"
@@ -2278,7 +2455,7 @@ export function SH15Screen() {
             {defaultBank ? (
               <>
                 <p className={`text-[11px] ${colors.text}`}>
-                  {defaultBank.bankName} · •••• {defaultBank.ibanLast4}
+                  {defaultBank.bankName} · <span dir="ltr">•••• {defaultBank.ibanLast4}</span>
                 </p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
                   {defaultBank.holderName} · {isAr ? 'الحساب البنكي المختار' : 'Selected bank account'}
@@ -2321,13 +2498,13 @@ export function SH15Screen() {
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-xs cursor-pointer">
+        <label className="flex items-center gap-2.5 text-xs cursor-pointer">
           <input
             type="checkbox"
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
             data-testid="confirm-withdrawal"
-            className="rounded border-slate-400 text-[#E51C23] focus:ring-[#E51C23]"
+            className="w-4 h-4 rounded accent-[#E51C23] shrink-0"
           />
           <span className={colors.text}>
             {isAr ? 'أؤكد المبلغ والحساب البنكي المستلم' : 'I confirm the amount and bank destination'}
@@ -2429,7 +2606,7 @@ export function SH16Screen({ id, params }) {
           </div>
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'الحساب' : 'Account'}</span>
-            <span className={`font-bold font-mono ${colors.text}`}>
+            <span className={`font-bold font-mono ${colors.text}`} dir="ltr">
               {defaultBank?.ibanLast4 ? `•••• ${defaultBank.ibanLast4}` : '—'}
             </span>
           </div>
@@ -2556,7 +2733,10 @@ export function SH17Screen({ id, params }) {
             {isAr ? 'عارض المستندات' : 'Document viewer'}
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
-            {holderName} · {isAr ? 'مستند التوثيق · معاينة آمنة' : 'Verification document · Secure preview'}
+            {holderName}
+            {kyc?.code ? ` · ${kyc.code}` : ''}
+            {' · '}
+            {isAr ? 'مستند التوثيق · معاينة آمنة' : 'Verification document · Secure preview'}
           </p>
         </div>
 
@@ -2577,6 +2757,7 @@ export function SH17Screen({ id, params }) {
                 href={fileUrl(previewFileId)}
                 target="_blank"
                 rel="noreferrer"
+                data-testid="open-original-file"
                 className="inline-block text-[11px] font-bold text-[#E51C23] underline"
               >
                 {isAr ? 'فتح الملف الأصلي' : 'Open original file'}
@@ -2589,7 +2770,11 @@ export function SH17Screen({ id, params }) {
                 {isAr ? 'مستند التوثيق' : 'VERIFICATION DOCUMENT'}
               </p>
               <p className={`text-[11px] ${colors.secondaryText}`}>
-                {isAr
+                {isAdmin
+                  ? isAr
+                    ? 'لم يتم إرفاق ملف صورة لهذا المستند في الطلب المرسل.'
+                    : 'No file image was uploaded for this credential entry.'
+                  : isAr
                   ? 'معاينة آمنة للمستند · ارفع نسخة جديدة أو استبدل المستند الحالي.'
                   : 'Secure document preview card · Upload or replace this credential below.'}
               </p>
@@ -2663,7 +2848,7 @@ export function SH17Screen({ id, params }) {
                 nav.updateFlow({ replaceDocType: docType });
                 nav.go('SH18', { type: docType });
               }}
-              testId="screen-primary"
+              testId="replace-doc-btn"
             >
               {isAr ? 'استبدال المستند / رفع جديد' : 'Replace Document / Upload New'}
             </PrimaryButton>
@@ -3042,12 +3227,10 @@ export function SH20Screen() {
   const [holderName, setHolderName] = useState(() => user?.fullName || '');
   const [bankCode, setBankCode] = useState('');
   const [iban, setIban] = useState('');
-  const [useAsPayout, setUseAsPayout] = useState(true);
+  const [useAsPayout, setUseAsPayout] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-
-  const SAMPLE_VALID_IBAN = 'EG380019000500000000263180002';
 
   useEffect(() => {
     if (user?.fullName && !holderName) {
@@ -3055,31 +3238,38 @@ export function SH20Screen() {
     }
   }, [user, holderName]);
 
-  useEffect(() => {
-    if (banks.length > 0 && !bankCode) {
-      setBankCode(banks[0].code);
-    }
-  }, [banks, bankCode]);
+  const compactIban = iban.replace(/\s+/g, '').toUpperCase();
+  const ibanShapeValid = /^EG\d{27}$/.test(compactIban);
+  const canSave = Boolean(holderName.trim() && bankCode && compactIban.length > 0 && !busy);
 
   async function handleSave(e) {
     if (e) e.preventDefault();
     setError('');
-    const finalHolder = holderName.trim() || user?.fullName || 'Account Holder';
-    const finalBank = bankCode || banks[0]?.code || 'NBE';
-    const finalIban = iban.trim() || SAMPLE_VALID_IBAN;
+    if (!holderName.trim()) {
+      setError(isAr ? 'يرجى إدخال اسم صاحب الحساب.' : 'Please enter the account holder name.');
+      return;
+    }
+    if (!bankCode) {
+      setError(isAr ? 'يرجى اختيار البنك.' : 'Please select a bank.');
+      return;
+    }
+    if (!compactIban) {
+      setError(isAr ? 'يرجى إدخال رقم IBAN المصري.' : 'Please enter your Egyptian IBAN.');
+      return;
+    }
     setBusy(true);
     try {
       await post('/payments/banks', {
-        holderName: finalHolder,
-        bankCode: finalBank,
-        iban: finalIban,
+        holderName: holderName.trim(),
+        bankCode,
+        iban: compactIban,
         isDefault: useAsPayout
       });
       await qc.invalidateQueries({ queryKey: k.banks });
       setDone(true);
-      setTimeout(() => nav.go('SH14'), 300);
+      nav.go('SH14');
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر حفظ الحساب البنكي' : 'Could not save bank account'));
+      setError(friendlyError(err, isAr, 'Could not save bank account', 'تعذر حفظ الحساب البنكي'));
     } finally {
       setBusy(false);
     }
@@ -3101,20 +3291,21 @@ export function SH20Screen() {
 
         <div className="space-y-1">
           <label className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'اسم صاحب الحساب' : 'Account holder'}
+            {isAr ? 'اسم صاحب الحساب · مطلوب' : 'Account holder · Required'}
           </label>
           <input
             type="text"
             value={holderName}
             onChange={(e) => setHolderName(e.target.value)}
             data-testid="field-holderName"
+            placeholder={isAr ? 'الاسم الكامل كما يظهر في البنك' : 'Full name as registered with the bank'}
             className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
           />
         </div>
 
         <div className="space-y-1">
           <label className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'البنك' : 'Bank'}
+            {isAr ? 'البنك · مطلوب' : 'Bank · Required'}
           </label>
           <select
             value={bankCode}
@@ -3122,9 +3313,7 @@ export function SH20Screen() {
             data-testid="field-bankCode"
             className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
           >
-            {banks.length === 0 && (
-              <option value="NBE">{isAr ? 'البنك الأهلي المصري' : 'National Bank of Egypt'}</option>
-            )}
+            <option value="">{isAr ? 'اختر البنك...' : 'Select bank...'}</option>
             {banks.map((b) => (
               <option key={b.code} value={b.code}>
                 {isAr ? b.nameAr : b.nameEn}
@@ -3134,37 +3323,30 @@ export function SH20Screen() {
         </div>
 
         <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'رقم IBAN المصري (٢٩ حرفاً)' : 'Egyptian IBAN (29 chars)'}
-            </label>
-            <button
-              type="button"
-              onClick={() => setIban(SAMPLE_VALID_IBAN)}
-              className="text-[10px] font-bold text-[#E51C23] underline"
-            >
-              {isAr ? 'ملء IBAN قياسي' : 'Fill valid sample IBAN'}
-            </button>
-          </div>
+          <label className={`text-[10px] ${colors.secondaryText}`}>
+            {isAr ? 'رقم IBAN المصري (٢٩ حرفاً) · مطلوب' : 'Egyptian IBAN (29 chars) · Required'}
+          </label>
           <input
             type="text"
             dir="ltr"
             value={iban}
             onChange={(e) => setIban(e.target.value)}
             data-testid="field-iban"
-            placeholder={SAMPLE_VALID_IBAN}
+            placeholder="EG00 0000 0000 0000 0000 0000 0000 0"
             className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-mono font-bold ${colors.text}`}
           />
         </div>
 
         <div className="p-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 text-[11px] space-y-0.5">
           <p className="font-bold text-blue-500">
-            {isAr ? 'تم التحقق من صيغة IBAN' : 'IBAN format checked'}
+            {ibanShapeValid
+              ? (isAr ? 'صيغة IBAN مطابقة (٢٩ حرفاً)' : 'IBAN length & prefix valid')
+              : (isAr ? 'متطلبات رقم IBAN المصري' : 'Egyptian IBAN requirements')}
           </p>
           <p className={colors.secondaryText}>
             {isAr
-              ? 'يتكون رقم IBAN المصري من ٢٩ حرفاً ويبدأ بـ EG. يتم إخفاء التفاصيل الكاملة بعد الإدخال.'
-              : 'Egypt IBANs contain 29 characters and begin with EG. Full account details are masked after entry; bank verification is still required.'}
+              ? 'يتكون رقم IBAN المصري من ٢٩ حرفاً ويبدأ بـ EG. يتم إخفاء التفاصيل الكاملة بعد الحفظ.'
+              : 'Egypt IBANs contain 29 characters and begin with EG. Full account details are masked after saving.'}
           </p>
         </div>
 
@@ -3180,6 +3362,7 @@ export function SH20Screen() {
           <button
             type="button"
             role="switch"
+            data-testid="toggle-useAsPayout"
             aria-checked={useAsPayout}
             onClick={() => setUseAsPayout(!useAsPayout)}
             className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${
@@ -3193,8 +3376,8 @@ export function SH20Screen() {
         {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
         {done && <p role="status" className="text-xs text-emerald-500">{isAr ? 'تم الحفظ بنجاح' : 'Saved successfully'}</p>}
 
-        <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
-          {isAr ? 'حفظ الحساب البنكي' : 'Save Bank Account'}
+        <PrimaryButton type="submit" disabled={!canSave} testId="screen-primary">
+          {busy ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ الحساب البنكي' : 'Save Bank Account')}
         </PrimaryButton>
       </form>
     </div>
@@ -3212,19 +3395,112 @@ export function SH21Screen() {
 
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [understood, setUnderstood] = useState(true);
+  const [understood, setUnderstood] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  const isNonAdmin = Boolean(user && user.role !== 'Admin');
+  const canHaveBookings = Boolean(user && (user.role === 'CarOwner' || user.role === 'ServiceCenter'));
+  const isFieldProvider = Boolean(user && ['Mechanic', 'TowCaptain'].includes(user.role));
+
+  const requestsQuery = useQuery({
+    queryKey: k.requests,
+    queryFn: () => get('/requests'),
+    enabled: isNonAdmin
+  });
+  const bookingsQuery = useQuery({
+    queryKey: k.bookings,
+    queryFn: () => get('/centers/bookings'),
+    enabled: canHaveBookings
+  });
+  const withdrawalsQuery = useQuery({
+    queryKey: k.withdrawals,
+    queryFn: () => get('/payments/withdrawals'),
+    enabled: isFieldProvider
+  });
+
+  const activeRequestCount = useMemo(() => {
+    if (!isNonAdmin) return 0;
+    const rows = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
+    return rows.filter((r) => r?.status && !TERMINAL_REQUEST_STATUSES.has(r.status)).length;
+  }, [isNonAdmin, requestsQuery.data]);
+
+  const activeBookingCount = useMemo(() => {
+    if (!canHaveBookings) return 0;
+    const rows = Array.isArray(bookingsQuery.data) ? bookingsQuery.data : [];
+    return rows.filter((b) => b?.status && !TERMINAL_BOOKING_STATUSES.has(b.status)).length;
+  }, [canHaveBookings, bookingsQuery.data]);
+
+  const pendingWithdrawalCount = useMemo(() => {
+    if (!isFieldProvider) return 0;
+    const rows = Array.isArray(withdrawalsQuery.data) ? withdrawalsQuery.data : [];
+    return rows.filter((w) => w?.status && !TERMINAL_WITHDRAWAL_STATUSES.has(w.status)).length;
+  }, [isFieldProvider, withdrawalsQuery.data]);
+
+  const blockerLabels = useMemo(() => {
+    const list = [];
+    if (activeRequestCount > 0) {
+      list.push(
+        pluralCount(
+          activeRequestCount,
+          'active roadside request',
+          'active roadside requests',
+          'طلب مساعدة نشط',
+          'طلبات مساعدة نشطة',
+          'طلب مساعدة نشط',
+          isAr
+        )
+      );
+    }
+    if (activeBookingCount > 0) {
+      list.push(
+        pluralCount(
+          activeBookingCount,
+          'active appointment',
+          'active appointments',
+          'موعد حجز نشط',
+          'مواعيد حجز نشطة',
+          'موعد حجز نشط',
+          isAr
+        )
+      );
+    }
+    if (pendingWithdrawalCount > 0) {
+      list.push(
+        pluralCount(
+          pendingWithdrawalCount,
+          'pending withdrawal',
+          'pending withdrawals',
+          'عملية سحب معلقة',
+          'عمليات سحب معلقة',
+          'عملية سحب معلقة',
+          isAr
+        )
+      );
+    }
+    return list;
+  }, [activeRequestCount, activeBookingCount, pendingWithdrawalCount, isAr]);
+
+  const hasBlockers = blockerLabels.length > 0;
+  const canSubmit = Boolean(understood && password.trim().length > 0 && !hasBlockers && !busy);
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    if (!password) {
+    if (!password.trim()) {
       setError(isAr ? 'يرجى إعادة إدخال كلمة المرور للتأكيد.' : 'Please re-enter your password to confirm.');
       return;
     }
     if (!understood) {
       setError(isAr ? 'يرجى الموافقة على شروط حذف الحساب.' : 'Please confirm that you understand the account deletion rules.');
+      return;
+    }
+    if (hasBlockers) {
+      setError(
+        isAr
+          ? 'يرجى إنهاء جميع الخدمات النشطة قبل تقديم طلب حذف الحساب.'
+          : 'Please resolve all active services before requesting account deletion.'
+      );
       return;
     }
     setBusy(true);
@@ -3233,7 +3509,7 @@ export function SH21Screen() {
       await logout();
       nav.replace('A02');
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر تقديم طلب حذف الحساب' : 'Could not request account deletion'));
+      setError(friendlyError(err, isAr, 'Could not request account deletion', 'تعذر تقديم طلب حذف الحساب'));
     } finally {
       setBusy(false);
     }
@@ -3270,20 +3546,37 @@ export function SH21Screen() {
           </p>
         </div>
 
-        <div className="p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] space-y-0.5">
-          <p className="font-bold text-amber-500">
-            {isAr ? 'أنهِ الخدمات النشطة أولاً' : 'Resolve active services first'}
-          </p>
-          <p className={colors.secondaryText}>
-            {isAr
-              ? 'تمنع الرحلات النشطة والطلبات غير المدفوعة والحجوزات القادمة حذف الحساب.'
-              : 'Active trips, unpaid requests and upcoming bookings block deletion. Finish or manage them before submitting.'}
-          </p>
-        </div>
+        {hasBlockers ? (
+          <div
+            role="status"
+            data-testid="deletion-blockers"
+            className="p-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-[11px] space-y-1"
+          >
+            <p className="font-bold text-rose-500">
+              {isAr ? 'لا يمكن حذف الحساب حالياً بسبب خدمات نشطة:' : 'Active blockers must be resolved first:'}
+            </p>
+            <ul className="list-disc ps-4 space-y-0.5 text-rose-500 font-semibold">
+              {blockerLabels.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-[11px] space-y-0.5">
+            <p className="font-bold text-amber-500">
+              {isAr ? 'أنهِ الخدمات النشطة أولاً' : 'Resolve active services first'}
+            </p>
+            <p className={colors.secondaryText}>
+              {isAr
+                ? 'تمنع الرحلات النشطة والطلبات غير المدفوعة والحجوزات القادمة حذف الحساب.'
+                : 'Active trips, unpaid requests and upcoming bookings block deletion. Finish or manage them before submitting.'}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-1">
           <label className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'أعد إدخال كلمة المرور' : 'Re-enter your password'}
+            {isAr ? 'أعد إدخال كلمة المرور · مطلوب' : 'Re-enter your password · Required'}
           </label>
           <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-xs ${colors.text}`}>
             <input
@@ -3300,15 +3593,14 @@ export function SH21Screen() {
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-xs cursor-pointer">
+        <label className="flex items-center gap-2.5 text-xs cursor-pointer">
           <input
             type="checkbox"
             checked={understood}
             onChange={(e) => setUnderstood(e.target.checked)}
             data-testid="confirm-deletion"
-            className="rounded border-slate-400 text-[#E51C23] focus:ring-[#E51C23]"
+            className="w-4 h-4 rounded accent-[#E51C23] shrink-0"
           />
-          <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
           <span className={colors.text}>
             {isAr ? 'أفهم تبعات البيانات والوصول للحساب' : 'I understand the data and access implications'}
           </span>
@@ -3317,8 +3609,8 @@ export function SH21Screen() {
         {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
 
         <div className="space-y-2">
-          <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
-            {isAr ? 'طلب حذف الحساب' : 'Request Account Deletion'}
+          <PrimaryButton type="submit" disabled={!canSubmit} testId="screen-primary">
+            {busy ? (isAr ? 'جاري التقديم...' : 'Submitting...') : (isAr ? 'طلب حذف الحساب' : 'Request Account Deletion')}
           </PrimaryButton>
           <SecondaryButton onClick={() => nav.back()}>
             {isAr ? 'الإبقاء على حسابي' : 'Keep My Account'}

@@ -257,12 +257,17 @@ public sealed class SupportService(IAppDbContext db, IClock clock, INotifier not
             throw new DomainException("auth.invalid_credentials", "Password is incorrect.");
         var blockers = new List<string>();
         if (await db.ServiceRequests.AnyAsync(r => (r.CustomerId == userId || r.AssignedProviderId == userId)
-            && r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled, ct))
+            && r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled && r.Status != RequestStatus.NoProviders, ct))
             blockers.Add("active_requests");
-        if (await db.Bookings.AnyAsync(b => b.CustomerId == userId && b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled, ct))
+        if (await db.Bookings.AnyAsync(b => b.CustomerId == userId
+            && b.Status != BookingStatus.Completed && b.Status != BookingStatus.Cancelled
+            && b.Status != BookingStatus.Rejected && b.Status != BookingStatus.Expired, ct))
             blockers.Add("active_bookings");
-        if (await db.Withdrawals.AnyAsync(w => w.UserId == userId && w.Status != WithdrawalStatus.Confirmed, ct))
+        if (await db.Withdrawals.AnyAsync(w => w.UserId == userId
+            && w.Status != WithdrawalStatus.Confirmed && w.Status != WithdrawalStatus.Failed, ct))
             blockers.Add("pending_withdrawals");
+        if (blockers.Count > 0)
+            throw new DomainException("deletion.blocked", "Resolve active requests, bookings, or pending withdrawals before deleting your account.");
         var request = await db.AccountDeletionRequests.FirstOrDefaultAsync(x => x.UserId == userId, ct);
         if (request is null)
         {
