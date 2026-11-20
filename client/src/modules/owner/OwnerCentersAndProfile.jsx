@@ -1318,8 +1318,8 @@ export function C23() {
                 </div>
                 <StatusBadge status={user?.status || 'Active'} />
               </div>
-              <div className="text-xs truncate" dir="ltr" style={{ color: c.text2 }}>{user?.email || ''}</div>
-              <div className="text-xs truncate" dir="ltr" style={{ color: c.text3 }}>{user?.phone || ''}</div>
+              <div className="text-xs truncate text-start" dir="ltr" style={{ color: c.text2 }}>{user?.email || ''}</div>
+              <div className="text-xs truncate text-start" dir="ltr" style={{ color: c.text3 }}>{user?.phone || ''}</div>
             </div>
           </div>
         </Card>

@@ -1201,7 +1201,7 @@ export function AD06Screen() {
           </div>
           <div className="min-w-0 flex-1">
             <p className={`font-extrabold truncate ${colors.text}`}>{user?.fullName || (isAr ? 'المشرف' : 'Administrator')}</p>
-            <p className={`text-[11px] truncate ${colors.secondaryText}`} dir="ltr">{user?.email || '—'}</p>
+            <p className={`text-[11px] truncate text-start ${colors.secondaryText}`} dir="ltr">{user?.email || '—'}</p>
           </div>
         </div>
         <div className="flex justify-between pt-1 border-t border-slate-500/10">
