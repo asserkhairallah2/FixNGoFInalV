@@ -10,7 +10,8 @@ import {
   useColors, AppTopBar, PrimaryButton, SecondaryButton, StatusBadge,
   ShieldLogo, MapView, Toast, formatLabel
 } from '../../ui/kit.jsx';
-import { fmtDate, fmtDateTime } from '../../i18n/format.js';
+import { providerLabel } from './providerLabels.js';
+import { fmtDate, fmtNumber } from '../../i18n/format.js';
 import { NIGHT_CAR_IMAGE } from '../../assets/images.js';
 
 // ─── A01: Splash Screen ───────────────────────────────────────────────────────
@@ -174,7 +175,7 @@ export function A03Screen() {
             <img src={NIGHT_CAR_IMAGE} alt="Car" className="w-full h-full object-cover" />
           </div>
           <div className="space-y-1">
-            <label htmlFor="login-email" className={`text-[11px] font-medium ${c.secondaryText}`}>
+            <label htmlFor="login-email" className={`block text-[11px] font-medium ${c.secondaryText}`}>
               {isAr ? 'البريد الإلكتروني' : 'Email address'}
             </label>
             <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg}`}>
@@ -193,7 +194,7 @@ export function A03Screen() {
             </div>
           </div>
           <div className="space-y-1">
-            <label htmlFor="login-password" className={`text-[11px] font-medium ${c.secondaryText}`}>
+            <label htmlFor="login-password" className={`block text-[11px] font-medium ${c.secondaryText}`}>
               {isAr ? 'كلمة المرور' : 'Password'}
             </label>
             <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg}`}>
@@ -309,6 +310,7 @@ export function A04Screen() {
       sessionStorage.setItem('fixngo.otpRole', role);
       nav.updateFlow({
         signupName: fullName.trim(),
+        signupBusinessName: role === 'ServiceCenter' ? fullName.trim() : '',
         signupEmail: target,
         signupPhone: payload.phone,
         signupRole: role
@@ -605,11 +607,11 @@ export function A05Screen() {
               />
             ))}
           </div>
-          <div className="flex justify-between text-xs">
+          <div className="flex items-center justify-between text-xs">
             <span className={c.secondaryText}>
               {isAr ? 'ينتهي الرمز خلال ' : 'Code expires in '}
+              <span className={`font-bold ${c.text}`} dir="ltr">{mm}:{ss}</span>
             </span>
-            <span className={`font-bold ${c.text}`} dir="ltr">{mm}:{ss}</span>
           </div>
           <button
             type="button"
@@ -820,6 +822,7 @@ function KycDocUploadRow({ label, subtitle, docType, uploaded, onUploaded, c, is
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
   const existing = uploaded.find((d) => d.documentType === docType);
+  const promptText = subtitle || (isAr ? 'اضغط للرفع' : 'Tap to upload');
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
@@ -841,12 +844,12 @@ function KycDocUploadRow({ label, subtitle, docType, uploaded, onUploaded, c, is
       <div className="min-w-0 flex-1">
         <p className={`text-xs font-semibold ${c.text}`}>{label}</p>
         <p className={`text-[10px] truncate ${existing ? 'text-emerald-400 font-semibold' : c.secondaryText}`}>
-          {uploading ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : existing ? `✓ ${existing.fileName}` : subtitle}
+          {uploading ? (isAr ? 'جارٍ الرفع…' : 'Uploading…') : existing ? existing.fileName : promptText}
         </p>
         {err && <p className="text-[10px] text-rose-500">{err}</p>}
       </div>
       <div className="shrink-0">
-        {existing ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Upload size={15} className="text-[#E51C23]" />}
+        {existing ? <CheckCircle2 size={16} className="text-emerald-400" aria-label="Uploaded" /> : <Upload size={15} className="text-[#E51C23]" />}
       </div>
       <input
         type="file"
@@ -870,7 +873,7 @@ export function A08Screen() {
 
   const [fullName, setFullName] = useState(user?.fullName || nav.flow?.signupName || '');
   const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '');
-  const [yearsExperience, setYearsExperience] = useState(5);
+  const [yearsExperience, setYearsExperience] = useState('');
   const [selectedServices, setSelectedServices] = useState([]);
   const [docs, setDocs] = useState([]);
   const [error, setError] = useState('');
@@ -879,17 +882,11 @@ export function A08Screen() {
   const serviceOptions = rawServiceOptions.length > 0
     ? [...rawServiceOptions, ...(rawServiceOptions.some((s) => s.key === 'other') ? [] : [{ id: '00000000-0000-0000-0000-000000000099', key: 'other', nameEn: 'Other', nameAr: 'أخرى' }])]
     : [
-        { id: '00000000-0000-0000-0000-000000000001', nameEn: 'Mobile diagnostics', nameAr: 'تشخيص الأعطال المتنقل' },
-        { id: '00000000-0000-0000-0000-000000000002', nameEn: 'Battery jump & tire change', nameAr: 'شحن البطارية وتغيير الإطارات' },
-        { id: '00000000-0000-0000-0000-000000000003', nameEn: 'Fuel delivery', nameAr: 'توصيل الوقود' },
-        { id: '00000000-0000-0000-0000-000000000099', nameEn: 'Other', nameAr: 'أخرى' }
+        { id: '00000000-0000-0000-0000-000000000001', key: 'mechanic', nameEn: 'Mobile diagnostics', nameAr: 'تشخيص الأعطال المتنقل' },
+        { id: '00000000-0000-0000-0000-000000000002', key: 'battery', nameEn: 'Battery jump & tire change', nameAr: 'شحن البطارية وتغيير الإطارات' },
+        { id: '00000000-0000-0000-0000-000000000003', key: 'fuel', nameEn: 'Fuel delivery', nameAr: 'توصيل الوقود' },
+        { id: '00000000-0000-0000-0000-000000000099', key: 'other', nameEn: 'Other', nameAr: 'أخرى' }
       ];
-
-  useEffect(() => {
-    if (selectedServices.length === 0 && serviceOptions.length > 0) {
-      setSelectedServices([serviceOptions[0].id]);
-    }
-  }, [rawServiceOptions.length]);
 
   const toggleService = (id) => {
     setSelectedServices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -901,17 +898,27 @@ export function A08Screen() {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
+    if (!fullName.trim()) {
+      setError(isAr ? 'يرجى إدخال الاسم الكامل.' : 'Please enter your full name.');
+      return;
+    }
+    if (!phone.trim()) {
+      setError(isAr ? 'يرجى إدخال رقم الهاتف.' : 'Please enter your phone number.');
+      return;
+    }
+    const rawExp = String(yearsExperience).trim();
+    const expNum = Number(rawExp);
+    if (rawExp === '' || !Number.isInteger(expNum) || expNum < 0 || expNum > 60) {
+      setError(isAr ? 'يرجى إدخال عدد صحيح لسنوات الخبرة (٠ أو أكثر).' : 'Please enter a valid integer for years of experience (0 or more).');
+      return;
+    }
     try {
-      const expNum = Number(yearsExperience);
       const validGuids = selectedServices.filter((id) => /^[0-9a-fA-F-]{36}$/.test(String(id)));
       await submitKyc.mutateAsync({
         applicantType: 'Mechanic',
-        fullName: fullName.trim() || 'Mobile Mechanic',
+        fullName: fullName.trim(),
         phone: phone.trim(),
-        yearsExperience: expNum >= 0 ? expNum : 3,
-        address: 'Cairo, Egypt',
-        latitude: 30.0444,
-        longitude: 31.2357,
+        yearsExperience: expNum,
         services: validGuids,
         documents: docs.map(({ documentType, fileId }) => ({ documentType, fileId }))
       });
@@ -936,8 +943,9 @@ export function A08Screen() {
             </p>
           </div>
           <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'الاسم الكامل' : 'Full name'}</label>
+            <label htmlFor="a08-fullName" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'الاسم الكامل' : 'Full name'}</label>
             <input
+              id="a08-fullName"
               data-testid="field-fullName"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
@@ -948,8 +956,9 @@ export function A08Screen() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'رقم الهاتف' : 'Phone number'}</label>
+              <label htmlFor="a08-phone" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'رقم الهاتف' : 'Phone number'}</label>
               <input
+                id="a08-phone"
                 data-testid="field-phone"
                 dir="ltr"
                 value={phone}
@@ -959,12 +968,15 @@ export function A08Screen() {
               />
             </div>
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'سنوات الخبرة' : 'Experience (years)'}</label>
+              <label htmlFor="a08-yearsExperience" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'سنوات الخبرة' : 'Experience (years)'}</label>
               <input
+                id="a08-yearsExperience"
                 data-testid="field-yearsExperience"
                 type="number"
                 min={0}
-                max={50}
+                max={60}
+                step={1}
+                placeholder={isAr ? 'مثال: ٣' : 'e.g. 3'}
                 value={yearsExperience}
                 onChange={(e) => setYearsExperience(e.target.value)}
                 className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
@@ -977,19 +989,24 @@ export function A08Screen() {
             <p className={`font-bold ${c.text}`}>
               {isAr ? 'تخصصاتك' : 'Your expertise'}
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5" data-testid="mechanic-expertise-picker">
               {serviceOptions.map((s) => {
                 const active = selectedServices.includes(s.id);
                 return (
                   <button
                     key={s.id}
                     type="button"
+                    aria-pressed={active}
+                    data-testid={`expertise-chip-${s.key || s.id}`}
                     onClick={() => toggleService(s.id)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition ${
-                      active ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : `${c.border} ${c.secondaryText}`
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition inline-flex items-center gap-1 ${
+                      active
+                        ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
+                        : `${c.border} ${c.secondaryText}`
                     }`}
                   >
-                    {active ? '✓ ' : ''}{isAr ? s.nameAr : s.nameEn}
+                    {active && <CheckCircle2 size={11} className="shrink-0" />}
+                    <span>{isAr ? s.nameAr : s.nameEn}</span>
                   </button>
                 );
               })}
@@ -1007,7 +1024,7 @@ export function A08Screen() {
               uploaded={docs}
               onUploaded={addDoc}
               label={isAr ? 'البطاقة الشخصية والشهادة المهنية' : 'National ID & professional certificate'}
-              subtitle={isAr ? 'اضغط لرفع صورة أو PDF (≤10MB)' : 'Tap to upload JPG/PNG/PDF (≤10MB)'}
+              subtitle={isAr ? 'اضغط للرفع · JPG/PNG/PDF (≤10MB)' : 'Tap to upload · JPG/PNG/PDF (≤10MB)'}
             />
             <KycDocUploadRow
               c={c}
@@ -1016,7 +1033,7 @@ export function A08Screen() {
               uploaded={docs}
               onUploaded={addDoc}
               label={isAr ? 'رخصة القيادة' : 'Driving license'}
-              subtitle={isAr ? 'ارفع صورة واضحة للوجه والخلف' : 'Upload a clear front and back photo'}
+              subtitle={isAr ? 'اضغط للرفع · صورة واضحة للوجه والخلف' : 'Tap to upload · Clear front & back photo'}
             />
           </div>
           {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
@@ -1040,10 +1057,10 @@ export function A09Screen() {
 
   const [fullName, setFullName] = useState(user?.fullName || nav.flow?.signupName || '');
   const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '');
-  const [truckMake, setTruckMake] = useState('Isuzu NPR');
-  const [truckType, setTruckType] = useState('Flatbed');
-  const [capacityTonnes, setCapacityTonnes] = useState('3.5');
-  const [plate, setPlate] = useState('TOW-4510');
+  const [truckMake, setTruckMake] = useState('');
+  const [truckType, setTruckType] = useState('');
+  const [capacityTonnes, setCapacityTonnes] = useState('');
+  const [plate, setPlate] = useState('');
   const [docs, setDocs] = useState([]);
   const [error, setError] = useState('');
 
@@ -1054,19 +1071,32 @@ export function A09Screen() {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
+    const capNum = Number(capacityTonnes);
+    if (!fullName.trim() || !phone.trim()) {
+      setError(isAr ? 'يرجى إدخال الاسم ورقم الهاتف.' : 'Please enter your name and phone number.');
+      return;
+    }
+    if (!truckMake.trim() || !truckType) {
+      setError(isAr ? 'يرجى إدخال ماركة ونوع الونش.' : 'Please enter truck make and select truck type.');
+      return;
+    }
+    if (!capacityTonnes || !Number.isFinite(capNum) || capNum <= 0) {
+      setError(isAr ? 'يرجى إدخال حمولة صحيحة بالطن.' : 'Please enter a valid truck capacity in tonnes.');
+      return;
+    }
+    if (!plate.trim()) {
+      setError(isAr ? 'يرجى إدخال رقم لوحة الونش.' : 'Please enter your truck plate.');
+      return;
+    }
     try {
-      const capNum = Number(capacityTonnes);
       await submitKyc.mutateAsync({
         applicantType: 'TowCaptain',
-        fullName: fullName.trim() || 'Tow Captain',
+        fullName: fullName.trim(),
         phone: phone.trim(),
         truckMake: truckMake.trim(),
         truckType,
-        truckCapacityTonnes: capNum > 0 ? capNum : 3.5,
+        truckCapacityTonnes: capNum,
         truckPlate: plate.trim(),
-        address: 'Cairo, Egypt',
-        latitude: 30.0444,
-        longitude: 31.2357,
         services: [],
         documents: docs.map(({ documentType, fileId }) => ({ documentType, fileId }))
       });
@@ -1092,8 +1122,9 @@ export function A09Screen() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'الاسم الكامل' : 'Full name'}</label>
+              <label htmlFor="a09-fullName" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'الاسم الكامل' : 'Full name'}</label>
               <input
+                id="a09-fullName"
                 data-testid="field-fullName"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -1102,8 +1133,9 @@ export function A09Screen() {
               />
             </div>
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'رقم الهاتف' : 'Phone number'}</label>
+              <label htmlFor="a09-phone" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'رقم الهاتف' : 'Phone number'}</label>
               <input
+                id="a09-phone"
                 data-testid="field-phone"
                 dir="ltr"
                 value={phone}
@@ -1115,39 +1147,46 @@ export function A09Screen() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'ماركة الونش' : 'Truck make & model'}</label>
+              <label htmlFor="a09-truckMake" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'ماركة الونش' : 'Truck make & model'}</label>
               <input
+                id="a09-truckMake"
                 data-testid="field-truckMake"
                 value={truckMake}
                 onChange={(e) => setTruckMake(e.target.value)}
+                placeholder={isAr ? 'مثال: شفروليه جامبو' : 'Make & model'}
                 className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
                 required
               />
             </div>
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'نوع الونش' : 'Truck type'}</label>
+              <label htmlFor="a09-truckType" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'نوع الونش' : 'Truck type'}</label>
               <select
+                id="a09-truckType"
                 data-testid="field-truckType"
                 value={truckType}
                 onChange={(e) => setTruckType(e.target.value)}
                 className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
+                required
               >
+                <option value="">{isAr ? 'اختر نوع الونش...' : 'Select truck type...'}</option>
                 <option value="Flatbed">{isAr ? 'ونش سطحة' : 'Flatbed'}</option>
                 <option value="WheelLift">{isAr ? 'رفع العجلات' : 'Wheel-Lift'}</option>
-                <option value="HookAndChain">{isAr ? 'خطاف وسلسلة' : 'Hook & Chain'}</option>
-                <option value="Integrated">{isAr ? 'ونش متكامل' : 'Integrated'}</option>
+                <option value="Hook">{isAr ? 'خطاف وسلسلة' : 'Hook & Chain'}</option>
+                <option value="Carry">{isAr ? 'ونش حمّال' : 'Self-Loader / Carry'}</option>
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'الحمولة (طن)' : 'Capacity (tonnes)'}</label>
+              <label htmlFor="a09-capacityTonnes" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'الحمولة (طن)' : 'Capacity (tonnes)'}</label>
               <input
+                id="a09-capacityTonnes"
                 data-testid="field-capacityTonnes"
                 type="number"
                 step="0.5"
                 min="0.5"
                 max="50"
+                placeholder="0.0"
                 value={capacityTonnes}
                 onChange={(e) => setCapacityTonnes(e.target.value)}
                 className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
@@ -1155,9 +1194,11 @@ export function A09Screen() {
               />
             </div>
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'لوحة الونش' : 'Truck plate'}</label>
+              <label htmlFor="a09-plate" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'لوحة الونش' : 'Truck plate'}</label>
               <input
+                id="a09-plate"
                 data-testid="field-plate"
+                dir="ltr"
                 value={plate}
                 onChange={(e) => setPlate(e.target.value)}
                 className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
@@ -1177,7 +1218,7 @@ export function A09Screen() {
               uploaded={docs}
               onUploaded={addDoc}
               label={isAr ? 'البطاقة ورخصة القيادة المهنية' : 'National ID & driving license'}
-              subtitle={isAr ? 'وجه وخلف الرخصة · اضغط للرفع' : 'Front & back attached · Tap to upload'}
+              subtitle={isAr ? 'اضغط للرفع · وجه وخلف الرخصة' : 'Tap to upload · Front & back photo'}
             />
             <KycDocUploadRow
               c={c}
@@ -1186,7 +1227,7 @@ export function A09Screen() {
               uploaded={docs}
               onUploaded={addDoc}
               label={isAr ? 'رخصة تسيير الونش والتأمين' : 'Truck registration & insurance'}
-              subtitle={isAr ? 'أضف المستندات السارية' : 'Add current registration documents'}
+              subtitle={isAr ? 'اضغط للرفع · رخصة التسيير السارية' : 'Tap to upload · Current registration'}
             />
           </div>
           {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
@@ -1211,34 +1252,34 @@ export function A10Screen() {
   const CENTER_PINS = [
     { id: 'new_cairo', en: 'Fifth Settlement, New Cairo', ar: 'التجمع الخامس، القاهرة الجديدة', lat: 30.025, lng: 31.49 },
     { id: 'nasr_city', en: 'Abbas El-Akkad, Nasr City', ar: 'عباس العقاد، مدينة نصر', lat: 30.0561, lng: 31.3301 },
-    { id: 'maadi', en: ' Autostrad Industrial Zone, Maadi', ar: 'المنطقة الصناعية بالأوتوستراد، المعادي', lat: 29.9602, lng: 31.2569 },
+    { id: 'maadi', en: 'Autostrad Industrial Zone, Maadi', ar: 'المنطقة الصناعية بالأوتوستراد، المعادي', lat: 29.9602, lng: 31.2569 },
     { id: 'october', en: 'Central Axis, 6th of October', ar: 'المحور المركزي، ٦ أكتوبر', lat: 29.9723, lng: 30.9435 }
   ];
 
   const CENTER_SERVICE_CATALOG = [
-    { key: 'oil_filter', en: 'Oil & filter change', ar: 'تغيير زيت وفلتر' },
-    { key: 'brakes', en: 'Brake inspection & pads', ar: 'فحص وتغيير الفرامل' },
-    { key: 'diagnostics', en: 'Full computer diagnostics', ar: 'فحص شامل بالكمبيوتر' },
-    { key: 'ac', en: 'AC maintenance & recharge', ar: 'صيانة وشحن التكييف' },
-    { key: 'tires', en: 'Tires & wheel alignment', ar: 'إطارات وضبط زوايا' },
-    { key: 'periodic', en: 'Periodic maintenance', ar: 'صيانة دورية شاملة' }
+    { id: '00000000-0000-0000-00c0-000000000001', key: 'oil_filter', en: 'Oil & filter change', ar: 'تغيير زيت وفلتر' },
+    { id: '00000000-0000-0000-00c0-000000000002', key: 'brakes', en: 'Brake inspection & pads', ar: 'فحص وتغيير الفرامل' },
+    { id: '00000000-0000-0000-00c0-000000000003', key: 'diagnostics', en: 'Full computer diagnostics', ar: 'فحص شامل بالكمبيوتر' },
+    { id: '00000000-0000-0000-00c0-000000000004', key: 'ac', en: 'AC maintenance & recharge', ar: 'صيانة وشحن التكييف' },
+    { id: '00000000-0000-0000-00c0-000000000005', key: 'tires', en: 'Tires & wheel alignment', ar: 'إطارات وضبط زوايا' },
+    { id: '00000000-0000-0000-00c0-000000000006', key: 'periodic', en: 'Periodic maintenance', ar: 'صيانة دورية شاملة' }
   ];
 
-  const [businessName, setBusinessName] = useState(user?.fullName || nav.flow?.signupName || '');
+  const [businessName, setBusinessName] = useState(nav.flow?.signupBusinessName || '');
   const [phone, setPhone] = useState(user?.phone || nav.flow?.signupPhone || '');
-  const [address, setAddress] = useState(isAr ? CENTER_PINS[0].ar : CENTER_PINS[0].en);
-  const [coords, setCoords] = useState({ lat: CENTER_PINS[0].lat, lng: CENTER_PINS[0].lng });
-  const [selectedServices, setSelectedServices] = useState(['oil_filter', 'brakes', 'diagnostics', 'ac']);
+  const [address, setAddress] = useState('');
+  const [pin, setPin] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [docs, setDocs] = useState([]);
   const [error, setError] = useState('');
 
-  const toggleCenterService = (key) => {
-    setSelectedServices((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  const toggleCenterService = (id) => {
+    setSelectedServices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const selectPin = (pin) => {
-    setCoords({ lat: pin.lat, lng: pin.lng });
-    setAddress(isAr ? pin.ar : pin.en);
+  const selectPin = (preset) => {
+    setPin({ lat: preset.lat, lng: preset.lng });
+    setAddress(isAr ? preset.ar : preset.en);
   };
 
   const addDoc = (doc) => {
@@ -1248,15 +1289,27 @@ export function A10Screen() {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
+    if (!businessName.trim()) {
+      setError(isAr ? 'يرجى إدخال اسم المركز.' : 'Please enter your business name.');
+      return;
+    }
+    if (!phone.trim()) {
+      setError(isAr ? 'يرجى إدخال هاتف المركز.' : 'Please enter your business phone.');
+      return;
+    }
+    if (!address.trim()) {
+      setError(isAr ? 'يرجى إدخال عنوان المركز أو تحديده على الخريطة.' : 'Please enter your center address or pick a map pin.');
+      return;
+    }
     try {
       await submitKyc.mutateAsync({
         applicantType: 'ServiceCenter',
-        businessName: businessName.trim() || 'Auto Service Center',
+        businessName: businessName.trim(),
         phone: phone.trim(),
         address: address.trim(),
-        latitude: coords.lat,
-        longitude: coords.lng,
-        services: [],
+        latitude: pin?.lat ?? null,
+        longitude: pin?.lng ?? null,
+        services: selectedServices,
         documents: docs.map(({ documentType, fileId }) => ({ documentType, fileId }))
       });
       await loadMe();
@@ -1281,18 +1334,21 @@ export function A10Screen() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'اسم المركز' : 'Business name'}</label>
+              <label htmlFor="a10-businessName" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'اسم المركز' : 'Business name'}</label>
               <input
+                id="a10-businessName"
                 data-testid="field-businessName"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
+                placeholder={isAr ? 'اسم المركز التجاري' : 'Center business name'}
                 className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
                 required
               />
             </div>
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'هاتف المركز' : 'Business phone'}</label>
+              <label htmlFor="a10-phone" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'هاتف المركز' : 'Business phone'}</label>
               <input
+                id="a10-phone"
                 data-testid="field-phone"
                 dir="ltr"
                 value={phone}
@@ -1303,32 +1359,41 @@ export function A10Screen() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'العنوان والموقع على الخريطة' : 'Address & map pin'}</label>
+            <label htmlFor="a10-address" className={`block text-[10px] ${c.secondaryText}`}>{isAr ? 'العنوان والموقع على الخريطة' : 'Address & map pin'}</label>
             <input
+              id="a10-address"
               data-testid="field-address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              placeholder={isAr ? 'أدخل عنوان المركز أو اضغط على الخريطة' : 'Enter street address or tap the map'}
               className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
               required
             />
             <MapView
-              label={`${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`}
-              subtitle={address}
+              height={165}
+              interactive
+              pin={pin}
+              onPick={({ lat, lng }) => {
+                setPin({ lat, lng });
+                if (!address.trim()) setAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+              }}
+              label={pin ? `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}` : undefined}
+              subtitle={address || undefined}
             />
             <div className="flex flex-wrap gap-1.5 pt-1" data-testid="center-pin-picker">
-              {CENTER_PINS.map((pin) => {
-                const isSelected = Math.abs(coords.lat - pin.lat) < 0.001 && Math.abs(coords.lng - pin.lng) < 0.001;
+              {CENTER_PINS.map((preset) => {
+                const isSelected = Boolean(pin && Math.abs(pin.lat - preset.lat) < 0.001 && Math.abs(pin.lng - preset.lng) < 0.001);
                 return (
                   <button
-                    key={pin.id}
+                    key={preset.id}
                     type="button"
-                    data-testid={`pin-${pin.id}`}
-                    onClick={() => selectPin(pin)}
+                    data-testid={`pin-${preset.id}`}
+                    onClick={() => selectPin(preset)}
                     className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition ${
                       isSelected ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]' : `${c.border} ${c.secondaryText}`
                     }`}
                   >
-                    📍 {isAr ? pin.ar : pin.en}
+                    📍 {isAr ? preset.ar : preset.en}
                   </button>
                 );
               })}
@@ -1340,22 +1405,29 @@ export function A10Screen() {
             </p>
             <div className="flex flex-wrap gap-1.5" data-testid="center-services-picker">
               {CENTER_SERVICE_CATALOG.map((svc) => {
-                const active = selectedServices.includes(svc.key);
+                const active = selectedServices.includes(svc.id);
                 return (
                   <button
                     key={svc.key}
                     type="button"
+                    aria-pressed={active}
                     data-testid={`center-service-${svc.key}`}
-                    onClick={() => toggleCenterService(svc.key)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition ${
-                      active ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' : `${c.border} ${c.secondaryText}`
+                    onClick={() => toggleCenterService(svc.id)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition inline-flex items-center gap-1 ${
+                      active ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400' : `${c.border} ${c.secondaryText}`
                     }`}
                   >
-                    {active ? '✓ ' : ''}{isAr ? svc.ar : svc.en}
+                    {active && <CheckCircle2 size={11} className="shrink-0" />}
+                    <span>{isAr ? svc.ar : svc.en}</span>
                   </button>
                 );
               })}
             </div>
+            <p className={`text-[10px] ${c.secondaryText}`}>
+              {isAr
+                ? 'ستُضاف الخدمات المختارة إلى قائمة خدماتك لتحديد الأسعار وتفعيلها.'
+                : 'Selected services are added to your Service Catalog so you can set prices and activate them.'}
+            </p>
           </div>
           <div className={`p-3 rounded-2xl border ${c.border} ${c.surface} space-y-2 text-xs`}>
             <p className={`font-bold ${c.text}`}>
@@ -1368,7 +1440,7 @@ export function A10Screen() {
               uploaded={docs}
               onUploaded={addDoc}
               label={isAr ? 'السجل التجاري والبطاقة الضريبية' : 'Commercial license & tax ID'}
-              subtitle={isAr ? 'رفع المستندات الرسمية للتحقق' : 'Upload documents · Required for verification'}
+              subtitle={isAr ? 'اضغط للرفع · المستندات الرسمية للتحقق' : 'Tap to upload · Required for verification'}
             />
             <KycDocUploadRow
               c={c}
@@ -1377,7 +1449,7 @@ export function A10Screen() {
               uploaded={docs}
               onUploaded={addDoc}
               label={isAr ? 'صور المركز ومنصات الصيانة' : 'Center photos'}
-              subtitle={isAr ? 'واجهة المركز ومنصات العمل' : 'Exterior and service bays'}
+              subtitle={isAr ? 'اضغط للرفع · واجهة المركز ومنصات العمل' : 'Tap to upload · Exterior and service bays'}
             />
           </div>
           {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
@@ -1447,11 +1519,11 @@ export function A11Screen() {
             </div>
             <div className="flex justify-between">
               <span className={c.secondaryText}>{isAr ? 'نوع الحساب' : 'Applicant type'}</span>
-              <span className={`font-semibold ${c.text}`}>{kyc?.applicantType || user?.role || 'Provider'}</span>
+              <span className={`font-semibold ${c.text}`}>{providerLabel(kyc?.applicantType || user?.role || 'Provider', isAr)}</span>
             </div>
             <div className="flex justify-between">
               <span className={c.secondaryText}>{isAr ? 'المستندات المرفقة' : 'Documents attached'}</span>
-              <span className={`font-semibold ${c.text}`}>{documents.length}</span>
+              <span className={`font-semibold ${c.text}`}>{fmtNumber(documents.length, lang)}</span>
             </div>
           </div>
 
@@ -1464,7 +1536,7 @@ export function A11Screen() {
                   onClick={() => nav.go('SH17', { id: d.id, fileId: d.fileId, type: d.documentType })}
                   className={`w-full p-3 rounded-xl border ${c.border} ${c.surface} flex items-center justify-between text-xs`}
                 >
-                  <span className={`font-semibold ${c.text}`}>{formatLabel(d.documentType, isAr)}</span>
+                  <span className={`font-semibold ${c.text}`}>{providerLabel(d.documentType, isAr)}</span>
                   <StatusBadge status={d.status} />
                 </button>
               ))}

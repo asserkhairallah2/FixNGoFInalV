@@ -17,6 +17,7 @@ import {
 import { usePrefs, useNav, useSession } from '../../app/stores.jsx';
 import { post, put, fileUrl } from '../../api/http.js';
 import {
+  useBootstrap,
   useProvider,
   useKyc,
   useProviderHistory,
@@ -46,6 +47,7 @@ import {
   Toast,
   formatLabel
 } from '../../ui/kit.jsx';
+import { providerLabel, plural, pluralCount } from '../auth/providerLabels.js';
 import {
   fmtMoney,
   fmtNumber,
@@ -106,7 +108,7 @@ function getArea(provider, user, isAr) {
 function getServiceLabel(item, isAr) {
   if (!item) return isAr ? 'إصلاح على الطريق' : 'Roadside Repair';
   const raw = item.serviceName || item.service || item.serviceType || item.problem || item.kind || 'mechanic';
-  return formatLabel(raw, isAr);
+  return providerLabel(raw, isAr);
 }
 
 function getCustomerName(req, isAr) {
@@ -277,7 +279,7 @@ export function M01Screen() {
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}>
         <div>
           <p className={`text-xs font-bold ${colors.text}`}>
-            {isAr ? 'التغطية متوقفة (OFF)' : 'Coverage OFF'}
+            {isAr ? 'التغطية متوقفة' : 'Coverage OFF'}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'أنت لا تستقبل طلبات جديدة حالياً.' : "You're not receiving new requests."}
@@ -316,7 +318,7 @@ export function M01Screen() {
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(todayEarningsMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'الرصيد · ج.م' : 'Balance · EGP'}
+            {isAr ? 'الرصيد' : 'Balance'}
           </p>
         </div>
       </div>
@@ -420,7 +422,7 @@ export function M02Screen() {
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}>
         <div className="space-y-1">
           <p className={`text-xs font-bold ${colors.text}`}>
-            {isAr ? 'التغطية مفعلة (ON)' : 'Coverage ON'}
+            {isAr ? 'التغطية مفعلة' : 'Coverage ON'}
           </p>
           <StatusBadge status="Online" text={isAr ? 'متصل · يستقبل الطلبات' : 'Online · Receiving jobs'} />
         </div>
@@ -451,7 +453,7 @@ export function M02Screen() {
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(availableMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'الرصيد · ج.م' : 'Balance · EGP'}
+            {isAr ? 'الرصيد' : 'Balance'}
           </p>
         </div>
       </div>
@@ -761,7 +763,21 @@ export function M04Screen({ id }) {
 
       <MapView
         label={req?.pickupAddress || (isAr ? 'موقع العميل' : 'Customer pickup location')}
-        subtitle={fmtDistance(req?.distanceKm ?? 2.4, lang)}
+        subtitle={
+          (req?.pickupDistanceKm ?? req?.distanceKm) > 0
+            ? fmtDistance(req?.pickupDistanceKm ?? req?.distanceKm, lang)
+            : undefined
+        }
+        markers={
+          req?.pickupLatitude != null && req?.pickupLongitude != null
+            ? [
+                { lat: req.pickupLatitude, lng: req.pickupLongitude },
+                ...(req?.providerLatitude != null && req?.providerLongitude != null
+                  ? [{ lat: req.providerLatitude, lng: req.providerLongitude }]
+                  : [])
+              ]
+            : []
+        }
       />
 
       <div className="flex justify-between text-xs">
@@ -827,8 +843,22 @@ export function M05Screen({ id }) {
       </div>
 
       <MapView
-        label={fmtDistance(req?.distanceKm ?? 2.4, lang)}
+        label={
+          (req?.pickupDistanceKm ?? req?.distanceKm) > 0
+            ? `${fmtDistance(req?.pickupDistanceKm ?? req?.distanceKm, lang)} · ${isAr ? 'إلى العميل' : 'to customer'}`
+            : (isAr ? 'في الطريق للعميل' : 'En route to customer')
+        }
         subtitle={req?.pickupAddress || (isAr ? 'موقع العميل' : 'Pickup address')}
+        markers={
+          req?.pickupLatitude != null && req?.pickupLongitude != null
+            ? [
+                { lat: req.pickupLatitude, lng: req.pickupLongitude },
+                ...(req?.providerLatitude != null && req?.providerLongitude != null
+                  ? [{ lat: req.providerLatitude, lng: req.providerLongitude }]
+                  : [])
+              ]
+            : []
+        }
       />
 
       <div className="space-y-1">
@@ -889,29 +919,44 @@ export function M11Screen({ id }) {
   const nav = useNav();
   const qc = useQueryClient();
   const { req } = useActiveRequest(id);
+  const boot = useBootstrap();
 
   const [diagnosis, setDiagnosis] = useState('');
-  const [calloutEgp, setCalloutEgp] = useState(150);
-  const [laborEgp, setLaborEgp] = useState(200);
-  const [partsEgp, setPartsEgp] = useState(0);
+  const [calloutEgp, setCalloutEgp] = useState('');
+  const [laborEgp, setLaborEgp] = useState('');
+  const [partsEgp, setPartsEgp] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (req?.problem && !diagnosis) {
-      setDiagnosis(req.problem);
-    }
-  }, [req?.problem]);
+  const serviceFeeMinor = boot.data?.pricing?.serviceFeeMinor ?? 5000;
+  const baseHintEgp = boot.data?.pricing?.mechanicBaseMinor
+    ? String(Math.round(boot.data.pricing.mechanicBaseMinor / 100))
+    : '0';
 
-  const serviceFeeEgp = 50;
-  const cVal = Number(calloutEgp);
-  const lVal = Number(laborEgp);
-  const pVal = Number(partsEgp);
-  const netEgp = (Number.isFinite(cVal) ? cVal : 0) + (Number.isFinite(lVal) ? lVal : 0) + (Number.isFinite(pVal) ? pVal : 0);
-  const totalEgp = netEgp + serviceFeeEgp;
+  const cVal = calloutEgp === '' ? 0 : Number(calloutEgp);
+  const lVal = laborEgp === '' ? 0 : Number(laborEgp);
+  const pVal = partsEgp === '' ? 0 : Number(partsEgp);
+  const netEgp =
+    (Number.isFinite(cVal) && cVal >= 0 ? cVal : 0) +
+    (Number.isFinite(lVal) && lVal >= 0 ? lVal : 0) +
+    (Number.isFinite(pVal) && pVal >= 0 ? pVal : 0);
+  const netMinor = Math.round(netEgp * 100);
+  const totalMinor = netMinor > 0 ? netMinor + serviceFeeMinor : 0;
 
   const handleSendQuote = async () => {
     setError('');
+    if (!diagnosis.trim()) {
+      setError(isAr ? 'يرجى كتابة تشخيص العطل.' : 'Please enter the on-site diagnosis.');
+      return;
+    }
+    if (calloutEgp === '' && laborEgp === '') {
+      setError(isAr ? 'يرجى إدخال تكلفة الانتقال أو المصنعية.' : 'Please enter call-out or labor fee.');
+      return;
+    }
+    if (netMinor <= 0) {
+      setError(isAr ? 'يجب أن تكون التكلفة التقديرية أكبر من صفر.' : 'Quote amount must be greater than zero.');
+      return;
+    }
     setBusy(true);
     try {
       if (req?.id) {
@@ -919,12 +964,10 @@ export function M11Screen({ id }) {
           await advanceRequestChain(req.id, req.status, 'Arrived');
         }
         await post('/requests/' + req.id + '/quotes', {
-          calloutMinor: Math.round((Number.isFinite(cVal) ? cVal : 0) * 100),
-          laborMinor: Math.round((Number.isFinite(lVal) ? lVal : 0) * 100),
-          partsMinor: Math.round((Number.isFinite(pVal) ? pVal : 0) * 100),
-          diagnosis:
-            diagnosis.trim() ||
-            (isAr ? 'تم فحص المركبة وتشخيص العطل في الموقع.' : 'Vehicle inspected and diagnosed on site.')
+          calloutMinor: Math.round((Number.isFinite(cVal) && cVal >= 0 ? cVal : 0) * 100),
+          laborMinor: Math.round((Number.isFinite(lVal) && lVal >= 0 ? lVal : 0) * 100),
+          partsMinor: Math.round((Number.isFinite(pVal) && pVal >= 0 ? pVal : 0) * 100),
+          diagnosis: diagnosis.trim()
         });
         qc.invalidateQueries({ queryKey: k.requests });
         qc.invalidateQueries({ queryKey: ['requests', req.id, 'quotes'] });
@@ -958,17 +1001,21 @@ export function M11Screen({ id }) {
         </div>
       </div>
 
-      <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} text-xs`}>
+      <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs`}>
         <p className={`font-bold ${colors.text}`}>
           {`${getVehicleSummary(req, isAr)} · ${getVehiclePlate(req)}`}
         </p>
+        {req?.problem && (
+          <p className={`text-[11px] ${colors.secondaryText}`}>{req.problem}</p>
+        )}
       </div>
 
       <div>
-        <label className={`text-[10px] ${colors.secondaryText}`}>
+        <label htmlFor="m11-diagnosis" className={`block text-[10px] ${colors.secondaryText}`}>
           {isAr ? 'التشخيص' : 'Diagnosis'}
         </label>
         <textarea
+          id="m11-diagnosis"
           rows={2}
           data-testid="field-diagnosis"
           value={diagnosis}
@@ -980,12 +1027,14 @@ export function M11Screen({ id }) {
 
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m11-callout" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'الانتقال · ج.م' : 'Call-out · EGP'}
           </label>
           <input
+            id="m11-callout"
             type="number"
             min="0"
+            placeholder={baseHintEgp}
             data-testid="field-callout"
             value={calloutEgp}
             onChange={(e) => setCalloutEgp(e.target.value)}
@@ -993,12 +1042,14 @@ export function M11Screen({ id }) {
           />
         </div>
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m11-labor" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'المصنعية · ج.م' : 'Labor · EGP'}
           </label>
           <input
+            id="m11-labor"
             type="number"
             min="0"
+            placeholder="0"
             data-testid="field-labor"
             value={laborEgp}
             onChange={(e) => setLaborEgp(e.target.value)}
@@ -1006,12 +1057,14 @@ export function M11Screen({ id }) {
           />
         </div>
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m11-parts" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'قطع الغيار · ج.م' : 'Parts · EGP'}
           </label>
           <input
+            id="m11-parts"
             type="number"
             min="0"
+            placeholder="0"
             data-testid="field-parts"
             value={partsEgp}
             onChange={(e) => setPartsEgp(e.target.value)}
@@ -1023,15 +1076,15 @@ export function M11Screen({ id }) {
       <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs`}>
         <div className="flex justify-between">
           <span className={colors.secondaryText}>{isAr ? 'رسوم الخدمة' : 'Service fee · Fixed'}</span>
-          <span className={colors.text}>{fmtMoney(serviceFeeEgp * 100, lang)}</span>
+          <span className={colors.text}>{fmtMoney(serviceFeeMinor, lang)}</span>
         </div>
         <div className="flex justify-between font-bold">
           <span className={colors.text}>{isAr ? 'إجمالي العميل' : 'Customer total'}</span>
-          <span className={colors.text}>{fmtMoney(totalEgp * 100, lang)}</span>
+          <span className={colors.text}>{fmtMoney(totalMinor, lang)}</span>
         </div>
         <div className="flex justify-between font-extrabold text-emerald-500">
           <span>{isAr ? 'صافي أرباحك' : 'Your net earnings'}</span>
-          <span>{fmtMoney(netEgp * 100, lang)}</span>
+          <span>{fmtMoney(netMinor, lang)}</span>
         </div>
       </div>
 
@@ -1039,8 +1092,8 @@ export function M11Screen({ id }) {
 
       <PrimaryButton onClick={handleSendQuote} disabled={busy} testId="screen-primary">
         {isAr
-          ? `إرسال العرض · ${fmtMoney(totalEgp * 100, lang)}`
-          : `Send Quote · ${fmtMoney(totalEgp * 100, lang)}`}
+          ? `إرسال العرض · ${fmtMoney(totalMinor, lang)}`
+          : `Send Quote · ${fmtMoney(totalMinor, lang)}`}
       </PrimaryButton>
     </MechanicShell>
   );
@@ -1511,7 +1564,8 @@ export function M07Screen() {
             >
               <div>
                 <p className={`font-bold ${colors.text}`}>
-                  {entry.reference || formatLabel(entry.type, isAr)}
+                  {providerLabel(entry.type, isAr)}
+                  {entry.reference ? ` · ${entry.reference}` : ''}
                 </p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
                   {fmtDateTime(entry.at || entry.createdAt, lang)}
@@ -1647,8 +1701,8 @@ export function M09Screen() {
   const area = getArea(provider, user, isAr);
   const rating = Number(provider?.rating ?? 0).toFixed(1);
   const completedJobs = provider?.completedJobs ?? 0;
-  const years = provider?.yearsExperience ?? 5;
-  const radius = provider?.coverageRadiusKm ?? 15;
+  const years = provider?.yearsExperience ?? 0;
+  const radius = provider?.coverageRadiusKm ?? 10;
   const kycStatus = kyc?.status || provider?.kycStatus || user?.kycStatus || 'Approved';
   const docs = Array.isArray(kyc?.documents) ? kyc.documents : [];
 
@@ -1669,20 +1723,18 @@ export function M09Screen() {
           <div>
             <p className={`font-bold ${colors.text}`}>{fullName}</p>
             <p className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr
-                ? `${rating} ★ · ${fmtNumber(completedJobs, lang)} مهمة مكتملة`
-                : `${rating} ★ · ${fmtNumber(completedJobs, lang)} completed jobs`}
+              {`${rating} ★ · ${pluralCount(completedJobs, 'completed job', 'completed jobs', 'مهمة مكتملة', 'مهام مكتملة', 'مهمة مكتملة', isAr)}`}
             </p>
           </div>
         </div>
         <StatusBadge
           status={kycStatus}
-          text={kycStatus === 'Approved' ? (isAr ? 'ميكانيكي معتمد' : 'Verified Mechanic') : formatLabel(kycStatus, isAr)}
+          text={kycStatus === 'Approved' ? (isAr ? 'ميكانيكي معتمد' : 'Verified Mechanic') : providerLabel(kycStatus, isAr)}
         />
         <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
           <span className={colors.secondaryText}>{isAr ? 'الخبرة' : 'Experience'}</span>
           <span className={`font-bold ${colors.text}`}>
-            {isAr ? `${fmtNumber(years, lang)} سنوات` : `${years} years`}
+            {plural(years, 'year', isAr)}
           </span>
         </div>
         <div className="flex justify-between">
@@ -1708,7 +1760,7 @@ export function M09Screen() {
                 {isAr ? 'مستندات التوثيق المهني' : 'Verification documents'}
               </p>
               <p className={`text-[10px] ${colors.secondaryText}`}>
-                {formatLabel(kycStatus, isAr)}
+                {providerLabel(kycStatus, isAr)}
               </p>
             </div>
             <ForwardChevron size={14} className={colors.secondaryText} />
@@ -1722,8 +1774,8 @@ export function M09Screen() {
               className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
             >
               <div>
-                <p className={`font-bold ${colors.text}`}>{formatLabel(doc.documentType, isAr)}</p>
-                <p className={`text-[10px] ${colors.secondaryText}`}>{formatLabel(doc.status, isAr)}</p>
+                <p className={`font-bold ${colors.text}`}>{providerLabel(doc.documentType, isAr)}</p>
+                <p className={`text-[10px] ${colors.secondaryText}`}>{providerLabel(doc.status, isAr)}</p>
               </div>
               <ForwardChevron size={14} className={colors.secondaryText} />
             </button>
@@ -1942,75 +1994,126 @@ export function M14Screen() {
   const qc = useQueryClient();
   const { user, loadMe } = useSession();
   const { data: provider } = useProvider();
+  const boot = useBootstrap();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [yearsExperience, setYearsExperience] = useState(5);
+  const [yearsExperience, setYearsExperience] = useState('');
   const [coverageArea, setCoverageArea] = useState('');
-  const [expertise, setExpertise] = useState(['diagnostics', 'battery_jump', 'tire_change']);
+  const [expertise, setExpertise] = useState([]);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const baseOptions = useMemo(() => {
+    const raw = (boot.data?.serviceTypes || []).filter((s) => s.kind !== 'Tow');
+    if (raw.length > 0) {
+      const hasOther = raw.some((s) => s.key === 'other');
+      return hasOther
+        ? raw.map((s) => ({ id: String(s.id), key: s.key, en: s.nameEn, ar: s.nameAr }))
+        : [
+            ...raw.map((s) => ({ id: String(s.id), key: s.key, en: s.nameEn, ar: s.nameAr })),
+            { id: '00000000-0000-0000-0000-000000000099', key: 'other', en: 'Other', ar: 'أخرى' }
+          ];
+    }
+    return [
+      { id: '00000000-0000-0000-0000-000000000001', key: 'mechanic', en: 'Mobile Mechanic', ar: 'ميكانيكا متنقلة' },
+      { id: '00000000-0000-0000-0000-000000000002', key: 'battery', en: 'Battery Replacement', ar: 'تبديل بطارية' },
+      { id: '00000000-0000-0000-0000-000000000003', key: 'tire', en: 'Tire Change', ar: 'تغيير إطار' },
+      { id: '00000000-0000-0000-0000-000000000004', key: 'fuel', en: 'Fuel Delivery', ar: 'توصيل وقود' },
+      { id: '00000000-0000-0000-0000-000000000099', key: 'other', en: 'Other', ar: 'أخرى' }
+    ];
+  }, [boot.data?.serviceTypes]);
 
   useEffect(() => {
     if (provider || user) {
       setFullName(provider?.fullName || user?.fullName || '');
       setEmail(provider?.email || user?.email || '');
       setPhone(provider?.phone || user?.phone || '');
-      setYearsExperience(provider?.yearsExperience ?? 5);
-      setCoverageArea(provider?.coverageArea || user?.areaLabel || 'Cairo');
-      const savedLocal = localStorage.getItem(`fixngo.expertise.${user?.id || 'me'}`);
-      if (savedLocal) {
-        try {
-          const parsedLocal = JSON.parse(savedLocal);
-          if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
-            setExpertise(parsedLocal);
-            return;
-          }
-        } catch {}
+      if (provider?.yearsExperience !== undefined && provider?.yearsExperience !== null) {
+        setYearsExperience(String(provider.yearsExperience));
       }
-      if (provider?.expertiseJson) {
-        try {
-          const parsed = JSON.parse(provider.expertiseJson);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setExpertise(parsed.map(String));
-          }
-        } catch {}
-      }
+      setCoverageArea(provider?.coverageArea || user?.areaLabel || '');
     }
   }, [provider, user]);
 
-  const expertiseOptions = [
-    { key: 'diagnostics', en: 'Mobile diagnostics', ar: 'تشخيص الأعطال المتنقل' },
-    { key: 'battery_jump', en: 'Battery jump', ar: 'شحن البطارية' },
-    { key: 'tire_change', en: 'Tire change', ar: 'تغيير الإطارات' },
-    { key: 'engine_repair', en: 'Engine repair', ar: 'إصلاح المحرك' },
-    { key: 'other', en: 'Other', ar: 'أخرى' }
-  ];
+  useEffect(() => {
+    if (!provider?.expertiseJson) return;
+    try {
+      const parsed = JSON.parse(provider.expertiseJson);
+      if (!Array.isArray(parsed)) return;
+      const aliasMap = {
+        general: 'mechanic',
+        diagnostics: 'mechanic',
+        engine_repair: 'mechanic',
+        battery_jump: 'battery',
+        tire_change: 'tire',
+        fuel_delivery: 'fuel'
+      };
+      const mapped = parsed
+        .map((item) => {
+          const raw = String(item || '').trim();
+          if (!raw) return null;
+          const byId = baseOptions.find((o) => o.id.toLowerCase() === raw.toLowerCase());
+          if (byId) return byId.id;
+          const targetKey = aliasMap[raw] || raw;
+          const byKey = baseOptions.find((o) => o.key === targetKey);
+          if (byKey) return byKey.id;
+          return raw;
+        })
+        .filter(Boolean);
+      setExpertise(Array.from(new Set(mapped)));
+    } catch {
+      // Ignore malformed JSON
+    }
+  }, [provider?.expertiseJson, baseOptions]);
 
-  const toggleExpertise = (key) => {
+  const expertiseOptions = useMemo(() => {
+    const knownIds = new Set(baseOptions.map((o) => o.id.toLowerCase()));
+    const extras = expertise
+      .filter((id) => !knownIds.has(String(id).toLowerCase()))
+      .map((id) => ({
+        id: String(id),
+        key: String(id),
+        en: providerLabel(id, false),
+        ar: providerLabel(id, true)
+      }));
+    return [...baseOptions, ...extras];
+  }, [baseOptions, expertise]);
+
+  const toggleExpertise = (id) => {
     setExpertise((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
   const handleSave = async () => {
     setError('');
+    if (!fullName.trim() || !phone.trim()) {
+      setError(isAr ? 'الاسم ورقم الهاتف مطلوبان.' : 'Full name and phone are required.');
+      return;
+    }
+    const rawExp = String(yearsExperience).trim();
+    const expNum = Number(rawExp);
+    if (rawExp === '' || !Number.isFinite(expNum) || expNum < 0 || expNum > 60) {
+      setError(isAr ? 'يرجى إدخال سنوات خبرة صحيحة.' : 'Please enter valid years of experience.');
+      return;
+    }
     setBusy(true);
     try {
-      const expNum = Number(yearsExperience);
-      const radNum = Number(provider?.coverageRadiusKm ?? 15);
-      try {
-        localStorage.setItem(`fixngo.expertise.${user?.id || 'me'}`, JSON.stringify(expertise));
-      } catch {}
+      const radNum = Number(provider?.coverageRadiusKm ?? 10);
+      const validGuids = expertise.filter((id) =>
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(id))
+      );
       await put('/providers/me', {
-        fullName,
-        phone,
-        email,
-        yearsExperience: expNum > 0 ? expNum : 5,
-        coverageRadiusKm: radNum > 0 ? radNum : 15,
-        coverageArea: coverageArea || provider?.coverageArea || 'Cairo'
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        yearsExperience: Math.round(expNum),
+        expertise: validGuids,
+        coverageRadiusKm: radNum > 0 ? radNum : 10,
+        coverageArea: coverageArea.trim() || provider?.coverageArea || null
       });
       qc.invalidateQueries({ queryKey: k.provider });
       await loadMe?.();
@@ -2036,10 +2139,11 @@ export function M14Screen() {
 
       <div className="space-y-2">
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m14-fullName" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'الاسم الكامل' : 'Full name'}
           </label>
           <input
+            id="m14-fullName"
             data-testid="field-fullName"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -2047,10 +2151,11 @@ export function M14Screen() {
           />
         </div>
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m14-email" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'البريد الإلكتروني' : 'Email address'}
           </label>
           <input
+            id="m14-email"
             type="email"
             data-testid="field-email"
             value={email}
@@ -2060,8 +2165,10 @@ export function M14Screen() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'الهاتف' : 'Phone'}</label>
+            <label htmlFor="m14-phone" className={`block text-[10px] ${colors.secondaryText}`}>{isAr ? 'الهاتف' : 'Phone'}</label>
             <input
+              id="m14-phone"
+              dir="ltr"
               data-testid="field-phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -2069,13 +2176,14 @@ export function M14Screen() {
             />
           </div>
           <div>
-            <label className={`text-[10px] ${colors.secondaryText}`}>
+            <label htmlFor="m14-yearsExperience" className={`block text-[10px] ${colors.secondaryText}`}>
               {isAr ? 'سنوات الخبرة' : 'Experience (years)'}
             </label>
             <input
+              id="m14-yearsExperience"
               type="number"
-              min="1"
-              max="50"
+              min="0"
+              max="60"
               data-testid="field-yearsExperience"
               value={yearsExperience}
               onChange={(e) => setYearsExperience(e.target.value)}
@@ -2089,20 +2197,22 @@ export function M14Screen() {
         <p className={`font-bold ${colors.text}`}>{isAr ? 'التخصصات' : 'Expertise'}</p>
         <div className="flex flex-wrap gap-1.5">
           {expertiseOptions.map((opt) => {
-            const active = expertise.includes(opt.key);
+            const active = expertise.includes(opt.id);
             return (
               <button
-                key={opt.key}
+                key={opt.id}
                 type="button"
+                aria-pressed={active}
                 data-testid={`expertise-${opt.key}`}
-                onClick={() => toggleExpertise(opt.key)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+                onClick={() => toggleExpertise(opt.id)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition inline-flex items-center gap-1 ${
                   active
-                    ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-500'
+                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-500'
                     : `${colors.border} ${colors.secondaryText}`
                 }`}
               >
-                {`${active ? '✓ ' : ''}${isAr ? opt.ar : opt.en}`}
+                {active && <CheckCircle2 size={11} className="shrink-0" />}
+                <span>{isAr ? opt.ar : opt.en}</span>
               </button>
             );
           })}
@@ -2132,18 +2242,22 @@ export function M15Screen() {
   const goOnline = useGoOnline();
 
   const [coverageArea, setCoverageArea] = useState('');
-  const [radius, setRadius] = useState(15);
-  const [availableOnline, setAvailableOnline] = useState(true);
+  const [radius, setRadius] = useState('');
+  const [availableOnline, setAvailableOnline] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (provider || user) {
-      setCoverageArea(provider?.coverageArea || user?.areaLabel || 'Cairo');
-      setRadius(provider?.coverageRadiusKm ?? 15);
-      setAvailableOnline(provider?.isOnline ?? true);
+    if (provider) {
+      setCoverageArea(provider.coverageArea || user?.areaLabel || '');
+      if (provider.coverageRadiusKm !== undefined && provider.coverageRadiusKm !== null) {
+        setRadius(String(provider.coverageRadiusKm));
+      }
+      setAvailableOnline(Boolean(provider.isOnline));
+    } else if (user?.areaLabel) {
+      setCoverageArea(user.areaLabel);
     }
-  }, [provider, user]);
+  }, [provider, user?.areaLabel]);
 
   const handleToggleOnline = async () => {
     const next = !availableOnline;
@@ -2151,8 +2265,8 @@ export function M15Screen() {
     try {
       await goOnline.mutateAsync({
         isOnline: next,
-        latitude: provider?.latitude ?? 30.0444,
-        longitude: provider?.longitude ?? 31.2357
+        latitude: provider?.latitude ?? null,
+        longitude: provider?.longitude ?? null
       });
     } catch {
       // Handled on save if offline/unverified
@@ -2161,16 +2275,24 @@ export function M15Screen() {
 
   const handleSave = async () => {
     setError('');
+    const radNum = Number(radius);
+    if (!coverageArea.trim()) {
+      setError(isAr ? 'يرجى إدخال منطقة التغطية.' : 'Please enter your coverage area.');
+      return;
+    }
+    if (String(radius).trim() === '' || !Number.isFinite(radNum) || radNum < 1 || radNum > 200) {
+      setError(isAr ? 'يرجى إدخال نصف قطر تغطية بين ١ و ٢٠٠ كم.' : 'Please enter a coverage radius between 1 and 200 km.');
+      return;
+    }
     setBusy(true);
     try {
-      const radNum = Number(radius);
-      const expNum = Number(provider?.yearsExperience ?? 5);
+      const expNum = Number(provider?.yearsExperience ?? 0);
       await put('/providers/me', {
-        coverageArea: coverageArea || 'Cairo',
-        coverageRadiusKm: radNum >= 1 ? radNum : 15,
-        yearsExperience: expNum > 0 ? expNum : 5,
-        latitude: provider?.latitude ?? 30.0444,
-        longitude: provider?.longitude ?? 31.2357
+        coverageArea: coverageArea.trim(),
+        coverageRadiusKm: radNum,
+        yearsExperience: expNum >= 0 ? expNum : 0,
+        latitude: provider?.latitude ?? null,
+        longitude: provider?.longitude ?? null
       });
       qc.invalidateQueries({ queryKey: k.provider });
       nav.go('M09');
@@ -2180,6 +2302,11 @@ export function M15Screen() {
       setBusy(false);
     }
   };
+
+  const radiusNum = Number(radius);
+  const radiusLabel = String(radius).trim() !== '' && Number.isFinite(radiusNum) && radiusNum > 0
+    ? fmtDistance(radiusNum, lang)
+    : null;
 
   return (
     <MechanicShell code="M15">
@@ -2216,33 +2343,37 @@ export function M15Screen() {
       </div>
 
       <MapView
-        label={`${coverageArea || (isAr ? 'منطقة التغطية' : 'Coverage area')} · ${fmtDistance(radius, lang)}`}
+        label={[coverageArea || (isAr ? 'منطقة التغطية' : 'Coverage area'), radiusLabel].filter(Boolean).join(' · ')}
         subtitle={availableOnline ? (isAr ? 'متصل' : 'Online') : (isAr ? 'غير متصل' : 'Offline')}
       />
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m15-coverageArea" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'منطقة التغطية' : 'Coverage area'}
           </label>
           <input
+            id="m15-coverageArea"
             data-testid="field-coverageArea"
             value={coverageArea}
             onChange={(e) => setCoverageArea(e.target.value)}
+            placeholder={isAr ? 'مثال: مدينة نصر، القاهرة' : 'e.g. Nasr City, Cairo'}
             className={`w-full px-3 h-10 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
           />
         </div>
         <div>
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label htmlFor="m15-radius" className={`block text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'نصف القطر (كم)' : 'Radius (km)'}
           </label>
           <input
+            id="m15-radius"
             type="number"
             min="1"
-            max="50"
+            max="200"
             data-testid="field-coverageRadiusKm"
             value={radius}
             onChange={(e) => setRadius(e.target.value)}
+            placeholder="10"
             className={`w-full px-3 h-10 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
           />
         </div>
@@ -2254,8 +2385,8 @@ export function M15Screen() {
           min="1"
           max="50"
           aria-label={isAr ? 'نصف القطر' : 'Radius slider'}
-          value={radius}
-          onChange={(e) => setRadius(Number(e.target.value))}
+          value={Number.isFinite(radiusNum) && radiusNum >= 1 ? Math.min(50, radiusNum) : 10}
+          onChange={(e) => setRadius(e.target.value)}
           className="w-full accent-[#E51C23]"
         />
       </div>

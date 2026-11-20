@@ -19,7 +19,8 @@ import {
   Trash2,
   Users,
   LogOut,
-  CreditCard
+  CreditCard,
+  Wallet
 } from 'lucide-react';
 import { usePrefs, useNav } from '../../app/stores.jsx';
 import { get, post, put, del } from '../../api/http.js';
@@ -43,6 +44,7 @@ import {
   Skeleton,
   ErrorState
 } from '../../ui/kit.jsx';
+import { providerLabel, plural, pluralCount } from '../auth/providerLabels.js';
 import { fmtMoney, fmtNumber, fmtDate, fmtTime, fmtDateTime } from '../../i18n/format.js';
 import { WORKSHOP_IMAGE } from '../../assets/images.js';
 
@@ -122,7 +124,11 @@ export function SC01Screen({ code = 'SC01' }) {
   const pendingBookingsCount = bookings.filter((b) => b.status === 'Pending').length;
   const activeWoCount = workOrders.filter((w) => w.status !== 'Closed').length;
 
-  const todayDow = new Date().getDay();
+  const cairoShort = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    timeZone: 'Africa/Cairo'
+  }).format(new Date());
+  const todayDow = Math.max(0, DAY_NAMES.findIndex((d) => d.shortEn === cairoShort));
   const todayHours = hours.find((h) => Number(h.dayOfWeek) === todayDow);
 
   const menuItems = [
@@ -138,32 +144,42 @@ export function SC01Screen({ code = 'SC01' }) {
       icon: Wrench,
       title: isAr ? 'أوامر الشغل' : 'Work Orders',
       meta: isAr
-        ? `${fmtNumber(activeWoCount, lang)} قيد العمل`
+        ? `${fmtNumber(activeWoCount, lang)} قيد التنفيذ`
         : `${fmtNumber(activeWoCount, lang)} in progress`,
       target: 'SC06'
     },
     {
       icon: BookOpen,
       title: isAr ? 'قائمة الخدمات' : 'Service Catalog',
-      meta: isAr
-        ? `${fmtNumber(activeServicesCount, lang)} خدمات نشطة`
-        : `${fmtNumber(activeServicesCount, lang)} active services`,
+      meta: pluralCount(
+        activeServicesCount,
+        'active service',
+        'active services',
+        'خدمة نشطة',
+        'خدمات نشطة',
+        'خدمة نشطة',
+        isAr
+      ),
       target: 'SC04'
     },
     {
       icon: Users,
       title: isAr ? 'الحارات والفنيون' : 'Bays & Technicians',
-      meta: isAr
-        ? `${fmtNumber(bays.length, lang)} حارات`
-        : `${fmtNumber(bays.length, lang)} bays`,
+      meta: plural(bays.length, 'bay', isAr),
       target: 'SC17'
     },
     {
       icon: Star,
       title: isAr ? 'تقييمات السائقين' : 'Driver Reviews',
-      meta: isAr
-        ? `${fmtNumber(profile?.ratingCount ?? 0, lang)} تقييم سائق`
-        : `${fmtNumber(profile?.ratingCount ?? 0, lang)} driver reviews`,
+      meta: pluralCount(
+        profile?.ratingCount ?? 0,
+        'driver review',
+        'driver reviews',
+        'تقييم سائق',
+        'تقييمات سائقين',
+        'تقييم سائق',
+        isAr
+      ),
       target: 'SC07'
     },
     {
@@ -249,13 +265,27 @@ export function SC01Screen({ code = 'SC01' }) {
         </div>
 
         <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between text-[11px]`}>
-          <span className={colors.secondaryText}>
-            {todayHours
-              ? todayHours.isClosed
-                ? (isAr ? 'مغلق اليوم' : 'Closed today')
-                : `${isAr ? 'مفتوح اليوم' : 'Open today'} · ${trimTimeSpan(todayHours.openTime)} – ${trimTimeSpan(todayHours.closeTime)}`
-              : (isAr ? 'ساعات العمل اليومية' : 'Today working hours')}
-          </span>
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-[#E51C23] shrink-0" />
+            <span className={`font-semibold ${colors.text}`}>
+              {todayHours ? (
+                todayHours.isClosed ? (
+                  isAr ? 'مغلق اليوم' : 'Closed today'
+                ) : (
+                  <>
+                    {isAr ? 'ساعات العمل اليوم: ' : "Today's hours: "}
+                    <span dir="ltr">
+                      {trimTimeSpan(todayHours.openTime)}–{trimTimeSpan(todayHours.closeTime)}
+                    </span>
+                  </>
+                )
+              ) : isAr ? (
+                'ساعات العمل اليومية'
+              ) : (
+                "Today's working hours"
+              )}
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => nav.go('SC15')}
@@ -286,10 +316,10 @@ export function SC02Screen({ code = 'SC02' }) {
   }, [bookings, apptFilter]);
 
   const tabs = [
-    { id: 'Pending', label: isAr ? 'انتظار' : 'Pending' },
-    { id: 'Confirmed', label: isAr ? 'مؤكد' : 'Confirmed' },
-    { id: 'InProgress', label: isAr ? 'جاري' : 'InProgress' },
-    { id: 'Completed', label: isAr ? 'مكتمل' : 'Completed' },
+    { id: 'Pending', label: providerLabel('Pending', isAr) },
+    { id: 'Confirmed', label: providerLabel('Confirmed', isAr) },
+    { id: 'InProgress', label: providerLabel('InProgress', isAr) },
+    { id: 'Completed', label: providerLabel('Completed', isAr) },
     { id: 'All', label: isAr ? 'الكل' : 'All' }
   ];
 
@@ -303,33 +333,34 @@ export function SC02Screen({ code = 'SC02' }) {
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
             {profileQ.data?.name || (isAr ? 'مركز الخدمة' : 'Service Center')} ·{' '}
-            {isAr
-              ? `${fmtNumber(bookings.length, lang)} حجز`
-              : `${fmtNumber(bookings.length, lang)} bookings`}
+            {plural(bookings.length, 'booking', isAr)}
           </p>
         </div>
 
         <div className="grid grid-cols-5 gap-1">
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              data-testid={`filter-${tab.id}`}
-              onClick={() => setApptFilter(tab.id)}
-              className={`py-2 rounded-xl text-[10px] font-bold border ${
-                apptFilter === tab.id
-                  ? `${colors.border} ${colors.surface} ${colors.text} shadow-sm`
-                  : `border-transparent ${colors.secondaryText}`
-              }`}
-            >
-              {tab.label}
-            </button>
+            <React.Fragment key={tab.id}>
+              <button
+                type="button"
+                data-testid={`filter-${tab.id}`}
+                onClick={() => setApptFilter(tab.id)}
+                className={`py-2 px-1 rounded-xl text-[10px] font-bold border truncate ${
+                  apptFilter === tab.id
+                    ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23] shadow-sm'
+                    : `${colors.border} ${colors.surface} ${colors.secondaryText}`
+                }`}
+              >
+                {tab.label}
+              </button>{' '}
+            </React.Fragment>
           ))}
         </div>
 
         <div className="flex items-center justify-between">
           <span className={`text-xs font-semibold ${colors.secondaryText}`}>
-            {isAr ? 'المواعيد القادمة' : 'Upcoming appointments'}
+            {apptFilter === 'All'
+              ? (isAr ? 'جميع المواعيد' : 'All appointments')
+              : providerLabel(apptFilter, isAr)}
           </span>
           <button
             type="button"
@@ -443,7 +474,9 @@ export function SC03Screen({ id, params, code = 'SC03' }) {
       <div className="p-4 space-y-3.5 flex-1">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
-            {isAr ? 'تفاصيل الموعد' : 'Appointment detail'}
+            {booking?.status === 'InProgress'
+              ? providerLabel('InProgress', isAr)
+              : (isAr ? 'تفاصيل الموعد' : 'Appointment detail')}
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
             {booking ? `${booking.code} · ${fmtDateTime(booking.slotStart, lang)}` : '—'}
@@ -477,7 +510,8 @@ export function SC03Screen({ id, params, code = 'SC03' }) {
                     {booking.customerPhone && (
                       <a
                         href={`tel:${booking.customerPhone}`}
-                        className={`text-[11px] ${colors.secondaryText} underline`}
+                        dir="ltr"
+                        className={`inline-block text-[11px] ${colors.secondaryText} underline`}
                       >
                         {booking.customerPhone}
                       </a>
@@ -582,6 +616,15 @@ export function SC04Screen({ code = 'SC04' }) {
 
   async function handleToggle(e, srv) {
     e.stopPropagation();
+    if (!srv.isActive && (!srv.priceMinor || srv.priceMinor <= 0)) {
+      setToast(
+        isAr
+          ? 'يرجى تحديد سعر الخدمة أولاً لتفعيلها'
+          : 'Set a service price (> 0 EGP) before activating'
+      );
+      nav.go('SC05', { id: srv.id });
+      return;
+    }
     try {
       await put(`/center-admin/services/${srv.id}`, {
         name: srv.name,
@@ -623,6 +666,7 @@ export function SC04Screen({ code = 'SC04' }) {
           <div className="space-y-2.5">
             {services.map((srv) => {
               const isActive = srv.isActive !== false;
+              const isDraft = !isActive && (!srv.priceMinor || srv.priceMinor <= 0);
               return (
                 <div
                   key={srv.id}
@@ -634,7 +678,11 @@ export function SC04Screen({ code = 'SC04' }) {
                     <p className={`text-xs font-extrabold ${colors.text}`}>{srv.name}</p>
                     <p className={`text-[11px] ${colors.secondaryText}`}>
                       {fmtNumber(srv.durationMinutes, lang)} {isAr ? 'د' : 'min'} ·{' '}
-                      {isActive ? (isAr ? 'نشط' : 'Active') : (isAr ? 'غير نشط' : 'Inactive')}
+                      {isDraft
+                        ? (isAr ? 'حدد السعر للتفعيل' : 'Set price to activate')
+                        : isActive
+                        ? (isAr ? 'نشط' : 'Active')
+                        : (isAr ? 'غير نشط' : 'Inactive')}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
@@ -649,8 +697,8 @@ export function SC04Screen({ code = 'SC04' }) {
                     >
                       <span className="w-4 h-4 rounded-full bg-white shadow" />
                     </button>
-                    <span className={`text-xs font-extrabold ${colors.text}`}>
-                      {fmtMoney(srv.priceMinor, lang)}
+                    <span className={`text-xs font-extrabold ${isDraft ? 'text-[#E51C23]' : colors.text}`}>
+                      {isDraft ? (isAr ? 'تحديد السعر' : 'Set price') : fmtMoney(srv.priceMinor, lang)}
                     </span>
                   </div>
                 </div>
@@ -670,7 +718,7 @@ export function SC04Screen({ code = 'SC04' }) {
             onClick={() => nav.go('SC05', { mode: 'create' })}
             testId="screen-primary"
           >
-            <Plus size={14} />
+            <Plus size={14} aria-hidden="true" />
             <span>{isAr ? 'إضافة خدمة جديدة' : 'Add New Service'}</span>
           </PrimaryButton>
         </div>
@@ -690,38 +738,44 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
   const profileQ = useCenterProfile();
 
   const targetId = id || params?.id;
-  const isCreateMode = params?.mode === 'create';
+  const isCreateMode = params?.mode === 'create' || (!targetId && (!servicesQ.data || servicesQ.data.length === 0));
   const services = Array.isArray(servicesQ.data) ? servicesQ.data : [];
   const editingService = useMemo(() => {
-    if (isCreateMode) return null;
+    if (params?.mode === 'create') return null;
     if (targetId) return services.find((s) => String(s.id) === String(targetId)) || null;
     return services[0] || null;
-  }, [isCreateMode, targetId, services]);
+  }, [params?.mode, targetId, services]);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priceEgp, setPriceEgp] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('30');
+  const [durationMinutes, setDurationMinutes] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (isCreateMode) {
+    if (params?.mode === 'create') {
       setName('');
       setDescription('');
       setPriceEgp('');
-      setDurationMinutes('30');
+      setDurationMinutes('');
       setIsActive(true);
     } else if (editingService) {
       setName(editingService.name || '');
-      setDescription(editingService.description || '');
-      setPriceEgp(String(Math.round((editingService.priceMinor ?? 0) / 100)));
-      setDurationMinutes(String(editingService.durationMinutes ?? 30));
-      setIsActive(editingService.isActive !== false);
+      setDescription(
+        editingService.description === 'Set price & activate in Service Catalog'
+          ? ''
+          : (editingService.description || '')
+      );
+      const p = editingService.priceMinor ?? 0;
+      setPriceEgp(p > 0 ? String(Math.round(p / 100)) : '');
+      const d = editingService.durationMinutes ?? 0;
+      setDurationMinutes(d > 0 ? String(d) : '');
+      setIsActive(p > 0 ? editingService.isActive !== false : true);
     }
-  }, [isCreateMode, editingService]);
+  }, [params?.mode, editingService]);
 
   async function handleSave(e) {
     if (e) e.preventDefault();
@@ -842,12 +896,13 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
                 type="number"
                 min="1"
                 step="1"
+                placeholder="0"
                 value={priceEgp}
                 onChange={(e) => setPriceEgp(e.target.value)}
                 className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
                 required
               />
-              <span className={`text-[10px] ${colors.secondaryText}`}>EGP</span>
+              <span className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'ج.م' : 'EGP'}</span>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -860,6 +915,7 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
                 type="number"
                 min="5"
                 step="5"
+                placeholder={isAr ? 'مثال: ٤٥' : 'e.g. 45'}
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(e.target.value)}
                 className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
@@ -951,8 +1007,8 @@ export function SC06Screen({ code = 'SC06' }) {
   }, [workOrders, woFilter]);
 
   const tabs = [
-    { id: 'InProgress', label: isAr ? 'قيد التنفيذ' : 'InProgress' },
-    { id: 'ReadyForReview', label: isAr ? 'جاهز للمراجعة' : 'ReadyForReview' },
+    { id: 'InProgress', label: providerLabel('InProgress', isAr) },
+    { id: 'ReadyForReview', label: providerLabel('ReadyForReview', isAr) },
     { id: 'All', label: isAr ? 'الكل' : 'All' }
   ];
 
@@ -965,27 +1021,26 @@ export function SC06Screen({ code = 'SC06' }) {
             {isAr ? 'أوامر الشغل' : 'Work orders'}
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
-            {isAr
-              ? `${fmtNumber(activeRepairs.length, lang)} إصلاحات نشطة · ${fmtNumber(availableBaysCount, lang)} حارات متاحة`
-              : `${fmtNumber(activeRepairs.length, lang)} active repairs · ${fmtNumber(availableBaysCount, lang)} bays available`}
+            {`${pluralCount(activeRepairs.length, 'active repair', 'active repairs', 'إصلاح نشط', 'إصلاحات نشطة', 'إصلاح نشط', isAr)} · ${plural(availableBaysCount, 'bay', isAr)} ${isAr ? 'متاحة' : 'available'}`}
           </p>
         </div>
 
         <div className="grid grid-cols-3 gap-1.5">
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              data-testid={`filter-${tab.id}`}
-              onClick={() => setWoFilter(tab.id)}
-              className={`py-2 rounded-xl text-[11px] font-bold border ${
-                woFilter === tab.id
-                  ? `${colors.border} ${colors.surface} ${colors.text}`
-                  : `border-transparent ${colors.secondaryText}`
-              }`}
-            >
-              {tab.label}
-            </button>
+            <React.Fragment key={tab.id}>
+              <button
+                type="button"
+                data-testid={`filter-${tab.id}`}
+                onClick={() => setWoFilter(tab.id)}
+                className={`py-2 px-1.5 rounded-xl text-[11px] font-bold border truncate ${
+                  woFilter === tab.id
+                    ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]'
+                    : `${colors.border} ${colors.surface} ${colors.secondaryText}`
+                }`}
+              >
+                {tab.label}
+              </button>{' '}
+            </React.Fragment>
           ))}
         </div>
 
@@ -1104,10 +1159,11 @@ export function SC07Screen({ code = 'SC07' }) {
 
   const totalCount = profileQ.data?.ratingCount ?? reviews.length;
   const recommendPercent = useMemo(() => {
-    if (profileQ.data?.recommendPercent !== undefined) return profileQ.data.recommendPercent;
-    if (!reviews.length) return 100;
+    if (totalCount === 0 && !reviews.length) return null;
+    if (profileQ.data?.recommendPercent !== undefined && totalCount > 0) return profileQ.data.recommendPercent;
+    if (!reviews.length) return null;
     return Math.round((reviews.filter((r) => r.recommend !== false).length / reviews.length) * 100);
-  }, [profileQ.data?.recommendPercent, reviews]);
+  }, [profileQ.data?.recommendPercent, reviews, totalCount]);
 
   const tabs = [
     { id: 'All', label: isAr ? 'كل التقييمات' : 'All' },
@@ -1131,33 +1187,37 @@ export function SC07Screen({ code = 'SC07' }) {
 
         <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1`}>
           <div className="flex items-center gap-2">
-            <span className={`text-2xl font-extrabold ${colors.text}`}>{avgRating}</span>
+            <span className={`text-2xl font-extrabold ${colors.text}`}>
+              {totalCount > 0 ? avgRating : '—'}
+            </span>
             <span className="text-amber-400 text-xs">★★★★★</span>
             <span className={`text-xs ${colors.secondaryText}`}>
-              {fmtNumber(totalCount, lang)} {isAr ? 'تقييم' : 'reviews'}
+              {plural(totalCount, 'review', isAr)}
             </span>
           </div>
           <p className={`text-[11px] ${colors.secondaryText}`}>
-            {fmtNumber(recommendPercent, lang)}%{' '}
-            {isAr ? 'من السائقين يوصون بمركزك' : 'of drivers recommend your center'}
+            {recommendPercent !== null
+              ? `${fmtNumber(recommendPercent, lang)}% ${isAr ? 'من السائقين يوصون بمركزك' : 'of drivers recommend your center'}`
+              : (isAr ? 'لا توجد تقييمات بعد' : 'No reviews yet')}
           </p>
         </div>
 
         <div className="grid grid-cols-3 gap-1.5">
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              data-testid={`filter-${tab.id}`}
-              onClick={() => setReviewFilter(tab.id)}
-              className={`py-2 rounded-xl text-[10px] font-bold border ${
-                reviewFilter === tab.id
-                  ? `${colors.border} ${colors.surface} ${colors.text}`
-                  : `border-transparent ${colors.secondaryText}`
-              }`}
-            >
-              {tab.label}
-            </button>
+            <React.Fragment key={tab.id}>
+              <button
+                type="button"
+                data-testid={`filter-${tab.id}`}
+                onClick={() => setReviewFilter(tab.id)}
+                className={`py-2 px-1.5 rounded-xl text-[10px] font-bold border ${
+                  reviewFilter === tab.id
+                    ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]'
+                    : `${colors.border} ${colors.surface} ${colors.secondaryText}`
+                }`}
+              >
+                {tab.label}
+              </button>{' '}
+            </React.Fragment>
           ))}
         </div>
 
@@ -1271,7 +1331,7 @@ export function SC08Screen({ code = 'SC08' }) {
     }));
   }, [filteredBookings, bookings, services, isAr, totalBookings]);
 
-  const completionPct = totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : 100;
+  const completionPct = totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : null;
 
   const tabs = [
     { id: 'week', label: isAr ? 'هذا الأسبوع' : 'This week' },
@@ -1294,19 +1354,20 @@ export function SC08Screen({ code = 'SC08' }) {
 
         <div className="grid grid-cols-3 gap-1.5">
           {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              data-testid={`period-${tab.id}`}
-              onClick={() => setReportPeriod(tab.id)}
-              className={`py-2 rounded-xl text-[11px] font-bold border ${
-                reportPeriod === tab.id
-                  ? `${colors.border} ${colors.surface} ${colors.text}`
-                  : `border-transparent ${colors.secondaryText}`
-              }`}
-            >
-              {tab.label}
-            </button>
+            <React.Fragment key={tab.id}>
+              <button
+                type="button"
+                data-testid={`period-${tab.id}`}
+                onClick={() => setReportPeriod(tab.id)}
+                className={`py-2 px-2 rounded-xl text-[11px] font-bold border ${
+                  reportPeriod === tab.id
+                    ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]'
+                    : `${colors.border} ${colors.surface} ${colors.secondaryText}`
+                }`}
+              >
+                {tab.label}
+              </button>{' '}
+            </React.Fragment>
           ))}
         </div>
 
@@ -1399,7 +1460,7 @@ export function SC08Screen({ code = 'SC08' }) {
               {isAr ? 'معدل الإتمام' : 'Completion rate'}
             </span>
             <span className={`font-bold ${colors.text}`}>
-              {fmtNumber(completionPct, lang)}%
+              {completionPct !== null ? `${fmtNumber(completionPct, lang)}%` : '—'}
             </span>
           </div>
         </div>
@@ -1512,6 +1573,7 @@ export function SC09Screen({ code = 'SC09' }) {
               <input
                 data-testid="field-phone"
                 type="tel"
+                dir="ltr"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
@@ -1617,6 +1679,21 @@ export function SC09Screen({ code = 'SC09' }) {
 
         <button
           type="button"
+          data-testid="goto-withdraw"
+          onClick={() => nav.go('SH15')}
+          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
+        >
+          <div className="flex items-center gap-2.5">
+            <Wallet size={16} className="text-red-500" />
+            <span className={`text-xs font-extrabold ${colors.text}`}>
+              {isAr ? 'سحب الأرباح' : 'Withdraw Earnings'}
+            </span>
+          </div>
+          <ForwardChevron size={14} className={colors.secondaryText} />
+        </button>
+
+        <button
+          type="button"
           data-testid="goto-settings"
           onClick={() => nav.go('SH06')}
           className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
@@ -1669,8 +1746,10 @@ export function SC10Screen({ code = 'SC10' }) {
 
   const bookingsQ = useBookings();
   const profileQ = useCenterProfile();
+  const hoursQ = useCenterHours();
 
   const bookings = Array.isArray(bookingsQ.data) ? bookingsQ.data : [];
+  const hours = Array.isArray(hoursQ.data) ? hoursQ.data : [];
 
   const days = useMemo(() => {
     const list = [];
@@ -1728,7 +1807,13 @@ export function SC10Screen({ code = 'SC10' }) {
     );
   }, [bookings, activeDay]);
 
-  const standardHours = ['09:00–10:00', '11:00–12:00', '14:00–15:00'];
+  const activeDayHours = useMemo(() => {
+    if (!activeDay) return null;
+    const dow = activeDay.date.getDay();
+    return hours.find((h) => Number(h.dayOfWeek) === dow) || null;
+  }, [activeDay, hours]);
+  const isClosedDay = activeDayHours ? Boolean(activeDayHours.isClosed) : activeDay?.date.getDay() === 5;
+  const standardHours = isClosedDay ? [] : ['09:00–10:00', '11:00–12:00', '14:00–15:00'];
 
   return (
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
@@ -1753,8 +1838,8 @@ export function SC10Screen({ code = 'SC10' }) {
               onClick={() => setSelectedIso(d.iso)}
               className={`py-2 rounded-xl text-[11px] font-bold border ${
                 activeDay?.iso === d.iso
-                  ? `${colors.border} ${colors.surface} ${colors.text}`
-                  : `border-transparent ${colors.secondaryText}`
+                  ? 'border-[#E51C23] bg-[#E51C23]/15 text-[#E51C23]'
+                  : `${colors.border} ${colors.surface} ${colors.secondaryText}`
               }`}
             >
               {d.shortLabel}
@@ -1767,17 +1852,23 @@ export function SC10Screen({ code = 'SC10' }) {
             {activeDay?.fullLabel}
           </p>
 
-          {standardHours.map((slotRange, idx) => (
-            <div
-              key={slotRange}
-              className={`flex justify-between text-xs py-1 ${idx > 0 ? 'border-t border-slate-500/10' : ''}`}
-            >
-              <span className={colors.secondaryText}>{slotRange}</span>
-              <span className="font-bold text-emerald-500">
-                {isAr ? 'متاح' : 'Available'}
-              </span>
-            </div>
-          ))}
+          {isClosedDay ? (
+            <p className={`text-xs font-semibold ${colors.secondaryText}`}>
+              {isAr ? 'مغلق في هذا اليوم' : 'Closed on this day'}
+            </p>
+          ) : (
+            standardHours.map((slotRange, idx) => (
+              <div
+                key={slotRange}
+                className={`flex justify-between text-xs py-1 ${idx > 0 ? 'border-t border-slate-500/10' : ''}`}
+              >
+                <span className={colors.secondaryText} dir="ltr">{slotRange}</span>
+                <span className="font-bold text-emerald-500">
+                  {isAr ? 'متاح' : 'Available'}
+                </span>
+              </div>
+            ))
+          )}
 
           {dayBookings.map((b) => (
             <button
@@ -1785,7 +1876,7 @@ export function SC10Screen({ code = 'SC10' }) {
               type="button"
               data-testid="calendar-booked-slot"
               onClick={() =>
-                nav.go(b.status === 'Confirmed' ? 'SC11' : 'SC03', { id: b.id })
+                nav.go(b.status === 'Confirmed' || b.status === 'InProgress' ? 'SC11' : 'SC03', { id: b.id })
               }
               className="w-full flex items-center justify-between text-start py-1.5 border-t border-slate-500/10"
             >
@@ -1796,7 +1887,7 @@ export function SC10Screen({ code = 'SC10' }) {
                 </p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
                   {b.code} · {b.customerName || (isAr ? 'عميل' : 'Customer')} ·{' '}
-                  {fmtNumber(b.durationMinutes ?? 45, lang)} {isAr ? 'د' : 'min'} · {b.status}
+                  {fmtNumber(b.durationMinutes ?? 45, lang)} {isAr ? 'د' : 'min'} · {providerLabel(b.status, isAr)}
                 </p>
               </div>
               <ForwardChevron size={14} className="text-red-500" />
@@ -1806,9 +1897,11 @@ export function SC10Screen({ code = 'SC10' }) {
 
         <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} text-[11px] ${colors.secondaryText}`}>
           <p className={`font-bold ${colors.text}`}>
-            {isAr
-              ? `${fmtNumber(dayBookings.length, lang)} مواعيد · ${fmtNumber(standardHours.length, lang)} فترات متاحة`
-              : `${fmtNumber(dayBookings.length, lang)} appointments · ${fmtNumber(standardHours.length, lang)} open slots`}
+            {`${pluralCount(dayBookings.length, 'appointment', 'appointments', 'موعد', 'مواعيد', 'موعد', isAr)} · ${
+              isClosedDay
+                ? (isAr ? 'مغلق' : 'Closed')
+                : pluralCount(standardHours.length, 'open slot', 'open slots', 'فترة متاحة', 'فترات متاحة', 'فترة متاحة', isAr)
+            }`}
           </p>
           <p>
             {isAr
@@ -1887,7 +1980,11 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
       <div className="p-4 space-y-3.5 flex-1">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
-            {isAr ? 'موعد مقبول' : 'Accepted appointment'}
+            {isInProgress
+              ? providerLabel('InProgress', isAr)
+              : booking?.status === 'Completed'
+              ? providerLabel('Completed', isAr)
+              : (isAr ? 'موعد مقبول' : 'Accepted appointment')}
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
             {booking ? `${booking.code} · ${fmtDate(booking.slotStart, lang)}` : '—'}
@@ -1914,6 +2011,7 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
                   </span>
                   <a
                     href={`tel:${booking.customerPhone}`}
+                    dir="ltr"
                     className={`font-bold ${colors.text}`}
                   >
                     {booking.customerPhone}
@@ -2990,7 +3088,7 @@ export function SC17Screen({ code = 'SC17' }) {
               >
                 <div>
                   <p className={`font-bold ${colors.text}`}>{t.name}</p>
-                  {t.phone && <p className={`text-[10px] ${colors.secondaryText}`}>{t.phone}</p>}
+                  {t.phone && <p className={`text-[10px] ${colors.secondaryText}`} dir="ltr">{t.phone}</p>}
                 </div>
                 <StatusBadge status="Active" />
               </div>
@@ -3009,6 +3107,7 @@ export function SC17Screen({ code = 'SC17' }) {
               <input
                 data-testid="field-techPhone"
                 type="tel"
+                dir="ltr"
                 value={techPhone}
                 onChange={(e) => setTechPhone(e.target.value)}
                 placeholder={isAr ? 'رقم الهاتف' : 'Phone number'}
