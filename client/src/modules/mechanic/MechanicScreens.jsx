@@ -1697,6 +1697,8 @@ export function M09Screen() {
   const fullName = getFullName(user, provider, isAr);
   const area = getArea(provider, user, isAr);
   const rating = Number(provider?.rating ?? 0).toFixed(1);
+  const ratingCount = Number(provider?.ratingCount ?? 0);
+  const recommendPercent = Number(provider?.recommendPercent ?? 0);
   const completedJobs = provider?.completedJobs ?? 0;
   const years = provider?.yearsExperience ?? 0;
   const radius = provider?.coverageRadiusKm ?? 10;
@@ -1720,7 +1722,9 @@ export function M09Screen() {
           <div>
             <p className={`font-bold ${colors.text}`}>{fullName}</p>
             <p className={`text-[10px] ${colors.secondaryText}`}>
-              {`${rating} ★ · ${pluralCount(completedJobs, 'completed job', 'completed jobs', 'مهمة مكتملة', 'مهام مكتملة', 'مهمة مكتملة', isAr)}`}
+              {ratingCount > 0
+                ? `${rating} ★ (${ratingCount}) · 👍 ${recommendPercent}% · ${pluralCount(completedJobs, 'completed job', 'completed jobs', 'مهمة مكتملة', 'مهام مكتملة', 'مهمة مكتملة', isAr)}`
+                : `${isAr ? 'بدون تقييمات بعد' : 'No reviews yet'} · ${pluralCount(completedJobs, 'completed job', 'completed jobs', 'مهمة مكتملة', 'مهام مكتملة', 'مهمة مكتملة', isAr)}`}
             </p>
           </div>
         </div>

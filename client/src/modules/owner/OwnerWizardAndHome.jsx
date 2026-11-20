@@ -4,7 +4,7 @@ import {
   usePrefs, useNav, useSession,
   AppTopBar, Card, SectionHeader, StatusBadge, Chip, PrimaryButton, SecondaryButton,
   InputField, SelectField, ToggleSwitch, EmptyState, Banner, Divider, Avatar,
-  StarRating, MapView, BottomSheet, Skeleton, egp, formatLabel, pluralCount
+  StarRating, MapView, BottomSheet, Skeleton, egp, formatLabel, pluralCount, FormValidationProvider
 } from '../../ui/kit.jsx';
 
 function useColors() {
@@ -32,7 +32,7 @@ import {
   useRequests, useRequest, useTimeline, useCandidates, useQuotes,
   useEstimate, useCreateRequest, useCancelRequest, useSelectProvider,
   useApproveQuote, useDispute, useMethods, useInvoiceForRequest,
-  useAddCard, usePay, useConfirmCash, useBookings, useUnreadCount, useSos, k
+  useAddCard, usePay, useConfirmCash, useBookings, useUnreadCount, useSos, useReviews, k
 } from '../../api/hooks.js';
 import { post, put, uploadFile, fileUrl } from '../../api/http.js';
 import { fmtDateTime } from '../../i18n/format.js';
@@ -698,6 +698,8 @@ function VehicleFormScreen({ isEdit = false, params }) {
     { value: 'Gas', label: t('Natural Gas (CNG)', 'غاز طبيعي (Gas)') },
   ];
 
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const normalisedPlate = useMemo(
     () => String(plate || '').replace(/[^a-zA-Z0-9\u0600-\u06FF\u0660-\u0669]/g, '').toUpperCase(),
     [plate]
@@ -706,28 +708,24 @@ function VehicleFormScreen({ isEdit = false, params }) {
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     setErr('');
+    const nextErrors = {};
     const parsedYear = Number(year);
     const maxYear = new Date().getUTCFullYear() + 1;
-    if (!make.trim() || !model.trim()) {
-      setErr(t('Please select vehicle make and model.', 'يرجى اختيار ماركة وموديل السيارة.'));
-      return;
-    }
+    if (!make.trim()) nextErrors.make = t('Please select the vehicle make.', 'يرجى اختيار ماركة السيارة.');
+    if (!model.trim()) nextErrors.model = t('Please select the vehicle model.', 'يرجى اختيار موديل السيارة.');
     if (!year || Number.isNaN(parsedYear) || parsedYear < 1950 || parsedYear > maxYear) {
-      setErr(t(`Please enter a valid model year (1950–${maxYear}).`, `يرجى إدخال سنة صنع صحيحة (١٩٥٠–${maxYear}).`));
+      nextErrors.year = t(`Enter a valid year (1950–${maxYear}).`, `يرجى إدخال سنة صنع صحيحة (١٩٥٠–${maxYear}).`);
+    }
+    if (!color.trim()) nextErrors.color = t('Please enter the vehicle color.', 'يرجى إدخال لون السيارة.');
+    if (!normalisedPlate) nextErrors.plate = t('Please enter the license plate number.', 'يرجى إدخال رقم لوحة السيارة.');
+    if (!fuel) nextErrors.fuel = t('Please select the fuel type.', 'يرجى اختيار نوع الوقود.');
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setErr(Object.values(nextErrors)[0]);
       return;
     }
-    if (!color.trim()) {
-      setErr(t('Please enter the vehicle color.', 'يرجى إدخال لون السيارة.'));
-      return;
-    }
-    if (!normalisedPlate) {
-      setErr(t('Please enter the license plate number.', 'يرجى إدخال رقم لوحة السيارة.'));
-      return;
-    }
-    if (!fuel) {
-      setErr(t('Please select the fuel type.', 'يرجى اختيار نوع الوقود.'));
-      return;
-    }
+    setFieldErrors({});
     try {
       await saveVehicle.mutateAsync({
         id: isEdit ? (existing?.id || params?.id) : undefined,
@@ -741,6 +739,7 @@ function VehicleFormScreen({ isEdit = false, params }) {
       });
       go('C04');
     } catch (ex) {
+      if (ex.fieldErrors) setFieldErrors(ex.fieldErrors);
       setErr(ex.message || t('Failed to save vehicle', 'فشل حفظ بيانات المركبة'));
     }
   };
@@ -751,7 +750,8 @@ function VehicleFormScreen({ isEdit = false, params }) {
         title={isEdit ? t('Edit Vehicle', 'تعديل المركبة') : t('Add Vehicle', 'إضافة مركبة جديدة')}
         onBack={back}
       />
-      <form onSubmit={handleSubmit} className="px-4 pt-4 space-y-3">
+      <FormValidationProvider errors={fieldErrors} onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '' }))}>
+        <form noValidate onSubmit={handleSubmit} className="px-4 pt-4 space-y-3">
         {err && <Banner tone="danger" title={err} />}
         <Card>
           <SelectField
@@ -827,6 +827,7 @@ function VehicleFormScreen({ isEdit = false, params }) {
             : isEdit ? t('Save Vehicle Changes', 'حفظ التعديلات') : t('Save Vehicle', 'حفظ المركبة')}
         </PrimaryButton>
       </form>
+      </FormValidationProvider>
     </div>
   );
 }
@@ -1060,21 +1061,27 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
     return draft;
   };
 
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const validateDetails = () => {
+    const nextErrors = {};
     if (!pickupAddress.trim()) {
-      setErr(t('Please enter or pin your pickup location.', 'يرجى إدخال أو تحديد موقع السيارة الحالي.'));
-      return false;
+      nextErrors.pickupAddress = t('Please enter or pin your pickup location.', 'يرجى إدخال أو تحديد موقع السيارة الحالي.');
     }
     if (isTowKind) {
       if (!destAddress.trim()) {
-        setErr(t('Please enter the drop-off destination.', 'يرجى إدخال وجهة التوصيل.'));
-        return false;
+        nextErrors.destinationAddress = t('Please enter the drop-off destination.', 'يرجى إدخال وجهة التوصيل.');
       }
       if (!distanceKm || Number(distanceKm) <= 0) {
-        setErr(t('Please enter the estimated trip distance in km.', 'يرجى إدخال المسافة التقديرية بالكيلومتر.'));
-        return false;
+        nextErrors.distanceKm = t('Please enter the estimated trip distance in km.', 'يرجى إدخال المسافة التقديرية بالكيلومتر.');
       }
     }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setErr(Object.values(nextErrors)[0]);
+      return false;
+    }
+    setFieldErrors({});
     return true;
   };
 
@@ -1128,6 +1135,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
         }
         onBack={back}
       />
+      <FormValidationProvider errors={fieldErrors} onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '' }))}>
       <div className="px-4 pt-4 space-y-3">
         {err && <Banner tone="danger" title={err} />}
 
@@ -1327,6 +1335,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
           </SecondaryButton>
         </div>
       </div>
+      </FormValidationProvider>
     </div>
   );
 }
@@ -1670,13 +1679,28 @@ function OffersListScreen({ isMechanic = false, params }) {
   const { data: candidates = [], isLoading } = useCandidates(reqId);
   const selectMut = useSelectProvider(reqId);
   const [sortBy, setSortBy] = useState('recommended');
+  const [reviewCand, setReviewCand] = useState(null);
+  const { data: candReviews = [] } = useReviews('provider', reviewCand?.providerId);
   const [err, setErr] = useState('');
 
   const sorted = useMemo(() => {
     const copy = [...candidates];
-    if (sortBy === 'fastest') return copy.sort((a, b) => a.etaMinutes - b.etaMinutes);
-    if (sortBy === 'lowest') return copy.sort((a, b) => a.priceMinor - b.priceMinor);
-    return copy.sort((a, b) => b.score - a.score);
+    if (sortBy === 'top') {
+      return copy
+        .filter((x) => Number(x.ratingCount ?? 0) > 0 && Number(x.rating ?? 0) >= 4.4)
+        .sort((a, b) =>
+          Number(b.rating ?? 0) - Number(a.rating ?? 0) ||
+          Number(b.ratingCount ?? 0) - Number(a.ratingCount ?? 0) ||
+          a.etaMinutes - b.etaMinutes
+        );
+    }
+    if (sortBy === 'fastest') {
+      return copy.sort((a, b) => a.etaMinutes - b.etaMinutes || a.distanceKm - b.distanceKm || b.rating - a.rating);
+    }
+    if (sortBy === 'lowest') {
+      return copy.sort((a, b) => a.priceMinor - b.priceMinor || a.etaMinutes - b.etaMinutes || b.rating - a.rating);
+    }
+    return copy.sort((a, b) => a.score - b.score || Number(b.rating ?? 0) - Number(a.rating ?? 0));
   }, [candidates, sortBy]);
 
   const handleSelect = async (cand) => {
@@ -1699,10 +1723,11 @@ function OffersListScreen({ isMechanic = false, params }) {
       <div className="px-4 pt-3 space-y-3">
         {err && <Banner tone="danger" title={err} />}
 
-        {/* Sort Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {/* Sort & Filter Chips */}
+        <div className="flex items-center gap-1.5 flex-wrap pb-0.5">
           {[
             { id: 'recommended', en: 'Recommended', ar: 'الموصى به' },
+            { id: 'top', en: 'Top Rated ⭐', ar: 'الأعلى تقييماً ⭐' },
             { id: 'fastest', en: 'Fastest ETA', ar: 'الأسرع وصولاً' },
             { id: 'lowest', en: 'Lowest Fare', ar: 'الأقل سعراً' },
           ].map((tab) => (
@@ -1719,55 +1744,111 @@ function OffersListScreen({ isMechanic = false, params }) {
         {!isLoading && sorted.length === 0 ? (
           <EmptyState
             icon="🛻"
-            title={t('No Providers Available Right Now', 'لا يوجد مقدمو خدمة متاحون حالياً')}
-            subtitle={t('Use the Simulator Dock or expand search radius to match online providers.', 'استخدم لوحة المحاكاة أو وسّع نطاق البحث للعثور على مقدمي خدمة متصلين.')}
-            action={<PrimaryButton onClick={() => go('C28', { id: reqId })}>{t('Expand Search Radius', 'توسيع نطاق البحث')}</PrimaryButton>}
+            title={t('No Providers Match This Filter', 'لا يوجد مقدمو خدمة مطابقون')}
+            subtitle={t('Switch back to Recommended or expand search radius to match online providers.', 'انتقل إلى الموصى به أو وسّع نطاق البحث للعثور على مقدمي خدمة متصلين.')}
+            action={<PrimaryButton onClick={() => (sortBy !== 'recommended' ? setSortBy('recommended') : go('C28', { id: reqId }))}>{sortBy !== 'recommended' ? t('Show All Online Providers', 'عرض جميع المتصلين') : t('Expand Search Radius', 'توسيع نطاق البحث')}</PrimaryButton>}
           />
         ) : (
-          sorted.map((cand, idx) => (
-            <Card key={cand.providerId}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar name={cand.name} size={44} />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold" style={{ color: c.text }}>{cand.name}</span>
-                      {idx === 0 && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
-                          {t('Top Match', 'الأفضل')}
-                        </span>
+          sorted.map((cand, idx) => {
+            const revCount = Number(cand.ratingCount ?? 0);
+            const ratingVal = Number(cand.rating ?? 0);
+            const recPct = Number(cand.recommendPercent ?? 0);
+            const jobsCount = Number(cand.completedJobs ?? 0);
+
+            return (
+              <Card key={cand.providerId}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <Avatar name={cand.name} size={44} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold truncate" style={{ color: c.text }}>{cand.name}</span>
+                        {idx === 0 && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
+                            {sortBy === 'fastest'
+                              ? t('Closest', 'الأقرب')
+                              : sortBy === 'lowest'
+                              ? t('Best Fare', 'أفضل سعر')
+                              : sortBy === 'top'
+                              ? t('Highest Rated', 'الأعلى تقييماً')
+                              : t('Top Match', 'الأفضل')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs flex items-center flex-wrap gap-1.5 mt-1" style={{ color: c.text2 }}>
+                        {revCount > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setReviewCand(cand)}
+                            className="inline-flex items-center gap-1 underline hover:opacity-80"
+                          >
+                            <StarRating value={ratingVal} size={11} />
+                            <span className="font-bold" style={{ color: c.accent }}>{ratingVal.toFixed(1)}</span>
+                            <span>({revCount})</span>
+                            <span>• 👍 {recPct}%</span>
+                          </button>
+                        ) : (
+                          <span>{t('New specialist', 'مختص جديد')}</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] flex items-center flex-wrap gap-1.5 mt-0.5" style={{ color: c.text3 }}>
+                        <span>📍 {Number(cand.distanceKm ?? 0).toFixed(1)} km</span>
+                        <span>• ⏱ {cand.etaMinutes} {t('min', 'دقيقة')}</span>
+                        {jobsCount > 0 && <span>• ✓ {jobsCount} {t('jobs', 'مهمة')}</span>}
+                      </div>
+                      {cand.truckMake && (
+                        <div className="text-[11px] mt-0.5" style={{ color: c.text3 }}>
+                          🛻 {cand.truckMake} • {cand.areaLabel || t('Greater Cairo', 'القاهرة الكبرى')}
+                        </div>
                       )}
                     </div>
-                    <div className="text-xs flex items-center gap-2 mt-0.5" style={{ color: c.text2 }}>
-                      <span>⭐ {Number(cand.rating ?? 0).toFixed(1)} ({cand.ratingCount ?? 0})</span>
-                      <span>• {Number(cand.distanceKm ?? 0).toFixed(1)} km</span>
-                      <span>• {cand.etaMinutes} {t('min', 'دقيقة')}</span>
+                  </div>
+                  <div className="text-end shrink-0">
+                    <div className="text-sm font-extrabold" style={{ color: c.accent }}>
+                      {egp(cand.priceMinor, isAr)}
                     </div>
-                    {cand.truckMake && (
-                      <div className="text-[11px] mt-0.5" style={{ color: c.text3 }}>
-                        🛻 {cand.truckMake} • {cand.areaLabel || t('Greater Cairo', 'القاهرة الكبرى')}
-                      </div>
-                    )}
+                    <div className="text-[10px]" style={{ color: c.text3 }}>
+                      {isMechanic ? t('Callout Fee', 'رسوم الفحص') : t('Est. Total', 'الإجمالي التقديري')}
+                    </div>
                   </div>
                 </div>
-                <div className="text-end">
-                  <div className="text-sm font-extrabold" style={{ color: c.accent }}>
-                    {egp(cand.priceMinor, isAr)}
-                  </div>
-                  <div className="text-[10px]" style={{ color: c.text3 }}>
-                    {isMechanic ? t('Callout Fee', 'رسوم الفحص') : t('Est. Total', 'الإجمالي التقديري')}
-                  </div>
-                </div>
-              </div>
 
-              <div className="mt-3 flex items-center gap-2">
-                <PrimaryButton testId="screen-primary" onClick={() => handleSelect(cand)} disabled={selectMut.isPending}>
-                  {t('Select & Dispatch', 'اختيار وإرسال الطلب')}
-                </PrimaryButton>
-              </div>
-            </Card>
-          ))
+                <div className="mt-3 flex items-center gap-2">
+                  <PrimaryButton testId="screen-primary" onClick={() => handleSelect(cand)} disabled={selectMut.isPending}>
+                    {t('Select & Dispatch', 'اختيار وإرسال الطلب')}
+                  </PrimaryButton>
+                </div>
+              </Card>
+            );
+          })
         )}
+
+        <BottomSheet
+          open={Boolean(reviewCand)}
+          onClose={() => setReviewCand(null)}
+          title={reviewCand ? `${reviewCand.name} · ${t('Customer Reviews', 'تقييمات العملاء')}` : ''}
+        >
+          <div className="max-h-72 overflow-y-auto space-y-2.5">
+            {candReviews.length === 0 ? (
+              <p className="text-xs" style={{ color: c.text2 }}>
+                {t('No written reviews yet.', 'لا توجد تقييمات مكتوبة بعد.')}
+              </p>
+            ) : (
+              candReviews.slice(0, 6).map((r) => (
+                <div key={r.id} className="rounded-xl p-3 border space-y-1" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold" style={{ color: c.text }}>{r.authorName || t('Verified Driver', 'عميل موثق')}</span>
+                    <StarRating value={r.stars} size={12} />
+                  </div>
+                  {r.text && <p className="text-xs" style={{ color: c.text2 }}>{r.text}</p>}
+                </div>
+              ))
+            )}
+          </div>
+          <SecondaryButton onClick={() => setReviewCand(null)}>
+            {t('Done', 'تم')}
+          </SecondaryButton>
+        </BottomSheet>
       </div>
     </div>
   );
@@ -2318,24 +2399,32 @@ export function C33({ params }) {
   const [isDefault, setIsDefault] = useState(false);
   const [err, setErr] = useState('');
 
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const handleSaveCard = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     setErr('');
-    if (!luhnCheck(number)) {
-      setErr(t('Please enter a valid 16-digit card number (Luhn check failed).', 'يرجى إدخال رقم بطاقة بنكية صحيح مكون من ١٦ رقماً.'));
-      return;
+    const nextErrors = {};
+    if (!number.trim()) {
+      nextErrors.Number = t('Card number is required.', 'يرجى إدخال رقم البطاقة البنكية.');
+    } else if (!luhnCheck(number)) {
+      nextErrors.Number = t('Please enter a valid 16-digit card number (Luhn check failed).', 'يرجى إدخال رقم بطاقة بنكية صحيح مكون من ١٦ رقماً.');
     }
     const parsedMonth = Number(expMonth);
     const parsedYear = Number(expYear);
     const currentYear = new Date().getUTCFullYear();
     if (!expMonth || Number.isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
-      setErr(t('Please enter a valid expiry month (1–12).', 'يرجى إدخال شهر انتهاء صحيح (١–١٢).'));
-      return;
+      nextErrors.ExpMonth = t('Enter valid month (1–12).', 'أدخل شهراً صحيحاً (١–١٢).');
     }
     if (!expYear || Number.isNaN(parsedYear) || parsedYear < currentYear || parsedYear > currentYear + 20) {
-      setErr(t(`Please enter a valid 4-digit expiry year (${currentYear}+).`, `يرجى إدخال سنة انتهاء صحيحة (${currentYear}+).`));
+      nextErrors.ExpYear = t(`Enter valid year (${currentYear}+).`, `أدخل سنة انتهاء صحيحة (${currentYear}+).`);
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setErr(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     try {
       await addCardMut.mutateAsync({
         number: number.replace(/\D/g, ''),
@@ -2346,6 +2435,12 @@ export function C33({ params }) {
       });
       go('C34', params);
     } catch (ex) {
+      if (ex.fieldErrors) {
+        setFieldErrors({
+          ...ex.fieldErrors,
+          Number: ex.fieldErrors.number || ex.fieldErrors.Number || '',
+        });
+      }
       setErr(ex.message || t('Could not add card', 'تعذر حفظ البطاقة البنكية'));
     }
   };
@@ -2353,7 +2448,8 @@ export function C33({ params }) {
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar title={t('Add Payment Card', 'إضافة بطاقة دفع')} onBack={back} />
-      <form onSubmit={handleSaveCard} className="px-4 pt-4 space-y-4">
+      <FormValidationProvider errors={fieldErrors} onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '', Number: kName.toLowerCase() === 'number' ? '' : p.Number }))}>
+      <form noValidate onSubmit={handleSaveCard} className="px-4 pt-4 space-y-4">
         {err && <Banner tone="danger" title={err} />}
         <Card>
           <InputField
@@ -2400,6 +2496,7 @@ export function C33({ params }) {
           {addCardMut.isPending ? t('Saving Card...', 'جارٍ حفظ البطاقة...') : t('Save Card', 'حفظ البطاقة')}
         </PrimaryButton>
       </form>
+      </FormValidationProvider>
     </div>
   );
 }

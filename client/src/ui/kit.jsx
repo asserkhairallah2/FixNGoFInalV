@@ -1,12 +1,13 @@
 // Shared UI kit — stable top-level components moved out of the legacy App().
 // Visual design kept 1:1; all content comes from props/context, never mock data.
-import React, { useState } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import {
   ChevronLeft, ChevronRight, AlertTriangle, Phone, Navigation, Check,
   MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck
 } from 'lucide-react';
 import { usePrefs, useNav, useSession, useNavigate } from '../app/stores.jsx';
 import { fmtMoney } from '../i18n/format.js';
+import { checkPasswordRules } from './validation.js';
 
 export { usePrefs, useNav, useSession, useNavigate };
 
@@ -376,18 +377,84 @@ export function EmergencySOSBar({ onClick }) {
   );
 }
 
+const FormValidationContext = createContext(null);
+
+export function FormValidationProvider({ errors = {}, onClearField, children }) {
+  return (
+    <FormValidationContext.Provider value={{ errors, onClearField }}>
+      {children}
+    </FormValidationContext.Provider>
+  );
+}
+
+export function fieldBoxClass(c, hasError, heightClass = 'h-11') {
+  return `w-full px-3.5 ${heightClass} rounded-xl border transition text-xs ${c.text} disabled:opacity-60 focus:outline-none ${
+    hasError
+      ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5'
+      : `${c.border} ${c.inputBg} focus:border-[#E51C23]`
+  }`;
+}
+
+export function PasswordChecklist({ password = '', showInvalid = false }) {
+  const { isAr } = usePrefs();
+  const c = useColors();
+  const rules = checkPasswordRules(password);
+  const typed = String(password ?? '').length > 0;
+
+  const items = [
+    { key: 'minLen', ok: rules.minLen, en: '8+ chars', ar: '8+ خانات' },
+    { key: 'upper', ok: rules.hasUpper, en: 'Uppercase (A-Z)', ar: 'حرف كبير (A-Z)' },
+    { key: 'lower', ok: rules.hasLower, en: 'Lowercase (a-z)', ar: 'حرف صغير (a-z)' },
+    { key: 'digit', ok: rules.hasDigit, en: 'Number (0-9)', ar: 'رقم (0-9)' },
+    { key: 'symbol', ok: rules.hasSymbol, en: 'Symbol (@#$!)', ar: 'رمز (@#$!)' },
+  ];
+
+  return (
+    <div className={`rounded-xl border ${c.border} ${c.surface} px-3 py-2 space-y-1.5`} data-testid="password-policy-note">
+      <p className={`text-[10px] font-semibold ${c.secondaryText}`}>
+        {isAr
+          ? 'شروط كلمة المرور المطلوبة (مثال: @Dd112233):'
+          : 'Password policy (e.g. @Dd112233):'}
+      </p>
+      <div className="flex flex-wrap gap-1">
+        {items.map((it) => {
+          const stateClass = it.ok
+            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            : (showInvalid || typed)
+              ? (showInvalid
+                  ? 'border-rose-500/50 bg-rose-500/10 text-rose-500'
+                  : 'border-amber-500/35 bg-amber-500/10 text-amber-600 dark:text-amber-400')
+              : `${c.border} ${c.secondaryText}`;
+          return (
+            <span
+              key={it.key}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-bold border transition ${stateClass}`}
+            >
+              <span>{it.ok ? '✓' : showInvalid ? '✕' : '•'}</span>
+              <span>{isAr ? it.ar : it.en}</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function Field({ label, children, hint, error }) {
   const c = useColors();
   return (
     <label className="block space-y-1">
-      {label && <span className={`text-[11px] font-medium ${c.secondaryText}`}>{label}</span>}
+      {label && <span className={`text-[11px] font-medium ${error ? 'text-rose-500 font-semibold' : c.secondaryText}`}>{label}</span>}
       {children}
       {hint && !error && <span className={`block text-[10px] ${c.secondaryText}`}>{hint}</span>}
-      {error && <span className="block text-[10px] text-rose-500">{error}</span>}
+      {error && <span role="alert" className="block text-[11px] font-semibold text-rose-500">{error}</span>}
     </label>
   );
 }
-export function inputClass() { const c = useColors(); return `w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`; }
+export function inputClass(hasError = false) {
+  const c = useColors();
+  return fieldBoxClass(c, hasError, 'h-11');
+}
 
 export function Toggle({ checked, onChange, label, testId }) {
   return (
@@ -456,41 +523,128 @@ export function SectionHeader({ title, subtitle, action }) {
   );
 }
 
-export function InputField({ label, value, onChange, type = 'text', placeholder = '', disabled = false, testId, dir, hint }) {
+function resolveContextualError(ctx, explicitError, errorKey, name, testId) {
+  if (explicitError) return { msg: explicitError, key: errorKey || name || '' };
+  if (!ctx?.errors) return { msg: '', key: '' };
+  const candidates = [
+    errorKey,
+    name,
+    testId ? String(testId).replace(/^field-/, '') : '',
+  ].filter(Boolean);
+  for (const k of candidates) {
+    if (ctx.errors[k]) return { msg: ctx.errors[k], key: k };
+    const lower = k[0].toLowerCase() + k.slice(1);
+    if (ctx.errors[lower]) return { msg: ctx.errors[lower], key: lower };
+  }
+  return { msg: '', key: candidates[0] || '' };
+}
+
+export function InputField({
+  label, value, onChange, type = 'text', placeholder = '', disabled = false,
+  testId, dir, hint, error, errorKey, name
+}) {
   const c = useColors();
+  const ctx = useContext(FormValidationContext);
+  const { msg: resolvedError, key: resolvedKey } = resolveContextualError(ctx, error, errorKey, name, testId);
+  const hasError = Boolean(resolvedError);
+
   return (
     <label className="block space-y-1 mb-2.5">
-      {label && <span className={`text-[11px] font-medium ${c.secondaryText}`}>{label}</span>}
+      {label && (
+        <span className={`text-[11px] font-medium ${hasError ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
+          {label}
+        </span>
+      )}
       <input
         type={type}
+        name={name}
         value={value ?? ''}
         disabled={disabled}
         placeholder={placeholder}
         data-testid={testId}
+        aria-invalid={hasError ? 'true' : undefined}
         dir={dir}
-        onChange={(e) => onChange?.(e.target.value)}
-        className={`w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text} disabled:opacity-60`}
+        onChange={(e) => {
+          if (hasError && resolvedKey) ctx?.onClearField?.(resolvedKey);
+          onChange?.(e.target.value);
+        }}
+        className={fieldBoxClass(c, hasError, 'h-11')}
       />
-      {hint && <span className={`block text-[10px] ${c.secondaryText}`}>{hint}</span>}
+      {hint && !hasError && <span className={`block text-[10px] ${c.secondaryText}`}>{hint}</span>}
+      {hasError && <span role="alert" className="block text-[11px] font-semibold text-rose-500">{resolvedError}</span>}
     </label>
   );
 }
 
-export function SelectField({ label, value, onChange, options = [], testId }) {
+export function SelectField({ label, value, onChange, options = [], testId, error, errorKey, name }) {
   const c = useColors();
+  const ctx = useContext(FormValidationContext);
+  const { msg: resolvedError, key: resolvedKey } = resolveContextualError(ctx, error, errorKey, name, testId);
+  const hasError = Boolean(resolvedError);
+
   return (
     <label className="block space-y-1 mb-2.5">
-      {label && <span className={`text-[11px] font-medium ${c.secondaryText}`}>{label}</span>}
+      {label && (
+        <span className={`text-[11px] font-medium ${hasError ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
+          {label}
+        </span>
+      )}
       <select
+        name={name}
         value={value ?? ''}
         data-testid={testId}
-        onChange={(e) => onChange?.(e.target.value)}
-        className={`w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
+        aria-invalid={hasError ? 'true' : undefined}
+        onChange={(e) => {
+          if (hasError && resolvedKey) ctx?.onClearField?.(resolvedKey);
+          onChange?.(e.target.value);
+        }}
+        className={fieldBoxClass(c, hasError, 'h-11')}
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
+      {hasError && <span role="alert" className="block text-[11px] font-semibold text-rose-500">{resolvedError}</span>}
+    </label>
+  );
+}
+
+export function TextareaField({
+  label, value, onChange, placeholder = '', rows = 3, disabled = false,
+  testId, error, errorKey, name, hint
+}) {
+  const c = useColors();
+  const ctx = useContext(FormValidationContext);
+  const { msg: resolvedError, key: resolvedKey } = resolveContextualError(ctx, error, errorKey, name, testId);
+  const hasError = Boolean(resolvedError);
+
+  return (
+    <label className="block space-y-1 mb-2.5">
+      {label && (
+        <span className={`text-[11px] font-medium ${hasError ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
+          {label}
+        </span>
+      )}
+      <textarea
+        name={name}
+        rows={rows}
+        value={value ?? ''}
+        disabled={disabled}
+        placeholder={placeholder}
+        data-testid={testId}
+        aria-invalid={hasError ? 'true' : undefined}
+        onChange={(e) => {
+          if (hasError && resolvedKey) ctx?.onClearField?.(resolvedKey);
+          onChange?.(e.target.value);
+        }}
+        className={`w-full p-3 rounded-xl border transition text-xs ${c.text} disabled:opacity-60 focus:outline-none ${
+          hasError
+            ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5'
+            : `${c.border} ${c.inputBg} focus:border-[#E51C23]`
+        }`}
+      />
+      {hint && !hasError && <span className={`block text-[10px] ${c.secondaryText}`}>{hint}</span>}
+      {hasError && <span role="alert" className="block text-[11px] font-semibold text-rose-500">{resolvedError}</span>}
     </label>
   );
 }

@@ -41,7 +41,8 @@ public sealed record StatusRequest(RequestStatus Status, string? Note = null);
 
 // ---- Matching & offers ----
 public sealed record CandidateDto(Guid ProviderId, string Name, decimal Rating, int RatingCount,
-    double DistanceKm, int EtaMinutes, long PriceMinor, double Score, string? AreaLabel, string? TruckMake);
+    double DistanceKm, int EtaMinutes, long PriceMinor, double Score, string? AreaLabel, string? TruckMake,
+    int RecommendPercent = 0, int CompletedJobs = 0);
 public sealed record SelectProviderRequest(Guid ProviderId);
 public sealed record OfferDto(Guid Id, Guid RequestId, Guid ProviderId, OfferStatus Status,
     DateTime ExpiresAt, long PriceMinor, double DistanceKm, int EtaMinutes, bool IsP0,
@@ -74,7 +75,8 @@ public sealed record WithdrawalDto(Guid Id, string Code, long AmountMinor, long 
 
 // ---- Centers, bookings, work orders ----
 public sealed record CenterDto(Guid Id, string Name, string Address, decimal Rating, int RatingCount,
-    int RecommendPercent, double? Latitude, double? Longitude, string? Description, string? Phone = null);
+    int RecommendPercent, double? Latitude, double? Longitude, string? Description, string? Phone = null,
+    IReadOnlyList<string>? Services = null, long? StartingPriceMinor = null, bool IsVerified = true);
 public sealed record CenterServiceDto(Guid Id, string Name, long PriceMinor, int DurationMinutes, string? Description = null, bool IsActive = true);
 public sealed record AvailabilityDto(DateTime SlotStart, DateTime SlotEnd, bool Available);
 public sealed record CreateBookingRequest(Guid CenterId, Guid ServiceId, DateTime SlotStart, Guid? VehicleId, string? Note);
@@ -109,11 +111,13 @@ public sealed record ProviderDto(Guid Id, string FullName, decimal Rating, int R
     string? Email = null, string? Phone = null, KycStatus KycStatus = KycStatus.None,
     int YearsExperience = 0, double CoverageRadiusKm = 5, string? CoverageArea = null,
     string? TruckMake = null, string? TruckModel = null, string? TruckPlate = null,
-    string? TruckType = null, decimal? TruckCapacityTonnes = null, string? ExpertiseJson = null);
+    string? TruckType = null, decimal? TruckCapacityTonnes = null, string? ExpertiseJson = null,
+    int RecommendPercent = 0);
 
 // ---- Reviews, notifications, chat ----
 public sealed record CreateReviewRequest(int Stars, string? Text, bool Recommend = true);
-public sealed record ReviewDto(Guid Id, Guid? ProviderId, Guid? CenterId, int Stars, string? Text, bool Recommend, DateTime CreatedAt);
+public sealed record ReviewDto(Guid Id, Guid? ProviderId, Guid? CenterId, int Stars, string? Text, bool Recommend, DateTime CreatedAt,
+    string? AuthorName = null, string? ContextLabel = null);
 public sealed record NotificationDto(Guid Id, NotificationType Type, string Title, string Body, string? DeepLink, bool IsRead, DateTime CreatedAt);
 public sealed record SendMessageRequest(string Text);
 public sealed record ChatMessageDto(Guid Id, Guid ThreadId, Guid SenderId, string MessageType, string? Text, DateTime SentAt, DateTime? ReadAt);

@@ -4,8 +4,9 @@ import {
   usePrefs, useNav, useSession,
   AppTopBar, Card, SectionHeader, StatusBadge, Chip, PrimaryButton, SecondaryButton,
   InputField, SelectField, ToggleSwitch, EmptyState, Banner, Divider, Avatar,
-  StarRating, MapView, Skeleton, egp, formatLabel, pluralCount
+  StarRating, MapView, Skeleton, egp, formatLabel, pluralCount, FormValidationProvider
 } from '../../ui/kit.jsx';
+import { validateEgyptPhoneField } from '../../ui/validation.js';
 
 function useColors() {
   const { isDark } = usePrefs();
@@ -92,6 +93,25 @@ function formatSlotTime(isoStr, isAr = false) {
   return fmtTime12(isoStr, isAr ? 'ar' : 'en');
 }
 
+function matchesCenterCategory(center, cat) {
+  const svcs = Array.isArray(center?.services) ? center.services : [];
+  const hay = `${svcs.join(' ')} ${center?.description ?? ''}`.toLowerCase();
+  if (cat === 'periodic') return /periodic|oil|filter|inspection/.test(hay);
+  if (cat === 'diagnostics') return /diagnostic|obd|ac\b|cooling|battery|charging/.test(hay);
+  if (cat === 'brakes') return /brake|alignment|tire|suspension|wheel/.test(hay);
+  return true;
+}
+
+function weightedCenterScore(center) {
+  const count = Number(center?.ratingCount ?? 0);
+  const rating = Number(center?.rating ?? 0);
+  if (count <= 0) return 0;
+  // Bayesian weighted rating (m = 4 prior weight, C = 4.2 baseline) + recommendation bonus
+  const bayes = (count / (count + 4)) * rating + (4 / (count + 4)) * 4.2;
+  const recBonus = Number(center?.recommendPercent ?? 0) / 1000;
+  return bayes + recBonus;
+}
+
 // ---------------------------------------------------------------------------
 // C17 — SERVICE CENTERS DIRECTORY
 // ---------------------------------------------------------------------------
@@ -103,20 +123,62 @@ export function C17() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
+  const searched = useMemo(() => {
+    if (!search.trim()) return [...centers];
+    const q = search.trim().toLowerCase();
+    return centers.filter((x) => {
+      const svcs = Array.isArray(x.services) ? x.services.join(' ') : '';
+      return (
+        String(x.name ?? '').toLowerCase().includes(q) ||
+        String(x.address ?? '').toLowerCase().includes(q) ||
+        String(x.description ?? '').toLowerCase().includes(q) ||
+        svcs.toLowerCase().includes(q)
+      );
+    });
+  }, [centers, search]);
+
+  const counts = useMemo(() => ({
+    all: searched.length,
+    top: searched.filter((x) => Number(x.ratingCount ?? 0) > 0 && Number(x.rating ?? 0) >= 4.5).length,
+    periodic: searched.filter((x) => matchesCenterCategory(x, 'periodic')).length,
+    diagnostics: searched.filter((x) => matchesCenterCategory(x, 'diagnostics')).length,
+    brakes: searched.filter((x) => matchesCenterCategory(x, 'brakes')).length,
+    price: searched.filter((x) => x.startingPriceMinor != null).length,
+  }), [searched]);
+
   const filtered = useMemo(() => {
-    let list = [...centers];
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((x) =>
-        String(x.name || '').toLowerCase().includes(q) ||
-        String(x.address || '').toLowerCase().includes(q)
+    let list = [...searched];
+    if (filter === 'top') {
+      return list
+        .filter((x) => Number(x.ratingCount ?? 0) > 0 && Number(x.rating ?? 0) >= 4.5)
+        .sort((a, b) =>
+          Number(b.rating ?? 0) - Number(a.rating ?? 0) ||
+          Number(b.ratingCount ?? 0) - Number(a.ratingCount ?? 0) ||
+          Number(b.recommendPercent ?? 0) - Number(a.recommendPercent ?? 0)
+        );
+    }
+    if (filter === 'periodic' || filter === 'diagnostics' || filter === 'brakes') {
+      return list
+        .filter((x) => matchesCenterCategory(x, filter))
+        .sort((a, b) => weightedCenterScore(b) - weightedCenterScore(a));
+    }
+    if (filter === 'price') {
+      return list.sort((a, b) =>
+        Number(a.startingPriceMinor ?? 9999999) - Number(b.startingPriceMinor ?? 9999999) ||
+        weightedCenterScore(b) - weightedCenterScore(a)
       );
     }
-    if (filter === 'top') {
-      list = list.sort((a, b) => Number(b.rating ?? 0) - Number(a.rating ?? 0));
-    }
     return list;
-  }, [centers, search, filter]);
+  }, [searched, filter]);
+
+  const filterTabs = [
+    { id: 'all', en: `All Centers (${counts.all})`, ar: `جميع المراكز (${counts.all})` },
+    { id: 'top', en: `Top Rated ⭐ (${counts.top})`, ar: `الأعلى تقييماً ⭐ (${counts.top})` },
+    { id: 'periodic', en: `Periodic Maintenance (${counts.periodic})`, ar: `صيانة دورية (${counts.periodic})` },
+    { id: 'diagnostics', en: `Diagnostics & AC (${counts.diagnostics})`, ar: `فحص كمبيوتر وتكييف (${counts.diagnostics})` },
+    { id: 'brakes', en: `Brakes & Alignment (${counts.brakes})`, ar: `فرامل وزوايا (${counts.brakes})` },
+    { id: 'price', en: 'Lowest Price', ar: 'الأقل سعراً' },
+  ];
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
@@ -136,17 +198,13 @@ export function C17() {
       />
       <div className="px-4 pt-3 space-y-3">
         <InputField
-          placeholder={t('Search center name or district (e.g. New Cairo, Nasr City)...', 'ابحث باسم المركز أو المنطقة (مثل القاهرة الجديدة، مدينة نصر)...')}
+          placeholder={t('Search center, district, or service (e.g. Nasr City, Oil, AC)...', 'ابحث باسم المركز أو المنطقة أو الخدمة (مثل مدينة نصر، زيت، تكييف)...')}
           value={search}
           onChange={setSearch}
         />
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {[
-            { id: 'all', en: 'All Centers', ar: 'جميع المراكز' },
-            { id: 'top', en: 'Top Rated ⭐', ar: 'الأعلى تقييماً ⭐' },
-            { id: 'periodic', en: 'Periodic Maintenance', ar: 'صيانة دورية' },
-          ].map((tab) => (
+        <div className="flex items-center gap-1.5 flex-wrap pb-0.5">
+          {filterTabs.map((tab) => (
             <Chip key={tab.id} active={filter === tab.id} onClick={() => setFilter(tab.id)}>
               {t(tab.en, tab.ar)}
             </Chip>
@@ -157,41 +215,84 @@ export function C17() {
           <EmptyState
             icon="🏢"
             title={t('No Matching Service Centers', 'لا توجد مراكز خدمة مطابقة')}
-            subtitle={t('Try clearing your search filter to view all verified workshops.', 'جرب مسح كلمة البحث لعرض جميع المراكز المعتمدة.')}
+            subtitle={t('Try switching category filters or clearing your search keywords.', 'جرب تغيير الفلتر أو مسح كلمة البحث لعرض المراكز المتاحة.')}
           />
         ) : (
-          filtered.map((center) => (
-            <Card key={center.id}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-sm font-extrabold" style={{ color: c.text }}>{center.name}</div>
-                  <div className="text-xs mt-0.5" style={{ color: c.text2 }}>📍 {center.address}</div>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs" style={{ color: c.text2 }}>
-                    <span className="font-bold" style={{ color: c.accent }}>
-                      ⭐ {Number(center.rating ?? 0).toFixed(1)}
-                    </span>
-                    <span>({pluralCount(center.ratingCount ?? 0, 'review', 'reviews', 'تقييم', 'تقييمات', 'تقييماً', isAr)})</span>
-                    <span>• 👍 {center.recommendPercent ?? 0}%</span>
+          filtered.map((center) => {
+            const revCount = Number(center.ratingCount ?? 0);
+            const ratingVal = Number(center.rating ?? 0);
+            const recPct = Number(center.recommendPercent ?? 0);
+            const svcs = Array.isArray(center.services) ? center.services : [];
+
+            return (
+              <Card key={center.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-extrabold truncate" style={{ color: c.text }}>{center.name}</div>
+                      {center.startingPriceMinor != null && (
+                        <span className="text-[11px] font-extrabold shrink-0 px-2 py-0.5 rounded-lg" style={{ backgroundColor: c.accentBg, color: c.accent }}>
+                          {t('From', 'يبدأ من')} {egp(center.startingPriceMinor, isAr)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs mt-0.5" style={{ color: c.text2 }}>📍 {center.address}</div>
+
+                    {revCount > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => go('C40', { centerId: center.id })}
+                        className="flex items-center flex-wrap gap-1.5 mt-1.5 text-xs text-start hover:opacity-85"
+                        style={{ color: c.text2 }}
+                      >
+                        <StarRating value={ratingVal} size={12} />
+                        <span className="font-extrabold" style={{ color: c.accent }}>
+                          {ratingVal.toFixed(1)}
+                        </span>
+                        <span className="underline">
+                          ({pluralCount(revCount, 'review', 'reviews', 'تقييم', 'تقييمات', 'تقييماً', isAr)})
+                        </span>
+                        <span>• 👍 {recPct}%</span>
+                      </button>
+                    ) : (
+                      <div className="text-[11px] font-medium mt-1.5" style={{ color: c.text3 }}>
+                        {t('New workshop · No verified reviews yet', 'مركز جديد · لا توجد تقييمات موثقة بعد')}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {center.description && (
-                <p className="text-xs mt-2 line-clamp-2" style={{ color: c.text2 }}>
-                  {center.description}
-                </p>
-              )}
+                {center.description && (
+                  <p className="text-xs mt-2 line-clamp-2" style={{ color: c.text2 }}>
+                    {center.description}
+                  </p>
+                )}
 
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <SecondaryButton onClick={() => go('C18', { id: center.id, centerId: center.id })}>
-                  {t('View Services', 'عرض الخدمات')}
-                </SecondaryButton>
-                <PrimaryButton onClick={() => go('C19', { centerId: center.id })}>
-                  {t('Book Slot', 'حجز موعد')}
-                </PrimaryButton>
-              </div>
-            </Card>
-          ))
+                {svcs.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {svcs.slice(0, 3).map((svcName) => (
+                      <span
+                        key={svcName}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: c.surface2, color: c.text2 }}
+                      >
+                        {svcName}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <SecondaryButton onClick={() => go('C18', { id: center.id, centerId: center.id })}>
+                    {t('View Services', 'عرض الخدمات')}
+                  </SecondaryButton>
+                  <PrimaryButton onClick={() => go('C19', { centerId: center.id })}>
+                    {t('Book Slot', 'حجز موعد')}
+                  </PrimaryButton>
+                </div>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>
@@ -233,10 +334,19 @@ export function C18({ params }) {
               <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
                 📍 {center?.address || '—'}
               </div>
-              <div className="flex items-center gap-3 mt-2 text-xs">
-                <span className="font-bold" style={{ color: c.accent }}>
-                  ⭐ {Number(center?.rating ?? 0).toFixed(1)} ({center?.ratingCount ?? 0})
-                </span>
+              <div className="flex items-center flex-wrap gap-2.5 mt-2 text-xs">
+                {Number(center?.ratingCount ?? 0) > 0 ? (
+                  <>
+                    <StarRating value={Number(center?.rating ?? 0)} size={13} />
+                    <span className="font-bold" style={{ color: c.accent }}>
+                      {Number(center?.rating ?? 0).toFixed(1)} ({center?.ratingCount ?? 0}) • 👍 {center?.recommendPercent ?? 0}%
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: c.text3 }}>
+                    {t('No verified reviews yet', 'لا توجد تقييمات بعد')}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => go('C40', { centerId: center?.id })}
@@ -921,19 +1031,58 @@ export function C40({ params }) {
   const { data: centers = [] } = useCenters();
   const { data: bookings = [] } = useBookings();
   const centerId = params?.centerId || params?.id || centers[0]?.id;
-  const bookingId = params?.bookingId || bookings.find((b) => b.centerId === centerId && b.status === 'Completed')?.id || bookings.find((b) => b.centerId === centerId)?.id || bookings[0]?.id;
+  const center = centers.find((x) => x.id === centerId) || null;
+  const bookingId = params?.bookingId
+    || bookings.find((b) => b.centerId === centerId && b.status === 'Completed')?.id
+    || bookings.find((b) => b.centerId === centerId)?.id
+    || bookings[0]?.id;
   const { data: reviews = [] } = useReviews('center', centerId);
 
   const [stars, setStars] = useState(0);
   const [text, setText] = useState('');
   const [recommend, setRecommend] = useState(false);
+  const [starFilter, setStarFilter] = useState('all');
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState('');
+  const [starsErr, setStarsErr] = useState('');
+
+  const stats = useMemo(() => {
+    const count = reviews.length;
+    if (count === 0) return { avg: 0, count: 0, recPct: 0, buckets: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } };
+    const buckets = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    let sum = 0;
+    let recCount = 0;
+    for (const r of reviews) {
+      const s = Math.min(5, Math.max(1, Number(r.stars ?? 5)));
+      buckets[s] = (buckets[s] ?? 0) + 1;
+      sum += s;
+      if (r.recommend) recCount += 1;
+    }
+    return {
+      avg: sum / count,
+      count,
+      recPct: Math.round((100 * recCount) / count),
+      buckets,
+    };
+  }, [reviews]);
+
+  const filteredReviews = useMemo(() => {
+    if (starFilter === 'positive') return reviews.filter((r) => Number(r.stars ?? 0) >= 4);
+    if (starFilter === 'critical') return reviews.filter((r) => Number(r.stars ?? 0) <= 3);
+    return reviews;
+  }, [reviews, starFilter]);
 
   const handlePostReview = async () => {
     setErr('');
+    setStarsErr('');
     if (stars < 1) {
-      setErr(t('Please select a star rating (1–5).', 'يرجى اختيار تقييم بالنجوم (من ١ إلى ٥).'));
+      const msg = t('Please select a star rating (1–5).', 'يرجى اختيار تقييم بالنجوم (من ١ إلى ٥).');
+      setStarsErr(msg);
+      setErr(msg);
+      return;
+    }
+    if (!bookingId) {
+      setErr(t('Only customers with a completed workshop visit can submit a review.', 'يمكن فقط للعملاء الذين أتموا زيارة صيانة مكتملة إضافة تقييم.'));
       return;
     }
     if (centerId && bookingId) {
@@ -955,15 +1104,59 @@ export function C40({ params }) {
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('Service Center Reviews', 'تقييمات مركز الخدمة')} onBack={back} />
+      <AppTopBar title={center?.name || t('Service Center Reviews', 'تقييمات مركز الخدمة')} onBack={back} />
       <div className="px-4 pt-4 space-y-4">
+        {/* Aggregate Rating & Distribution Card */}
+        <Card>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-2xl font-black" style={{ color: c.text }}>
+                {stats.count > 0 ? stats.avg.toFixed(1) : '—'}
+              </div>
+              <StarRating value={stats.avg} size={15} />
+              <div className="text-[11px]" style={{ color: c.text2 }}>
+                {stats.count > 0
+                  ? `${pluralCount(stats.count, 'review', 'reviews', 'تقييم', 'تقييمات', 'تقييماً', isAr)} • 👍 ${stats.recPct}%`
+                  : t('No verified reviews yet', 'لا توجد تقييمات موثقة بعد')}
+              </div>
+            </div>
+            {stats.count > 0 && (
+              <div className="flex-1 max-w-[180px] space-y-1">
+                {[5, 4, 3, 2, 1].map((s) => {
+                  const pct = Math.round(((stats.buckets[s] ?? 0) / stats.count) * 100);
+                  return (
+                    <div key={s} className="flex items-center gap-1.5 text-[10px]" style={{ color: c.text2 }}>
+                      <span className="w-3 font-bold">{s}★</span>
+                      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: c.surface2 }}>
+                        <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-6 text-end">{stats.buckets[s] ?? 0}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
+
         {err && <Banner tone="danger" title={err} />}
         <Card>
           <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
             {t('Rate Your Workshop Visit', 'قيّم زيارتك لمركز الخدمة')}
           </div>
-          <div className="my-2" data-testid="star-rating-picker">
-            <StarRating value={stars} onChange={setStars} size={28} />
+          <div
+            className={`my-2 p-2 rounded-xl border transition ${starsErr ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : 'border-transparent'}`}
+            data-testid="star-rating-picker"
+          >
+            <StarRating
+              value={stars}
+              onChange={(val) => {
+                setStars(val);
+                if (starsErr) setStarsErr('');
+              }}
+              size={28}
+            />
+            {starsErr && <p className="text-[11px] font-semibold text-rose-500 mt-1">{starsErr}</p>}
           </div>
           <InputField
             label={t('Your Review (Optional)', 'تعليقك (اختياري)')}
@@ -984,15 +1177,51 @@ export function C40({ params }) {
           </PrimaryButton>
         </Card>
 
-        <SectionHeader title={t(`Verified Customer Reviews (${reviews.length})`, `تقييمات العملاء الموثقة (${reviews.length})`)} />
-        {reviews.map((r) => (
+        <div className="flex items-center justify-between gap-2">
+          <SectionHeader title={t(`Verified Customer Reviews (${filteredReviews.length})`, `تقييمات العملاء الموثقة (${filteredReviews.length})`)} />
+        </div>
+        {reviews.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { id: 'all', en: `All (${reviews.length})`, ar: `الكل (${reviews.length})` },
+              { id: 'positive', en: '4★ & 5★', ar: '٤ و٥ نجوم' },
+              { id: 'critical', en: '3★ & below', ar: '٣ نجوم فأقل' },
+            ].map((chip) => (
+              <Chip key={chip.id} active={starFilter === chip.id} onClick={() => setStarFilter(chip.id)}>
+                {t(chip.en, chip.ar)}
+              </Chip>
+            ))}
+          </div>
+        )}
+
+        {filteredReviews.map((r) => (
           <Card key={r.id}>
-            <div className="flex items-center justify-between mb-1">
-              <StarRating value={r.stars} size={16} />
-              <span className="text-[11px]" style={{ color: c.text3 }}>
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Avatar name={r.authorName || 'Customer'} size={30} />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate" style={{ color: c.text }}>
+                    {r.authorName || t('Verified Customer', 'عميل موثق')}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <StarRating value={r.stars} size={12} />
+                    {r.recommend && (
+                      <span className="text-[10px] font-bold" style={{ color: c.success }}>
+                        ✓ {t('Recommends', 'يوصي بالمركز')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] shrink-0" style={{ color: c.text3 }}>
                 {new Date(r.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-GB')}
               </span>
             </div>
+            {r.contextLabel && (
+              <div className="text-[10px] font-semibold mb-1" style={{ color: c.accent }}>
+                🔧 {r.contextLabel}
+              </div>
+            )}
             {r.text ? (
               <p className="text-xs" style={{ color: c.text }}>{r.text}</p>
             ) : (
@@ -1250,6 +1479,7 @@ export function C23() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     if (user) {
@@ -1262,10 +1492,20 @@ export function C23() {
     if (e?.preventDefault) e.preventDefault();
     setErr('');
     setSaved(false);
+    const nextErrors = {};
     if (!fullName.trim()) {
-      setErr(t('Full name is required', 'الاسم الكامل مطلوب'));
+      nextErrors.fullName = t('Full name is required.', 'الاسم الكامل مطلوب.');
+    } else if (fullName.trim().length < 2) {
+      nextErrors.fullName = t('Full name must be at least 2 characters.', 'يجب أن يتكون الاسم من حرفين على الأقل.');
+    }
+    const phoneErr = validateEgyptPhoneField(phone, isAr);
+    if (phoneErr) nextErrors.phone = phoneErr;
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setErr(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     setSaving(true);
     try {
       const updated = await put('/auth/me', {
@@ -1280,6 +1520,7 @@ export function C23() {
       setTheme(preferredTheme);
       setSaved(true);
     } catch (ex) {
+      if (ex.fieldErrors) setFieldErrors(ex.fieldErrors);
       setErr(ex.message || t('Could not update profile', 'تعذر تحديث الملف الشخصي'));
     } finally {
       setSaving(false);
@@ -1327,41 +1568,46 @@ export function C23() {
           </div>
         </Card>
 
-        <form onSubmit={handleSave} className="space-y-3">
-          {err && <Banner tone="danger" title={err} />}
-          {saved && <Banner tone="success" title={t('Profile updated successfully', 'تم حفظ التعديلات بنجاح')} />}
+        <FormValidationProvider
+          errors={fieldErrors}
+          onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '' }))}
+        >
+          <form noValidate onSubmit={handleSave} className="space-y-3">
+            {err && <Banner tone="danger" title={err} />}
+            {saved && <Banner tone="success" title={t('Profile updated successfully', 'تم حفظ التعديلات بنجاح')} />}
 
-          <Card>
-            <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
-              {t('Quick Profile & Security Settings', 'إعدادات الحساب السريعة')}
-            </div>
-            <InputField
-              label={t('Full Name', 'الاسم الكامل')}
-              value={fullName}
-              onChange={setFullName}
-              testId="field-fullName"
-              placeholder={t('Your Full Name', 'الاسم الكامل')}
-            />
-            <InputField
-              label={t('Egypt Mobile Number', 'رقم الهاتف المحمول')}
-              value={phone}
-              onChange={setPhone}
-              testId="field-phone"
-              dir="ltr"
-              placeholder="+201012345678"
-            />
-            <div className="flex items-center justify-between pt-2 mb-3">
-              <div>
-                <div className="text-xs font-bold" style={{ color: c.text }}>{t('Require OTP on Every Login', 'طلب رمز التحقق عند كل تسجيل دخول')}</div>
-                <div className="text-[11px]" style={{ color: c.text2 }}>{t('Extra security for new devices', 'حماية إضافية عند الدخول من جهاز جديد')}</div>
+            <Card>
+              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
+                {t('Quick Profile & Security Settings', 'إعدادات الحساب السريعة')}
               </div>
-              <ToggleSwitch checked={otpOnLogin} onChange={setOtpOnLogin} />
-            </div>
-            <PrimaryButton type="submit" testId="screen-primary" disabled={saving}>
-              {saving ? t('Saving Changes...', 'جارٍ الحفظ...') : t('Save Profile Changes', 'حفظ التغييرات')}
-            </PrimaryButton>
-          </Card>
-        </form>
+              <InputField
+                label={t('Full Name', 'الاسم الكامل')}
+                value={fullName}
+                onChange={setFullName}
+                testId="field-fullName"
+                placeholder={t('Your Full Name', 'الاسم الكامل')}
+              />
+              <InputField
+                label={t('Egypt Mobile Number', 'رقم الهاتف المحمول')}
+                value={phone}
+                onChange={setPhone}
+                testId="field-phone"
+                dir="ltr"
+                placeholder="+201012345678"
+              />
+              <div className="flex items-center justify-between pt-2 mb-3">
+                <div>
+                  <div className="text-xs font-bold" style={{ color: c.text }}>{t('Require OTP on Every Login', 'طلب رمز التحقق عند كل تسجيل دخول')}</div>
+                  <div className="text-[11px]" style={{ color: c.text2 }}>{t('Extra security for new devices', 'حماية إضافية عند الدخول من جهاز جديد')}</div>
+                </div>
+                <ToggleSwitch checked={otpOnLogin} onChange={setOtpOnLogin} />
+              </div>
+              <PrimaryButton type="submit" testId="screen-primary" disabled={saving}>
+                {saving ? t('Saving Changes...', 'جارٍ الحفظ...') : t('Save Profile Changes', 'حفظ التغييرات')}
+              </PrimaryButton>
+            </Card>
+          </form>
+        </FormValidationProvider>
 
         <Card className="p-0 overflow-hidden">
           {links.map((item, idx) => (

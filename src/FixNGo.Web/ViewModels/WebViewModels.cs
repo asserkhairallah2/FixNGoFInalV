@@ -45,6 +45,9 @@ public sealed class ServiceCenterItemViewModel
     public int RecommendPercent { get; init; }
     public string? Description { get; init; }
     public string? Phone { get; init; }
+    public IReadOnlyList<string> Services { get; init; } = [];
+    public decimal? StartingPriceEgp { get; init; }
+    public bool IsVerified { get; init; } = true;
 }
 
 /// <summary>Searchable, filterable, sortable and paginated MVC ViewModel for Service Centers.</summary>
@@ -52,7 +55,8 @@ public sealed class ServiceCenterCatalogViewModel
 {
     public string? SearchQuery { get; init; }
     public string? SelectedCity { get; init; }
-    public string SortBy { get; init; } = "rating";
+    public string? SelectedCategory { get; init; }
+    public string SortBy { get; init; } = "all";
     public int CurrentPage { get; init; } = 1;
     public int PageSize { get; init; } = 6;
     public int TotalCount { get; init; }
@@ -61,11 +65,23 @@ public sealed class ServiceCenterCatalogViewModel
     public IReadOnlyList<ServiceCenterItemViewModel> Centers { get; init; } = [];
 }
 
-/// <summary>Detailed MVC ViewModel for a single verified Service Center and its published catalog.</summary>
+/// <summary>Detailed MVC ViewModel for a single verified Service Center, catalog, and customer reviews.</summary>
 public sealed class ServiceCenterDetailsViewModel
 {
     public required ServiceCenterItemViewModel Center { get; init; }
     public IReadOnlyList<ServiceOfferingViewModel> Services { get; init; } = [];
+    public IReadOnlyList<CustomerReviewViewModel> Reviews { get; init; } = [];
+}
+
+public sealed class CustomerReviewViewModel
+{
+    public Guid Id { get; init; }
+    public string AuthorName { get; init; } = "Verified Driver";
+    public int Stars { get; init; }
+    public string? Text { get; init; }
+    public bool Recommend { get; init; }
+    public string? ContextLabel { get; init; }
+    public DateTime CreatedAt { get; init; }
 }
 
 public sealed class ServiceOfferingViewModel

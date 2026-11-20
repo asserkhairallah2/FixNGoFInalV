@@ -25,7 +25,13 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
         var u = await db.Users.FirstOrDefaultAsync(x => x.Id == userId, ct)
             ?? throw new DomainException("user.not_found", "User not found.");
         var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == userId, ct) ?? new ProviderProfile();
-        return Mappings.Provider(u, p);
+        var recPct = 0;
+        if (p.RatingCount > 0)
+        {
+            var revs = await db.Reviews.Where(r => !r.IsHidden && r.ProviderId == userId).Select(r => r.Recommend).ToListAsync(ct);
+            if (revs.Count > 0) recPct = (int)Math.Round(100.0 * revs.Count(x => x) / revs.Count);
+        }
+        return Mappings.Provider(u, p, recPct);
     }
 
     public async Task<ProviderDto> UpdateProfileAsync(Guid userId, UpdateProviderProfileRequest req, CancellationToken ct = default)

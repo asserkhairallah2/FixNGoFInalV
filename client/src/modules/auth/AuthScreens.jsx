@@ -8,8 +8,11 @@ import { post, put, uploadFile } from '../../api/http.js';
 import { useBootstrap, useKyc, useSubmitKyc } from '../../api/hooks.js';
 import {
   useColors, AppTopBar, PrimaryButton, SecondaryButton, StatusBadge,
-  ShieldLogo, MapView, Toast, formatLabel
+  ShieldLogo, MapView, Toast, formatLabel, PasswordChecklist
 } from '../../ui/kit.jsx';
+import {
+  describePasswordIssues, validateEmailField, validateEgyptPhoneField
+} from '../../ui/validation.js';
 import { providerLabel } from './providerLabels.js';
 import { fmtDate, fmtNumber } from '../../i18n/format.js';
 import { NIGHT_CAR_IMAGE } from '../../assets/images.js';
@@ -126,15 +129,22 @@ export function A03Screen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    if (!email.trim() || !password) {
-      setError(isAr ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور.' : 'Please enter your email and password.');
+    const nextErrors = {};
+    const emailErr = validateEmailField(email, isAr);
+    if (emailErr) nextErrors.email = emailErr;
+    if (!password) nextErrors.password = isAr ? 'يرجى إدخال كلمة المرور.' : 'Password is required.';
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     setBusy(true);
     try {
       const user = await login(email.trim(), password);
@@ -147,10 +157,15 @@ export function A03Screen() {
         return;
       }
       if (err.status === 403 || err.code === 'auth.account_blocked') {
-        setError(isAr ? 'هذا الحساب موقوف. تواصل مع الدعم.' : 'Your account has been suspended. Please contact support.');
+        const msg = isAr ? 'هذا الحساب موقوف. تواصل مع الدعم.' : 'Your account has been suspended. Please contact support.';
+        setFieldErrors({ email: msg });
+        setError(msg);
       } else if (err.status === 401) {
-        setError(isAr ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.');
+        const msg = isAr ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' : 'Invalid email or password.';
+        setFieldErrors({ email: ' ', password: msg });
+        setError(msg);
       } else {
+        if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) setFieldErrors(err.fieldErrors);
         setError(err.message || (isAr ? 'تعذر تسجيل الدخول.' : 'Could not sign in.'));
       }
     } finally {
@@ -161,7 +176,7 @@ export function A03Screen() {
   return (
     <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="view-login">
       <AppTopBar showBack={true} onBack={() => nav.back('A02')} />
-      <form onSubmit={handleSubmit} className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
+      <form noValidate onSubmit={handleSubmit} className="p-5 pb-7 space-y-3.5 flex-1 flex flex-col justify-between">
         <div className="space-y-3.5">
           <div>
             <h1 className={`text-xl font-bold ${c.text}`}>
@@ -175,38 +190,49 @@ export function A03Screen() {
             <img src={NIGHT_CAR_IMAGE} alt="Car" className="w-full h-full object-cover" />
           </div>
           <div className="space-y-1">
-            <label htmlFor="login-email" className={`block text-[11px] font-medium ${c.secondaryText}`}>
+            <label htmlFor="login-email" className={`block text-[11px] font-medium ${fieldErrors.email ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'البريد الإلكتروني' : 'Email address'}
             </label>
-            <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg}`}>
+            <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border transition ${
+              fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+            }`}>
               <input
                 id="login-email"
                 data-testid="login-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: '' }));
+                }}
                 placeholder="name@example.com"
                 autoComplete="username"
                 className={`bg-transparent text-xs w-full focus:outline-none ${c.text}`}
-                required
               />
-              <Mail size={14} className={c.secondaryText} />
+              <Mail size={14} className={fieldErrors.email ? 'text-rose-500' : c.secondaryText} />
             </div>
+            {fieldErrors.email && fieldErrors.email.trim() && (
+              <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.email}</p>
+            )}
           </div>
           <div className="space-y-1">
-            <label htmlFor="login-password" className={`block text-[11px] font-medium ${c.secondaryText}`}>
+            <label htmlFor="login-password" className={`block text-[11px] font-medium ${fieldErrors.password ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'كلمة المرور' : 'Password'}
             </label>
-            <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg}`}>
+            <div className={`flex items-center justify-between px-3.5 h-11 rounded-xl border transition ${
+              fieldErrors.password ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+            }`}>
               <input
                 id="login-password"
                 data-testid="login-password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password || fieldErrors.email === ' ') setFieldErrors((p) => ({ ...p, password: '', email: p.email === ' ' ? '' : p.email }));
+                }}
                 autoComplete="current-password"
                 className={`bg-transparent text-xs w-full focus:outline-none ${c.text}`}
-                required
               />
               <button
                 type="button"
@@ -220,6 +246,9 @@ export function A03Screen() {
                 )}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.password}</p>
+            )}
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className={`text-[10px] ${c.secondaryText}`}>
@@ -273,6 +302,7 @@ export function A04Screen() {
   const [role, setRole] = useState('CarOwner');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
 
   const roles = [
@@ -285,14 +315,27 @@ export function A04Screen() {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    if (fullName.trim().length < 2) {
-      setError(isAr ? 'يجب أن يكون الاسم حرفين على الأقل.' : 'Name must be at least 2 characters.');
-      return;
+    const nextErrors = {};
+    if (!fullName.trim()) {
+      nextErrors.fullName = isAr ? 'يرجى إدخال الاسم الكامل.' : 'Full name is required.';
+    } else if (fullName.trim().length < 2) {
+      nextErrors.fullName = isAr ? 'يجب أن يكون الاسم حرفين على الأقل.' : 'Name must be at least 2 characters.';
     }
+    const emailErr = validateEmailField(email, isAr);
+    if (emailErr) nextErrors.email = emailErr;
+    const phoneErr = validateEgyptPhoneField(phone, isAr);
+    if (phoneErr) nextErrors.phone = phoneErr;
+    const passErr = describePasswordIssues(password, isAr);
+    if (passErr) nextErrors.password = passErr;
     if (confirmPassword && password !== confirmPassword) {
-      setError(isAr ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.');
+      nextErrors.confirmPassword = isAr ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.';
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     setBusy(true);
     try {
       const payload = {
@@ -317,6 +360,9 @@ export function A04Screen() {
       });
       nav.go('A05');
     } catch (err) {
+      if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {
+        setFieldErrors(err.fieldErrors);
+      }
       setError(err.message || (isAr ? 'تعذر إنشاء الحساب.' : 'Could not create account.'));
     } finally {
       setBusy(false);
@@ -326,7 +372,7 @@ export function A04Screen() {
   return (
     <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="screen">
       <AppTopBar showBack={true} onBack={() => nav.back('A02')} />
-      <form onSubmit={handleSubmit} className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+      <form noValidate onSubmit={handleSubmit} className="p-5 pb-8 space-y-3 flex-1 flex flex-col justify-between">
         <div className="space-y-2.5">
           <div>
             <h1 className={`text-xl font-bold ${c.text}`}>
@@ -337,7 +383,7 @@ export function A04Screen() {
             </p>
           </div>
           <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>
+            <label className={`text-[10px] font-medium ${fieldErrors.fullName ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {role === 'ServiceCenter'
                 ? (isAr ? 'اسم المركز / المنشأة' : 'Business name')
                 : (isAr ? 'الاسم الكامل' : 'Full name')}
@@ -345,27 +391,37 @@ export function A04Screen() {
             <input
               data-testid="field-fullName"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
-              required
+              onChange={(e) => {
+                setFullName(e.target.value);
+                if (fieldErrors.fullName) setFieldErrors((p) => ({ ...p, fullName: '' }));
+              }}
+              className={`w-full px-3 h-10 rounded-xl border transition text-xs ${c.text} focus:outline-none ${
+                fieldErrors.fullName ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+              }`}
             />
+            {fieldErrors.fullName && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.fullName}</p>}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>
+              <label className={`text-[10px] font-medium ${fieldErrors.email ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
                 {isAr ? 'البريد الإلكتروني' : 'Email address'}
               </label>
               <input
                 data-testid="field-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: '' }));
+                }}
+                className={`w-full px-3 h-10 rounded-xl border transition text-xs ${c.text} focus:outline-none ${
+                  fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+                }`}
               />
+              {fieldErrors.email && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.email}</p>}
             </div>
             <div className="space-y-1">
-              <label className={`text-[10px] ${c.secondaryText}`}>
+              <label className={`text-[10px] font-medium ${fieldErrors.phone ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
                 {isAr ? 'رقم الموبايل' : 'Mobile number'}
               </label>
               <input
@@ -374,41 +430,58 @@ export function A04Screen() {
                 dir="ltr"
                 placeholder="+20 10..."
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
-                required
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: '' }));
+                }}
+                className={`w-full px-3 h-10 rounded-xl border transition text-xs ${c.text} focus:outline-none ${
+                  fieldErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+                }`}
               />
+              {fieldErrors.phone && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.phone}</p>}
             </div>
           </div>
-          <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>
+          <div className="space-y-1.5">
+            <label className={`text-[10px] font-medium ${fieldErrors.password ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'كلمة المرور' : 'Password'}
             </label>
-            <div className={`flex items-center justify-between px-3 h-10 rounded-xl border ${c.border} ${c.inputBg}`}>
+            <div className={`flex items-center justify-between px-3 h-10 rounded-xl border transition ${
+              fieldErrors.password ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+            }`}>
               <input
                 data-testid="field-password"
                 type={showPass ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: '' }));
+                }}
                 className={`bg-transparent text-xs w-full focus:outline-none ${c.text}`}
-                required
               />
               <button type="button" onClick={() => setShowPass((v) => !v)}>
                 {showPass ? <Eye size={13} className={c.secondaryText} /> : <EyeOff size={13} className={c.secondaryText} />}
               </button>
             </div>
+            {fieldErrors.password && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.password}</p>}
+            <PasswordChecklist password={password} showInvalid={Boolean(fieldErrors.password)} />
           </div>
           <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>
+            <label className={`text-[10px] font-medium ${fieldErrors.confirmPassword ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'تأكيد كلمة المرور' : 'Confirm password'}
             </label>
             <input
               data-testid="field-confirmPassword"
               type={showPass ? 'text' : 'password'}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full px-3 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (fieldErrors.confirmPassword) setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+              }}
+              className={`w-full px-3 h-10 rounded-xl border transition text-xs ${c.text} focus:outline-none ${
+                fieldErrors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+              }`}
             />
+            {fieldErrors.confirmPassword && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.confirmPassword}</p>}
           </div>
           <div className="space-y-1.5 pt-1">
             <label className={`text-[10px] ${c.secondaryText}`}>
@@ -432,13 +505,17 @@ export function A04Screen() {
               ))}
             </div>
           </div>
-          {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
+          {error && (
+            <div role="alert" className="text-xs font-semibold text-rose-500 rounded-xl px-3 py-2.5 bg-rose-500/10 border border-rose-500/30">
+              {error}
+            </div>
+          )}
         </div>
-        <div className="space-y-2 pt-2">
+        <div className="space-y-2.5 pt-3 pb-2">
           <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
             {busy ? (isAr ? 'جارٍ الإنشاء…' : 'Creating…') : (isAr ? 'إنشاء الحساب' : 'Create Account')}
           </PrimaryButton>
-          <div className="text-center">
+          <div className="text-center pb-1">
             <button type="button" onClick={() => nav.go('A03')} className={`text-[11px] ${c.secondaryText}`}>
               {isAr ? 'مسجل بالفعل؟ ' : 'Already registered? '}
               <span className="text-[#E51C23] font-semibold">
@@ -601,8 +678,12 @@ export function A05Screen() {
                     boxes.current[idx - 1]?.focus();
                   }
                 }}
-                className={`h-11 rounded-xl text-center font-bold text-sm border ${
-                  digit ? 'border-[#E51C23]' : c.border
+                className={`h-11 rounded-xl text-center font-bold text-sm border transition ${
+                  error
+                    ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5'
+                    : digit
+                      ? 'border-[#E51C23]'
+                      : c.border
                 } ${c.surface} ${c.text}`}
               />
             ))}
@@ -646,6 +727,11 @@ export function A06Screen() {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
+    const emailErr = validateEmailField(email, isAr);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
     setBusy(true);
     try {
       await post('/auth/forgot-password', { email: email.trim() });
@@ -662,7 +748,7 @@ export function A06Screen() {
   return (
     <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="screen">
       <AppTopBar showBack={true} onBack={() => nav.back('A03')} />
-      <form onSubmit={handleSubmit} className="p-5 flex-1 flex flex-col justify-between">
+      <form noValidate onSubmit={handleSubmit} className="p-5 pb-7 flex-1 flex flex-col justify-between">
         <div className="space-y-4">
           <div>
             <h1 className={`text-xl font-bold ${c.text}`}>
@@ -684,19 +770,23 @@ export function A06Screen() {
             </p>
           </div>
           <div className="space-y-1">
-            <label className={`text-[11px] ${c.secondaryText}`}>
+            <label className={`text-[11px] font-medium ${error ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'البريد الإلكتروني' : 'Email address'}
             </label>
             <input
               data-testid="field-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full px-3.5 h-11 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
-              required
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError('');
+              }}
+              className={`w-full px-3.5 h-11 rounded-xl border transition text-xs ${c.text} focus:outline-none ${
+                error ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+              }`}
             />
+            {error && <p role="alert" className="text-[11px] font-semibold text-rose-500">{error}</p>}
           </div>
-          {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
         </div>
         <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
           {busy ? '…' : (isAr ? 'إرسال رمز التحقق' : 'Send Verification Code')}
@@ -716,23 +806,26 @@ export function A07Screen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
-
-  const hasMinLen = newPassword.length >= 8;
-  const hasComplexity = /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) && /\d/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword);
-  const matches = newPassword.length > 0 && newPassword === confirmPassword;
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    if (!hasMinLen || !hasComplexity) {
-      setError(isAr ? 'يرجى استيفاء شروط قوة كلمة المرور.' : 'Password does not meet security requirements.');
+    const nextErrors = {};
+    const passErr = describePasswordIssues(newPassword, isAr);
+    if (passErr) nextErrors.newPassword = passErr;
+    if (!confirmPassword) {
+      nextErrors.confirmPassword = isAr ? 'يرجى تأكيد كلمة المرور الجديدة.' : 'Please confirm your new password.';
+    } else if (newPassword !== confirmPassword) {
+      nextErrors.confirmPassword = isAr ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.';
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
-    if (confirmPassword && newPassword !== confirmPassword) {
-      setError(isAr ? 'كلمتا المرور غير متطابقتين.' : 'Passwords do not match.');
-      return;
-    }
+    setFieldErrors({});
     setBusy(true);
     try {
       const resetToken = sessionStorage.getItem('fixngo.resetToken') || '';
@@ -740,6 +833,7 @@ export function A07Screen() {
       sessionStorage.removeItem('fixngo.resetToken');
       nav.go('A13');
     } catch (err) {
+      if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) setFieldErrors(err.fieldErrors);
       setError(err.message || (isAr ? 'تعذر تحديث كلمة المرور.' : 'Could not update password.'));
     } finally {
       setBusy(false);
@@ -749,7 +843,7 @@ export function A07Screen() {
   return (
     <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="screen">
       <AppTopBar showBack={true} onBack={() => nav.back('A06')} />
-      <form onSubmit={handleSubmit} className="p-5 flex-1 flex flex-col justify-between">
+      <form noValidate onSubmit={handleSubmit} className="p-5 pb-7 flex-1 flex flex-col justify-between">
         <div className="space-y-3">
           <div>
             <h1 className={`text-xl font-bold ${c.text}`}>
@@ -759,55 +853,53 @@ export function A07Screen() {
               {isAr ? 'حافظ على أمان حسابك وبياناتك.' : 'Keep your account and roadside details safe.'}
             </p>
           </div>
-          <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>
+          <div className="space-y-1.5">
+            <label className={`text-[10px] font-medium ${fieldErrors.newPassword ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'كلمة المرور الجديدة' : 'New password'}
             </label>
-            <div className={`flex items-center justify-between px-3.5 h-10 rounded-xl border ${c.border} ${c.inputBg}`}>
+            <div className={`flex items-center justify-between px-3.5 h-10 rounded-xl border transition ${
+              fieldErrors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+            }`}>
               <input
                 data-testid="field-newPassword"
                 type={showPass ? 'text' : 'password'}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  if (fieldErrors.newPassword) setFieldErrors((p) => ({ ...p, newPassword: '' }));
+                }}
                 className={`bg-transparent text-xs w-full focus:outline-none ${c.text}`}
-                required
               />
               <button type="button" onClick={() => setShowPass((v) => !v)}>
                 {showPass ? <Eye size={14} className={c.secondaryText} /> : <EyeOff size={14} className={c.secondaryText} />}
               </button>
             </div>
+            {fieldErrors.newPassword && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.newPassword}</p>}
+            <PasswordChecklist password={newPassword} showInvalid={Boolean(fieldErrors.newPassword)} />
           </div>
           <div className="space-y-1">
-            <label className={`text-[10px] ${c.secondaryText}`}>
+            <label className={`text-[10px] font-medium ${fieldErrors.confirmPassword ? 'text-rose-500 font-semibold' : c.secondaryText}`}>
               {isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm new password'}
             </label>
             <input
               data-testid="field-confirmPassword"
               type={showPass ? 'text' : 'password'}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full px-3.5 h-10 rounded-xl border ${c.border} ${c.inputBg} text-xs ${c.text}`}
-              required
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (fieldErrors.confirmPassword) setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+              }}
+              className={`w-full px-3.5 h-10 rounded-xl border transition text-xs ${c.text} focus:outline-none ${
+                fieldErrors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+              }`}
             />
+            {fieldErrors.confirmPassword && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.confirmPassword}</p>}
           </div>
-          <div className={`p-3.5 rounded-2xl border ${c.border} ${c.surface} space-y-1.5 text-[11px]`}>
-            <p className={`font-bold ${c.text}`}>
-              {isAr ? 'اجعل كلمة المرور قوية' : 'Make it a strong one'}
-            </p>
-            <p className={hasMinLen ? 'text-emerald-400 font-semibold' : c.secondaryText}>
-              {hasMinLen ? '✓ ' : '• '}
-              {isAr ? '٨ أحرف على الأقل' : 'At least 8 characters'}
-            </p>
-            <p className={hasComplexity ? 'text-emerald-400 font-semibold' : c.secondaryText}>
-              {hasComplexity ? '✓ ' : '• '}
-              {isAr ? 'حرف كبير وحرف صغير ورقم ورمز' : 'Uppercase, lowercase, number & symbol'}
-            </p>
-            <p className={matches ? 'text-emerald-400 font-semibold' : c.secondaryText}>
-              {matches ? '✓ ' : '• '}
-              {isAr ? 'تطابق كلمتي المرور' : 'Passwords match'}
-            </p>
-          </div>
-          {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
+          {error && (
+            <div role="alert" className="text-xs font-semibold text-rose-500 rounded-xl px-3 py-2.5 bg-rose-500/10 border border-rose-500/30">
+              {error}
+            </div>
+          )}
         </div>
         <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
           {busy ? '…' : (isAr ? 'إعادة تعيين كلمة المرور' : 'Reset Password')}

@@ -11,14 +11,21 @@
         <h1 class="text-2xl font-extrabold text-slate-900">@Model.Center.Name</h1>
         <p class="text-xs text-slate-500">@Model.Center.City · @Model.Center.Address</p>
       </div>
-      <fixngo-status-badge status="Approved"></fixngo-status-badge>
+      <fixngo-status-badge status="@(Model.Center.IsVerified ? "Approved" : "Pending")"></fixngo-status-badge>
     </div>
     @if (!string.IsNullOrWhiteSpace(Model.Center.Description))
     {
       <p class="text-xs text-slate-600 pt-1">@Model.Center.Description</p>
     }
     <div class="flex flex-wrap gap-4 pt-2 text-xs text-slate-600">
-      <span><strong>Rating:</strong> ★ @Model.Center.Rating.ToString("0.0") (@Model.Center.RatingCount reviews)</span>
+      @if (Model.Center.RatingCount > 0)
+      {
+        <span><strong>Rating:</strong> ★ @Model.Center.Rating.ToString("0.0") (@Model.Center.RatingCount reviews · 👍 @Model.Center.RecommendPercent% recommend)</span>
+      }
+      else
+      {
+        <span><strong>Rating:</strong> No verified customer reviews yet</span>
+      }
       @if (!string.IsNullOrWhiteSpace(Model.Center.Phone))
       {
         <span dir="ltr"><strong>Phone:</strong> @Model.Center.Phone</span>
@@ -45,6 +52,38 @@
               <p class="text-[11px] text-slate-500">@svc.DurationMinutes min @(string.IsNullOrWhiteSpace(svc.Description) ? "" : "· " + svc.Description)</p>
             </div>
             <span class="text-sm font-extrabold text-[#E51C23]">EGP @svc.PriceEgp.ToString("0.00")</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="space-y-3">
+    <h2 class="text-base font-extrabold text-slate-900">Verified Customer Reviews (@Model.Reviews.Count)</h2>
+    @if (Model.Reviews.Count == 0)
+    {
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 text-xs text-slate-500">
+        No reviews recorded for this workshop yet.
+      </div>
+    }
+    else
+    {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @foreach (var rev in Model.Reviews)
+        {
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-1.5">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-900">@rev.AuthorName</span>
+              <span class="font-bold text-amber-600">@(new string('★', Math.Clamp(rev.Stars, 1, 5)))@(new string('☆', 5 - Math.Clamp(rev.Stars, 1, 5)))</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(rev.Text))
+            {
+              <p class="text-xs text-slate-600">@rev.Text</p>
+            }
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <span>@(rev.Recommend ? "✓ Recommends workshop" : "Reviewed visit")@(string.IsNullOrWhiteSpace(rev.ContextLabel) ? "" : " · " + rev.ContextLabel)</span>
+              <span>@rev.CreatedAt.ToString("dd MMM yyyy")</span>
+            </div>
           </div>
         }
       </div>

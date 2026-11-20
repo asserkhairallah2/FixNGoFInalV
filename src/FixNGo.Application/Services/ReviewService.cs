@@ -47,7 +47,8 @@ public sealed class ReviewService(IAppDbContext db, IClock clock) : IReviewServi
         await db.SaveChangesAsync(ct);
         await RefreshAggregateAsync(target, targetId, ct);
         await db.SaveChangesAsync(ct);
-        return Mappings.Review(review);
+        var authorName = await db.Users.Where(u => u.Id == authorId).Select(u => u.FullName).FirstOrDefaultAsync(ct);
+        return Mappings.Review(review, authorName, null);
     }
 
     private async Task RefreshAggregateAsync(ReviewTargetType target, Guid id, CancellationToken ct)
@@ -68,13 +69,33 @@ public sealed class ReviewService(IAppDbContext db, IClock clock) : IReviewServi
         }
     }
 
-    public async Task<IReadOnlyList<ReviewDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default) =>
-        await db.Reviews.Where(r => r.ProviderId == providerId && !r.IsHidden).OrderByDescending(r => r.CreatedAt)
-            .Select(r => Mappings.Review(r)).ToListAsync(ct);
+    public async Task<IReadOnlyList<ReviewDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default)
+    {
+        var rows = await (from r in db.Reviews
+                          where r.ProviderId == providerId && !r.IsHidden
+                          join u in db.Users on r.AuthorId equals u.Id into uj
+                          from author in uj.DefaultIfEmpty()
+                          join req in db.ServiceRequests on r.RequestId equals req.Id into rq
+                          from sreq in rq.DefaultIfEmpty()
+                          orderby r.CreatedAt descending
+                          select new { r, AuthorName = author != null ? author.FullName : null, Context = sreq != null ? sreq.Kind.ToString() : null })
+                         .ToListAsync(ct);
+        return rows.Select(x => Mappings.Review(x.r, x.AuthorName, x.Context)).ToList();
+    }
 
-    public async Task<IReadOnlyList<ReviewDto>> ForCenterAsync(Guid centerId, CancellationToken ct = default) =>
-        await db.Reviews.Where(r => r.CenterId == centerId && !r.IsHidden).OrderByDescending(r => r.CreatedAt)
-            .Select(r => Mappings.Review(r)).ToListAsync(ct);
+    public async Task<IReadOnlyList<ReviewDto>> ForCenterAsync(Guid centerId, CancellationToken ct = default)
+    {
+        var rows = await (from r in db.Reviews
+                          where r.CenterId == centerId && !r.IsHidden
+                          join u in db.Users on r.AuthorId equals u.Id into uj
+                          from author in uj.DefaultIfEmpty()
+                          join b in db.Bookings.Include(bk => bk.Service) on r.BookingId equals b.Id into bj
+                          from bk in bj.DefaultIfEmpty()
+                          orderby r.CreatedAt descending
+                          select new { r, AuthorName = author != null ? author.FullName : null, Context = bk != null && bk.Service != null ? bk.Service.Name : null })
+                         .ToListAsync(ct);
+        return rows.Select(x => Mappings.Review(x.r, x.AuthorName, x.Context)).ToList();
+    }
 
     public async Task ReportAsync(Guid reviewId, ReportReviewRequest req, CancellationToken ct = default)
     {

@@ -27,23 +27,41 @@ public sealed class OfferService(
                                      && u.KycStatus == KycStatus.Approved && p.Latitude != null && p.Longitude != null
                                select new { p, u }).ToListAsync(ct);
 
+        var providerIds = providers.Select(x => x.p.UserId).ToList();
+        var recommendByProvider = providerIds.Count == 0
+            ? new Dictionary<Guid, int>()
+            : await db.Reviews
+                .Where(rv => !rv.IsHidden && rv.ProviderId != null && providerIds.Contains(rv.ProviderId.Value))
+                .GroupBy(rv => rv.ProviderId!.Value)
+                .Select(g => new
+                {
+                    ProviderId = g.Key,
+                    RecommendPct = (int)Math.Round(100.0 * g.Count(rv => rv.Recommend) / g.Count())
+                })
+                .ToDictionaryAsync(x => x.ProviderId, x => x.RecommendPct, ct);
+
         var candidates = new List<CandidateScore>();
-        var total = r.EstimateMinor ?? (r.Kind == RequestKind.Tow
+        var baseTotal = r.EstimateMinor ?? (r.Kind == RequestKind.Tow
             ? Pricing.TowTotalMinor(r.DistanceKm, s) : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s));
         foreach (var x in providers)
         {
             var rawRoad = Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, x.p.Latitude!.Value, x.p.Longitude!.Value);
             if (rawRoad > s.SearchRadiusKm * 4) continue;
             var road = Math.Max(0.5, Math.Round(rawRoad, 1));
-            candidates.Add(new CandidateScore(x.p.UserId, road, Geo.EtaMinutes(road), x.p.Rating, total));
+            var approachExtra = road > 2.0 ? (long)(Math.Round((road - 2.0) * 1.2) * 500L) : 0L;
+            var candPrice = baseTotal + approachExtra;
+            var effectiveRating = x.p.RatingCount > 0 ? x.p.Rating : 0m;
+            candidates.Add(new CandidateScore(x.p.UserId, road, Geo.EtaMinutes(road), effectiveRating, candPrice));
         }
         var ranked = Matching.Rank(candidates, sort);
         var result = new List<CandidateDto>();
         foreach (var c in ranked)
         {
             var x = providers.First(p => p.p.UserId == c.ProviderId);
+            var recPct = x.p.RatingCount > 0 && recommendByProvider.TryGetValue(c.ProviderId, out var rp) ? rp : 0;
             result.Add(new CandidateDto(c.ProviderId, x.u.FullName, c.Rating, x.p.RatingCount,
-                c.DistanceKm, c.EtaMinutes, c.PriceMinor, c.Score, x.p.CoverageArea ?? x.u.AreaLabel, x.p.TruckMake));
+                c.DistanceKm, c.EtaMinutes, c.PriceMinor, c.Score, x.p.CoverageArea ?? x.u.AreaLabel, x.p.TruckMake,
+                recPct, x.p.CompletedJobs));
         }
         return result;
     }

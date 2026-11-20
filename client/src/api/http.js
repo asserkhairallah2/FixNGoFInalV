@@ -1,5 +1,7 @@
 // Fetch wrapper: base URL, bearer auth, single refresh-on-401, ProblemDetails errors.
 
+import { extractFieldErrors, localizeErrorMessage } from '../ui/validation.js';
+
 let accessToken = sessionStorage.getItem('fixngo.access');
 let refreshToken = sessionStorage.getItem('fixngo.refresh');
 
@@ -43,10 +45,22 @@ export function fileUrl(fileId) {
 
 export class ApiError extends Error {
   constructor(status, payload, code) {
-    super(payload?.detail || payload?.title || `HTTP ${status}`);
+    const isAr = typeof localStorage !== 'undefined' && localStorage.getItem('fixngo.lang') === 'ar';
+    const resolvedCode = code || payload?.code;
+    const fieldErrors = extractFieldErrors(payload?.errors, resolvedCode, payload?.detail, isAr);
+    const firstFieldMsg = Object.values(fieldErrors)[0] || '';
+    const rawDetail = String(payload?.detail ?? '').trim();
+    const isGenericDetail = !rawDetail || /^(Validation failed\.?|One or more validation errors occurred\.?)$/i.test(rawDetail);
+    const bestMessage = (!isGenericDetail ? localizeErrorMessage(rawDetail, isAr) : '')
+      || firstFieldMsg
+      || localizeErrorMessage(payload?.title, isAr)
+      || `HTTP ${status}`;
+
+    super(bestMessage);
     this.status = status;
-    this.code = code || payload?.code;
+    this.code = resolvedCode;
     this.errors = payload?.errors;
+    this.fieldErrors = fieldErrors;
   }
 }
 

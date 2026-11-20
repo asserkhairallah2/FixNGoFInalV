@@ -1422,6 +1422,8 @@ export function T10Screen() {
 
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
   const rating = Number(provider?.rating ?? 0).toFixed(1);
+  const ratingCount = Number(provider?.ratingCount ?? 0);
+  const recommendPercent = Number(provider?.recommendPercent ?? 0);
   const trips = provider?.completedJobs ?? 0;
   const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
@@ -1446,7 +1448,9 @@ export function T10Screen() {
           <div>
             <p className={`font-bold ${colors.text}`}>{displayName}</p>
             <p className={`text-[10px] ${colors.secondaryText}`}>
-              {`${providerLabel('TowCaptain', isAr)} · ${rating} ★ (${plural(trips, 'trip', isAr)})`}
+              {ratingCount > 0
+                ? `${providerLabel('TowCaptain', isAr)} · ${rating} ★ (${ratingCount}) · 👍 ${recommendPercent}% · ${plural(trips, 'trip', isAr)}`
+                : `${providerLabel('TowCaptain', isAr)} · ${plural(trips, 'trip', isAr)}`}
             </p>
           </div>
         </div>

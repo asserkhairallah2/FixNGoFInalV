@@ -156,6 +156,44 @@ builder.Services.AddControllersWithViews()
         o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(kv => kv.Value is { Errors.Count: > 0 })
+                .ToDictionary(
+                    kv =>
+                    {
+                        var key = kv.Key;
+                        if (string.IsNullOrWhiteSpace(key)) return "general";
+                        var leaf = key.Contains('.') ? key[(key.LastIndexOf('.') + 1)..] : key;
+                        return leaf.Length == 1 ? leaf.ToLowerInvariant() : char.ToLowerInvariant(leaf[0]) + leaf[1..];
+                    },
+                    kv => kv.Value!.Errors
+                        .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Invalid field value." : e.ErrorMessage)
+                        .Distinct()
+                        .ToArray());
+
+            var detail = string.Join(" ", errors.Values.SelectMany(v => v).Distinct());
+            if (string.IsNullOrWhiteSpace(detail)) detail = "Please check the highlighted fields and try again.";
+
+            var body = new Dictionary<string, object>
+            {
+                ["type"] = "https://tools.ietf.org/html/rfc7807",
+                ["title"] = "Validation failed",
+                ["status"] = StatusCodes.Status400BadRequest,
+                ["code"] = "validation.failed",
+                ["detail"] = detail,
+                ["errors"] = errors,
+                ["traceId"] = context.HttpContext.TraceIdentifier
+            };
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(body)
+            {
+                ContentTypes = { "application/problem+json" }
+            };
+        };
     });
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o => o.MultipartBodyLengthLimit = 10 * 1024 * 1024);
 builder.Services.AddEndpointsApiExplorer();

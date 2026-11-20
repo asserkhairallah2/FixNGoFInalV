@@ -84,8 +84,18 @@ public static class Mappings
 
     public static WithdrawalDto Withdrawal(Withdrawal w) => new(w.Id, w.Code, w.AmountMinor, w.FeeMinor, w.NetMinor, w.Status, w.FailureReason);
 
-    public static CenterDto Center(ServiceCenter c) => new(c.Id, c.Name, c.Address, c.Rating, c.RatingCount,
-        c.RecommendPercent, c.Latitude, c.Longitude, c.Description, c.Phone);
+    public static CenterDto Center(ServiceCenter c)
+    {
+        var activeServices = c.Services?.Where(s => s.IsActive).OrderBy(s => s.PriceMinor).ToList();
+        var serviceNames = activeServices?.Select(s => s.Name).ToList();
+        var startingMinor = activeServices is { Count: > 0 } ? activeServices[0].PriceMinor : (long?)null;
+        var verified = c.Owner is null || c.Owner.KycStatus == KycStatus.Approved;
+        var effectiveRating = c.RatingCount > 0 ? c.Rating : 0m;
+        var effectiveRecommend = c.RatingCount > 0 ? c.RecommendPercent : 0;
+        return new(c.Id, c.Name, c.Address, effectiveRating, c.RatingCount,
+            effectiveRecommend, c.Latitude, c.Longitude, c.Description, c.Phone,
+            serviceNames, startingMinor, verified);
+    }
 
     public static CenterServiceDto CenterService(FixNGo.Domain.Entities.CenterService s) =>
         new(s.Id, s.Name, s.PriceMinor, s.DurationMinutes, s.Description, s.IsActive);
@@ -150,16 +160,23 @@ public static class Mappings
         a.BusinessName, a.ReviewerNote, a.CreatedAt, a.UserId, a.User?.FullName, a.User?.Email, a.User?.Phone,
         a.Address, a.Documents?.Select(d => new KycDocumentDto(d.Id, d.DocumentType, d.FileId, d.Status.ToString(), d.ReviewNote, d.CreatedAt)).ToList());
 
-    public static ProviderDto Provider(User u, ProviderProfile p) => new(u.Id, u.FullName, p.Rating, p.RatingCount,
+    public static ProviderDto Provider(User u, ProviderProfile p) => Provider(u, p, 0);
+
+    public static ProviderDto Provider(User u, ProviderProfile p, int recommendPercent) => new(
+        u.Id, u.FullName, p.RatingCount > 0 ? p.Rating : 0m, p.RatingCount,
         p.CompletedJobs, p.IsOnline, p.Latitude ?? u.Latitude, p.Longitude ?? u.Longitude, p.CoverageArea ?? u.AreaLabel,
         u.Email, u.Phone, u.KycStatus, p.YearsExperience, p.CoverageRadiusKm, p.CoverageArea ?? u.AreaLabel,
-        p.TruckMake, null, p.TruckPlate, p.TruckType?.ToString(), p.TruckCapacityTonnes, p.ExpertiseJson);
+        p.TruckMake, null, p.TruckPlate, p.TruckType?.ToString(), p.TruckCapacityTonnes, p.ExpertiseJson,
+        p.RatingCount > 0 ? recommendPercent : 0);
 
     public static NotificationDto Notification(Notification n) => new(n.Id, n.Type, n.Title, n.Body, n.DeepLink, n.IsRead, n.CreatedAt);
 
     public static ChatMessageDto ChatMessage(ChatMessage m) => new(m.Id, m.ThreadId, m.SenderId, m.MessageType, m.Text, m.SentAt, m.ReadAt);
 
-    public static ReviewDto Review(Review r) => new(r.Id, r.ProviderId, r.CenterId, r.Stars, r.Text, r.Recommend, r.CreatedAt);
+    public static ReviewDto Review(Review r) => Review(r, null, null);
+
+    public static ReviewDto Review(Review r, string? authorName, string? contextLabel) =>
+        new(r.Id, r.ProviderId, r.CenterId, r.Stars, r.Text, r.Recommend, r.CreatedAt, authorName, contextLabel);
 
     public static TicketDto Ticket(SupportTicket t) => new(t.Id, t.Code, t.Category, t.Subject, t.Status, t.CreatedAt);
 

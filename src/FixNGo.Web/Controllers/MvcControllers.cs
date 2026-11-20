@@ -63,13 +63,17 @@ public sealed class HomeController(
 /// </summary>
 [AllowAnonymous]
 [Route("mvc/centers")]
-public sealed class ServiceCentersMvcController(ICenterService centerService, IMapper mapper) : Controller
+public sealed class ServiceCentersMvcController(
+    ICenterService centerService,
+    IReviewService reviewService,
+    IMapper mapper) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index(
         [FromQuery] string? q = null,
         [FromQuery] string? city = null,
-        [FromQuery] string sort = "rating",
+        [FromQuery] string? category = null,
+        [FromQuery] string sort = "all",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 6,
         CancellationToken ct = default)
@@ -86,6 +90,7 @@ public sealed class ServiceCentersMvcController(ICenterService centerService, IM
             filtered = filtered.Where(c =>
                 c.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
                 c.Address.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                c.Services.Any(s => s.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (c.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
         }
 
@@ -94,11 +99,37 @@ public sealed class ServiceCentersMvcController(ICenterService centerService, IM
             filtered = filtered.Where(c => string.Equals(c.City, city.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            var cat = category.Trim().ToLowerInvariant();
+            filtered = cat switch
+            {
+                "periodic" => filtered.Where(c => c.Services.Any(s =>
+                    s.Contains("periodic", StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains("oil", StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains("filter", StringComparison.OrdinalIgnoreCase))),
+                "diagnostics" => filtered.Where(c => c.Services.Any(s =>
+                    s.Contains("diagnostic", StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains("ac ", StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains("battery", StringComparison.OrdinalIgnoreCase))),
+                "brakes" => filtered.Where(c => c.Services.Any(s =>
+                    s.Contains("brake", StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains("alignment", StringComparison.OrdinalIgnoreCase) ||
+                    s.Contains("tire", StringComparison.OrdinalIgnoreCase))),
+                _ => filtered
+            };
+        }
+
         filtered = sort.ToLowerInvariant() switch
         {
-            "name" => filtered.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase),
+            "rating" or "top" => filtered
+                .Where(c => c.RatingCount > 0 && c.Rating >= 4.5m)
+                .OrderByDescending(c => c.Rating)
+                .ThenByDescending(c => c.RatingCount),
             "reviews" => filtered.OrderByDescending(c => c.RatingCount).ThenByDescending(c => c.Rating),
-            _ => filtered.OrderByDescending(c => c.Rating).ThenByDescending(c => c.RatingCount)
+            "price" => filtered.OrderBy(c => c.StartingPriceEgp ?? decimal.MaxValue).ThenByDescending(c => c.Rating),
+            "name" => filtered.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase),
+            _ => filtered.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
         };
 
         var list = filtered.ToList();
@@ -111,6 +142,7 @@ public sealed class ServiceCentersMvcController(ICenterService centerService, IM
         {
             SearchQuery = q,
             SelectedCity = city,
+            SelectedCategory = category,
             SortBy = sort,
             CurrentPage = safePage,
             PageSize = safePageSize,
@@ -127,10 +159,12 @@ public sealed class ServiceCentersMvcController(ICenterService centerService, IM
     {
         var center = await centerService.GetAsync(id, ct);
         var services = await centerService.ServicesAsync(id, ct);
+        var reviews = await reviewService.ForCenterAsync(id, ct);
         var vm = new ServiceCenterDetailsViewModel
         {
             Center = mapper.Map<ServiceCenterItemViewModel>(center),
-            Services = services.Select(s => mapper.Map<ServiceOfferingViewModel>(s)).ToList()
+            Services = services.Select(s => mapper.Map<ServiceOfferingViewModel>(s)).ToList(),
+            Reviews = reviews.Select(r => mapper.Map<CustomerReviewViewModel>(r)).ToList()
         };
         return View("~/Views/ServiceCentersMvc/Details.cshtml", vm);
     }

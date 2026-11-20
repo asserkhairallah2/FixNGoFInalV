@@ -245,6 +245,7 @@ public static class DummyGenerator
                     Body = "Your dummy account is ready.", IsRead = i % 2 == 0
                 });
         await db.SaveChangesAsync();
+        await FixNGo.Infrastructure.Persistence.DummyDataConsistencySync.SynchronizeIfDummyAsync(db);
         return accounts;
     }
 

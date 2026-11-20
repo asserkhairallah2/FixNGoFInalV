@@ -746,6 +746,7 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
   const [durationMinutes, setDurationMinutes] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -777,19 +778,23 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
     const trimmedName = name.trim();
     const numPrice = Number(priceEgp);
     const numDuration = Number(durationMinutes);
+    const nextErrors = {};
 
     if (!trimmedName) {
-      setError(isAr ? 'اسم الخدمة مطلوب.' : 'Service name is required.');
+      nextErrors.name = isAr ? 'اسم الخدمة مطلوب.' : 'Service name is required.';
+    }
+    if (!priceEgp || !Number.isFinite(numPrice) || numPrice <= 0) {
+      nextErrors.price = isAr ? 'يرجى إدخال سعر أكبر من صفر.' : 'Price must be greater than 0.';
+    }
+    if (!durationMinutes || !Number.isFinite(numDuration) || numDuration < 5 || numDuration % 5 !== 0) {
+      nextErrors.duration = isAr ? 'المدة يجب أن تكون من مضاعفات ٥ دقائق.' : 'Duration must be a multiple of 5 minutes.';
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
-    if (!Number.isFinite(numPrice) || numPrice <= 0) {
-      setError(isAr ? 'يرجى إدخال سعر أكبر من صفر.' : 'Price must be greater than 0.');
-      return;
-    }
-    if (!Number.isFinite(numDuration) || numDuration < 5 || numDuration % 5 !== 0) {
-      setError(isAr ? 'المدة يجب أن تكون من مضاعفات ٥ دقائق.' : 'Duration must be a multiple of 5 minutes.');
-      return;
-    }
+    setFieldErrors({});
 
     setBusy(true);
     try {
@@ -809,6 +814,7 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
       setToast(isAr ? 'تم حفظ الخدمة بنجاح' : 'Service saved successfully');
       nav.go('SC04');
     } catch (err) {
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
       setError(err.message || (isAr ? 'تعذر حفظ الخدمة.' : 'Could not save service.'));
     } finally {
       setBusy(false);
@@ -834,7 +840,7 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
       <AppTopBar showBack={!CENTER_MAIN_SCREENS.includes(code)} onBack={() => nav.back('SC04')} />
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
-      <form onSubmit={handleSave} className="p-4 space-y-3.5 flex-1">
+      <form noValidate onSubmit={handleSave} className="p-4 space-y-3.5 flex-1">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
             {editingService && !isCreateMode
@@ -848,21 +854,26 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
         </div>
 
         <div className="space-y-1.5">
-          <label className={`text-[11px] font-semibold ${colors.secondaryText}`}>
+          <label className={`text-[11px] font-semibold ${fieldErrors.name ? 'text-rose-500' : colors.secondaryText}`}>
             {isAr ? 'اسم الخدمة' : 'Service name'}
           </label>
-          <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
+          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center ${
+            fieldErrors.name ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+          }`}>
             <input
               data-testid="field-name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: '' }));
+              }}
               placeholder={isAr ? 'أدخل اسم الخدمة' : 'Enter service name'}
               className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
-              required
             />
-            <Edit3 size={14} className={colors.secondaryText} />
+            <Edit3 size={14} className={fieldErrors.name ? 'text-rose-500' : colors.secondaryText} />
           </div>
+          {fieldErrors.name && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.name}</p>}
         </div>
 
         <div className="space-y-1.5">
@@ -881,10 +892,12 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
 
         <div className="grid grid-cols-2 gap-2.5">
           <div className="space-y-1.5">
-            <label className={`text-[11px] font-semibold ${colors.secondaryText}`}>
+            <label className={`text-[11px] font-semibold ${fieldErrors.price ? 'text-rose-500' : colors.secondaryText}`}>
               {isAr ? 'السعر · ج.م' : 'Price · EGP'}
             </label>
-            <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
+            <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center ${
+              fieldErrors.price ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}>
               <input
                 data-testid="field-price"
                 type="number"
@@ -892,18 +905,23 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
                 step="1"
                 placeholder="0"
                 value={priceEgp}
-                onChange={(e) => setPriceEgp(e.target.value)}
+                onChange={(e) => {
+                  setPriceEgp(e.target.value);
+                  if (fieldErrors.price) setFieldErrors((p) => ({ ...p, price: '' }));
+                }}
                 className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
-                required
               />
               <span className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'ج.م' : 'EGP'}</span>
             </div>
+            {fieldErrors.price && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.price}</p>}
           </div>
           <div className="space-y-1.5">
-            <label className={`text-[11px] font-semibold ${colors.secondaryText}`}>
+            <label className={`text-[11px] font-semibold ${fieldErrors.duration ? 'text-rose-500' : colors.secondaryText}`}>
               {isAr ? 'المدة · دقائق' : 'Duration · mins'}
             </label>
-            <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
+            <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center ${
+              fieldErrors.duration ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}>
               <input
                 data-testid="field-duration"
                 type="number"
@@ -911,12 +929,15 @@ export function SC05Screen({ id, params, code = 'SC05' }) {
                 step="5"
                 placeholder={isAr ? 'مثال: ٤٥' : 'e.g. 45'}
                 value={durationMinutes}
-                onChange={(e) => setDurationMinutes(e.target.value)}
+                onChange={(e) => {
+                  setDurationMinutes(e.target.value);
+                  if (fieldErrors.duration) setFieldErrors((p) => ({ ...p, duration: '' }));
+                }}
                 className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
-                required
               />
-              <Clock size={14} className={colors.secondaryText} />
+              <Clock size={14} className={fieldErrors.duration ? 'text-rose-500' : colors.secondaryText} />
             </div>
+            {fieldErrors.duration && <p className="text-[10.5px] font-semibold text-rose-500">{fieldErrors.duration}</p>}
           </div>
         </div>
 
@@ -1184,7 +1205,10 @@ export function SC07Screen({ code = 'SC07' }) {
             <span className={`text-2xl font-extrabold ${colors.text}`}>
               {totalCount > 0 ? avgRating : '—'}
             </span>
-            <span className="text-amber-400 text-xs">★★★★★</span>
+            <span className="text-amber-400 text-xs">
+              {'★'.repeat(Math.min(5, Math.max(0, Math.round(Number(avgRating ?? 0))))) +
+                '☆'.repeat(5 - Math.min(5, Math.max(0, Math.round(Number(avgRating ?? 0)))))}
+            </span>
             <span className={`text-xs ${colors.secondaryText}`}>
               {plural(totalCount, 'review', isAr)}
             </span>

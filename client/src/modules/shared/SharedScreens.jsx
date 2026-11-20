@@ -55,8 +55,14 @@ import {
   Skeleton,
   Toast,
   formatLabel,
-  pluralCount
+  pluralCount,
+  PasswordChecklist
 } from '../../ui/kit.jsx';
+import {
+  describePasswordIssues,
+  validateEmailField,
+  validateEgyptPhoneField
+} from '../../ui/validation.js';
 import { fmtMoney, fmtDate, fmtTime, fmtDateTime } from '../../i18n/format.js';
 
 export const SHARED_INTERNAL_FALLBACK_BACK = {
@@ -445,6 +451,7 @@ export function SH02Screen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [done, setDone] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -465,14 +472,21 @@ export function SH02Screen() {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    if (!currentPassword || !newPassword) {
-      setError(isAr ? 'يرجى إدخال كلمة المرور الحالية والجديدة.' : 'Please enter your current and new password.');
-      return;
+    const nextErrors = {};
+    if (!currentPassword) {
+      nextErrors.currentPassword = isAr ? 'يرجى إدخال كلمة المرور الحالية.' : 'Current password is required.';
     }
+    const passErr = describePasswordIssues(newPassword, isAr);
+    if (passErr) nextErrors.newPassword = passErr;
     if (confirmPassword && confirmPassword !== newPassword) {
-      setError(isAr ? 'كلمتا المرور غير متطابقتين.' : 'New passwords do not match.');
+      nextErrors.confirmPassword = isAr ? 'كلمتا المرور غير متطابقتين.' : 'New passwords do not match.';
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     setBusy(true);
     try {
       await post('/auth/change-password', { currentPassword, newPassword });
@@ -480,6 +494,7 @@ export function SH02Screen() {
       setToast(isAr ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully');
       setTimeout(() => nav.back(), 450);
     } catch (err) {
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
       setError(err.message || (isAr ? 'تعذر تحديث كلمة المرور' : 'Could not update password'));
     } finally {
       setBusy(false);
@@ -491,7 +506,7 @@ export function SH02Screen() {
       <AppTopBar showBack={true} onBack={() => nav.back()} />
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
 
-      <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+      <form noValidate onSubmit={handleSubmit} className="p-4 pb-8 space-y-3.5">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
             {isAr ? 'تغيير كلمة المرور' : 'Change password'}
@@ -503,14 +518,19 @@ export function SH02Screen() {
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.currentPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'كلمة المرور الحالية' : 'Current password'}
           </label>
-          <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-xs ${colors.text}`}>
+          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+            fieldErrors.currentPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+          }`}>
             <input
               type={showCurrent ? 'text' : 'password'}
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                if (fieldErrors.currentPassword) setFieldErrors((p) => ({ ...p, currentPassword: '' }));
+              }}
               data-testid="field-currentPassword"
               placeholder="••••••••••••"
               className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
@@ -519,17 +539,23 @@ export function SH02Screen() {
               {showCurrent ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
             </button>
           </div>
+          {fieldErrors.currentPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.currentPassword}</p>}
         </div>
 
         <div className="space-y-1.5">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.newPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'كلمة المرور الجديدة' : 'New password'}
           </label>
-          <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-xs ${colors.text}`}>
+          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+            fieldErrors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+          }`}>
             <input
               type={showNew ? 'text' : 'password'}
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (fieldErrors.newPassword) setFieldErrors((p) => ({ ...p, newPassword: '' }));
+              }}
               data-testid="field-newPassword"
               placeholder="••••••••••••"
               className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
@@ -538,6 +564,8 @@ export function SH02Screen() {
               {showNew ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
             </button>
           </div>
+          {fieldErrors.newPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.newPassword}</p>}
+          <PasswordChecklist password={newPassword} showInvalid={Boolean(fieldErrors.newPassword)} />
           <div className="grid grid-cols-4 gap-1.5 pt-1">
             {[1, 2, 3, 4].map((bar) => (
               <div
@@ -557,14 +585,19 @@ export function SH02Screen() {
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.confirmPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm new password'}
           </label>
-          <div className={`px-3 h-11 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-xs ${colors.text}`}>
+          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+            fieldErrors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+          }`}>
             <input
               type={showConfirm ? 'text' : 'password'}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (fieldErrors.confirmPassword) setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+              }}
               data-testid="field-confirmPassword"
               placeholder="••••••••••••"
               className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
@@ -573,6 +606,7 @@ export function SH02Screen() {
               {showConfirm ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
             </button>
           </div>
+          {fieldErrors.confirmPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.confirmPassword}</p>}
         </div>
 
         <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-[11px] ${colors.secondaryText}`}>
@@ -1274,6 +1308,7 @@ export function SH08Screen({ params }) {
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [done, setDone] = useState(false);
 
   const categories = [
@@ -1307,16 +1342,18 @@ export function SH08Screen({ params }) {
   async function handleSubmit(e) {
     if (e) e.preventDefault();
     setError('');
-    if (!category) {
-      setError(isAr ? 'يرجى اختيار فئة التذكرة.' : 'Please select a category.');
-      return;
-    }
+    const nextErrors = {};
+    if (!category) nextErrors.category = isAr ? 'يرجى اختيار فئة التذكرة.' : 'Please select a ticket category.';
     const finalSubject = subject.trim();
     const finalDescription = description.trim();
-    if (!finalSubject || !finalDescription) {
-      setError(isAr ? 'يرجى إدخال موضوع التذكرة والوصف.' : 'Please enter both a subject and description.');
+    if (!finalSubject) nextErrors.subject = isAr ? 'يرجى إدخال موضوع التذكرة.' : 'Please enter a ticket subject.';
+    if (!finalDescription) nextErrors.description = isAr ? 'يرجى إدخال تفاصيل المشكلة.' : 'Please describe your issue.';
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     setBusy(true);
     try {
       const selectedReq = requests.find((r) => r.id === refId);
@@ -1338,6 +1375,7 @@ export function SH08Screen({ params }) {
       setDone(true);
       nav.go('SH09', created?.id ? { id: created.id } : {});
     } catch (err) {
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
       setError(friendlyError(err, isAr, 'Could not submit ticket', 'تعذر إرسال التذكرة'));
     } finally {
       setBusy(false);
@@ -1348,7 +1386,7 @@ export function SH08Screen({ params }) {
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
       <AppTopBar showBack={true} onBack={() => nav.back('SH07')} />
 
-      <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+      <form noValidate onSubmit={handleSubmit} className="p-4 space-y-3.5">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
             {isAr ? 'تذكرة دعم جديدة' : 'New support ticket'}
@@ -1360,14 +1398,22 @@ export function SH08Screen({ params }) {
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.category ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'الفئة · مطلوبة' : 'Category · Required'}
           </label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              if (fieldErrors.category) setFieldErrors((p) => ({ ...p, category: '' }));
+            }}
+            onBlur={() => {
+              if (!category) setFieldErrors((p) => ({ ...p, category: isAr ? 'يرجى اختيار فئة التذكرة.' : 'Please select a ticket category.' }));
+            }}
             data-testid="field-Category"
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.category ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           >
             <option value="">{isAr ? 'اختر الفئة...' : 'Select category...'}</option>
             {categories.map((c) => (
@@ -1376,20 +1422,30 @@ export function SH08Screen({ params }) {
               </option>
             ))}
           </select>
+          {fieldErrors.category && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.category}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.subject ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'الموضوع' : 'Subject'}
           </label>
           <input
             type="text"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              if (fieldErrors.subject) setFieldErrors((p) => ({ ...p, subject: '' }));
+            }}
+            onBlur={() => {
+              if (!subject.trim()) setFieldErrors((p) => ({ ...p, subject: isAr ? 'يرجى إدخال موضوع التذكرة.' : 'Please enter a ticket subject.' }));
+            }}
             data-testid="field-Subject"
             placeholder={isAr ? 'ملخص قصير للمشكلة' : 'Brief summary of your issue'}
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs ${colors.text} focus:outline-none ${
+              fieldErrors.subject ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.subject && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.subject}</p>}
         </div>
 
         {(requests.length > 0 || bookings.length > 0) && (
@@ -1419,17 +1475,26 @@ export function SH08Screen({ params }) {
         )}
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.description ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'الوصف' : 'Description'}
           </label>
           <textarea
             rows={3}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) setFieldErrors((p) => ({ ...p, description: '' }));
+            }}
+            onBlur={() => {
+              if (!description.trim()) setFieldErrors((p) => ({ ...p, description: isAr ? 'يرجى إدخال تفاصيل المشكلة.' : 'Please describe your issue.' }));
+            }}
             data-testid="field-Description"
             placeholder={isAr ? 'اشرح تفاصيل المشكلة ليتمكن فريق الدعم من مساعدتك...' : 'Describe what happened so our support team can help...'}
-            className={`w-full p-3 rounded-xl border ${colors.border} ${colors.surface} text-xs ${colors.text}`}
+            className={`w-full p-3 rounded-xl border transition text-xs ${colors.text} focus:outline-none ${
+              fieldErrors.description ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.description && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.description}</p>}
         </div>
 
         <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
@@ -1944,6 +2009,7 @@ export function SH12Screen() {
   const [phone, setPhone] = useState(() => user?.phone || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [done, setDone] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -1958,17 +2024,32 @@ export function SH12Screen() {
   async function handleSave(e) {
     if (e) e.preventDefault();
     setError('');
+    const nextErrors = {};
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      nextErrors.fullName = isAr ? 'يجب أن يكون الاسم حرفين على الأقل.' : 'Full name must be at least 2 characters.';
+    }
+    const emailErr = validateEmailField(email, isAr);
+    if (emailErr) nextErrors.email = emailErr;
+    const phoneErr = validateEgyptPhoneField(phone, isAr);
+    if (phoneErr) nextErrors.phone = phoneErr;
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
+      return;
+    }
+    setFieldErrors({});
     setBusy(true);
     try {
       await put('/auth/me', {
-        fullName: fullName.trim() || user?.fullName,
-        email: email.trim() || user?.email,
-        phone: phone.trim() || user?.phone
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim()
       });
       await loadMe();
       setDone(true);
       setToast(isAr ? 'تم حفظ تغييرات الحساب' : 'Account changes saved');
     } catch (err) {
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
       setError(friendlyError(err, isAr, 'Could not save account changes', 'تعذر حفظ التغييرات'));
     } finally {
       setBusy(false);
@@ -1980,7 +2061,7 @@ export function SH12Screen() {
       <AppTopBar showBack={true} onBack={() => nav.back()} />
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
 
-      <form onSubmit={handleSave} className="p-4 space-y-3.5">
+      <form noValidate onSubmit={handleSave} className="p-4 space-y-3.5">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
             {isAr ? 'تعديل الحساب' : 'Edit account'}
@@ -1992,44 +2073,62 @@ export function SH12Screen() {
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.fullName ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'الاسم الكامل' : 'Full name'}
           </label>
           <input
             type="text"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => {
+              setFullName(e.target.value);
+              if (fieldErrors.fullName) setFieldErrors((p) => ({ ...p, fullName: '' }));
+            }}
             data-testid="field-fullName"
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.fullName ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.fullName && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.fullName}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.email ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'البريد الإلكتروني' : 'Email address'}
           </label>
           <input
             type="email"
             dir="ltr"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: '' }));
+            }}
             data-testid="field-email"
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.email ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.email && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.email}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.phone ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'رقم الهاتف' : 'Phone number'}
           </label>
           <input
             type="tel"
             dir="ltr"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: '' }));
+            }}
             data-testid="field-phone"
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.phone ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.phone && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.phone}</p>}
         </div>
 
         <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1.5 text-xs`}>
@@ -3222,6 +3321,7 @@ export function SH20Screen() {
   const [useAsPayout, setUseAsPayout] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -3232,23 +3332,28 @@ export function SH20Screen() {
 
   const compactIban = iban.replace(/\s+/g, '').toUpperCase();
   const ibanShapeValid = /^EG\d{27}$/.test(compactIban);
-  const canSave = Boolean(holderName.trim() && bankCode && compactIban.length > 0 && !busy);
 
   async function handleSave(e) {
     if (e) e.preventDefault();
     setError('');
+    const nextErrors = {};
     if (!holderName.trim()) {
-      setError(isAr ? 'يرجى إدخال اسم صاحب الحساب.' : 'Please enter the account holder name.');
-      return;
+      nextErrors.holderName = isAr ? 'يرجى إدخال اسم صاحب الحساب.' : 'Please enter the account holder name.';
     }
     if (!bankCode) {
-      setError(isAr ? 'يرجى اختيار البنك.' : 'Please select a bank.');
-      return;
+      nextErrors.bankCode = isAr ? 'يرجى اختيار البنك.' : 'Please select a bank.';
     }
     if (!compactIban) {
-      setError(isAr ? 'يرجى إدخال رقم IBAN المصري.' : 'Please enter your Egyptian IBAN.');
+      nextErrors.iban = isAr ? 'يرجى إدخال رقم IBAN المصري.' : 'Please enter your Egyptian IBAN.';
+    } else if (!ibanShapeValid) {
+      nextErrors.iban = isAr ? 'يجب أن يبدأ رقم IBAN بـ EG ويتكون من 29 خانة.' : 'Egyptian IBAN must start with EG and contain 29 characters.';
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
       return;
     }
+    setFieldErrors({});
     setBusy(true);
     try {
       await post('/payments/banks', {
@@ -3261,6 +3366,7 @@ export function SH20Screen() {
       setDone(true);
       nav.go('SH14');
     } catch (err) {
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
       setError(friendlyError(err, isAr, 'Could not save bank account', 'تعذر حفظ الحساب البنكي'));
     } finally {
       setBusy(false);
@@ -3271,7 +3377,7 @@ export function SH20Screen() {
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
       <AppTopBar showBack={true} onBack={() => nav.back('SH14')} />
 
-      <form onSubmit={handleSave} className="p-4 space-y-3.5">
+      <form noValidate onSubmit={handleSave} className="p-4 space-y-3.5">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
             {isAr ? 'إضافة حساب بنكي' : 'Add bank account'}
@@ -3282,28 +3388,39 @@ export function SH20Screen() {
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.holderName ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'اسم صاحب الحساب · مطلوب' : 'Account holder · Required'}
           </label>
           <input
             type="text"
             value={holderName}
-            onChange={(e) => setHolderName(e.target.value)}
+            onChange={(e) => {
+              setHolderName(e.target.value);
+              if (fieldErrors.holderName) setFieldErrors((p) => ({ ...p, holderName: '' }));
+            }}
             data-testid="field-holderName"
             placeholder={isAr ? 'الاسم الكامل كما يظهر في البنك' : 'Full name as registered with the bank'}
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.holderName ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.holderName && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.holderName}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.bankCode ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'البنك · مطلوب' : 'Bank · Required'}
           </label>
           <select
             value={bankCode}
-            onChange={(e) => setBankCode(e.target.value)}
+            onChange={(e) => {
+              setBankCode(e.target.value);
+              if (fieldErrors.bankCode) setFieldErrors((p) => ({ ...p, bankCode: '' }));
+            }}
             data-testid="field-bankCode"
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.bankCode ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           >
             <option value="">{isAr ? 'اختر البنك...' : 'Select bank...'}</option>
             {banks.map((b) => (
@@ -3312,21 +3429,28 @@ export function SH20Screen() {
               </option>
             ))}
           </select>
+          {fieldErrors.bankCode && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.bankCode}</p>}
         </div>
 
         <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
+          <label className={`text-[10px] font-medium ${fieldErrors.iban ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
             {isAr ? 'رقم IBAN المصري (٢٩ حرفاً) · مطلوب' : 'Egyptian IBAN (29 chars) · Required'}
           </label>
           <input
             type="text"
             dir="ltr"
             value={iban}
-            onChange={(e) => setIban(e.target.value)}
+            onChange={(e) => {
+              setIban(e.target.value);
+              if (fieldErrors.iban) setFieldErrors((p) => ({ ...p, iban: '' }));
+            }}
             data-testid="field-iban"
             placeholder="EG00 0000 0000 0000 0000 0000 0000 0"
-            className={`w-full px-3.5 h-11 rounded-xl border ${colors.border} ${colors.surface} text-xs font-mono font-bold ${colors.text}`}
+            className={`w-full px-3.5 h-11 rounded-xl border transition text-xs font-mono font-bold ${colors.text} focus:outline-none ${
+              fieldErrors.iban ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}
           />
+          {fieldErrors.iban && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.iban}</p>}
         </div>
 
         <div className="p-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 text-[11px] space-y-0.5">
@@ -3368,7 +3492,7 @@ export function SH20Screen() {
         {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
         {done && <p role="status" className="text-xs text-emerald-500">{isAr ? 'تم الحفظ بنجاح' : 'Saved successfully'}</p>}
 
-        <PrimaryButton type="submit" disabled={!canSave} testId="screen-primary">
+        <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
           {busy ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ الحساب البنكي' : 'Save Bank Account')}
         </PrimaryButton>
       </form>

@@ -23,13 +23,20 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
         {
             logger.LogWarning("Domain error {Code}: {Message}", ex.Code, ex.Message);
             var status = StatusForCode(ex.Code);
-            await WriteProblem(context, status, ex.Code, ex.Message);
+            var field = FieldForDomainCode(ex.Code);
+            var fieldErrors = field is null
+                ? null
+                : new Dictionary<string, string[]> { [field] = [ex.Message] };
+            await WriteProblem(context, status, ex.Code, fieldErrors, ex.Message);
         }
         catch (FluentValidation.ValidationException ex)
         {
-            var errors = ex.Errors.GroupBy(e => e.PropertyName)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-            await WriteProblem(context, HttpStatusCode.BadRequest, "validation.failed", errors, "Validation failed.");
+            var errors = ex.Errors
+                .GroupBy(e => ToCamelCase(e.PropertyName))
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+            var detail = string.Join(" ", ex.Errors.Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).Distinct());
+            if (string.IsNullOrWhiteSpace(detail)) detail = "Please check the highlighted fields and try again.";
+            await WriteProblem(context, HttpStatusCode.BadRequest, "validation.failed", errors, detail);
         }
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
@@ -77,6 +84,32 @@ public sealed class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionM
         if (extra is not null) problem["errors"] = extra;
         await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
     }
+
+    private static string ToCamelCase(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "general";
+        var leaf = name.Contains('.') ? name[(name.LastIndexOf('.') + 1)..] : name;
+        return leaf.Length == 1
+            ? leaf.ToLowerInvariant()
+            : char.ToLowerInvariant(leaf[0]) + leaf[1..];
+    }
+
+    private static string? FieldForDomainCode(string code) => code switch
+    {
+        "auth.email_exists" => "email",
+        "auth.phone_exists" => "phone",
+        "auth.invalid_credentials" => "password",
+        "auth.current_password_wrong" or "auth.wrong_password" => "currentPassword",
+        "auth.otp_invalid" or "auth.otp_expired" or "auth.otp_attempts" => "code",
+        "auth.reset_invalid" or "auth.reset_expired" => "resetToken",
+        "vehicle.plate_exists" or "vehicle.plate_invalid" => "plate",
+        "card.invalid" or "payment.card_invalid" => "number",
+        "payment.iban_invalid" or "bank.iban_invalid" => "iban",
+        "wallet.insufficient" or "payment.insufficient_balance" or "withdrawal.min_amount" => "amount",
+        "request.address_required" => "pickupAddress",
+        "review.stars_invalid" => "stars",
+        _ => null
+    };
 
     /// <summary>Maps domain error codes to the correct HTTP status.</summary>
     private static HttpStatusCode StatusForCode(string code) => code switch

@@ -27,6 +27,8 @@ public static class DatabaseSetup
         // If the DB existed but has no reference data yet, seed it anyway.
         else if (!await db.ServiceTypes.AnyAsync(ct)) await ReferenceSeeder.SeedAsync(db, ct);
 
+        await Persistence.DummyDataConsistencySync.SynchronizeIfDummyAsync(db, ct);
+
         var count = await db.Users.CountAsync(ct);
         return (created, count);
     }

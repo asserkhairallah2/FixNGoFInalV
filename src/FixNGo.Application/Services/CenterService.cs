@@ -10,13 +10,23 @@ namespace FixNGo.Application.Services;
 public sealed class CenterService(
     IAppDbContext db, IClock clock, INotifier notifier, SettingsService settings) : ICenterService
 {
-    public async Task<IReadOnlyList<CenterDto>> CatalogAsync(CancellationToken ct = default) =>
-        await db.ServiceCenters.OrderByDescending(c => (double)c.Rating).ThenBy(c => c.Name)
-            .Select(c => Mappings.Center(c)).ToListAsync(ct);
+    public async Task<IReadOnlyList<CenterDto>> CatalogAsync(CancellationToken ct = default)
+    {
+        var centers = await db.ServiceCenters
+            .Include(c => c.Services)
+            .Include(c => c.Owner)
+            .Where(c => c.Owner == null || c.Owner.Status == UserStatus.Active)
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct);
+        return centers.Select(Mappings.Center).ToList();
+    }
 
     public async Task<CenterDto> GetAsync(Guid id, CancellationToken ct = default)
     {
-        var c = await db.ServiceCenters.FirstOrDefaultAsync(x => x.Id == id, ct)
+        var c = await db.ServiceCenters
+            .Include(x => x.Services)
+            .Include(x => x.Owner)
+            .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("center.not_found", "Service center not found.");
         return Mappings.Center(c);
     }

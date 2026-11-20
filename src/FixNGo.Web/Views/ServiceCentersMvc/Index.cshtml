@@ -8,15 +8,15 @@
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
       <h1 class="text-2xl font-extrabold text-slate-900">Verified Service Centers</h1>
-      <p class="text-xs text-slate-500">@Model.TotalCount verified centers available across Egypt</p>
+      <p class="text-xs text-slate-500">@Model.TotalCount verified centers matching your criteria across Egypt</p>
     </div>
     <fixngo-status-badge status="Verified"></fixngo-status-badge>
   </div>
 
-  <form method="get" asp-controller="ServiceCentersMvc" asp-action="Index" class="bg-white rounded-2xl border border-slate-200 p-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
+  <form method="get" asp-controller="ServiceCentersMvc" asp-action="Index" class="bg-white rounded-2xl border border-slate-200 p-4 grid grid-cols-1 sm:grid-cols-5 gap-3">
     <div>
       <label class="block text-[11px] font-bold text-slate-600 mb-1" for="q">Search</label>
-      <input id="q" name="q" value="@Model.SearchQuery" placeholder="Center or district..."
+      <input id="q" name="q" value="@Model.SearchQuery" placeholder="Center, district, or service..."
              class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" />
     </div>
     <div>
@@ -30,11 +30,21 @@
       </select>
     </div>
     <div>
-      <label class="block text-[11px] font-bold text-slate-600 mb-1" for="sort">Sort By</label>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1" for="category">Specialization</label>
+      <select id="category" name="category" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs">
+        <option value="" selected="@string.IsNullOrEmpty(Model.SelectedCategory)">All Categories</option>
+        <option value="periodic" selected="@(Model.SelectedCategory == "periodic")">Periodic Maintenance</option>
+        <option value="diagnostics" selected="@(Model.SelectedCategory == "diagnostics")">Diagnostics &amp; AC</option>
+        <option value="brakes" selected="@(Model.SelectedCategory == "brakes")">Brakes &amp; Alignment</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-[11px] font-bold text-slate-600 mb-1" for="sort">Filter &amp; Sort</label>
       <select id="sort" name="sort" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs">
-        <option value="rating" selected="@(Model.SortBy == "rating")">Highest Rating</option>
+        <option value="all" selected="@(Model.SortBy == "all" || Model.SortBy == "name")">All Centers (A-Z)</option>
+        <option value="rating" selected="@(Model.SortBy == "rating" || Model.SortBy == "top")">Top Rated (4.5★+)</option>
         <option value="reviews" selected="@(Model.SortBy == "reviews")">Most Reviewed</option>
-        <option value="name" selected="@(Model.SortBy == "name")">Name (A-Z)</option>
+        <option value="price" selected="@(Model.SortBy == "price")">Lowest Starting Price</option>
       </select>
     </div>
     <div class="flex items-end gap-2">
@@ -46,7 +56,7 @@
   {
     <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-2">
       <p class="text-sm font-bold text-slate-800">No service centers matched your criteria</p>
-      <p class="text-xs text-slate-500">Adjust your search keywords or city filter to view available centers.</p>
+      <p class="text-xs text-slate-500">Adjust your search keywords, specialization, or filter to view available centers.</p>
     </div>
   }
   else
@@ -58,16 +68,41 @@
           <div class="space-y-1.5">
             <div class="flex items-start justify-between gap-2">
               <h2 class="text-base font-extrabold text-slate-900">@item.Name</h2>
-              <span class="text-xs font-bold text-amber-600">★ @item.Rating.ToString("0.0") (@item.RatingCount)</span>
+              @if (item.RatingCount > 0)
+              {
+                <span class="text-xs font-bold text-amber-600">★ @item.Rating.ToString("0.0") (@item.RatingCount)</span>
+              }
+              else
+              {
+                <span class="text-[11px] font-semibold text-slate-400">New · No reviews yet</span>
+              }
             </div>
             <p class="text-xs text-slate-500">@item.City · @item.Address</p>
             @if (!string.IsNullOrWhiteSpace(item.Description))
             {
               <p class="text-xs text-slate-600">@item.Description</p>
             }
+            @if (item.Services.Count > 0)
+            {
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                @foreach (var svc in item.Services.Take(3))
+                {
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold">@svc</span>
+                }
+              </div>
+            }
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-            <span class="text-slate-500">@item.RecommendPercent% recommended</span>
+            <div class="flex items-center gap-3 text-slate-500">
+              @if (item.RatingCount > 0)
+              {
+                <span>👍 @item.RecommendPercent% recommended</span>
+              }
+              @if (item.StartingPriceEgp.HasValue)
+              {
+                <span class="font-bold text-slate-700">From EGP @item.StartingPriceEgp.Value.ToString("0")</span>
+              }
+            </div>
             <a asp-controller="ServiceCentersMvc" asp-action="Details" asp-route-id="@item.Id"
                class="font-bold text-[#E51C23] hover:underline">View Services →</a>
           </div>
@@ -82,6 +117,7 @@
         {
           <a asp-controller="ServiceCentersMvc" asp-action="Index"
              asp-route-q="@Model.SearchQuery" asp-route-city="@Model.SelectedCity"
+             asp-route-category="@Model.SelectedCategory"
              asp-route-sort="@Model.SortBy" asp-route-page="@p" asp-route-pageSize="@Model.PageSize"
              class="px-3 py-1.5 rounded-xl text-xs font-bold border @(p == Model.CurrentPage ? "bg-[#E51C23] text-white border-[#E51C23]" : "bg-white text-slate-700 border-slate-200")">
             @p

@@ -108,9 +108,10 @@ public static class Matching
         }
         return sort switch
         {
-            "fastest" => list.OrderBy(c => c.EtaMinutes).ThenBy(c => c.Score).ToList(),
-            "price" => list.OrderBy(c => c.PriceMinor).ThenBy(c => c.Score).ToList(),
-            _ => list.OrderBy(c => c.Score).ToList()
+            "fastest" => list.OrderBy(c => c.EtaMinutes).ThenBy(c => c.DistanceKm).ThenBy(c => c.Score).ToList(),
+            "price" or "lowest" => list.OrderBy(c => c.PriceMinor).ThenBy(c => c.EtaMinutes).ThenBy(c => c.Score).ToList(),
+            "top_rated" or "rating" or "top" => list.OrderByDescending(c => c.Rating).ThenBy(c => c.EtaMinutes).ThenBy(c => c.Score).ToList(),
+            _ => list.OrderBy(c => c.Score).ThenByDescending(c => c.Rating).ToList()
         };
     }
 
@@ -124,6 +125,23 @@ public static class Rules
     public static bool PasswordPolicy(string? password) =>
         password is { Length: >= 8 } && password.Any(char.IsUpper) && password.Any(char.IsLower)
         && password.Any(char.IsDigit) && password.Any(c => !char.IsLetterOrDigit(c));
+
+    public static string DescribePasswordError(string? password)
+    {
+        if (string.IsNullOrEmpty(password))
+            return "Password is required (8+ chars with uppercase, lowercase, number, and symbol).";
+
+        var missing = new List<string>();
+        if (password.Length < 8) missing.Add("at least 8 characters");
+        if (!password.Any(char.IsUpper)) missing.Add("an uppercase letter (A-Z)");
+        if (!password.Any(char.IsLower)) missing.Add("a lowercase letter (a-z)");
+        if (!password.Any(char.IsDigit)) missing.Add("a number (0-9)");
+        if (!password.Any(c => !char.IsLetterOrDigit(c))) missing.Add("a symbol (e.g. @ # $ !)");
+
+        return missing.Count == 0
+            ? string.Empty
+            : $"Password is missing: {string.Join(", ", missing)}.";
+    }
 
     public static bool Luhn(string number)
     {
