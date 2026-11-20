@@ -1,3 +1,4 @@
+// FixNGo — ASP.NET Core 8 MVC & Clean Architecture Web Host
 using FixNGo.Application;
 using FixNGo.Application.Interfaces;
 using FixNGo.Application.Services;
