@@ -1,25 +1,31 @@
 // Shared label / plural helpers for the provider modules (auth, mechanic, captain, center).
 // Wraps the kit's formatLabel with the extra enum values those screens display, so no raw
 // enum (e.g. `JobEarning`, `CheckedIn`, `WheelLift`) ever reaches the UI in EN or AR.
-import { formatLabel } from '../../ui/kit.jsx';
+import { formatLabel, pluralCount } from '../../ui/kit.jsx';
+
+export { pluralCount };
 
 const EXTRA_EN = {
   JobEarning: 'Job earning', Earning: 'Earning', Withdrawal: 'Withdrawal', Payout: 'Payout',
   Commission: 'Platform fee', Refund: 'Refund', Adjustment: 'Adjustment', Bonus: 'Bonus',
-  CashCollected: 'Cash collected', Cash: 'Cash', Card: 'Card', Wallet: 'Wallet',
+  CashCollected: 'Cash collected', Cash: 'Cash', Card: 'Card', ApplePay: 'Apple Pay', Wallet: 'Wallet',
   CheckedIn: 'Checked in', NoShow: 'No-show', Ready: 'Ready', ReadyForPickup: 'Ready for pickup',
-  Flatbed: 'Flatbed', WheelLift: 'Wheel-lift', HookAndChain: 'Hook & chain', Integrated: 'Integrated',
+  Flatbed: 'Flatbed', WheelLift: 'Wheel-lift', Hook: 'Hook & chain', HookAndChain: 'Hook & chain',
+  Carry: 'Self-loader / Carry', Integrated: 'Integrated',
   wheel_lift: 'Wheel Lift Tow', PickedUp: 'Vehicle loaded', Delivered: 'Delivered', Dropoff: 'Drop-off',
-  AtDestination: 'At destination', Loading: 'Loading', Towing: 'Towing'
+  AtDestination: 'At destination', Loading: 'Loading', Towing: 'Towing',
+  Provider: 'Service Provider'
 };
 const EXTRA_AR = {
   JobEarning: 'أرباح مهمة', Earning: 'أرباح', Withdrawal: 'سحب', Payout: 'تحويل',
   Commission: 'رسوم المنصة', Refund: 'استرداد', Adjustment: 'تسوية', Bonus: 'مكافأة',
-  CashCollected: 'تم تحصيل نقدي', Cash: 'نقدي', Card: 'بطاقة', Wallet: 'المحفظة',
+  CashCollected: 'تم تحصيل نقدي', Cash: 'نقدي', Card: 'بطاقة', ApplePay: 'آبل باي', Wallet: 'المحفظة',
   CheckedIn: 'تم تسجيل الوصول', NoShow: 'لم يحضر', Ready: 'جاهز', ReadyForPickup: 'جاهز للاستلام',
-  Flatbed: 'سطحة', WheelLift: 'رفع العجلات', HookAndChain: 'خطاف وسلسلة', Integrated: 'ونش متكامل',
+  Flatbed: 'سطحة', WheelLift: 'رفع العجلات', Hook: 'خطاف وسلسلة', HookAndChain: 'خطاف وسلسلة',
+  Carry: 'ونش حمّال', Integrated: 'ونش متكامل',
   wheel_lift: 'ونش رفع العجلات', PickedUp: 'تم تحميل السيارة', Delivered: 'تم التسليم', Dropoff: 'التسليم',
-  AtDestination: 'عند الوجهة', Loading: 'جاري التحميل', Towing: 'جاري السحب'
+  AtDestination: 'عند الوجهة', Loading: 'جاري التحميل', Towing: 'جاري السحب',
+  Provider: 'مقدم خدمة'
 };
 
 /** Friendly EN/AR label for any enum/status/doc-type value shown on provider screens. */
@@ -32,7 +38,7 @@ export function providerLabel(key, isAr = false) {
 }
 
 const AR_NOUNS = {
-  bay: ['منصة', 'منصتان', 'منصات', 'منصة'],
+  bay: ['حارة', 'حارتان', 'حارات', 'حارة'],
   booking: ['حجز', 'حجزان', 'حجوزات', 'حجز'],
   job: ['مهمة', 'مهمتان', 'مهام', 'مهمة'],
   trip: ['رحلة', 'رحلتان', 'رحلات', 'رحلة'],
@@ -42,7 +48,8 @@ const AR_NOUNS = {
   day: ['يوم', 'يومان', 'أيام', 'يوم'],
   year: ['سنة', 'سنتان', 'سنوات', 'سنة'],
   minute: ['دقيقة', 'دقيقتان', 'دقائق', 'دقيقة'],
-  order: ['أمر شغل', 'أمرا شغل', 'أوامر شغل', 'أمر شغل']
+  order: ['أمر شغل', 'أمرا شغل', 'أوامر شغل', 'أمر شغل'],
+  document: ['مستند', 'مستندات', 'مستندات', 'مستند']
 };
 
 /**

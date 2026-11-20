@@ -18,6 +18,7 @@ import { usePrefs, useNav, useSession } from '../../app/stores.jsx';
 import { post, put, fileUrl, uploadFile } from '../../api/http.js';
 import {
   k,
+  useCenters,
   useProvider,
   useOffers,
   useRequests,
@@ -43,6 +44,7 @@ import {
   useColors,
   formatLabel
 } from '../../ui/kit.jsx';
+import { providerLabel, plural } from '../auth/providerLabels.js';
 import {
   fmtMoney,
   fmtNumber,
@@ -130,15 +132,17 @@ function computeTowBreakdown(totalMinor) {
   return { baseMinor, distanceMinor, feeMinor, totalMinor: total };
 }
 
+function fmtOptionalDistance(km, lang) {
+  const n = Number(km);
+  if (km === null || km === undefined || !Number.isFinite(n) || n <= 0) return '—';
+  return fmtDistance(n, lang);
+}
+
 function computeTripMinutes(req) {
-  const start = toUtcDate(req?.acceptedAt || req?.createdAt);
-  const end = toUtcDate(req?.completedAt) || new Date();
-  if (start && end && end.getTime() >= start.getTime()) {
-    const mins = Math.round((end.getTime() - start.getTime()) / 60000);
-    if (mins >= 1 && mins <= 360) return mins;
-  }
-  const dist = Number(req?.distanceKm ?? 5);
-  return Math.max(1, Math.round(dist * 3));
+  const start = toUtcDate(req?.acceptedAt);
+  const end = toUtcDate(req?.completedAt);
+  if (!start || !end || end.getTime() < start.getTime()) return null;
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
 }
 
 function useActiveTowRequest(id) {
@@ -204,9 +208,9 @@ export function T01Screen() {
 
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
   const firstName = displayName.split(' ')[0] || displayName;
-  const truckMake = provider?.truckMake || (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck');
+  const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
-  const capacity = provider?.truckCapacityTonnes ?? 3.5;
+  const capacityText = provider?.truckCapacityTonnes != null ? `${provider.truckCapacityTonnes}t` : '—';
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -246,7 +250,7 @@ export function T01Screen() {
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}>
         <div>
           <p className={`text-xs font-bold ${colors.text}`}>
-            {isAr ? 'أنت خارج الخدمة (OFF)' : "You're OFF duty"}
+            {isAr ? 'أنت خارج الخدمة' : "You're OFF duty"}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
             {isAr ? 'اتصل عندما تكون مستعداً لاستقبال الطلبات.' : "Go online when you're ready for dispatch."}
@@ -273,8 +277,8 @@ export function T01Screen() {
           </div>
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'الحمولة' : 'Capacity'}</span>
-            <span className={`font-bold ${colors.text}`}>
-              {`${capacity}t`}
+            <span className={`font-bold ${colors.text}`} dir="ltr">
+              {capacityText}
             </span>
           </div>
         </div>
@@ -296,7 +300,7 @@ export function T01Screen() {
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(todayMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'اليوم · ج.م' : 'Today · EGP'}
+            {isAr ? 'أرباح اليوم' : 'Today'}
           </p>
         </div>
       </div>
@@ -331,9 +335,9 @@ export function T02Screen() {
   const requests = Array.isArray(requestsQ.data) ? requestsQ.data : [];
 
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
-  const truckMake = provider?.truckMake || (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck');
+  const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
-  const capacity = provider?.truckCapacityTonnes ?? 3.5;
+  const capacityText = provider?.truckCapacityTonnes != null ? `${provider.truckCapacityTonnes}t` : null;
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
   const completedCount = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
   const availableMinor = earnings?.availableMinor ?? 0;
@@ -367,14 +371,14 @@ export function T02Screen() {
           {isAr ? 'لوحة الكابتن' : 'Captain dashboard'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {`${displayName} · ${truckMake} (${truckPlate} · ${capacity}t)`}
+          {`${displayName} · ${truckMake} (${[truckPlate, capacityText].filter(Boolean).join(' · ')})`}
         </p>
       </div>
 
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}>
         <div className="space-y-1">
           <p className={`text-xs font-bold ${colors.text}`}>
-            {isAr ? 'أنت في الخدمة (ON)' : "You're ON duty"}
+            {isAr ? 'أنت في الخدمة' : "You're ON duty"}
           </p>
           <StatusBadge status="Online" text={isAr ? 'متصل · جاهز لاستقبال الطلبات' : 'Online · Ready for dispatch'} />
         </div>
@@ -393,7 +397,7 @@ export function T02Screen() {
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtNumber(completedCount, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'رحلات اليوم' : "Today's jobs"}
+            {isAr ? 'رحلات مكتملة' : 'Completed trips'}
           </p>
         </div>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
@@ -405,7 +409,7 @@ export function T02Screen() {
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(availableMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'اليوم · ج.م' : 'Today · EGP'}
+            {isAr ? 'الرصيد المتاح' : 'Balance'}
           </p>
         </div>
       </div>
@@ -424,7 +428,7 @@ export function T02Screen() {
             {[liveOffer.vehicleMake, liveOffer.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}
           </p>
           <p className={`text-[11px] ${colors.secondaryText}`}>
-            {`${liveOffer.pickupArea || '—'} → ${liveOffer.destinationAddress || (isAr ? 'مركز الخدمة' : 'Service destination')} · ${fmtDistance(liveOffer.distanceKm, lang)}`}
+            {`${liveOffer.pickupArea || '—'} → ${liveOffer.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')} · ${fmtOptionalDistance(liveOffer.tripDistanceKm || liveOffer.distanceKm, lang)}`}
           </p>
           <div className={`flex justify-between pt-1 border-t ${colors.border} font-extrabold`}>
             <span className={colors.secondaryText}>{isAr ? 'عرض الرحلة' : 'Trip offer'}</span>
@@ -533,6 +537,13 @@ export function T03Screen({ id }) {
     ? 'مركبة العميل'
     : 'Customer vehicle';
 
+  const pickupDistText = fmtOptionalDistance(offer?.distanceKm, lang);
+  const towRouteKm =
+    offer?.tripDistanceKm != null && Number(offer.tripDistanceKm) > 0
+      ? offer.tripDistanceKm
+      : null;
+  const towRouteText = fmtOptionalDistance(towRouteKm, lang);
+
   return (
     <CaptainShell code="T03">
       <div>
@@ -565,7 +576,9 @@ export function T03Screen({ id }) {
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
         <div>
           <p className={`text-[10px] uppercase ${colors.secondaryText}`}>
-            {isAr ? 'نقطة الالتقاء' : 'PICKUP'}
+            {`${isAr ? 'نقطة الالتقاء' : 'PICKUP'} · ${pickupDistText}${
+              offer?.etaMinutes ? ` (${fmtNumber(offer.etaMinutes, lang)} ${isAr ? 'دقائق' : 'min'})` : ''
+            }`}
           </p>
           <p className={`font-bold ${colors.text}`}>
             {offer?.pickupArea || (isAr ? 'موقع العميل' : 'Customer pickup area')}
@@ -573,7 +586,7 @@ export function T03Screen({ id }) {
         </div>
         <div className={`pt-2 border-t ${colors.border}`}>
           <p className={`text-[10px] uppercase ${colors.secondaryText}`}>
-            {`${isAr ? 'الوجهة' : 'DESTINATION'} · ${fmtDistance(offer?.distanceKm, lang)}`}
+            {`${isAr ? 'الوجهة · مسافة السحب' : 'DESTINATION · TOW ROUTE'} · ${towRouteText}`}
           </p>
           <p className={`font-bold ${colors.text}`}>
             {offer?.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')}
@@ -591,18 +604,18 @@ export function T03Screen({ id }) {
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-xs font-extrabold ${colors.text}`}>
-            {fmtDistance(offer?.distanceKm, lang)}
+            {pickupDistText}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'مسافة الرحلة' : 'Trip distance'}
+            {isAr ? 'إلى الالتقاء' : 'To pickup'}
           </p>
         </div>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-xs font-extrabold ${colors.text}`}>
-            {`${fmtNumber(offer?.etaMinutes ?? 6, lang)} ${isAr ? 'دقائق' : 'min'}`}
+            {towRouteText}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'وقت الوصول' : 'Pickup ETA'}
+            {isAr ? 'مسافة السحب' : 'Tow route'}
           </p>
         </div>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
@@ -610,7 +623,7 @@ export function T03Screen({ id }) {
             {fmtMoney(offer?.priceMinor ?? 0, lang)}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'السعر · ج.م' : 'Price · EGP'}
+            {isAr ? 'التكلفة' : 'Price'}
           </p>
         </div>
       </div>
@@ -712,7 +725,7 @@ export function T04Screen({ id }) {
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'الوجهة' : 'Destination'}</span>
             <span className={`font-bold ${colors.text}`}>
-              {req?.destinationAddress || (isAr ? 'مركز الخدمة' : 'Service destination')}
+              {req?.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')}
             </span>
           </div>
         </div>
@@ -743,12 +756,45 @@ export function T05Screen({ id }) {
   const { isAr, lang } = usePrefs();
   const nav = useNav();
   const { req } = useActiveTowRequest(id);
+  const offersQ = useOffers();
+  const providerQ = useProvider();
   const advanceM = useAdvanceStatus();
   const [error, setError] = useState('');
 
   const step = 3;
   const customerPhone = req?.customerPhone || '';
-  const defaultDist = 2.4;
+  const offers = Array.isArray(offersQ.data) ? offersQ.data : [];
+  const matchedOffer = useMemo(
+    () => (req?.id ? offers.find((o) => String(o.requestId) === String(req.id)) : offers[0]) || null,
+    [offers, req?.id]
+  );
+  const pickupKm = req?.pickupDistanceKm ?? matchedOffer?.distanceKm ?? null;
+  const pickupDistLabel =
+    pickupKm != null && Number(pickupKm) > 0
+      ? `${fmtDistance(pickupKm, lang)} · ${isAr ? 'إلى نقطة الالتقاء' : 'to pickup'}`
+      : isAr
+      ? 'في الطريق إلى نقطة الالتقاء'
+      : 'Heading to pickup';
+
+  const mapMarkers = useMemo(() => {
+    const m = [];
+    if (req?.pickupLatitude != null && req?.pickupLongitude != null) {
+      m.push({ lat: req.pickupLatitude, lng: req.pickupLongitude });
+    }
+    const pLat = req?.providerLatitude ?? providerQ.data?.latitude;
+    const pLng = req?.providerLongitude ?? providerQ.data?.longitude;
+    if (pLat != null && pLng != null) {
+      m.push({ lat: pLat, lng: pLng });
+    }
+    return m;
+  }, [
+    req?.pickupLatitude,
+    req?.pickupLongitude,
+    req?.providerLatitude,
+    req?.providerLongitude,
+    providerQ.data?.latitude,
+    providerQ.data?.longitude
+  ]);
 
   const handleArrived = async () => {
     setError('');
@@ -781,8 +827,9 @@ export function T05Screen({ id }) {
       </div>
 
       <MapView
-        label={`${fmtDistance(req?.distanceKm ?? defaultDist, lang)} · ${isAr ? 'إلى نقطة الالتقاء' : 'to pickup'}`}
+        label={pickupDistLabel}
         subtitle={req?.pickupAddress || ''}
+        markers={mapMarkers}
       />
 
       <div className="space-y-1">
@@ -1003,17 +1050,35 @@ export function T06Screen({ id }) {
 }
 
 // ==========================================
-// T07: On the way to the center · step 5/7
+// T07: On the way to drop-off · step 5/7
 // ==========================================
 export function T07Screen({ id }) {
   const colors = useColors();
-  const { isAr, lang } = usePrefs();
+  const { isAr, lang, t } = usePrefs();
   const nav = useNav();
   const { req } = useActiveTowRequest(id);
+  const centersQ = useCenters();
   const advanceM = useAdvanceStatus();
   const [error, setError] = useState('');
 
   const step = 5;
+  const centers = Array.isArray(centersQ.data) ? centersQ.data : [];
+  const destLower = String(req?.destinationAddress || '').trim().toLowerCase();
+  const isCenterDestination = Boolean(
+    destLower &&
+      centers.some((c) => c.name && destLower.includes(String(c.name).trim().toLowerCase()))
+  );
+
+  const routeMarkers = useMemo(() => {
+    const m = [];
+    if (req?.destinationLatitude != null && req?.destinationLongitude != null) {
+      m.push({ lat: req.destinationLatitude, lng: req.destinationLongitude });
+    }
+    if (req?.pickupLatitude != null && req?.pickupLongitude != null) {
+      m.push({ lat: req.pickupLatitude, lng: req.pickupLongitude });
+    }
+    return m;
+  }, [req?.destinationLatitude, req?.destinationLongitude, req?.pickupLatitude, req?.pickupLongitude]);
 
   const handleArrivedAtDestination = async () => {
     setError('');
@@ -1038,7 +1103,9 @@ export function T07Screen({ id }) {
     <CaptainShell code="T07">
       <div>
         <h1 className={`text-lg font-bold ${colors.text}`}>
-          {isAr ? 'في الطريق إلى المركز' : 'On the way to the center'}
+          {isCenterDestination
+            ? t('On the way to service center', 'في الطريق إلى مركز الخدمة')
+            : t('On the way to drop-off', 'في الطريق إلى وجهة التسليم')}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
           {`${req?.code || '—'} · ${isAr ? 'المركبة محملة بأمان' : 'Vehicle securely loaded'}`}
@@ -1046,14 +1113,15 @@ export function T07Screen({ id }) {
       </div>
 
       <MapView
-        label={fmtDistance(req?.distanceKm ?? 0, lang)}
-        subtitle={req?.destinationAddress || (isAr ? 'وجهة التسليم' : 'Destination')}
+        label={fmtOptionalDistance(req?.distanceKm, lang)}
+        subtitle={req?.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')}
+        markers={routeMarkers}
       />
 
       <div className="space-y-1">
         <div className="flex justify-between text-[11px]">
           <span className={colors.secondaryText}>{isAr ? 'خطوة ٥ من ٧' : 'Step 5 of 7'}</span>
-          <span className={`font-bold ${colors.text}`}>{isAr ? 'جاري النقل' : 'Working'}</span>
+          <span className={`font-bold ${colors.text}`}>{providerLabel('Working', isAr)}</span>
         </div>
         <div className="w-full h-1.5 rounded-full bg-slate-500/20 overflow-hidden">
           <div className="h-full bg-[#E51C23] rounded-full" style={{ width: `${(step / 7) * 100}%` }} />
@@ -1069,10 +1137,10 @@ export function T07Screen({ id }) {
         </div>
         <div className={`pt-2 border-t ${colors.border}`}>
           <p className={`text-[10px] uppercase ${colors.secondaryText}`}>
-            {`${isAr ? 'الوجهة' : 'DESTINATION'} · ${fmtDistance(req?.distanceKm, lang)}`}
+            {`${isAr ? 'الوجهة' : 'DESTINATION'} · ${fmtOptionalDistance(req?.distanceKm, lang)}`}
           </p>
           <p className={`font-bold ${colors.text}`}>
-            {req?.destinationAddress || (isAr ? 'مركز الخدمة' : 'Service destination')}
+            {req?.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')}
           </p>
         </div>
       </div>
@@ -1084,7 +1152,7 @@ export function T07Screen({ id }) {
         disabled={advanceM.isPending}
         testId="screen-primary"
       >
-        {isAr ? 'وصلت إلى وجهة التسليم' : 'Arrived at Destination'}
+        {isAr ? 'وصلت إلى وجهة التسليم' : 'Arrived at Drop-off'}
       </PrimaryButton>
     </CaptainShell>
   );
@@ -1144,13 +1212,13 @@ export function T08Screen({ id }) {
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-xs font-extrabold ${colors.text}`}>
-            {fmtDistance(req?.distanceKm, lang)}
+            {fmtOptionalDistance(req?.distanceKm, lang)}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'المسافة' : 'Distance'}</p>
         </div>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-xs font-extrabold ${colors.text}`}>
-            {`${fmtNumber(durationMins, lang)} ${isAr ? 'دقيقة' : 'min'}`}
+            {durationMins != null ? `${fmtNumber(durationMins, lang)} ${isAr ? 'دقيقة' : 'min'}` : '—'}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'المدة' : 'Duration'}</p>
         </div>
@@ -1162,12 +1230,12 @@ export function T08Screen({ id }) {
 
       <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs`}>
         <div className="flex justify-between">
-          <span className={colors.secondaryText}>{isAr ? 'التكلفة الأساسية' : 'Flatbed tow · base fare'}</span>
+          <span className={colors.secondaryText}>{isAr ? 'التكلفة الأساسية' : 'Base fare'}</span>
           <span className={colors.text}>{fmtMoney(breakdown.baseMinor, lang)}</span>
         </div>
         <div className="flex justify-between">
           <span className={colors.secondaryText}>
-            {`${isAr ? 'المسافة' : 'Distance'} · ${fmtDistance(req?.distanceKm, lang)}`}
+            {`${isAr ? 'المسافة' : 'Distance'} · ${fmtOptionalDistance(req?.distanceKm, lang)}`}
           </span>
           <span className={colors.text}>{fmtMoney(breakdown.distanceMinor, lang)}</span>
         </div>
@@ -1319,7 +1387,7 @@ export function T09Screen() {
               <div>
                 <p className={`font-bold ${colors.text}`}>{fmtDate(entry.at, lang)}</p>
                 <p className={`text-[10px] ${colors.secondaryText}`}>
-                  {`${entry.reference || '—'} · ${entry.type || (isAr ? 'إيداع بالمحفظة' : 'Paid to wallet')}`}
+                  {`${entry.reference || '—'} · ${entry.type ? providerLabel(entry.type, isAr) : (isAr ? 'إيداع بالمحفظة' : 'Paid to wallet')}`}
                 </p>
               </div>
               <span className={`font-extrabold ${colors.text}`}>
@@ -1358,9 +1426,9 @@ export function T10Screen() {
   const displayName = provider?.fullName || user?.fullName || (isAr ? 'الكابتن' : 'Captain');
   const rating = Number(provider?.rating ?? 0).toFixed(1);
   const trips = provider?.completedJobs ?? 0;
-  const truckMake = provider?.truckMake || (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck');
+  const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
-  const capacity = provider?.truckCapacityTonnes ?? 3.5;
+  const capacityText = provider?.truckCapacityTonnes != null ? `${provider.truckCapacityTonnes}t` : '—';
   const kycStatus = provider?.kycStatus || kyc?.status || 'Approved';
   const docs = Array.isArray(kyc?.documents) ? kyc.documents : [];
 
@@ -1381,12 +1449,16 @@ export function T10Screen() {
           <div>
             <p className={`font-bold ${colors.text}`}>{displayName}</p>
             <p className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr
-                ? `كابتن ونش · ${rating} ★ (${fmtNumber(trips, lang)} رحلة)`
-                : `Tow Captain · ${rating} ★ (${fmtNumber(trips, lang)} trips)`}
+              {`${providerLabel('TowCaptain', isAr)} · ${rating} ★ (${plural(trips, 'trip', isAr)})`}
             </p>
           </div>
         </div>
+        {user?.phone && (
+          <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
+            <span className={colors.secondaryText}>{isAr ? 'رقم الهاتف' : 'Phone'}</span>
+            <span className={`font-bold ${colors.text}`} dir="ltr">{provider?.phone || user.phone}</span>
+          </div>
+        )}
         <StatusBadge
           status={kycStatus}
           text={
@@ -1405,7 +1477,9 @@ export function T10Screen() {
           <p className={`font-bold ${colors.text}`}>{truckMake}</p>
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'نوع الونش' : 'Truck type'}</span>
-            <span className={`font-bold ${colors.text}`}>{provider?.truckType || truckMake}</span>
+            <span className={`font-bold ${colors.text}`}>
+              {provider?.truckType ? providerLabel(provider.truckType, isAr) : truckMake}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'رقم اللوحة' : 'Truck plate'}</span>
@@ -1413,7 +1487,7 @@ export function T10Screen() {
           </div>
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'الحمولة' : 'Capacity'}</span>
-            <span className={`font-bold ${colors.text}`}>{`${capacity}t`}</span>
+            <span className={`font-bold ${colors.text}`} dir="ltr">{capacityText}</span>
           </div>
         </div>
       </div>
@@ -1427,9 +1501,9 @@ export function T10Screen() {
             className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
           >
             <div>
-              <p className={`font-bold ${colors.text}`}>{formatLabel(doc.documentType, isAr)}</p>
+              <p className={`font-bold ${colors.text}`}>{providerLabel(doc.documentType, isAr)}</p>
               <p className={`text-[10px] ${colors.secondaryText}`}>
-                {`${formatLabel(doc.status, isAr)} · ${fmtDate(doc.createdAt, lang)}`}
+                {`${providerLabel(doc.status, isAr)} · ${fmtDate(doc.createdAt, lang)}`}
               </p>
             </div>
             <ForwardChevron size={14} className={colors.secondaryText} />
@@ -1443,8 +1517,8 @@ export function T10Screen() {
             className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
           >
             <div>
-              <p className={`font-bold ${colors.text}`}>{isAr ? 'رخصة القيادة' : 'Driving license'}</p>
-              <p className={`text-[10px] ${colors.secondaryText}`}>{kycStatus}</p>
+              <p className={`font-bold ${colors.text}`}>{providerLabel('DrivingLicense', isAr)}</p>
+              <p className={`text-[10px] ${colors.secondaryText}`}>{providerLabel(kycStatus, isAr)}</p>
             </div>
             <ForwardChevron size={14} className={colors.secondaryText} />
           </button>
@@ -1455,9 +1529,9 @@ export function T10Screen() {
           >
             <div>
               <p className={`font-bold ${colors.text}`}>
-                {isAr ? 'رخصة وتأمين الونش' : 'Vehicle registration & insurance'}
+                {providerLabel('TruckRegistration', isAr)}
               </p>
-              <p className={`text-[10px] ${colors.secondaryText}`}>{kycStatus}</p>
+              <p className={`text-[10px] ${colors.secondaryText}`}>{providerLabel(kycStatus, isAr)}</p>
             </div>
             <ForwardChevron size={14} className={colors.secondaryText} />
           </button>
@@ -1558,11 +1632,11 @@ export function T11Screen() {
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'الوجهة' : 'Destination'}</span>
             <span className={`font-bold ${colors.text}`}>
-              {offer.destinationAddress || (isAr ? 'مركز الخدمة' : 'Service destination')}
+              {offer.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')}
             </span>
           </div>
           <div className="flex justify-between font-extrabold text-[#E51C23]">
-            <span>{`${isAr ? 'عرض الرحلة' : 'Trip offer'} · ${fmtDistance(offer.distanceKm, lang)}`}</span>
+            <span>{`${isAr ? 'عرض الرحلة' : 'Trip offer'} · ${fmtOptionalDistance(offer.tripDistanceKm || offer.distanceKm, lang)}`}</span>
             <span>{fmtMoney(offer.priceMinor, lang)}</span>
           </div>
         </div>
@@ -1592,7 +1666,7 @@ export function T11Screen() {
             <StatusBadge status={trip.status} />
           </div>
           <p className={`text-[11px] ${colors.secondaryText}`}>
-            {`${trip.pickupAddress || '—'} → ${trip.destinationAddress || (isAr ? 'الوجهة' : 'Destination')}`}
+            {`${trip.pickupAddress || '—'} → ${trip.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')}`}
           </p>
           <span className="inline-block text-[11px] font-bold text-[#E51C23] pt-1">
             {isAr ? 'متابعة الرحلة النشطة ←' : 'Continue Active Trip →'}
@@ -1608,8 +1682,8 @@ export function T11Screen() {
           <p className={colors.secondaryText}>
             {recentTrips.length > 0
               ? isAr
-                ? `لديك ${fmtNumber(recentTrips.length, lang)} رحلة في السجل.`
-                : `You have ${fmtNumber(recentTrips.length, lang)} trips in history.`
+                ? `لديك ${plural(recentTrips.length, 'trip', true)} في السجل.`
+                : `You have ${plural(recentTrips.length, 'trip', false)} in history.`
               : isAr
               ? 'ابقَ متصلاً لاستقبال طلبات السحب القريبة.'
               : 'Stay online to receive nearby tow requests.'}
@@ -1800,10 +1874,11 @@ export function T13Screen({ id }) {
             {isAr ? 'المسافة والمدة' : 'Trip distance & duration'}
           </span>
           <span className={`font-bold ${colors.text}`}>
-            {`${fmtDistance(req?.distanceKm, lang)} · ${fmtNumber(
-              computeTripMinutes(req),
-              lang
-            )} ${isAr ? 'دقيقة' : 'min'}`}
+            {`${fmtOptionalDistance(req?.distanceKm, lang)} · ${
+              computeTripMinutes(req) != null
+                ? `${fmtNumber(computeTripMinutes(req), lang)} ${isAr ? 'دقيقة' : 'min'}`
+                : '—'
+            }`}
           </span>
         </div>
       </div>
@@ -1854,7 +1929,7 @@ export function T13Screen({ id }) {
           <div className="flex justify-between">
             <span className={colors.secondaryText}>{isAr ? 'طريقة الدفع' : 'Payment method'}</span>
             <span className={`font-bold ${colors.text}`}>
-              {invoiceQ.data?.method || req?.paymentMethod || (isAr ? 'نقدي' : 'Cash')}
+              {providerLabel(invoiceQ.data?.method || req?.paymentMethod || 'Cash', isAr)}
             </span>
           </div>
           <div className="flex justify-between">
@@ -2065,9 +2140,9 @@ export function T15Screen() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [truckMake, setTruckMake] = useState('');
-  const [truckType, setTruckType] = useState('Flatbed');
+  const [truckType, setTruckType] = useState('');
   const [truckPlate, setTruckPlate] = useState('');
-  const [truckCapacityTonnes, setTruckCapacityTonnes] = useState('3.5');
+  const [truckCapacityTonnes, setTruckCapacityTonnes] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
@@ -2077,22 +2152,40 @@ export function T15Screen() {
       setFullName(provider?.fullName || user?.fullName || '');
       setPhone(provider?.phone || user?.phone || '');
       setEmail(provider?.email || user?.email || '');
-      setTruckMake(provider?.truckMake || 'Flatbed Tow Truck');
-      setTruckType(provider?.truckType || 'Flatbed');
+      setTruckMake(provider?.truckMake || '');
+      setTruckType(provider?.truckType || '');
       setTruckPlate(provider?.truckPlate || '');
-      setTruckCapacityTonnes(String(provider?.truckCapacityTonnes ?? 3.5));
+      if (provider?.truckCapacityTonnes !== undefined && provider?.truckCapacityTonnes !== null) {
+        setTruckCapacityTonnes(String(provider.truckCapacityTonnes));
+      }
     }
   }, [provider, user]);
 
   const handleSave = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     setError('');
+    const capNum = Number(truckCapacityTonnes);
+    if (!fullName.trim() || !phone.trim()) {
+      setError(isAr ? 'الاسم ورقم الهاتف مطلوبان.' : 'Full name and phone are required.');
+      return;
+    }
+    if (!truckMake.trim() || !truckType) {
+      setError(isAr ? 'يرجى إدخال ماركة ونوع الونش.' : 'Please enter truck make and select truck type.');
+      return;
+    }
+    if (String(truckCapacityTonnes).trim() === '' || !Number.isFinite(capNum) || capNum <= 0) {
+      setError(isAr ? 'يرجى إدخال حمولة صحيحة بالطن.' : 'Please enter a valid truck capacity in tonnes.');
+      return;
+    }
+    if (!truckPlate.trim()) {
+      setError(isAr ? 'يرجى إدخال لوحة الونش.' : 'Please enter your truck plate.');
+      return;
+    }
     setBusy(true);
     try {
-      const capNum = Number(truckCapacityTonnes);
       await put('/providers/me', {
-        yearsExperience: provider?.yearsExperience ?? 3,
-        coverageRadiusKm: provider?.coverageRadiusKm ?? 15,
+        yearsExperience: provider?.yearsExperience ?? 0,
+        coverageRadiusKm: provider?.coverageRadiusKm ?? 10,
         coverageArea: provider?.coverageArea,
         latitude: provider?.latitude,
         longitude: provider?.longitude,
@@ -2102,7 +2195,7 @@ export function T15Screen() {
         truckMake: truckMake.trim(),
         truckType,
         truckPlate: truckPlate.trim(),
-        truckCapacityTonnes: capNum > 0 ? capNum : 3.5
+        truckCapacityTonnes: capNum
       });
       await qc.invalidateQueries({ queryKey: k.provider });
       await loadMe?.();
@@ -2131,10 +2224,11 @@ export function T15Screen() {
       <form onSubmit={handleSave} className="space-y-3">
         <div className="space-y-2">
           <div>
-            <label className={`text-[10px] ${colors.secondaryText}`}>
+            <label htmlFor="t15-fullName" className={`block text-[10px] ${colors.secondaryText}`}>
               {isAr ? 'الاسم الكامل' : 'Full name'}
             </label>
             <input
+              id="t15-fullName"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               data-testid="field-fullName"
@@ -2143,8 +2237,10 @@ export function T15Screen() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'الهاتف' : 'Phone'}</label>
+              <label htmlFor="t15-phone" className={`block text-[10px] ${colors.secondaryText}`}>{isAr ? 'الهاتف' : 'Phone'}</label>
               <input
+                id="t15-phone"
+                dir="ltr"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 data-testid="field-phone"
@@ -2152,8 +2248,9 @@ export function T15Screen() {
               />
             </div>
             <div>
-              <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'البريد' : 'Email'}</label>
+              <label htmlFor="t15-email" className={`block text-[10px] ${colors.secondaryText}`}>{isAr ? 'البريد' : 'Email'}</label>
               <input
+                id="t15-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -2169,10 +2266,11 @@ export function T15Screen() {
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className={`text-[10px] ${colors.secondaryText}`}>
+              <label htmlFor="t15-truckMake" className={`block text-[10px] ${colors.secondaryText}`}>
                 {isAr ? 'ماركة الونش' : 'Truck make'}
               </label>
               <input
+                id="t15-truckMake"
                 value={truckMake}
                 onChange={(e) => setTruckMake(e.target.value)}
                 data-testid="field-truckMake"
@@ -2180,27 +2278,32 @@ export function T15Screen() {
               />
             </div>
             <div>
-              <label className={`text-[10px] ${colors.secondaryText}`}>
+              <label htmlFor="t15-truckType" className={`block text-[10px] ${colors.secondaryText}`}>
                 {isAr ? 'نوع الونش' : 'Truck type'}
               </label>
               <select
+                id="t15-truckType"
                 value={truckType}
                 onChange={(e) => setTruckType(e.target.value)}
                 data-testid="field-truckType"
                 className={`w-full px-3 h-10 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
               >
+                <option value="">{isAr ? 'اختر نوع الونش...' : 'Select truck type...'}</option>
                 <option value="Flatbed">{isAr ? 'سطحة' : 'Flatbed'}</option>
                 <option value="WheelLift">{isAr ? 'رفع عجلات' : 'Wheel Lift'}</option>
-                <option value="HeavyDuty">{isAr ? 'نقل ثقيل' : 'Heavy Duty'}</option>
+                <option value="Hook">{isAr ? 'خطاف وسلسلة' : 'Hook & Chain'}</option>
+                <option value="Carry">{isAr ? 'ونش حمّال' : 'Self-Loader / Carry'}</option>
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className={`text-[10px] ${colors.secondaryText}`}>
+              <label htmlFor="t15-truckPlate" className={`block text-[10px] ${colors.secondaryText}`}>
                 {isAr ? 'لوحة الونش' : 'Truck plate'}
               </label>
               <input
+                id="t15-truckPlate"
+                dir="ltr"
                 value={truckPlate}
                 onChange={(e) => setTruckPlate(e.target.value)}
                 data-testid="field-truckPlate"
@@ -2208,10 +2311,11 @@ export function T15Screen() {
               />
             </div>
             <div>
-              <label className={`text-[10px] ${colors.secondaryText}`}>
+              <label htmlFor="t15-truckCapacityTonnes" className={`block text-[10px] ${colors.secondaryText}`}>
                 {isAr ? 'الحمولة (طن)' : 'Capacity (tonnes)'}
               </label>
               <input
+                id="t15-truckCapacityTonnes"
                 type="number"
                 step="0.5"
                 min="0.5"
