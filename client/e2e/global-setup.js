@@ -125,15 +125,37 @@ export default async function globalSetup() {
   seeded.users.kyc = { id: kycAuth.user.id, email: KYCTEST_EMAIL, role: kycAuth.user.role };
 
   // Fixture-only DB patches (see comment on patchKycStatus).
-  // The mechanic role needs a real KYC application for A11/SH17 and for the
-  // admin queue (AD03/AD15); submit it from a legal None state first.
+  // The mechanic role needs a real KYC application (with uploaded credential PNGs)
+  // for A11/M09/SH17 and for the admin queue (AD02/AD03/AD15); submit it from None first.
+  const uploadFixturePng = async (token, fileName) => {
+    const pngBytes = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64'
+    );
+    const fd = new FormData();
+    fd.append('file', new Blob([pngBytes], { type: 'image/png' }), fileName);
+    const upRes = await fetch(`${base}/api/v1/files/upload?purpose=kyc`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd
+    });
+    if (!upRes.ok) throw new Error(`upload ${fileName} failed: ${upRes.status}`);
+    return await upRes.json();
+  };
+
   patchKycStatus(runtime.dataDir, CREDENTIALS.mechanic.email, 'None');
+  const mechIdDoc = await uploadFixturePng(auth.mechanic.accessToken, 'national-id.png');
+  const mechLicDoc = await uploadFixturePng(auth.mechanic.accessToken, 'driving-license.png');
   const mechanicKyc = assertOk(await api('/providers/kyc', {
     method: 'POST',
     token: auth.mechanic.accessToken,
     body: {
       applicantType: 'Mechanic', businessName: null, address: 'Cairo, Egypt',
-      latitude: 30.0444, longitude: 31.2357, services: [], documents: []
+      latitude: 30.0444, longitude: 31.2357, services: [],
+      documents: [
+        { documentType: 'NationalId', fileId: mechIdDoc.id },
+        { documentType: 'DrivingLicense', fileId: mechLicDoc.id }
+      ]
     }
   }), 'seed mechanic KYC application');
   seeded.ids.kycApplicationId = mechanicKyc.id;

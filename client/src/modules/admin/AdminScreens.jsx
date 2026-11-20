@@ -430,9 +430,9 @@ export function AD02Screen() {
             const docCount = app.documents?.length ?? 0;
             const isCenter = app.applicantType === 'ServiceCenter';
             const docSummary =
-              app.documents && app.documents.length > 0
+              docCount > 0
                 ? app.documents.map((d) => formatLabel(d.documentType, isAr)).join(' · ')
-                : pluralCount(docCount, 'document', 'documents', 'مستند', 'مستندات', 'مستنداً', isAr);
+                : '';
             return (
               <button
                 key={app.id}
@@ -461,13 +461,17 @@ export function AD02Screen() {
                   <div>
                     <p className={`text-xs font-extrabold ${colors.text}`}>{displayName}</p>
                     <p className={`text-[11px] ${colors.secondaryText}`}>
-                      {isAr
+                      {docCount === 0
+                        ? (isAr ? 'لم يتم رفع مستندات بعد' : 'No documents uploaded yet')
+                        : isAr
                         ? pluralCount(docCount, '', '', 'مستند مرفوع', 'مستندات مرفوعة', 'مستنداً مرفوعاً', true)
                         : `${pluralCount(docCount, 'document', 'documents', '', '', '', false)} submitted`}
                     </p>
                   </div>
                 </div>
-                <p className={`text-[11px] ${colors.secondaryText}`}>{docSummary}</p>
+                {docSummary && (
+                  <p className={`text-[11px] ${colors.secondaryText}`}>{docSummary}</p>
+                )}
                 <div className="flex items-center justify-between">
                   <StatusBadge status={app.status} />
                   <span className={`text-[10px] ${colors.secondaryText}`}>{app.address || ''}</span>
@@ -521,19 +525,7 @@ export function AD03Screen({ id, params }) {
   };
 
   const displayName = app?.fullName || app?.businessName || app?.code || '—';
-  const docs =
-    app?.documents && app.documents.length > 0
-      ? app.documents
-      : app
-      ? [
-          {
-            id: app.id,
-            documentType: 'NationalId',
-            status: app.status === 'Approved' ? 'Approved' : 'Submitted',
-            fileId: null
-          }
-        ]
-      : [];
+  const docs = Array.isArray(app?.documents) ? app.documents : [];
 
   return (
     <AdminShell code="AD03">

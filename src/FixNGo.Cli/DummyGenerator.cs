@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.IO.Compression;
 using System.Text;
 using FixNGo.Domain;
 using FixNGo.Domain.Entities;
@@ -19,16 +21,24 @@ public static class DummyGenerator
     public const int DefaultSeed = 20261119;
     private const string Domain = "@dummy.fixngo.test";
 
-    private static readonly string[] FirstNames =
+    private static readonly string[] EnFirstNames =
     [
         "Ahmed", "Mohamed", "Mahmoud", "Omar", "Karim", "Hassan", "Ali", "Hany", "Tarek", "Samir",
-        "Nour", "Salma", "Mona", "Dina", "Rania", "Yasmine", "Mostafa", "Amr", "Walid", "Fady",
+        "Nour", "Salma", "Mona", "Dina", "Rania", "Yasmine", "Mostafa", "Amr", "Walid", "Fady"
+    ];
+
+    private static readonly string[] EnLastNames =
+    [
+        "Hassan", "Abdelaziz", "El-Sayed", "Mostafa", "Naguib", "Fathy", "Aly", "Sabry", "Mohamed"
+    ];
+
+    private static readonly string[] ArFirstNames =
+    [
         "محمد", "أحمد", "محمود", "عمر", "كريم", "حسن", "نور", "سلمى", "منى", "ديانا"
     ];
 
-    private static readonly string[] LastNames =
+    private static readonly string[] ArLastNames =
     [
-        "Hassan", "Abdelaziz", "El-Sayed", "Mostafa", "Naguib", "Fathy", "Aly", "Sabry", "Mohamed",
         "عبد العزيز", "السيد", "مصطفى", "فتحى", "على", "صبرى"
     ];
 
@@ -41,7 +51,18 @@ public static class DummyGenerator
         SqliteConnection.ClearAllPools();
         foreach (var p in new[] { paths.DbPath, paths.DbPath + "-wal", paths.DbPath + "-shm" })
             if (File.Exists(p)) File.Delete(p);
+        if (Directory.Exists(paths.UploadsDir)) Directory.Delete(paths.UploadsDir, true);
+        Directory.CreateDirectory(paths.UploadsDir);
         await DatabaseSetup.EnsureAsync(paths);
+
+        var pngTemplates = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["NationalId"] = BuildCredentialPng(24, 58, 90),
+            ["DrivingLicense"] = BuildCredentialPng(16, 110, 78),
+            ["TruckRegistration"] = BuildCredentialPng(146, 64, 14),
+            ["CommercialLicense"] = BuildCredentialPng(49, 46, 129),
+            ["CenterPhoto"] = BuildCredentialPng(153, 27, 27)
+        };
 
         var rng = new Random(seed);
         var hasher = new PasswordHasherService();
@@ -65,8 +86,13 @@ public static class DummyGenerator
             for (var i = 1; i <= count; i++)
             {
                 n++;
-                var first = FirstNames[(n - 1) % FirstNames.Length];
-                var last = LastNames[(n - 1) % LastNames.Length];
+                var useArabicName = n > 2 && (n - 1) % 4 == 3;
+                var first = useArabicName
+                    ? ArFirstNames[(n - 1) % ArFirstNames.Length]
+                    : EnFirstNames[(n - 1) % EnFirstNames.Length];
+                var last = useArabicName
+                    ? ArLastNames[(n - 1) % ArLastNames.Length]
+                    : EnLastNames[(n - 1) % EnLastNames.Length];
                 var name = $"{first} {last}";
                 var email = $"{Translit(first)}.{Translit(last)}{n:D4}{Domain}".ToLowerInvariant();
                 var phone = "+2010" + (10_000_000 + n * 37).ToString("D8");
@@ -156,10 +182,16 @@ public static class DummyGenerator
                             var kycApp = new KycApplication
                             {
                                 User = user, UserId = user.Id, Code = $"KYC-{n:D4}", Status = kyc,
-                                ApplicantType = role.ToString(), ServicesJson = "[\"general\"]",
+                                ApplicantType = role.ToString(), Address = area,
+                                Latitude = user.Latitude, Longitude = user.Longitude,
+                                ServicesJson = "[\"general\"]",
                                 ReviewerNote = kyc == KycStatus.ChangesNeeded ? "Driving license photo is unclear."
-                                    : kyc == KycStatus.Rejected ? "Expired commercial documents." : null
+                                    : kyc == KycStatus.Rejected ? "Expired identification documents." : null
                             };
+                            var docTypes = role == Role.TowCaptain
+                                ? new[] { "NationalId", "DrivingLicense", "TruckRegistration" }
+                                : new[] { "NationalId", "DrivingLicense" };
+                            AttachKycDocuments(db, paths, pngTemplates, user, kycApp, n, docTypes);
                             db.KycApplications.Add(kycApp);
                         }
                         notes.Append($"online={profile.IsOnline}, jobs={profile.CompletedJobs}");
@@ -187,9 +219,11 @@ public static class DummyGenerator
                             {
                                 User = user, UserId = user.Id, Code = $"KYC-{n:D4}", Status = kyc,
                                 ApplicantType = role.ToString(), BusinessName = center.Name,
-                                Address = area, ServicesJson = "[\"inspection\",\"oil\"]",
+                                Address = area, Latitude = user.Latitude, Longitude = user.Longitude,
+                                ServicesJson = "[\"inspection\",\"oil\"]",
                                 ReviewerNote = kyc == KycStatus.ChangesNeeded ? "Please re-upload commercial registration." : null
                             };
+                            AttachKycDocuments(db, paths, pngTemplates, user, kycApp, n, ["CommercialLicense", "CenterPhoto"]);
                             db.KycApplications.Add(kycApp);
                         }
                         notes.Append("full service catalog");
@@ -525,5 +559,162 @@ public static class DummyGenerator
     {
         var t = Translit(value);
         return char.ToUpperInvariant(t[0]) + t[1..];
+    }
+
+    private static void AttachKycDocuments(
+        AppDbContext db,
+        RuntimePaths paths,
+        IReadOnlyDictionary<string, byte[]> pngTemplates,
+        User user,
+        KycApplication kycApp,
+        int accountNum,
+        string[] docTypes)
+    {
+        for (var idx = 0; idx < docTypes.Length; idx++)
+        {
+            var docType = docTypes[idx];
+            var png = pngTemplates[docType];
+            var slug = docType.ToLowerInvariant();
+            var storedName = $"dummy-kyc-{accountNum:D4}-{slug}.png";
+            File.WriteAllBytes(Path.Combine(paths.UploadsDir, storedName), png);
+
+            var file = new UploadedFile
+            {
+                FileName = $"{slug}-{accountNum:D4}.png",
+                StoredName = storedName,
+                ContentType = "image/png",
+                SizeBytes = png.Length,
+                OwnerId = user.Id,
+                Purpose = "kyc"
+            };
+            db.UploadedFiles.Add(file);
+
+            var docStatus = kycApp.Status switch
+            {
+                KycStatus.Approved => DocumentStatus.Approved,
+                KycStatus.Rejected => DocumentStatus.Rejected,
+                KycStatus.ChangesNeeded => idx == docTypes.Length - 1 ? DocumentStatus.Rejected : DocumentStatus.Approved,
+                _ => DocumentStatus.Pending
+            };
+
+            kycApp.Documents.Add(new KycDocument
+            {
+                Application = kycApp,
+                ApplicationId = kycApp.Id,
+                DocumentType = docType,
+                File = file,
+                FileId = file.Id,
+                Status = docStatus,
+                ReviewNote = docStatus == DocumentStatus.Rejected ? kycApp.ReviewerNote : null,
+                ReviewedAt = docStatus == DocumentStatus.Pending ? null : DateTime.UtcNow.AddDays(-2)
+            });
+        }
+    }
+
+    private static byte[] BuildCredentialPng(byte hdrR, byte hdrG, byte hdrB)
+    {
+        const int width = 320;
+        const int height = 200;
+        var raw = new byte[height * (1 + width * 3)];
+        var pos = 0;
+
+        for (var y = 0; y < height; y++)
+        {
+            raw[pos++] = 0; // filter: None
+            for (var x = 0; x < width; x++)
+            {
+                byte r = 246, g = 248, b = 252;
+                var border = x == 0 || x == width - 1 || y == 0 || y == height - 1;
+                if (border)
+                {
+                    r = 203; g = 213; b = 225;
+                }
+                else if (y < 38)
+                {
+                    r = hdrR; g = hdrG; b = hdrB;
+                    if (y is >= 14 and <= 23 && x is >= 20 and <= 150) { r = 255; g = 255; b = 255; }
+                }
+                else if (x is >= 22 and <= 102 && y is >= 58 and <= 154)
+                {
+                    r = 226; g = 232; b = 240;
+                    var dx = x - 62;
+                    var dyHead = y - 88;
+                    if (dx * dx + dyHead * dyHead <= 196 || (y >= 116 && Math.Abs(dx) <= 26))
+                    {
+                        r = 148; g = 163; b = 184;
+                    }
+                }
+                else if (x is >= 122 and <= 268 && y is >= 62 and <= 71)
+                {
+                    r = 30; g = 41; b = 59;
+                }
+                else if (x is >= 122 and <= 236 && y is >= 84 and <= 91)
+                {
+                    r = 100; g = 116; b = 139;
+                }
+                else if (x is >= 122 and <= 284 && y is >= 104 and <= 111)
+                {
+                    r = 148; g = 163; b = 184;
+                }
+                else if (x is >= 122 and <= 214 && y is >= 124 and <= 131)
+                {
+                    r = 148; g = 163; b = 184;
+                }
+                else if (x is >= 246 and <= 296 && y is >= 158 and <= 176)
+                {
+                    r = 16; g = 185; b = 129;
+                }
+
+                raw[pos++] = r;
+                raw[pos++] = g;
+                raw[pos++] = b;
+            }
+        }
+
+        using var idat = new MemoryStream();
+        using (var zlib = new ZLibStream(idat, CompressionLevel.Fastest, leaveOpen: true))
+        {
+            zlib.Write(raw, 0, raw.Length);
+        }
+
+        using var png = new MemoryStream();
+        png.Write([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+
+        Span<byte> ihdr = stackalloc byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(ihdr[..4], width);
+        BinaryPrimitives.WriteUInt32BigEndian(ihdr.Slice(4, 4), height);
+        ihdr[8] = 8; // bit depth
+        ihdr[9] = 2; // RGB
+        WritePngChunk(png, "IHDR"u8, ihdr);
+        WritePngChunk(png, "IDAT"u8, idat.ToArray());
+        WritePngChunk(png, "IEND"u8, ReadOnlySpan<byte>.Empty);
+        return png.ToArray();
+    }
+
+    private static void WritePngChunk(Stream output, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+    {
+        Span<byte> lenBytes = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(lenBytes, (uint)data.Length);
+        output.Write(lenBytes);
+        output.Write(type);
+        if (!data.IsEmpty) output.Write(data);
+
+        var crc = 0xFFFFFFFFu;
+        crc = UpdateCrc32(crc, type);
+        crc = UpdateCrc32(crc, data);
+        Span<byte> crcBytes = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(crcBytes, ~crc);
+        output.Write(crcBytes);
+    }
+
+    private static uint UpdateCrc32(uint crc, ReadOnlySpan<byte> bytes)
+    {
+        foreach (var b in bytes)
+        {
+            crc ^= b;
+            for (var k = 0; k < 8; k++)
+                crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
+        }
+        return crc;
     }
 }

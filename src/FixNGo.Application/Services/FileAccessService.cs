@@ -22,6 +22,13 @@ public sealed class FileAccessService(IAppDbContext db)
         if (file is null) return false;
         if (file.OwnerId == callerId) return true;
 
+        // KYC documents: visible to the applicant who owns the KYC application (admins handled above).
+        var onKyc = await db.KycDocuments.AsNoTracking()
+            .Where(d => d.FileId == fileId)
+            .Join(db.KycApplications.AsNoTracking(), d => d.ApplicationId, a => a.Id, (d, a) => a)
+            .AnyAsync(a => a.UserId == callerId, ct);
+        if (onKyc) return true;
+
         // Request photos: visible to the customer and the assigned provider.
         var onRequest = await db.RequestPhotos.AsNoTracking()
             .Where(p => p.FileId == fileId)

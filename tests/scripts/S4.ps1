@@ -65,7 +65,19 @@ try {
     $status = Get-EndpointJson -Port $port -Path '/api/v1/system/status'
     W ('system status: mode=' + $status.mode + ' setupComplete=' + $status.setupComplete)
     Assert-Equal 'dummy' $status.mode '/system/status reports mode=dummy (DUMMY DATA ribbon)'
-    if ($accounts.Count -gt 0) { Assert-AllDummyCredentialsLogin -Port $port -Accounts $accounts }
+    if ($accounts.Count -gt 0) {
+        Assert-AllDummyCredentialsLogin -Port $port -Accounts $accounts
+        $adminAcc = $accounts | Where-Object { $_.Role -eq 'Admin' } | Select-Object -First 1
+        if ($adminAcc) {
+            $loginBody = @{ email = $adminAcc.Email; password = $adminAcc.Password } | ConvertTo-Json -Compress
+            $adminLogin = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$port/api/v1/auth/login" -ContentType 'application/json' -Body $loginBody
+            $rawKyc = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:$port/api/v1/admin/kyc/queue" -Headers @{ Authorization = ('Bearer ' + $adminLogin.accessToken) }
+            $kycQueue = @($rawKyc | ForEach-Object { $_ })
+            Assert-Bool ($kycQueue.Count -ge 70) ('dummy KYC queue populated (' + $kycQueue.Count + ' applications)')
+            $zeroDocApps = @($kycQueue | Where-Object { -not $_.documents -or @($_.documents | ForEach-Object { $_ }).Count -lt 2 })
+            Assert-Equal 0 $zeroDocApps.Count 'every dummy KYC application has >= 2 uploaded documents'
+        }
+    }
 }
 finally {
     Stop-WebServer -Process $proc -DataDir $data -Port $port
