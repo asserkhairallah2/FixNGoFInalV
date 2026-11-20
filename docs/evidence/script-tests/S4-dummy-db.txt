@@ -1,9 +1,9 @@
 ﻿=== S4 : dummy-db.bat -> verified backup, >=200 users, all credentials log in, mode=dummy ===
-Timestamp: 2026-11-20T02:47:56.6848965+00:00
+Timestamp: 2026-11-20T09:17:06.1766324+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-650e785a
-Private port: 5876
+Temp data dir: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-489d14fa
+Private port: 5928
 [PASS] CLI setup created the original admin (value=0)
 dummy-db.bat exit=0
 ===================================================
@@ -14,7 +14,7 @@ dummy-db.bat exit=0
 [INFO] No server.pid found.
 [OK] Dummy database created (201 users, seed 20261119).
 [OK] Credentials written to C:\Users\xprenspel\Desktop\FixNGoFinal\dummy-db.md
-[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-650e785a\backups\real-20261120-024803
+[OK] Real data backup: C:\Users\xprenspel\AppData\Local\Temp\2\fixngo-s4-489d14fa\backups\real-20261120-091713
 [OK] Dummy database ready. See dummy-db.md for every credential.
 [PASS] dummy-db.bat succeeds with --yes (value=0)
 [PASS] dummy-db.log created in isolated log dir
@@ -24,8 +24,8 @@ dummy-db.bat exit=0
 [PASS] backup contains manifest.json
 [PASS] backup contains the database copy
 [PASS] backup contains the uploads folder
-manifest: users=1 uploads=0 sha=2B4A31C2590EE820C185F523CC3B3AD45862283E39B25131C375E3B9F8797B55
-[PASS] backup db SHA-256 matches manifest (value=2B4A31C2590EE820C185F523CC3B3AD45862283E39B25131C375E3B9F8797B55)
+manifest: users=1 uploads=0 sha=0866988F26C3A9F154C73850AC2D7BF8F46446E1D51716B5B882BDD2D1812898
+[PASS] backup db SHA-256 matches manifest (value=0866988F26C3A9F154C73850AC2D7BF8F46446E1D51716B5B882BDD2D1812898)
 [PASS] manifest records the pre-dummy user count
 [PASS] manifest records hadRealData=true
 [PASS] manifest records appVersion
@@ -44,5 +44,7 @@ Status coverage: Active=181, DeletionRequested=3, PendingVerification=11, Suspen
 [PASS] dummy accounts include Suspended users
 [PASS] every listed dummy credential authenticated as expected (201/201)
 [PASS] all five roles are represented in the credential login sweep
---- S4 result: PASS=24 FAIL=0 ---
+[PASS] dummy KYC queue populated (79 applications)
+[PASS] every dummy KYC application has >= 2 uploaded documents (value=0)
+--- S4 result: PASS=26 FAIL=0 ---
 

@@ -34,7 +34,7 @@
   {
     "code": "SC03",
     "role": "center",
-    "hash": "#/SC03?id=169aaf87-f331-4afa-a4fd-2a055f181054",
+    "hash": "#/SC03?id=aac6c72e-f618-4c1a-b4f2-981f751364b0",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC03.png",
     "diagnostics": {
       "bad": [],
@@ -98,7 +98,7 @@
   {
     "code": "SC07",
     "role": "center",
-    "hash": "#/SC07?id=23615d12-7c7f-4773-881c-ef7147f96c42",
+    "hash": "#/SC07?id=571e608e-3c30-4556-9aad-6a51aced9c1b",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC07.png",
     "diagnostics": {
       "bad": [],
@@ -162,7 +162,7 @@
   {
     "code": "SC11",
     "role": "center",
-    "hash": "#/SC11?id=169aaf87-f331-4afa-a4fd-2a055f181054",
+    "hash": "#/SC11?id=aac6c72e-f618-4c1a-b4f2-981f751364b0",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC11.png",
     "diagnostics": {
       "bad": [],
@@ -178,7 +178,7 @@
   {
     "code": "SC12",
     "role": "center",
-    "hash": "#/SC12?id=169aaf87-f331-4afa-a4fd-2a055f181054",
+    "hash": "#/SC12?id=aac6c72e-f618-4c1a-b4f2-981f751364b0",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC12.png",
     "diagnostics": {
       "bad": [],
@@ -194,7 +194,7 @@
   {
     "code": "SC13",
     "role": "center",
-    "hash": "#/SC13?id=682b6e24-6384-4723-b27c-15560b2ee9bc",
+    "hash": "#/SC13?id=437fb29e-ca32-4869-b7d3-514b6e8b65ca",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC13.png",
     "diagnostics": {
       "bad": [],
@@ -210,7 +210,7 @@
   {
     "code": "SC14",
     "role": "center",
-    "hash": "#/SC14?id=682b6e24-6384-4723-b27c-15560b2ee9bc",
+    "hash": "#/SC14?id=437fb29e-ca32-4869-b7d3-514b6e8b65ca",
     "screenshot": "..\\docs\\evidence\\screenshots\\dark-en\\SC14.png",
     "diagnostics": {
       "bad": [],

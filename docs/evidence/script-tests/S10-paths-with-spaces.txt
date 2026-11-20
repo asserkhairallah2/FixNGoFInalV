@@ -1,14 +1,14 @@
 ﻿=== S10 : paths with spaces / run from another cwd -> all tools work ===
-Timestamp: 2026-11-20T02:49:51.6527873+00:00
+Timestamp: 2026-11-20T09:19:06.6136948+00:00
 Project root: C:\Users\xprenspel\Desktop\FixNGoFinal
 Isolation: dedicated temp FIXNGO_DATA_DIR + FIXNGO_LOG_DIR + private port
-Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces 420aab24
-Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces 27986a50
-Private port: 5663
+Temp data dir (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10 path with spaces 24091560
+Alternate cwd (with spaces): C:\Users\xprenspel\AppData\Local\Temp\2\fixngo s10-cwd path with spaces b67ecfca
+Private port: 5823
 setup.bat from other cwd exit=0
 [PASS] setup.bat works from another cwd with spaces (value=0)
 [PASS] test data path actually contains spaces
-CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces 420aab24\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
+CLI db-status from other cwd: exit=0 {"mode":"real","dbPath":"C:\\Users\\xprenspel\\AppData\\Local\\Temp\\2\\fixngo s10 path with spaces 24091560\\fixngo.db","dbExists":true,"dbBytes":913408,"userCount":1,"backups":0}
 [PASS] CLI works from another cwd (value=0)
 [PASS] CLI reports the spaced temp data dir
 [PASS] one admin created in the spaced data dir (value=1)
@@ -31,7 +31,7 @@ remove-db.bat from other cwd exit=0
 [PASS] remove-db.log created in isolated log dir
 [PASS] remove-db.log is non-empty
 [PASS] remove-db.log contains no plaintext passwords
-[PASS] real project data\ folder file list unchanged (value=C:\Users\xprenspel\Desktop\FixNGoFinal\data\server.port)
-[PASS] real project database hash unchanged (value=)
+[PASS] real project data\ folder file list unchanged (value=C:\Users\xprenspel\Desktop\FixNGoFinal\data\fixngo.db|C:\Users\xprenspel\Desktop\FixNGoFinal\data\secrets.json|C:\Users\xprenspel\Desktop\FixNGoFinal\data\server.port|C:\Users\xprenspel\Desktop\FixNGoFinal\data\state.json|C:\Users\xprenspel\Desktop\FixNGoFinal\data\backups\real-20261120-054115\consistent-vacuum.db|C:\Users\xprenspel\Desktop\FixNGoFinal\data\backups\real-20261120-054115\fixngo.db|C:\Users\xprenspel\Desktop\FixNGoFinal\data\backups\real-20261120-054115\fixngo.db-shm|C:\Users\xprenspel\Desktop\FixNGoFinal\data\backups\real-20261120-054115\fixngo.db-wal|C:\Users\xprenspel\Desktop\FixNGoFinal\data\backups\real-20261120-054115\manifest.json)
+[PASS] real project database hash unchanged (value=F74668F5C9B9DDC73403908BE57477CB8FD0F79302541ACBD549E2895D9B194B)
 --- S10 result: PASS=23 FAIL=0 ---
 

@@ -27,14 +27,14 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 950
+      "chars": 964
     },
     "console": []
   },
   {
     "code": "AD03",
     "role": "admin",
-    "hash": "#/AD03?id=f23336f1-236c-44ba-a40c-e8d8e669dbfa",
+    "hash": "#/AD03?id=287886ae-a7f8-484c-83e4-d7ac97a382ad",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD03.png",
     "diagnostics": {
       "bad": [],
@@ -43,7 +43,7 @@
         "frame": 0
       },
       "hasContent": true,
-      "chars": 978
+      "chars": 962
     },
     "console": []
   },
@@ -114,7 +114,7 @@
   {
     "code": "AD08",
     "role": "admin",
-    "hash": "#/AD08?id=334ddf9d-6067-44d2-b8bf-5cebaf82a1d5",
+    "hash": "#/AD08?id=6f9228c7-93a3-46a2-bd95-a64cc54cd088",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD08.png",
     "diagnostics": {
       "bad": [],
@@ -146,7 +146,7 @@
   {
     "code": "AD10",
     "role": "admin",
-    "hash": "#/AD10?id=272561f8-120d-42ed-ac3e-69cd8d1c6322",
+    "hash": "#/AD10?id=ba205993-e44b-43e2-8261-444d44719b97",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD10.png",
     "diagnostics": {
       "bad": [],
@@ -162,7 +162,7 @@
   {
     "code": "AD11",
     "role": "admin",
-    "hash": "#/AD11?id=1783d2ba-c138-490c-b8bb-e9443a0bd956",
+    "hash": "#/AD11?id=6354b5fa-234e-4fb5-98ac-8075e925b9b3",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD11.png",
     "diagnostics": {
       "bad": [],
@@ -226,7 +226,7 @@
   {
     "code": "AD15",
     "role": "admin",
-    "hash": "#/AD15?id=f23336f1-236c-44ba-a40c-e8d8e669dbfa",
+    "hash": "#/AD15?id=287886ae-a7f8-484c-83e4-d7ac97a382ad",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD15.png",
     "diagnostics": {
       "bad": [],
@@ -274,7 +274,7 @@
   {
     "code": "AD18",
     "role": "admin",
-    "hash": "#/AD18?id=32c5a893-0e2f-4269-ba8b-cf7cb6b43997",
+    "hash": "#/AD18?id=bb4aae67-704b-489d-80e4-ca32395dc59f",
     "screenshot": "..\\docs\\evidence\\screenshots\\light-ar\\AD18.png",
     "diagnostics": {
       "bad": [],
