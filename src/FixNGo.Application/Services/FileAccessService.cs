@@ -1,4 +1,6 @@
+using FixNGo.Application.DTOs;
 using FixNGo.Application.Interfaces;
+using FixNGo.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace FixNGo.Application.Services;
@@ -10,7 +12,7 @@ namespace FixNGo.Application.Services;
 /// and any signed-in user when it is a public profile image (service-center logo/photo, user avatar,
 /// vehicle photo of a vehicle on a request the caller serves, truck photo).
 /// </summary>
-public sealed class FileAccessService(IAppDbContext db)
+public sealed class FileAccessService(IAppDbContext db) : IFileAccessService
 {
     /// <summary>Returns true when <paramref name="callerId"/> may read file <paramref name="fileId"/>.</summary>
     public async Task<bool> CanReadAsync(Guid callerId, bool isAdmin, Guid fileId, CancellationToken ct = default)
@@ -57,5 +59,20 @@ public sealed class FileAccessService(IAppDbContext db)
         if (await db.Vehicles.AsNoTracking().AnyAsync(v => v.PhotoFileId == idText && v.OwnerId == callerId, ct)) return true;
 
         return false;
+    }
+
+    public async Task<FileDto> AssignOwnerAsync(Guid fileId, Guid ownerId, CancellationToken ct = default)
+    {
+        var record = await db.UploadedFiles.FirstOrDefaultAsync(f => f.Id == fileId, ct)
+            ?? throw new DomainException("file.not_found", "Uploaded file record not found.");
+        record.OwnerId = ownerId;
+        await db.SaveChangesAsync(ct);
+        return new FileDto(record.Id, record.FileName, record.ContentType, record.SizeBytes, record.Purpose);
+    }
+
+    public async Task<FileDto?> GetMetadataAsync(Guid fileId, CancellationToken ct = default)
+    {
+        var record = await db.UploadedFiles.AsNoTracking().FirstOrDefaultAsync(f => f.Id == fileId, ct);
+        return record is null ? null : new FileDto(record.Id, record.FileName, record.ContentType, record.SizeBytes, record.Purpose);
     }
 }

@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/offers")]
 [Authorize(Policy = "Provider")]
-public sealed class OfferController(OfferService svc) : ControllerBase
+public sealed class OfferController(IOfferService svc) : ControllerBase
 {
     [HttpGet] public async Task<IActionResult> Mine(CancellationToken ct) => Ok(await svc.ForProviderAsync(this.UserId(), ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> One(Guid id, CancellationToken ct)

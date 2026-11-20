@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/vehicles")]
 [Authorize(Roles = nameof(Role.CarOwner))]
-public sealed class VehicleController(VehicleService svc) : ControllerBase
+public sealed class VehicleController(IVehicleService svc) : ControllerBase
 {
     [HttpGet] public async Task<IActionResult> List(CancellationToken ct) => Ok(await svc.ListAsync(this.UserId(), ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Ok(await svc.GetAsync(this.UserId(), id, ct));

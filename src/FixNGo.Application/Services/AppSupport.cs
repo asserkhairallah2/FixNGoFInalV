@@ -25,7 +25,7 @@ public static class Codes
 }
 
 /// <summary>Loads the current pricing snapshot; old requests keep their own version.</summary>
-public sealed class SettingsService(IAppDbContext db)
+public sealed class SettingsService(IAppDbContext db) : ISettingsService
 {
     public async Task<(PricingSettings Settings, int Version)> CurrentAsync(CancellationToken ct = default)
     {

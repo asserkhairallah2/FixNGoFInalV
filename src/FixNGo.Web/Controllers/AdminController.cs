@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,8 +9,8 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/admin")]
 [Authorize(Roles = nameof(Role.Admin))]
-public sealed class AdminController(AdminService svc, ProviderService providers, SupportService support,
-    ReviewService reviews) : ControllerBase
+public sealed class AdminController(IAdminService svc, IProviderService providers, ISupportService support,
+    IReviewService reviews) : ControllerBase
 {
     [HttpGet("dashboard")] public async Task<IActionResult> Dashboard(CancellationToken ct) => Ok(await svc.DashboardAsync(ct));
     [HttpGet("users")] public async Task<IActionResult> Users(CancellationToken ct) => Ok(await svc.UsersAsync(ct));

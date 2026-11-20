@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Admin dashboard, users, settings, payment reviews, safety, reports and audit.</summary>
-public sealed class AdminService(IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier)
+public sealed class AdminService(IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier) : IAdminService
 {
     public async Task<DashboardDto> DashboardAsync(CancellationToken ct = default)
     {

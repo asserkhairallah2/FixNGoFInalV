@@ -1,7 +1,5 @@
 using FixNGo.Application.DTOs;
 using FixNGo.Application.Interfaces;
-using FixNGo.Application.Services;
-using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/support")]
 [Authorize]
-public sealed class SupportController(SupportService svc, IPasswordHasher hasher) : ControllerBase
+public sealed class SupportController(ISupportService svc, IPasswordHasher hasher) : ControllerBase
 {
     [HttpPost("tickets")] public async Task<IActionResult> CreateTicket([FromBody] CreateTicketRequest req, CancellationToken ct) => Ok(await svc.CreateTicketAsync(this.UserId(), req, ct));
     [HttpGet("tickets")] public async Task<IActionResult> Tickets(CancellationToken ct) => Ok(await svc.TicketsAsync(this.UserId(), ct));
@@ -33,7 +31,7 @@ public sealed class SupportController(SupportService svc, IPasswordHasher hasher
 [ApiController]
 [Route("api/v1/files")]
 [Authorize]
-public sealed class FileController(IFileStore files, IAppDbContext db, FileAccessService access,
+public sealed class FileController(IFileStore files, IFileAccessService access,
     Microsoft.AspNetCore.DataProtection.IDataProtectionProvider protection) : ControllerBase
 {
     private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(10);
@@ -48,10 +46,8 @@ public sealed class FileController(IFileStore files, IAppDbContext db, FileAcces
         if (file is null || file.Length == 0) return BadRequest(new { code = "file.missing", detail = "Choose a file to upload." });
         await using var stream = file.OpenReadStream();
         var (id, _) = await files.SaveAsync(stream, file.FileName, file.ContentType, purpose ?? "document", ct);
-        var record = await db.UploadedFiles.FindAsync([id], ct);
-        record!.OwnerId = this.UserId();
-        await db.SaveChangesAsync(ct);
-        return Ok(new FileDto(id, record.FileName, record.ContentType, record.SizeBytes, record.Purpose));
+        var dto = await access.AssignOwnerAsync(id, this.UserId(), ct);
+        return Ok(dto);
     }
 
     /// <summary>Issues a short-lived token usable only for GET /api/v1/files/{id} (for img/a tags).</summary>
@@ -76,7 +72,7 @@ public sealed class FileController(IFileStore files, IAppDbContext db, FileAcces
         else return Unauthorized();
 
         if (!await access.CanReadAsync(caller, isAdmin, id, ct)) return NotFound();
-        var record = await db.UploadedFiles.FindAsync([id], ct);
+        var record = await access.GetMetadataAsync(id, ct);
         if (record is null) return NotFound();
         var stream = await files.OpenAsync(id, ct);
         if (stream is null) return NotFound();

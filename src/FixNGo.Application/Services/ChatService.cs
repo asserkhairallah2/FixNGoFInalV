@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Request/booking-scoped chat with resource-level authorization.</summary>
-public sealed class ChatService(IAppDbContext db, IClock clock, INotifier notifier)
+public sealed class ChatService(IAppDbContext db, IClock clock, INotifier notifier) : IChatService
 {
     public async Task<IReadOnlyList<ChatThreadDto>> ThreadsAsync(Guid userId, CancellationToken ct = default)
     {

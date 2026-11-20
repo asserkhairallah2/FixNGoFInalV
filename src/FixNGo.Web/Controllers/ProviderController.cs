@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/providers")]
 [Authorize]
-public sealed class ProviderController(ProviderService svc, PaymentService payments, RequestService requests) : ControllerBase
+public sealed class ProviderController(IProviderService svc, IPaymentService payments, IRequestService requests) : ControllerBase
 {
     [HttpGet("me")] [Authorize(Policy = "Provider")] public async Task<IActionResult> Profile(CancellationToken ct) => Ok(await svc.ProfileAsync(this.UserId(), ct));
     [HttpPut("me")] [Authorize(Policy = "Provider")] public async Task<IActionResult> UpdateProfile([FromBody] UpdateProviderProfileRequest req, CancellationToken ct) => Ok(await svc.UpdateProfileAsync(this.UserId(), req, ct));

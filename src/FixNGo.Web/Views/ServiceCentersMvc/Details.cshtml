@@ -1,0 +1,53 @@
+@model ServiceCenterDetailsViewModel
+@{
+    Layout = "_MvcPortalLayout";
+    ViewData["Title"] = Model.Center.Name;
+}
+
+<div class="space-y-6">
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-2">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold text-slate-900">@Model.Center.Name</h1>
+        <p class="text-xs text-slate-500">@Model.Center.City · @Model.Center.Address</p>
+      </div>
+      <fixngo-status-badge status="Approved"></fixngo-status-badge>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.Center.Description))
+    {
+      <p class="text-xs text-slate-600 pt-1">@Model.Center.Description</p>
+    }
+    <div class="flex flex-wrap gap-4 pt-2 text-xs text-slate-600">
+      <span><strong>Rating:</strong> ★ @Model.Center.Rating.ToString("0.0") (@Model.Center.RatingCount reviews)</span>
+      @if (!string.IsNullOrWhiteSpace(Model.Center.Phone))
+      {
+        <span dir="ltr"><strong>Phone:</strong> @Model.Center.Phone</span>
+      }
+    </div>
+  </div>
+
+  <div class="space-y-3">
+    <h2 class="text-base font-extrabold text-slate-900">Published Maintenance Catalog (@Model.Services.Count)</h2>
+    @if (Model.Services.Count == 0)
+    {
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 text-xs text-slate-500">
+        No active catalog services published yet.
+      </div>
+    }
+    else
+    {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @foreach (var svc in Model.Services)
+        {
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-bold text-slate-900">@svc.Name</p>
+              <p class="text-[11px] text-slate-500">@svc.DurationMinutes min @(string.IsNullOrWhiteSpace(svc.Description) ? "" : "· " + svc.Description)</p>
+            </div>
+            <span class="text-sm font-extrabold text-[#E51C23]">EGP @svc.PriceEgp.ToString("0.00")</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

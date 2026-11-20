@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/requests")]
 [Authorize]
-public sealed class RequestController(RequestService requests, OfferService offers, QuoteService quotes, ChatService chat) : ControllerBase
+public sealed class RequestController(IRequestService requests, IOfferService offers, IQuoteService quotes, IChatService chat) : ControllerBase
 {
     [HttpGet] public async Task<IActionResult> List(CancellationToken ct) => Ok(await requests.ListAsync(this.UserId(), this.IsAdmin(), ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Ok(await requests.GetAsync(this.UserId(), this.IsAdmin(), id, ct));

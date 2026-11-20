@@ -9,7 +9,7 @@ namespace FixNGo.Application.Services;
 
 /// <summary>Cards, charges, invoices, append-only wallet ledger, bank accounts and withdrawals.</summary>
 public sealed class PaymentService(
-    IAppDbContext db, IClock clock, IPaymentGateway gateway, INotifier notifier, SettingsService settings)
+    IAppDbContext db, IClock clock, IPaymentGateway gateway, INotifier notifier, SettingsService settings) : IPaymentService
 {
     // ---- Payment methods ----
     public async Task<IReadOnlyList<PaymentMethodDto>> MethodsAsync(Guid userId, CancellationToken ct = default) =>

@@ -1,0 +1,4 @@
+@model SystemStatusViewModel
+<meta name="fixngo-mode" content="@Model.Mode" />
+<meta name="fixngo-setup" content="@(Model.SetupComplete ? "complete" : "pending")" />
+<meta name="fixngo-version" content="@Model.Version" />

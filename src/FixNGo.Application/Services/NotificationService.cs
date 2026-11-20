@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Inbox, read state, per-channel preferences and device tokens.</summary>
-public sealed class NotificationService(IAppDbContext db, IClock clock)
+public sealed class NotificationService(IAppDbContext db, IClock clock) : INotificationService
 {
     public async Task<IReadOnlyList<NotificationDto>> ListAsync(Guid userId, bool unreadOnly = false, CancellationToken ct = default)
     {

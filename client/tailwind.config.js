@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,jsx}'],
+  content: [
+    './src/**/*.{js,jsx}',
+    '../src/FixNGo.Web/Views/**/*.cshtml',
+    '../src/FixNGo.Web/TagHelpers/**/*.cs'
+  ],
   darkMode: 'class',
   theme: {
     extend: {

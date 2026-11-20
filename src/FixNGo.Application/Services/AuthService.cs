@@ -15,7 +15,7 @@ public sealed class AuthService(
     ITokenService tokens,
     IOtpSender otpSender,
     ILogger<AuthService> logger,
-    AuthOptions options)
+    AuthOptions options) : IAuthService
 {
     private static readonly TimeSpan OtpTtl = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(30);

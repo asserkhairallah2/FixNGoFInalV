@@ -1,0 +1,12 @@
+@model AppShellViewModel
+<div id="root" data-host="aspnet-core-mvc" data-app-version="@Model.SystemStatus.Version"></div>
+<script id="fixngo-server-bootstrap" type="application/json">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new
+{
+    setupComplete = Model.SystemStatus.SetupComplete,
+    mode = Model.SystemStatus.Mode,
+    version = Model.SystemStatus.Version,
+    simulatorsEnabled = Model.SystemStatus.SimulatorsEnabled,
+    serverUtc = Model.ServerTimestampUtc
+}))
+</script>

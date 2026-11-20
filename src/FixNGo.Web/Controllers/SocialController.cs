@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/notifications")]
 [Authorize]
-public sealed class NotificationController(NotificationService svc) : ControllerBase
+public sealed class NotificationController(INotificationService svc) : ControllerBase
 {
     [HttpGet] public async Task<IActionResult> List([FromQuery] bool unreadOnly = false, CancellationToken ct = default) => Ok(await svc.ListAsync(this.UserId(), unreadOnly, ct));
     [HttpGet("unread-count")] public async Task<IActionResult> UnreadCount(CancellationToken ct) => Ok(new { count = await svc.UnreadCountAsync(this.UserId(), ct) });
@@ -24,7 +24,7 @@ public sealed class NotificationController(NotificationService svc) : Controller
 [ApiController]
 [Route("api/v1/chat")]
 [Authorize]
-public sealed class ChatController(ChatService svc) : ControllerBase
+public sealed class ChatController(IChatService svc) : ControllerBase
 {
     [HttpGet("threads")] public async Task<IActionResult> Threads(CancellationToken ct) => Ok(await svc.ThreadsAsync(this.UserId(), ct));
     [HttpPost("threads")] public async Task<IActionResult> Start([FromBody] ChatThreadStartRequest req, CancellationToken ct) => Ok(await svc.StartAsync(this.UserId(), req, ct));
@@ -37,7 +37,7 @@ public sealed class ChatController(ChatService svc) : ControllerBase
 [ApiController]
 [Route("api/v1/reviews")]
 [Authorize]
-public sealed class ReviewController(ReviewService svc) : ControllerBase
+public sealed class ReviewController(IReviewService svc) : ControllerBase
 {
     [HttpPost("provider/{providerId:guid}")] public async Task<IActionResult> ForProvider(Guid providerId, [FromQuery] Guid requestId, [FromBody] CreateReviewRequest req, CancellationToken ct)
         => Ok(await svc.CreateAsync(this.UserId(), ReviewTargetType.Provider, providerId, requestId, null, req, ct));

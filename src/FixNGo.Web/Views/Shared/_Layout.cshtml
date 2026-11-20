@@ -1,0 +1,18 @@
+@model AppShellViewModel
+<!doctype html>
+<html lang="@Model.Preferences.Language" dir="@Model.Preferences.Direction" class="@(Model.Preferences.IsDark ? "dark" : "")">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#E51C23" />
+    <meta name="generator" content="ASP.NET Core 8 MVC Razor" />
+    @await Component.InvokeAsync("SystemRibbon", new { status = Model.SystemStatus })
+    <title>@Model.PageTitle</title>
+    <fixngo-client-protection initial-route="@Model.InitialRouteHint"></fixngo-client-protection>
+    <link rel="stylesheet" href="@Model.CssBundlePath" asp-append-version="true" />
+  </head>
+  <body>
+    @RenderBody()
+    <script type="module" src="@Model.JsBundlePath" asp-append-version="true"></script>
+  </body>
+</html>

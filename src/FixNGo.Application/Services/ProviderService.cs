@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Provider profiles, KYC submission/review, availability and location.</summary>
-public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier notifier)
+public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier notifier) : IProviderService
 {
     private static readonly IReadOnlyDictionary<Guid, string> CenterCatalogPresets = new Dictionary<Guid, string>
     {

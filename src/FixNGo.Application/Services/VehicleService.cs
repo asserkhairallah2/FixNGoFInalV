@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Customer vehicle book with normalised, owner-unique plates.</summary>
-public sealed class VehicleService(IAppDbContext db)
+public sealed class VehicleService(IAppDbContext db) : IVehicleService
 {
     public async Task<IReadOnlyList<VehicleDto>> ListAsync(Guid ownerId, CancellationToken ct = default) =>
         await db.Vehicles.Where(v => v.OwnerId == ownerId).OrderByDescending(v => v.IsPrimary)

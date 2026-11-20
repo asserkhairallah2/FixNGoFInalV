@@ -1,5 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/payments")]
 [Authorize]
-public sealed class PaymentController(PaymentService svc) : ControllerBase
+public sealed class PaymentController(IPaymentService svc) : ControllerBase
 {
     [HttpGet("methods")] public async Task<IActionResult> Methods(CancellationToken ct) => Ok(await svc.MethodsAsync(this.UserId(), ct));
     [HttpPost("methods/card")] public async Task<IActionResult> AddCard([FromBody] AddCardRequest req, CancellationToken ct) => Ok(await svc.AddCardAsync(this.UserId(), req, ct));

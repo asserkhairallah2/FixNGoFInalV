@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Provider quotes with versioned revisions, approval and disputes.</summary>
-public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notifier)
+public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notifier) : IQuoteService
 {
     public async Task<QuoteDto> CreateAsync(Guid providerId, Guid requestId, CreateQuoteRequest req, CancellationToken ct = default)
     {

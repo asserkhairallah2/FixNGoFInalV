@@ -1,0 +1,61 @@
+@model ArchitectureOverviewViewModel
+@{
+    Layout = "_MvcPortalLayout";
+    ViewData["Title"] = "Clean Architecture Diagnostics";
+}
+
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900">Clean Architecture &amp; .NET 8 Runtime</h1>
+      <p class="text-xs text-slate-500">Live assembly boundary, AutoMapper, FluentValidation, and EF Core 8 diagnostics</p>
+    </div>
+    <fixngo-status-badge status="@Model.SystemStatus.Mode"></fixngo-status-badge>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <p class="text-2xl font-black text-slate-900">@Model.EntityCount</p>
+      <p class="text-xs text-slate-500">Domain Entities</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <p class="text-2xl font-black text-slate-900">@Model.EntityConfigurationCount</p>
+      <p class="text-xs text-slate-500">IEntityTypeConfiguration Classes</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <p class="text-2xl font-black text-slate-900">@Model.ApplicationServiceInterfaceCount</p>
+      <p class="text-xs text-slate-500">Service Interfaces</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <p class="text-2xl font-black text-slate-900">@Model.ValidatorCount</p>
+      <p class="text-xs text-slate-500">FluentValidation Validators</p>
+    </div>
+  </div>
+
+  <section class="space-y-3">
+    <h2 class="text-base font-extrabold text-slate-900">Four-Layer Dependency Rule</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      @foreach (var layer in Model.Layers)
+      {
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-extrabold text-slate-900">@layer.Name</h3>
+            <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">@layer.AssemblyName</span>
+          </div>
+          <p class="text-xs text-slate-600">@layer.Responsibility</p>
+          <p class="text-[11px] text-slate-500"><strong>Allowed References:</strong> @string.Join(", ", layer.AllowedDependencies)</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="bg-white rounded-2xl border border-slate-200 p-5 space-y-2">
+    <h2 class="text-base font-extrabold text-slate-900">Implemented Architectural Patterns (@Model.ActiveDatabaseProvider)</h2>
+    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
+      @foreach (var pattern in Model.ImplementedPatterns)
+      {
+        <li class="flex items-center gap-2"><span class="text-emerald-600 font-bold">✓</span> <span>@pattern</span></li>
+      }
+    </ul>
+  </section>
+</div>

@@ -1,6 +1,5 @@
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
-using FixNGo.Application.Validators;
+using FixNGo.Application.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ namespace FixNGo.Web.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-public sealed class AuthController(AuthService auth, IValidator<SignupRequest> signupValidator,
+public sealed class AuthController(IAuthService auth, IValidator<SignupRequest> signupValidator,
     IValidator<LoginRequest> loginValidator, IValidator<ForgotPasswordRequest> forgotValidator,
     IValidator<ResetPasswordRequest> resetValidator, IValidator<ChangePasswordRequest> changeValidator) : ControllerBase
 {

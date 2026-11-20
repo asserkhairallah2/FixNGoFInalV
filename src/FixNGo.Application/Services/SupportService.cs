@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Support tickets, legal/FAQ content, SOS and safety reports, account deletion.</summary>
-public sealed class SupportService(IAppDbContext db, IClock clock, INotifier notifier)
+public sealed class SupportService(IAppDbContext db, IClock clock, INotifier notifier) : ISupportService
 {
     public async Task<SupportTicketView> CreateTicketAsync(Guid userId, CreateTicketRequest req, CancellationToken ct = default)
     {

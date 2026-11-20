@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Reviews with one-per-completed-job rule and rolling provider/center rating aggregates.</summary>
-public sealed class ReviewService(IAppDbContext db, IClock clock)
+public sealed class ReviewService(IAppDbContext db, IClock clock) : IReviewService
 {
     public async Task<ReviewDto> CreateAsync(Guid authorId, ReviewTargetType target, Guid targetId,
         Guid? requestId, Guid? bookingId, CreateReviewRequest req, CancellationToken ct = default)

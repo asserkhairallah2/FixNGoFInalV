@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Read-only bilingual reference data used to bootstrap every client screen.</summary>
-public sealed class LookupService(IAppDbContext db, SettingsService settings)
+public sealed class LookupService(IAppDbContext db, SettingsService settings) : ILookupService
 {
     public async Task<LookupsDto> BootstrapAsync(CancellationToken ct = default)
     {

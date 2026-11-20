@@ -8,7 +8,7 @@ namespace FixNGo.Application.Services;
 
 /// <summary>Customer roadside request lifecycle: estimate, create, timeline, cancel, status.</summary>
 public sealed class RequestService(
-    IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier)
+    IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier) : IRequestService
 {
     public async Task<EstimateDto> EstimateAsync(EstimateRequest req, CancellationToken ct = default)
     {

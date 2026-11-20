@@ -39,6 +39,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/admin/tickets/{id}/close` | close | Bearer |
 | GET | `/api/v1/admin/audit` | audit | Bearer |
 | GET | `/api/v1/admin/reports` | reports | Bearer |
+| GET | `/mvc/architecture` | architecture | Bearer |
 | POST | `/api/v1/auth/signup` | signup | Bearer |
 | POST | `/api/v1/auth/verify-otp` | verify-otp | Bearer |
 | POST | `/api/v1/auth/resend-otp` | resend-otp | Bearer |
@@ -98,6 +99,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | GET | `/api/v1/files/{id}` | id | Bearer |
 | GET | `/health` | health | Bearer |
 | GET | `/api/v1/system/status` | status | Bearer |
+| GET | `/` |  | Bearer |
 | GET | `/api/v1/lookups/bootstrap` | bootstrap | Bearer |
 | GET | `/api/v1/notifications` | notifications | Bearer |
 | GET | `/api/v1/notifications/unread-count` | unread-count | Bearer |
@@ -160,6 +162,8 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/reviews/center/{centerId}` | centerId | Bearer |
 | GET | `/api/v1/reviews/center/{centerId}` | centerId | Bearer |
 | POST | `/api/v1/reviews/{id}/report` | report | Bearer |
+| GET | `/mvc/centers` | centers | Bearer |
+| GET | `/mvc/centers/{id}` | id | Bearer |
 | GET | `/api/v1/sim/push` | push | Bearer |
 | POST | `/api/v1/sim/push` | push | Bearer |
 | POST | `/api/v1/sim/push/read-all` | read-all | Bearer |

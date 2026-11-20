@@ -8,7 +8,7 @@ namespace FixNGo.Application.Services;
 
 /// <summary>Service-center catalog, availability, bookings and work orders.</summary>
 public sealed class CenterService(
-    IAppDbContext db, IClock clock, INotifier notifier, SettingsService settings)
+    IAppDbContext db, IClock clock, INotifier notifier, SettingsService settings) : ICenterService
 {
     public async Task<IReadOnlyList<CenterDto>> CatalogAsync(CancellationToken ct = default) =>
         await db.ServiceCenters.OrderByDescending(c => (double)c.Rating).ThenBy(c => c.Name)

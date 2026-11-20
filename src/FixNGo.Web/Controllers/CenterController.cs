@@ -1,5 +1,6 @@
+using AutoMapper;
 using FixNGo.Application.DTOs;
-using FixNGo.Application.Services;
+using FixNGo.Application.Interfaces;
 using FixNGo.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace FixNGo.Web.Controllers;
 [ApiController]
 [Route("api/v1/centers")]
 [Authorize]
-public sealed class CenterController(CenterService svc) : ControllerBase
+public sealed class CenterController(ICenterService svc) : ControllerBase
 {
     [HttpGet] public async Task<IActionResult> Catalog(CancellationToken ct) => Ok(await svc.CatalogAsync(ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Ok(await svc.GetAsync(id, ct));
@@ -32,9 +33,9 @@ public sealed class CenterController(CenterService svc) : ControllerBase
 [ApiController]
 [Route("api/v1/center-admin")]
 [Authorize(Roles = nameof(Role.ServiceCenter))]
-public sealed class CenterAdminController(CenterService svc) : ControllerBase
+public sealed class CenterAdminController(ICenterService svc, IMapper mapper) : ControllerBase
 {
-    [HttpGet("profile")] public async Task<IActionResult> Profile(CancellationToken ct) => Ok(Mappings.Center(await svc.OwnedAsync(this.UserId(), ct)));
+    [HttpGet("profile")] public async Task<IActionResult> Profile(CancellationToken ct) => Ok(mapper.Map<CenterDto>(await svc.OwnedAsync(this.UserId(), ct)));
     [HttpPut("profile")] public async Task<IActionResult> UpdateProfile([FromBody] CenterProfileRequest req, CancellationToken ct) => Ok(await svc.UpdateProfileAsync(this.UserId(), req, ct));
     [HttpGet("services")] public async Task<IActionResult> Services(CancellationToken ct) => Ok(await svc.AllServicesAsync((await svc.OwnedAsync(this.UserId(), ct)).Id, ct));
     [HttpPost("services")] public async Task<IActionResult> AddService([FromBody] CenterServiceRequest req, CancellationToken ct) => Ok(await svc.AddServiceAsync(this.UserId(), req, ct));

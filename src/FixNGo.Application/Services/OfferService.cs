@@ -8,7 +8,7 @@ namespace FixNGo.Application.Services;
 
 /// <summary>Matching, offer dispatch and the first-accept-wins race.</summary>
 public sealed class OfferService(
-    IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier)
+    IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier) : IOfferService
 {
     /// <summary>Ranked nearby online providers for a searching request.</summary>
     public async Task<IReadOnlyList<CandidateDto>> CandidatesAsync(Guid callerId, bool isAdmin,
