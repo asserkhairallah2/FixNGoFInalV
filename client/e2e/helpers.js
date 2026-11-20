@@ -100,8 +100,16 @@ export function screenDiagnostics(page) {
       'flatbed_tow', 'battery_jump', 'tire_change', 'fuel_delivery', 'engine_stall',
       'Advance Trip Status', 'Simulate Declined Payment', '13:00 AM',
       'FG-1042', 'INV-2026-0104', 'BK-101', 'TOW-01',
-      'Verified FixNGo Specialist', 'Your FixNGo Specialist', 'El-alamia', 'alternator'
+      'Verified FixNGo Specialist', 'Your FixNGo Specialist', 'El-alamia', 'alternator',
+      'TruckRegistration', 'DrivingLicense', 'CommercialLicense', 'ProfessionalCertificate', 'CenterPhoto', 'NationalId',
+      'InProgress', 'QuotePending', 'QuoteApproved', 'AwaitingPayment', 'ChangesNeeded',
+      'PendingVerification', 'DeletionRequested', 'ReadyForReview', 'JobEarning', 'CashCollected',
+      'offer.sent', 'offer.accepted', 'offer.declined', 'settings.update', 'kyc.approve', 'user.suspend'
     ].filter((s) => text.includes(s));
+    const leakedJwtUrl = Array.from(document.querySelectorAll('img[src],a[href]'))
+      .map((el) => el.getAttribute('src') || el.getAttribute('href') || '')
+      .find((u) => u.includes('access_token='));
+    if (leakedJwtUrl) bad.push('LEAKED_ACCESS_TOKEN_IN_URL');
     const frame = document.querySelector('.phone-frame');
     const overflow = {
       document: document.documentElement.scrollWidth - document.documentElement.clientWidth,

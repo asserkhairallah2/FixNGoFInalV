@@ -265,7 +265,7 @@ function HomeScreen() {
             subtitle={t('Select what you need right now', 'اختر الخدمة التي تحتاجها الآن')}
           />
           <div className="grid grid-cols-2 gap-3">
-            <Card onClick={() => startWizard('Tow', 'tow_flatbed')} className="hover:shadow-md transition-all">
+            <Card onClick={() => startWizard('Tow', 'flatbed_tow')} className="hover:shadow-md transition-all">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2" style={{ backgroundColor: c.accentBg }}>
                 🛻
               </div>
@@ -273,7 +273,7 @@ function HomeScreen() {
               <div className="text-[11px] mt-0.5" style={{ color: c.text2 }}>{t('Flatbed & wheel-lift tow trucks', 'ونش سطحة أو رفع عجل')}</div>
             </Card>
 
-            <Card onClick={() => startWizard('Mechanic', 'engine_stall')} className="hover:shadow-md transition-all">
+            <Card onClick={() => startWizard('Mechanic', 'mechanic')} className="hover:shadow-md transition-all">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2" style={{ backgroundColor: c.infoBg }}>
                 🔧
               </div>
@@ -1217,7 +1217,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                   } catch {}
                 }
                 const isChoice = q.answerType === 'choice' && choices;
-                const val = answers[q.key] || (isChoice ? choices[0] : 'no');
+                const val = answers[q.key] || '';
                 return (
                   <div key={q.id || q.key} className={isChoice ? 'space-y-1.5' : 'flex items-center justify-between gap-2'}>
                     <div className="text-xs font-medium" style={{ color: c.text }}>
@@ -1236,7 +1236,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                               color: val === choice ? '#0F172A' : c.text2,
                             }}
                           >
-                            {choice}
+                            {formatLabel(choice, isAr)}
                           </button>
                         ))}
                       </div>

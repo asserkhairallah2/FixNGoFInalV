@@ -50,7 +50,7 @@ test('F01 login -> C02 (owner home) + theme/RTL toggle + Simulator Dock visible'
   }
 });
 
-test('F02 vehicle add (C05 dropdown fuel) + request creation wizard (C06->C07->C08->C09)', async ({ browser }) => {
+test('F02 vehicle add (C05 empty-by-default + 2022/Silver persistence) + request wizard (C06->C07->C08->C09)', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
   const logs = attachConsoleWatch(page);
@@ -59,19 +59,46 @@ test('F02 vehicle add (C05 dropdown fuel) + request creation wizard (C06->C07->C
     const token = await page.evaluate(() => sessionStorage.getItem('fixngo.access'));
     const before = ok(await api('/requests', { token }), 'list requests before');
 
-    // 1. Add vehicle on C05 using fuel type dropdown
+    // 1. Add vehicle on C05 — verify all product fields start empty (A.2) and save persists exact 2022 / Silver
     await page.goto(`${await page.evaluate(() => location.origin)}/#/C05`);
-    await page.locator('[data-testid="field-plate"]').fill(`E2E-${Date.now().toString().slice(-4)}`);
+    await expect(page.locator('[data-testid="field-make"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="field-year"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="field-color"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="field-plate"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="field-fuel"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="toggle-isPrimary"]')).toHaveAttribute('aria-checked', 'false');
+
+    const rawPlate = `E2E-${Date.now().toString().slice(-4)}`;
+    await page.locator('[data-testid="field-make"]').selectOption('Toyota');
+    await page.locator('[data-testid="field-model"]').selectOption('Corolla');
+    await page.locator('[data-testid="field-year"]').fill('2022');
+    await page.locator('[data-testid="field-color"]').fill('Silver');
+    await page.locator('[data-testid="field-plate"]').fill(rawPlate);
+    await expect(page.getByText(rawPlate.replace('-', ''))).toBeVisible();
     await page.locator('[data-testid="field-fuel"]').selectOption('Hybrid');
     await page.locator('[data-testid="screen-primary"]').click();
     await page.waitForFunction(() => location.hash.includes('#/C04'), null, { timeout: 15_000 });
+    await expect(page.getByText(/Toyota Corolla \(2022\)/)).toBeVisible();
+    await expect(page.getByText(/Silver/).first()).toBeVisible();
 
-    // 2. Step through C06 -> C07 -> C08 -> C09
+    // 2. Step through C06 -> C07 -> C08 -> C09 (verifying no pre-selected service or pre-filled addresses)
+    await page.evaluate(() => sessionStorage.removeItem('fixngo.flow'));
     await page.goto(`${await page.evaluate(() => location.origin)}/#/C06`);
+    await expect(page.locator('[data-testid="screen-primary"]')).toBeDisabled();
+    // B.6: Wheel Lift Tow card must NOT display a "Flatbed" badge
+    await expect(page.locator('[data-testid="service-card-wheel_lift"]')).not.toContainText(/Flatbed/i);
+    await page.locator('[data-testid="service-card-flatbed_tow"]').click();
+    await expect(page.locator('[data-testid="screen-primary"]')).toBeEnabled();
     await page.locator('[data-testid="screen-primary"]').click();
-    await page.waitForFunction(() => location.hash.includes('#/C07') || location.hash.includes('#/C26'), null, { timeout: 15_000 });
+    await page.waitForFunction(() => location.hash.includes('#/C07'), null, { timeout: 15_000 });
+
+    await expect(page.locator('[data-testid="field-pickupAddress"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="field-destinationAddress"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="field-distanceKm"]')).toHaveValue('');
 
     await page.locator('[data-testid="field-pickupAddress"]').fill('90th Street, New Cairo E2E');
+    await page.locator('[data-testid="field-destinationAddress"]').fill('Al-Rehab Service Zone E2E');
+    await page.locator('[data-testid="field-distanceKm"]').fill('8.5');
     await page.locator('[data-testid="field-problem"]').fill('E2E wizard tow request');
     await page.locator('[data-testid="screen-primary"]').click();
     await page.waitForFunction(() => location.hash.includes('#/C08'), null, { timeout: 15_000 });
@@ -397,7 +424,9 @@ test('F07 signup + OTP session retention (A04->A05->A08) + KYC submission & admi
     const storedToken = await page.evaluate(() => sessionStorage.getItem('fixngo.access'));
     expect(storedToken).toBeTruthy();
 
-    // Submit Mechanic KYC on A08
+    // Submit Mechanic KYC on A08 (verifying yearsExperience starts empty — A.2)
+    await expect(page.locator('[data-testid="field-yearsExperience"]')).toHaveValue('');
+    await page.locator('[data-testid="field-yearsExperience"]').fill('4');
     await page.locator('[data-testid="screen-primary"]').click();
     await page.waitForFunction(() => location.hash.includes('#/A11'), null, { timeout: 15_000 });
 
@@ -468,37 +497,74 @@ test('F08 admin pricing save (AD05 200 OK) + user suspend/restore (AD12) + TOTP 
   }
 });
 
-test('F09 support ticket via SH08 UI form + admin reply API', async ({ browser }) => {
+test('F09 support ticket with attachment via SH08 UI + scoped ?ft= URL + AD18 author label (B.8, B.12)', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
+  const adminCtx = await browser.newContext();
+  const adminPage = await adminCtx.newPage();
   const logs = attachConsoleWatch(page);
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64'
+  );
   let subject;
+  let ticketId;
   try {
+    const seeded = readSeeded();
     await loginUI(page, 'owner');
-    await page.goto(`${await page.evaluate(() => location.origin)}/#/SH08`);
+    await page.goto(`${await page.evaluate(() => location.origin)}/#/SH08?requestId=${seeded.ids.requestId}`);
+    await expect(page.locator('[data-testid="field-Category"]')).toHaveValue('');
+    await expect(page.locator('[data-testid="screen-primary"]')).toBeDisabled();
+
     subject = `E2E UI ticket ${Date.now()}`;
+    await page.locator('[data-testid="field-Category"]').selectOption('General');
     await page.locator('[data-testid="field-Subject"]').fill(subject);
-    await page.locator('[data-testid="field-Description"]').fill('Created by the E2E UI flow test');
+    await page.locator('[data-testid="field-Description"]').fill('Created by the E2E UI flow test with PNG attachment');
+    await page.locator('[data-testid="field-attachment"]').setInputFiles({
+      name: 'receipt.png',
+      mimeType: 'image/png',
+      buffer: tinyPng
+    });
+    await expect(page.locator('[data-testid="uploaded-attachment"]')).toBeVisible({ timeout: 15_000 });
     await page.locator('[data-testid="screen-primary"]').click();
     await page.waitForFunction(() => location.hash.includes('#/SH09'), null, { timeout: 15_000 });
 
+    // B.8 & B.12: Verify reference shows FG-xxxx (never ticket code TK-xxxx) and attachment renders via ?ft= (never ?access_token=)
+    await expect(page.locator('[data-testid="ticket-reference"]')).toContainText(seeded.ids.requestCode);
+    const img = page.locator('[data-testid="ticket-attachment-image"]').first();
+    await expect(img).toBeVisible({ timeout: 15_000 });
+    const imgSrc = await img.getAttribute('src');
+    expect(imgSrc).toContain('?ft=');
+    expect(imgSrc).not.toContain('access_token');
+
+    const owner = await apiLogin('owner');
+    const tickets = ok(await api('/support/tickets', { token: owner.token }), 'list tickets');
+    const list = Array.isArray(tickets) ? tickets : tickets.items || [];
+    const ticket = list.find((t) => t.subject === subject);
+    expect(ticket).toBeTruthy();
+    ticketId = ticket.id;
+
+    // B.8: Admin opens AD18 for this ticket — customer message must show customer name (never "You") and attachment
+    await loginUI(adminPage, 'admin');
+    await adminPage.goto(`${await adminPage.evaluate(() => location.origin)}/#/AD18?id=${ticketId}`);
+    await expect(adminPage.locator('[data-testid="ticket-attachment-image"]').first()).toBeVisible({ timeout: 15_000 });
+    const msgText = await adminPage.locator('[data-testid="ticket-message"]').first().innerText();
+    expect(msgText).not.toMatch(/^You\b/m);
+    expect(msgText).toContain('Gate Two CarOwner');
+
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);
-    recordFlow('F09 support ticket (UI SH08 -> SH09)', 'PASS', { subject, console: clean });
+    recordFlow('F09 support ticket + attachment + ?ft= + AD18 author', 'PASS', { subject, ticketId, console: clean });
   } catch (err) {
-    recordFlow('F09 support ticket (UI SH08 -> SH09)', 'FAIL', { error: err.message });
+    recordFlow('F09 support ticket + attachment + ?ft= + AD18 author', 'FAIL', { error: err.message });
     throw err;
   } finally {
     await context.close();
+    await adminCtx.close();
   }
 
-  const owner = await apiLogin('owner');
   const admin = await apiLogin('admin');
-  const tickets = ok(await api('/support/tickets', { token: owner.token }), 'list tickets');
-  const list = Array.isArray(tickets) ? tickets : tickets.items || [];
-  const ticket = list.find((t) => t.subject === subject);
-  expect(ticket).toBeTruthy();
-  ok(await api(`/admin/tickets/${ticket.id}/reply`, { method: 'POST', token: admin.token, body: { text: 'E2E admin reply' } }), 'admin reply');
+  ok(await api(`/admin/tickets/${ticketId}/reply`, { method: 'POST', token: admin.token, body: { text: 'E2E admin reply' } }), 'admin reply');
 });
 
 test('F10 SOS (API + SH19 UI renders tel: links)', async ({ browser }) => {
@@ -618,4 +684,249 @@ test('F12 expired/declined offer re-dispatch to same provider returns 200 OK ins
   expect(secondRes.data.id).toBe(firstOffer.id);
   expect(secondRes.data.status).toBe('Pending');
   recordFlow('F12 expired/declined offer re-dispatch (200 OK)', 'PASS', { requestId: req.id, offerId: secondRes.data.id });
+});
+
+test('F13 live SignalR tracking on C11 updates status without reload + retains code & provider on reload (A.4, B.6)', async ({ browser }) => {
+  const seeded = readSeeded();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const logs = attachConsoleWatch(page);
+  try {
+    const owner = await apiLogin('owner');
+    const captain = await apiLogin('captain');
+
+    ok(await api('/providers/online', {
+      method: 'POST',
+      token: captain.token,
+      body: { isOnline: true, latitude: 30.0444, longitude: 31.2357 }
+    }), 'captain online');
+
+    const created = ok(await api('/requests', {
+      method: 'POST',
+      token: owner.token,
+      body: {
+        vehicleId: seeded.ids.vehicleId,
+        serviceTypeId: seeded.ids.serviceTypeId,
+        pickupLatitude: 30.0444,
+        pickupLongitude: 31.2357,
+        pickupAddress: 'E2E live SignalR tracking, Cairo',
+        destinationLatitude: 30.06,
+        destinationLongitude: 31.26,
+        destinationAddress: 'E2E destination, Cairo',
+        distanceKm: 6.4,
+        problem: 'E2E live tracking',
+        answersJson: '{}'
+      }
+    }), 'create live tracking request');
+
+    const offer = ok(await api(`/requests/${created.id}/offers`, {
+      method: 'POST',
+      token: owner.token,
+      body: { providerId: captain.user.id }
+    }), 'dispatch offer');
+
+    await loginUI(page, 'owner');
+    await page.goto(`${await page.evaluate(() => location.origin)}/#/C11?id=${created.id}`);
+    await expect(page.locator('[data-testid="tracking-request-code"]')).toHaveText(created.code);
+
+    // 1. Captain accepts offer -> C11 updates live WITHOUT reload to Accepted + Captain's name
+    ok(await api(`/offers/${offer.id}/accept`, { method: 'POST', token: captain.token }), 'accept offer');
+    await expect(page.locator('[data-testid="tracking-provider-name"]')).toContainText('Gate Two TowCaptain', { timeout: 12_000 });
+
+    // 2. Captain advances to EnRoute -> C11 updates live WITHOUT reload
+    ok(await api(`/requests/${created.id}/status`, {
+      method: 'POST',
+      token: captain.token,
+      body: { status: 'EnRoute', note: 'Live EnRoute' }
+    }), 'advance EnRoute');
+    await expect(page.locator('[data-testid="tracking-status-label"]')).toContainText(/En route/i, { timeout: 12_000 });
+
+    // 3. Captain advances to Arrived -> C11 updates live WITHOUT reload and NEVER shows "Review Repair Quote" for Tow (B.6)
+    ok(await api(`/requests/${created.id}/status`, {
+      method: 'POST',
+      token: captain.token,
+      body: { status: 'Arrived', note: 'Live Arrived' }
+    }), 'advance Arrived');
+    await expect(page.locator('[data-testid="tracking-status-label"]')).toContainText(/Arrived/i, { timeout: 12_000 });
+    await expect(page.getByText(/Review Repair Quote/i)).toHaveCount(0);
+
+    // 4. Reload #/C11?id=... directly -> code (FG-xxxx) and provider name MUST be retained (never '—')
+    await page.reload();
+    await expect(page.locator('[data-testid="tracking-request-code"]')).toHaveText(created.code, { timeout: 15_000 });
+    await expect(page.locator('[data-testid="tracking-provider-name"]')).toContainText('Gate Two TowCaptain');
+
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F13 live SignalR tracking on C11 + reload retention', 'PASS', { requestId: created.id, code: created.code });
+  } catch (err) {
+    recordFlow('F13 live SignalR tracking on C11 + reload retention', 'FAIL', { error: err.message });
+    throw err;
+  } finally {
+    await context.close();
+  }
+});
+
+test('F14 C14/C34 after cash Paid routes to C15 (0 HTTP 409) + C19 closed Friday 0 slots + C40 empty review null text (A.2, A.5, B.7, B.11)', async ({ browser }) => {
+  const seeded = readSeeded();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const logs = attachConsoleWatch(page);
+  try {
+    const owner = await apiLogin('owner');
+    const captain = await apiLogin('captain');
+    const center = await apiLogin('center');
+
+    // 1. Complete a tow trip so invoice is settled Paid by cash collection
+    const created = ok(await api('/requests', {
+      method: 'POST',
+      token: owner.token,
+      body: {
+        vehicleId: seeded.ids.vehicleId,
+        serviceTypeId: seeded.ids.serviceTypeId,
+        pickupLatitude: 30.0444,
+        pickupLongitude: 31.2357,
+        pickupAddress: 'E2E cash paid flow, Cairo',
+        distanceKm: 4,
+        problem: 'E2E cash paid',
+        answersJson: '{}'
+      }
+    }), 'create request');
+    const offer = ok(await api(`/requests/${created.id}/offers`, {
+      method: 'POST', token: owner.token, body: { providerId: captain.user.id }
+    }), 'send offer');
+    ok(await api(`/offers/${offer.id}/accept`, { method: 'POST', token: captain.token }), 'accept');
+    for (const status of ['EnRoute', 'Arrived', 'Working', 'Completed']) {
+      ok(await api(`/requests/${created.id}/status`, { method: 'POST', token: captain.token, body: { status } }), status);
+    }
+
+    await loginUI(page, 'owner');
+    const origin = await page.evaluate(() => location.origin);
+    logs.length = 0;
+
+    // C14 on Paid invoice -> shows Paid, primary routes to C15, zero 409 errors (A.5)
+    await page.goto(`${origin}/#/C14?id=${created.id}`);
+    await expect(page.locator('[data-testid="invoice-status"]')).toContainText(/Paid/i, { timeout: 15_000 });
+    await page.locator('[data-testid="screen-primary"]').click();
+    await page.waitForFunction(() => location.hash.includes('#/C15'), null, { timeout: 15_000 });
+
+    // C34 on Paid invoice -> shows Paid, no active "Pay Now", primary routes to C15 (A.5)
+    await page.goto(`${origin}/#/C34?id=${created.id}`);
+    await expect(page.locator('[data-testid="invoice-status"]')).toContainText(/Paid/i, { timeout: 15_000 });
+    await expect(page.getByText(/Pay Now/i)).toHaveCount(0);
+    await page.locator('[data-testid="screen-primary"]').click();
+    await page.waitForFunction(() => location.hash.includes('#/C15'), null, { timeout: 15_000 });
+    expect(logs.filter((l) => l.type === 'http')).toEqual([]);
+
+    // 2. C19 on closed Friday -> shows Closed notice, 0 slot buttons, disabled confirm (B.7)
+    await page.goto(`${origin}/#/C19?centerId=${seeded.ids.centerId}&serviceId=${seeded.ids.centerServiceId}`);
+    const fridaySpan = page.locator('[data-day-weekday="5"]').first();
+    await expect(fridaySpan).toBeVisible();
+    await fridaySpan.click();
+    await expect(page.locator('[data-testid="closed-day-state"]')).toBeVisible({ timeout: 10_000 });
+    expect(await page.locator('[data-testid="booking-slot-picker"] button').count()).toBe(0);
+    await expect(page.locator('[data-testid="screen-primary"]')).toBeDisabled();
+
+    // 3. C40 empty-comment review -> submits null text (never fake workshop string) + C38 Paid badge (A.2, B.11)
+    const slot = new Date(Date.now() + 72 * 3600 * 1000);
+    slot.setUTCMinutes(0, 0, 0);
+    const bk = ok(await api('/centers/bookings', {
+      method: 'POST',
+      token: owner.token,
+      body: { centerId: seeded.ids.centerId, serviceId: seeded.ids.centerServiceId, slotStart: slot.toISOString(), vehicleId: seeded.ids.vehicleId }
+    }), 'create booking for C40');
+    ok(await api(`/center-admin/bookings/${bk.id}/confirm`, { method: 'POST', token: center.token }), 'confirm');
+    ok(await api(`/center-admin/bookings/${bk.id}/start`, { method: 'POST', token: center.token }), 'start');
+    ok(await api(`/center-admin/bookings/${bk.id}/complete`, { method: 'POST', token: center.token, body: { extraMinor: 0 } }), 'complete');
+
+    await page.goto(`${origin}/#/C38?id=${bk.id}`);
+    await expect(page.locator('[data-testid="booking-payment-status"]')).toContainText(/Paid/i, { timeout: 15_000 });
+
+    await page.goto(`${origin}/#/C40?centerId=${seeded.ids.centerId}&bookingId=${bk.id}`);
+    await expect(page.locator('[data-testid="screen-primary"]')).toBeDisabled();
+    await expect(page.locator('[data-testid="toggle-recommend"]')).toHaveAttribute('aria-checked', 'false');
+    await page.locator('[data-testid="star-4"]').click();
+    await page.locator('[data-testid="screen-primary"]').click();
+    await expect(page.getByText(/Thank you! Your review has been recorded/i)).toBeVisible({ timeout: 15_000 });
+
+    const reviews = ok(await api(`/reviews/center/${seeded.ids.centerId}`, { token: owner.token }), 'list center reviews');
+    const latest = (Array.isArray(reviews) ? reviews : [])[0];
+    expect(latest).toBeTruthy();
+    expect(latest.text || null).toBeNull();
+
+    recordFlow('F14 C14/C34 Paid + C19 closed Friday + C40 empty review + C38 Paid badge', 'PASS', { requestId: created.id, bookingId: bk.id });
+  } catch (err) {
+    recordFlow('F14 C14/C34 Paid + C19 closed Friday + C40 empty review + C38 Paid badge', 'FAIL', { error: err.message });
+    throw err;
+  } finally {
+    await context.close();
+  }
+});
+
+test('F15 unticked irreversible confirmations (AD12, AD15, SH15, SH21) + empty A09/A10/SH20 forms + AD05 direct reload (A.2, A.3, B.9, B.10)', async ({ browser }) => {
+  const seeded = readSeeded();
+  const mechCtx = await browser.newContext();
+  const mechPage = await mechCtx.newPage();
+  const adminCtx = await browser.newContext();
+  const adminPage = await adminCtx.newPage();
+  try {
+    // 1. Mechanic checks A09, A10, SH15, SH20, SH21
+    await loginUI(mechPage, 'mechanic');
+    const origin = await mechPage.evaluate(() => location.origin);
+
+    await mechPage.goto(`${origin}/#/A09`);
+    await expect(mechPage.locator('[data-testid="field-truckMake"]')).toHaveValue('');
+    await expect(mechPage.locator('[data-testid="field-truckType"]')).toHaveValue('');
+    await expect(mechPage.locator('[data-testid="field-capacityTonnes"]')).toHaveValue('');
+    await expect(mechPage.locator('[data-testid="field-plate"]')).toHaveValue('');
+    await expect(mechPage.getByText(/Front & back attached/i)).toHaveCount(0);
+
+    await mechPage.goto(`${origin}/#/A10`);
+    await expect(mechPage.locator('[data-testid="field-address"]')).toHaveValue('');
+    expect(await mechPage.locator('[data-testid="center-services-picker"] button[aria-pressed="true"]').count()).toBe(0);
+    // Click interactive MapView to drop a pin (B.9)
+    await mechPage.locator('[data-testid="map-view"]').click({ position: { x: 120, y: 80 } });
+    await expect(mechPage.locator('[data-testid="map-pin"]')).toBeVisible();
+
+    await mechPage.goto(`${origin}/#/SH20`);
+    await expect(mechPage.locator('[data-testid="field-bankCode"]')).toHaveValue('');
+    await expect(mechPage.locator('[data-testid="toggle-useAsPayout"]')).toHaveAttribute('aria-checked', 'false');
+    await expect(mechPage.locator('.phone-frame').getByText(/sample IBAN/i)).toHaveCount(0);
+
+    await mechPage.goto(`${origin}/#/SH15`);
+    await expect(mechPage.locator('[data-testid="confirm-withdrawal"]')).not.toBeChecked();
+    await expect(mechPage.locator('[data-testid="screen-primary"]')).toBeDisabled();
+
+    await mechPage.goto(`${origin}/#/SH21`);
+    await expect(mechPage.locator('[data-testid="confirm-deletion"]')).not.toBeChecked();
+    await expect(mechPage.locator('[data-testid="screen-primary"]')).toBeDisabled();
+
+    // 2. Admin checks AD12, AD15 unticked confirmations + AD05 direct browser reload
+    await loginUI(adminPage, 'admin');
+    const adminOrigin = await adminPage.evaluate(() => location.origin);
+
+    await adminPage.goto(`${adminOrigin}/#/AD12?id=${seeded.users.mechanic.id}`);
+    await expect(adminPage.locator('[data-testid="field-reason"]')).toHaveValue('');
+    await expect(adminPage.locator('[data-testid="field-confirmed"]')).not.toBeChecked();
+    await expect(adminPage.locator('[data-testid="screen-primary"]')).toBeDisabled();
+
+    await adminPage.goto(`${adminOrigin}/#/AD15?id=${seeded.ids.kycApplicationId}`);
+    await expect(adminPage.locator('[data-testid="check-identity"]')).not.toBeChecked();
+    await expect(adminPage.locator('[data-testid="check-credentials"]')).not.toBeChecked();
+    await expect(adminPage.locator('[data-testid="screen-primary"]')).toBeDisabled();
+
+    // B.10: Direct reload on AD05 must render form inputs cleanly (never stuck on skeleton)
+    await adminPage.goto(`${adminOrigin}/#/AD05`);
+    await expect(adminPage.locator('[data-testid="field-towBaseEgp"]')).toBeVisible({ timeout: 15_000 });
+    await adminPage.reload();
+    await expect(adminPage.locator('[data-testid="field-towBaseEgp"]')).toBeVisible({ timeout: 15_000 });
+    expect(await adminPage.locator('[data-testid="skeleton"]').count()).toBe(0);
+
+    recordFlow('F15 unticked confirmations + empty A09/A10/SH20 + AD05 reload', 'PASS', {});
+  } catch (err) {
+    recordFlow('F15 unticked confirmations + empty A09/A10/SH20 + AD05 reload', 'FAIL', { error: err.message });
+    throw err;
+  } finally {
+    await mechCtx.close();
+    await adminCtx.close();
+  }
 });

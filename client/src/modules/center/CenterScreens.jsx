@@ -1679,14 +1679,14 @@ export function SC09Screen({ code = 'SC09' }) {
 
         <button
           type="button"
-          data-testid="goto-withdraw"
-          onClick={() => nav.go('SH15')}
+          data-testid="goto-reports"
+          onClick={() => nav.go('SC08')}
           className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
         >
           <div className="flex items-center gap-2.5">
             <Wallet size={16} className="text-red-500" />
             <span className={`text-xs font-extrabold ${colors.text}`}>
-              {isAr ? 'سحب الأرباح' : 'Withdraw Earnings'}
+              {isAr ? 'الإيرادات والتقارير المالية' : 'Revenue & Financial Reports'}
             </span>
           </div>
           <ForwardChevron size={14} className={colors.secondaryText} />
