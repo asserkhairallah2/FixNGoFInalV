@@ -23,7 +23,6 @@ logs/
 secrets.json
 server.pid
 server.port
-/dummy-db.md
 
 # E2E / test artifacts (evidence is intentionally kept under docs/evidence)
 test-results/
