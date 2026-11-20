@@ -6,7 +6,7 @@
       "test",
       "e2e/screens.spec.js",
       "-g",
-      "admin"
+      "light-en: admin|dark-ar: admin"
     ],
     "configFile": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\playwright.config.js",
     "rootDir": "C:/Users/xprenspel/Desktop/FixNGoFinal/client/e2e",
@@ -137,12 +137,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5948,
+                      "duration": 6294,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T10:14:03.547Z",
+                      "startTime": "2026-11-20T11:14:59.700Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -151,90 +151,6 @@
                 }
               ],
               "id": "4e58ca2a3cb798687116-5ea878ba47fcb6e9bcaf",
-              "file": "screens.spec.js",
-              "line": 72,
-              "column": 7
-            }
-          ]
-        },
-        {
-          "title": "screen sweep dark-en",
-          "file": "screens.spec.js",
-          "line": 66,
-          "column": 8,
-          "specs": [
-            {
-              "title": "dark-en: admin — 18 screens",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5472,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-20T10:14:09.663Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4e58ca2a3cb798687116-056e8aff81ac6c6af859",
-              "file": "screens.spec.js",
-              "line": 72,
-              "column": 7
-            }
-          ]
-        },
-        {
-          "title": "screen sweep light-ar",
-          "file": "screens.spec.js",
-          "line": 66,
-          "column": 8,
-          "specs": [
-            {
-              "title": "light-ar: admin — 18 screens",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 5653,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-20T10:14:15.176Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4e58ca2a3cb798687116-f4f86c5d4977bd7c4c13",
               "file": "screens.spec.js",
               "line": 72,
               "column": 7
@@ -263,12 +179,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5689,
+                      "duration": 5970,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-20T10:14:20.860Z",
+                      "startTime": "2026-11-20T11:15:06.183Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -288,9 +204,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-20T10:13:38.014Z",
-    "duration": 48886.259999999995,
-    "expected": 4,
+    "startTime": "2026-11-20T11:14:31.129Z",
+    "duration": 41422.995,
+    "expected": 2,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

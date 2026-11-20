@@ -17,6 +17,9 @@ import { renderView } from './ui/renderers.jsx';
 import { useColors, PrimaryButton, ShieldLogo } from './ui/kit.jsx';
 import SimulatorDock from './sim/SimulatorDock.jsx';
 
+const TAPPABLE_SELECTOR =
+  'button, a, input, select, textarea, label, [role="button"], [data-testid^="nav-"], [data-testid="data-row"]';
+
 const ROLE_TABS = {
   CarOwner: [
     { id: 'home', code: 'C02', en: 'Home', ar: 'الرئيسية', icon: Home, match: ['C01', 'C02', 'C06', 'C07', 'C08', 'C09', 'C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C22', 'C25', 'C26', 'C27', 'C28', 'C29', 'C30', 'C31', 'C32', 'C35', 'SH03', 'SH19'] },
@@ -55,31 +58,56 @@ const ROLE_TABS = {
   ]
 };
 
+function formatClock() {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Africa/Cairo'
+    }).format(new Date());
+  } catch {
+    return '9:41 AM';
+  }
+}
+
 function SystemRibbon({ status }) {
   if (!status) return null;
-  if (!status.setupComplete) return <div className="fixed inset-x-0 top-0 z-50 bg-amber-500 text-white text-center text-xs py-2">System not set up — run setup.bat</div>;
-  if (status.mode === 'dummy') return <div className="fixed inset-x-0 top-0 z-50 bg-fuchsia-700 text-white text-center text-xs font-bold py-2">DUMMY DATA MODE — NOT REAL</div>;
+  if (!status.setupComplete) {
+    return (
+      <div className="fixed top-3 start-3 z-40 px-3 py-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold shadow-lg backdrop-blur">
+        System not set up — run setup.bat
+      </div>
+    );
+  }
+  if (status.mode === 'dummy') {
+    return (
+      <div className="fixed top-3 start-3 z-40 px-3 py-1 rounded-full bg-slate-900/75 border border-white/10 text-slate-300 text-[10px] font-semibold shadow-lg backdrop-blur">
+        DUMMY DATA MODE
+      </div>
+    );
+  }
   return null;
 }
 
 function ThemeLangControls() {
   const { theme, setTheme, lang, setLang, isDark } = usePrefs();
   return (
-    <div className="flex gap-1.5 items-center">
+    <div className="flex gap-1 items-center">
       <button aria-label="Toggle language" title="Toggle language" data-testid="toggle-lang"
         onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-        className={`h-7 px-2 rounded-full border text-[10px] font-bold flex items-center gap-1 transition ${
+        className={`h-6 px-1.5 rounded-full border text-[9px] font-bold flex items-center gap-0.5 transition ${
           isDark ? 'border-[#262936] bg-[#1A1D26] text-slate-200' : 'border-slate-200 bg-slate-100 text-slate-700'
         }`}>
-        <Languages size={12} />
+        <Languages size={11} />
         <span>{lang === 'en' ? 'AR' : 'EN'}</span>
       </button>
       <button aria-label="Toggle theme" title="Toggle theme" data-testid="toggle-theme"
         onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        className={`w-7 h-7 rounded-full border grid place-items-center transition ${
+        className={`w-6 h-6 rounded-full border grid place-items-center transition ${
           isDark ? 'border-[#262936] bg-[#1A1D26] text-amber-400' : 'border-slate-200 bg-slate-100 text-slate-700'
         }`}>
-        {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
+        {theme === 'light' ? <Moon size={11} /> : <Sun size={11} />}
       </button>
     </div>
   );
@@ -87,12 +115,292 @@ function ThemeLangControls() {
 
 function PhoneStatusBar() {
   const c = useColors();
+  const [clock, setClock] = useState(formatClock);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const next = formatClock();
+      setClock((prev) => (prev === next ? prev : next));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <div className={`shrink-0 h-9 px-4 flex items-center justify-between border-b ${c.border} ${c.bg} select-none`}>
-      <span className={`text-[11px] font-bold tracking-tight ${c.text}`} dir="ltr">9:41</span>
-      <ThemeLangControls />
+    <div className={`mob-statusbar border-b ${c.border} ${c.bg} select-none`} dir="ltr">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`text-[12px] font-bold tracking-tight ${c.text}`}>{clock}</span>
+      </div>
+      <span className="mob-island" aria-hidden="true" />
+      <div className={`flex items-center gap-2 ${c.text}`}>
+        <div className="flex items-center gap-1 opacity-90" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M5 13a10 10 0 0 1 14 0" />
+            <path d="M8.5 16.3a5 5 0 0 1 7 0" />
+            <path d="M12 19.2h.01" />
+          </svg>
+          <svg viewBox="0 0 28 14" width="20" height="11" fill="none">
+            <rect x="1" y="2" width="22" height="10" rx="2.8" stroke="currentColor" strokeWidth="1.6" opacity="0.7" />
+            <rect x="3" y="4" width="18" height="6" rx="1.4" fill="currentColor" />
+            <path d="M25 5.2v3.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.7" />
+          </svg>
+        </div>
+        <ThemeLangControls />
+      </div>
     </div>
   );
+}
+
+function usePhoneInteractions(stageRef, frameRef, cursorRef) {
+  useEffect(() => {
+    const stage = stageRef.current;
+    const frame = frameRef.current;
+    const cursor = cursorRef.current;
+    if (!stage || !frame || !cursor) return;
+
+    const hitTappable = (el) => !!(el && el.closest && el.closest(TAPPABLE_SELECTOR));
+
+    const getScrollChain = (startNode) => {
+      const chain = [];
+      let el = startNode && startNode.nodeType === 1 ? startNode : startNode?.parentElement;
+      while (el && frame.contains(el)) {
+        if (el.scrollHeight > el.clientHeight + 1) {
+          const oy = window.getComputedStyle(el).overflowY;
+          if (oy === 'auto' || oy === 'scroll' || el.dataset?.testid === 'screen-container') {
+            chain.push(el);
+          }
+        }
+        el = el.parentElement;
+      }
+      const mainPane = frame.querySelector('[data-testid="screen-container"]');
+      if (mainPane && !chain.includes(mainPane) && mainPane.scrollHeight > mainPane.clientHeight + 1) {
+        chain.push(mainPane);
+      }
+      return chain;
+    };
+
+    const scrollByChain = (chain, deltaY) => {
+      if (!deltaY || chain.length === 0) return false;
+      let remaining = deltaY;
+      let movedAny = false;
+      for (const pane of chain) {
+        if (Math.abs(remaining) < 0.25) break;
+        const maxTop = pane.scrollHeight - pane.clientHeight;
+        if (maxTop <= 0) continue;
+        const prev = pane.scrollTop;
+        const next = Math.max(0, Math.min(maxTop, prev + remaining));
+        const consumed = next - prev;
+        if (Math.abs(consumed) > 0) {
+          pane.scrollTop = next;
+          remaining -= consumed;
+          movedAny = true;
+        }
+      }
+      return movedAny;
+    };
+
+    const updateCursorPos = (clientX, clientY, target) => {
+      const r = stage.getBoundingClientRect();
+      cursor.style.left = `${clientX - r.left}px`;
+      cursor.style.top = `${clientY - r.top}px`;
+      cursor.classList.add('live');
+      cursor.classList.remove('leave');
+      cursor.classList.toggle('on', hitTappable(target));
+    };
+
+    // Touch-style drag-to-scroll state (works even when starting on inputs, selects, buttons, or nested boxes)
+    let pointerDown = false;
+    let dragging = false;
+    let activePointerId = null;
+    let startX = 0;
+    let startY = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let maxMoved = 0;
+    let vel = 0;
+    let momentumId = 0;
+    let suppressClickUntil = 0;
+    let activeChain = [];
+    let downTarget = null;
+    let targetWasFocused = false;
+
+    const stopMomentum = () => {
+      if (momentumId) {
+        cancelAnimationFrame(momentumId);
+        momentumId = 0;
+      }
+      vel = 0;
+    };
+
+    const clearDragFlag = () => {
+      document.documentElement.removeAttribute('data-phone-dragging');
+    };
+
+    const onFramePointerMove = (e) => {
+      if (frame.contains(e.target)) {
+        updateCursorPos(e.clientX, e.clientY, e.target);
+      }
+    };
+
+    const onFramePointerEnter = (e) => {
+      updateCursorPos(e.clientX, e.clientY, e.target);
+    };
+
+    const onFramePointerLeave = () => {
+      cursor.classList.add('leave');
+      cursor.classList.remove('press');
+    };
+
+    const onFramePointerDown = (e) => {
+      if (e.button !== 0) return;
+      if (!frame.contains(e.target)) return;
+      updateCursorPos(e.clientX, e.clientY, e.target);
+      cursor.classList.add('press');
+
+      // Allow range sliders to drag natively
+      if (e.target?.closest?.('input[type="range"]')) return;
+
+      stopMomentum();
+      downTarget = e.target;
+      targetWasFocused = document.activeElement === e.target;
+      pointerDown = true;
+      dragging = false;
+      activePointerId = e.pointerId;
+      startX = e.clientX;
+      startY = e.clientY;
+      lastY = e.clientY;
+      lastT = e.timeStamp || performance.now();
+      maxMoved = 0;
+      activeChain = getScrollChain(e.target);
+    };
+
+    const onWindowPointerMove = (e) => {
+      if (!pointerDown) return;
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+
+      if (frame.contains(e.target)) {
+        updateCursorPos(e.clientX, e.clientY, e.target);
+      }
+
+      const totalDy = startY - e.clientY;
+      const totalDx = startX - e.clientX;
+      maxMoved = Math.max(maxMoved, Math.hypot(totalDx, totalDy));
+
+      if (!dragging && Math.abs(totalDy) > 5 && activeChain.length > 0) {
+        dragging = true;
+        document.documentElement.setAttribute('data-phone-dragging', '1');
+        try {
+          window.getSelection?.()?.removeAllRanges?.();
+          const ae = document.activeElement;
+          if (ae && ae === downTarget && !targetWasFocused && typeof ae.blur === 'function') {
+            ae.blur();
+          } else if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && typeof ae.setSelectionRange === 'function') {
+            const pos = ae.selectionStart ?? 0;
+            ae.setSelectionRange(pos, pos);
+          }
+        } catch {
+          // Some input types (e.g. number/email) do not support setSelectionRange
+        }
+      }
+
+      if (dragging) {
+        if (e.cancelable) e.preventDefault();
+        const stepY = lastY - e.clientY;
+        scrollByChain(activeChain, stepY);
+        const now = e.timeStamp || performance.now();
+        const dt = now - lastT;
+        if (dt > 0) {
+          const instVel = stepY / dt;
+          vel = vel * 0.35 + instVel * 0.65;
+        }
+        lastY = e.clientY;
+        lastT = now;
+      }
+    };
+
+    const endGesture = () => {
+      cursor.classList.remove('press');
+      if (!pointerDown) return;
+      const wasDragging = dragging && maxMoved > 6;
+      const chainSnapshot = activeChain;
+      let v = vel;
+
+      pointerDown = false;
+      dragging = false;
+      activePointerId = null;
+      clearDragFlag();
+
+      if (wasDragging) {
+        suppressClickUntil = Date.now() + 340;
+        const glide = () => {
+          if (pointerDown || Math.abs(v) < 0.025 || chainSnapshot.length === 0) {
+            momentumId = 0;
+            return;
+          }
+          const moved = scrollByChain(chainSnapshot, v * 16);
+          if (!moved) {
+            momentumId = 0;
+            return;
+          }
+          v *= 0.94;
+          momentumId = requestAnimationFrame(glide);
+        };
+        glide();
+      }
+    };
+
+    const onFrameClickCapture = (e) => {
+      if (Date.now() < suppressClickUntil) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    const onFrameWheel = (e) => {
+      stopMomentum();
+      const target = e.target;
+      const isNumberInput = target?.tagName === 'INPUT' && target?.type === 'number';
+      if (isNumberInput && document.activeElement === target) {
+        target.blur();
+      }
+      const chain = getScrollChain(target);
+      if (chain.length > 0 && (isNumberInput || !target?.closest?.('[data-testid="screen-container"]'))) {
+        if (e.cancelable) e.preventDefault();
+        scrollByChain(chain, e.deltaY);
+      }
+    };
+
+    const onWindowBlur = () => {
+      cursor.classList.add('leave');
+      cursor.classList.remove('press');
+      endGesture();
+    };
+
+    frame.addEventListener('pointermove', onFramePointerMove);
+    frame.addEventListener('pointerenter', onFramePointerEnter);
+    frame.addEventListener('pointerleave', onFramePointerLeave);
+    frame.addEventListener('pointerdown', onFramePointerDown, true);
+    frame.addEventListener('click', onFrameClickCapture, true);
+    frame.addEventListener('wheel', onFrameWheel, { passive: false });
+    window.addEventListener('pointermove', onWindowPointerMove, { passive: false });
+    window.addEventListener('pointerup', endGesture);
+    window.addEventListener('pointercancel', endGesture);
+    window.addEventListener('blur', onWindowBlur);
+
+    return () => {
+      stopMomentum();
+      clearDragFlag();
+      frame.removeEventListener('pointermove', onFramePointerMove);
+      frame.removeEventListener('pointerenter', onFramePointerEnter);
+      frame.removeEventListener('pointerleave', onFramePointerLeave);
+      frame.removeEventListener('pointerdown', onFramePointerDown, true);
+      frame.removeEventListener('click', onFrameClickCapture, true);
+      frame.removeEventListener('wheel', onFrameWheel);
+      window.removeEventListener('pointermove', onWindowPointerMove);
+      window.removeEventListener('pointerup', endGesture);
+      window.removeEventListener('pointercancel', endGesture);
+      window.removeEventListener('blur', onWindowBlur);
+    };
+  }, [stageRef, frameRef, cursorRef]);
 }
 
 function NotFound({ code }) {
@@ -135,7 +443,7 @@ function BottomNav({ role, current }) {
     return false;
   };
   return (
-    <nav className={`shrink-0 w-full border-t ${c.border} ${c.bg} px-2 pt-1.5 pb-2 z-30`} aria-label="Main navigation">
+    <nav className={`shrink-0 w-full border-t ${c.border} ${c.bg} px-2 pt-1.5 pb-1 z-30`} aria-label="Main navigation">
       <div className="grid grid-cols-5">
         {tabs.map((t) => {
           const Icon = t.icon || Home;
@@ -149,7 +457,6 @@ function BottomNav({ role, current }) {
           );
         })}
       </div>
-      <div className="w-28 h-1 rounded-full bg-slate-500/40 mx-auto mt-1" />
     </nav>
   );
 }
@@ -184,8 +491,11 @@ function ScreenRouter({ user }) {
 function AuthenticatedApp({ user }) {
   const { isAr } = usePrefs();
   const c = useColors();
+  const nav = useNav();
+  const scrollRef = useRef(null);
   const [filesReady, setFilesReady] = useState(false);
   useLiveSync();
+
   useEffect(() => {
     connectSignalR();
     // Short-lived, download-only token for <img>/<a> file URLs (never the JWT).
@@ -199,17 +509,23 @@ function AuthenticatedApp({ user }) {
       disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked);
     };
   }, [user.id]);
-  const current = useNav().route.code;
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [nav.route.code, nav.route.params?.id]);
+
+  const current = nav.route.code;
   if (!filesReady) {
     return <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>;
   }
   return (
     <div className={`h-full flex flex-col relative ${c.bg}`}>
       <PhoneStatusBar />
-      <div className="flex-1 min-h-0 overflow-y-auto" data-testid="screen-container">
+      <div ref={scrollRef} className="mob-scroll-pane flex-1 min-h-0 overflow-y-auto" data-testid="screen-container">
         <ScreenRouter user={user} />
       </div>
       <BottomNav role={user.role} current={current} />
+      <div className="mob-home-indicator" aria-hidden="true" />
       {isAr && <span className="sr-only">اتجاه عربي</span>}
     </div>
   );
@@ -217,20 +533,27 @@ function AuthenticatedApp({ user }) {
 
 function GuestApp() {
   const nav = useNav(); const { isAr } = usePrefs(); const c = useColors();
+  const scrollRef = useRef(null);
   const { code, params } = nav.route;
   const entry = getScreen(code);
   const allowed = entry && entry.roles.includes('guest');
   const Comp = entry?.Component;
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [code, params?.id]);
+
   return (
     <div className={`h-full flex flex-col relative ${c.bg}`}>
       <PhoneStatusBar />
-      <div className="flex-1 min-h-0 overflow-y-auto" data-testid="screen-container">
+      <div ref={scrollRef} className="mob-scroll-pane flex-1 min-h-0 overflow-y-auto" data-testid="screen-container">
         {allowed ? (
           <ScreenErrorBoundary code={code}>
             {Comp ? <Comp id={params.id} params={params} code={code} entry={entry} /> : renderView(entry.view, params.id, params)}
           </ScreenErrorBoundary>
         ) : <NotFound code={code} />}
       </div>
+      <div className="mob-home-indicator" aria-hidden="true" />
       {isAr && <span className="sr-only">اتجاه عربي</span>}
     </div>
   );
@@ -240,8 +563,13 @@ function Shell() {
   const { user, ready } = useSession();
   const qc = useQueryClient();
   const prevUserId = useRef(undefined);
+  const stageRef = useRef(null);
+  const frameRef = useRef(null);
+  const cursorRef = useRef(null);
   const [status, setStatus] = useState(null);
   const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  usePhoneInteractions(stageRef, frameRef, cursorRef);
 
   useEffect(() => {
     const nextId = user?.id || null;
@@ -262,19 +590,28 @@ function Shell() {
   return (
     <>
       <SystemRibbon status={status} />
-      <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 bg-[#EEF2F6] dark:bg-[#090A0D]">
-        <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 w-full max-w-[1120px]">
-          <div className="phone-frame shrink-0 flex flex-col">
-            {!online && <div data-testid="offline-banner" className="shrink-0 bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1"><WifiOff size={12} />Offline — requests will replay</div>}
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {blocked ? <SetupNeeded /> : !ready ? (
-                <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
-              ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
+      <div className="min-h-screen w-full flex items-center justify-center p-3 md:p-5">
+        <div ref={stageRef} className="phone-stage" id="phoneRoot">
+          <div ref={frameRef} className="phone-frame iphone-frame shrink-0">
+            <div className="iphone-inner">
+              <div className="iphone-screen" data-screen>
+                {!online && (
+                  <div data-testid="offline-banner" className="shrink-0 bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1">
+                    <WifiOff size={12} />Offline — requests will replay
+                  </div>
+                )}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  {blocked ? <SetupNeeded /> : !ready ? (
+                    <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
+                  ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
+                </div>
+              </div>
             </div>
           </div>
-          {status?.simulatorsEnabled && <SimulatorDock />}
+          <span ref={cursorRef} className="mob-cursor" data-cursor aria-hidden="true" />
         </div>
       </div>
+      {status?.simulatorsEnabled && <SimulatorDock />}
     </>
   );
 }

@@ -571,7 +571,7 @@ export default function SimulatorDock({ notices = {} }) {
   const { user } = useSession();
   const qc = useQueryClient();
   const [tab, setTab] = useState('push');
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const { data: pushes = [] } = useQuery({
     queryKey: ['sim', 'push', false],
@@ -613,19 +613,36 @@ export default function SimulatorDock({ notices = {} }) {
     otps: otps.filter((o) => !o.consumed && o.secondsRemaining > 0).length
   };
   const badges = { ...unread, ...notices };
+  const totalUnread = (badges.push ?? 0) + (badges.messages ?? 0) + (badges.otps ?? 0);
   const Active = { push: PushPanel, payments: PaymentPanel, messages: MessagePanel, otps: OtpPanel, gps: GpsPanel }[tab];
   return (
     <aside
       data-testid="simulator-dock"
       dir={isAr ? 'rtl' : 'ltr'}
-      className={`${c.surface} border ${c.border} rounded-2xl shadow-xl w-full md:w-[340px] shrink-0 flex flex-col overflow-hidden ${open ? 'h-[420px] md:h-[720px]' : 'h-[52px]'}`}
+      className={`fixed bottom-4 end-4 z-40 ${c.surface} border ${c.border} shadow-2xl flex flex-col overflow-hidden transition-all ${
+        open ? 'w-[340px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-2rem)] rounded-2xl' : 'w-auto h-10 rounded-full'
+      }`}
     >
-      <div className={`flex items-center justify-between px-3 py-2 border-b ${c.border}`}>
-        <span className={`text-xs font-black ${c.text}`}>{isAr ? 'محاكاة الخدمات' : 'SIMULATOR DOCK'}</span>
-        <button aria-label="Toggle dock" data-testid="sim-toggle" onClick={() => setOpen((v) => !v)} className={c.secondaryText}>
-          {open ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-        </button>
-      </div>
+      <button
+        type="button"
+        aria-label="Toggle dock"
+        data-testid="sim-toggle"
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center justify-between gap-2.5 px-3.5 h-10 shrink-0 ${open ? `border-b ${c.border} w-full` : ''}`}
+      >
+        <span className={`text-[11px] font-extrabold ${c.text} flex items-center gap-1.5`}>
+          <Radio size={13} className="text-[#E51C23]" />
+          <span>{isAr ? 'محاكاة الخدمات' : 'SIMULATOR'}</span>
+          {!open && totalUnread > 0 && (
+            <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-[#E51C23] text-white text-[9px] font-bold grid place-items-center">
+              {totalUnread}
+            </span>
+          )}
+        </span>
+        <span className={c.secondaryText}>
+          {open ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
+        </span>
+      </button>
       {open && (
         <>
           <div className={`grid grid-cols-5 border-b ${c.border}`} role="tablist">

@@ -939,3 +939,99 @@ test('F15 unticked irreversible confirmations (AD12, AD15, SH15, SH21) + empty A
     await adminCtx.close();
   }
 });
+
+test('F16 iPhone frame, touch-dot cursor, drag-scroll (including on input fields), wheel-scroll, F12 guard & copy/paste-safe no-select', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 620 } });
+  const page = await context.newPage();
+  const logs = attachConsoleWatch(page);
+  try {
+    await loginUI(page, 'admin');
+    const origin = await page.evaluate(() => location.origin);
+    await page.goto(`${origin}/#/A04`);
+    await expect(page.locator('#phoneRoot .iphone-frame .iphone-screen .mob-island')).toBeVisible();
+    await expect(page.locator('#phoneRoot .iphone-screen .mob-home-indicator')).toBeVisible();
+
+    // 1. Custom touch-dot cursor activates inside phone, scales on tappable, hides outside
+    const emailBox = await page.locator('[data-testid="field-email"]').boundingBox();
+    expect(emailBox).toBeTruthy();
+    await page.mouse.move(emailBox.x + emailBox.width / 2, emailBox.y + emailBox.height / 2);
+    const cursorClassesInside = await page.locator('[data-cursor]').getAttribute('class');
+    expect(cursorClassesInside).toContain('live');
+    expect(cursorClassesInside).toContain('on');
+
+    // 2. Hidden scrollbar check
+    const sbWidth = await page.evaluate(() => {
+      const pane = document.querySelector('[data-testid="screen-container"]');
+      return pane ? getComputedStyle(pane).scrollbarWidth : '';
+    });
+    expect(sbWidth).toBe('none');
+
+    // 3. Drag-to-scroll starting directly inside an <input> field
+    const beforeDrag = await page.evaluate(() => document.querySelector('[data-testid="screen-container"]').scrollTop);
+    await page.mouse.down();
+    await page.mouse.move(emailBox.x + emailBox.width / 2, emailBox.y - 120, { steps: 10 });
+    await page.mouse.up();
+    const afterDrag = await page.evaluate(() => document.querySelector('[data-testid="screen-container"]').scrollTop);
+    expect(afterDrag).toBeGreaterThan(beforeDrag + 50);
+
+    // 4. Mouse-wheel scroll works smoothly
+    await page.mouse.wheel(0, -80);
+    await page.waitForTimeout(100);
+    const afterWheel = await page.evaluate(() => document.querySelector('[data-testid="screen-container"]').scrollTop);
+    expect(afterWheel).toBeLessThan(afterDrag);
+
+    // 5. Outside phone -> cursor hides (.leave)
+    await page.mouse.move(12, 12);
+    const cursorClassesOutside = await page.locator('[data-cursor]').getAttribute('class');
+    expect(cursorClassesOutside).toContain('leave');
+
+    // 6. Guard checks: F12 & contextmenu & label selectstart blocked, input copy/paste allowed
+    const guardReport = await page.evaluate(() => {
+      const f12 = new KeyboardEvent('keydown', { key: 'F12', bubbles: true, cancelable: true });
+      document.dispatchEvent(f12);
+
+      const ctx = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      document.body.dispatchEvent(ctx);
+
+      const h1 = document.querySelector('h1');
+      const selUi = new Event('selectstart', { bubbles: true, cancelable: true });
+      h1.dispatchEvent(selUi);
+
+      const inp = document.querySelector('[data-testid="field-email"]');
+      const selInp = new Event('selectstart', { bubbles: true, cancelable: true });
+      inp.dispatchEvent(selInp);
+
+      const copyEv = new Event('copy', { bubbles: true, cancelable: true });
+      inp.dispatchEvent(copyEv);
+
+      const pasteEv = new Event('paste', { bubbles: true, cancelable: true });
+      inp.dispatchEvent(pasteEv);
+
+      return {
+        f12Blocked: f12.defaultPrevented,
+        ctxBlocked: ctx.defaultPrevented,
+        uiSelectBlocked: selUi.defaultPrevented,
+        inputSelectAllowed: !selInp.defaultPrevented,
+        copyAllowed: !copyEv.defaultPrevented,
+        pasteAllowed: !pasteEv.defaultPrevented
+      };
+    });
+    expect(guardReport).toEqual({
+      f12Blocked: true,
+      ctxBlocked: true,
+      uiSelectBlocked: true,
+      inputSelectAllowed: true,
+      copyAllowed: true,
+      pasteAllowed: true
+    });
+
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F16 iPhone frame + touch cursor + drag/wheel scroll + F12 guard + copy/paste', 'PASS', guardReport);
+  } catch (err) {
+    recordFlow('F16 iPhone frame + touch cursor + drag/wheel scroll + F12 guard + copy/paste', 'FAIL', { error: err.message });
+    throw err;
+  } finally {
+    await context.close();
+  }
+});

@@ -22,7 +22,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 906
+        "chars": 684
       },
       "console": []
     },
@@ -38,14 +38,14 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 515
+        "chars": 293
       },
       "console": []
     },
     {
       "code": "AD03",
       "role": "admin",
-      "hash": "#/AD03?id=96f81437-b303-4604-b12e-bf9b9986d4bc",
+      "hash": "#/AD03?id=d354c51f-c9c8-42d8-b100-48b927eb6ab6",
       "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD03.png",
       "diagnostics": {
         "bad": [],
@@ -54,7 +54,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 710
+        "chars": 488
       },
       "console": []
     },
@@ -70,7 +70,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 803
+        "chars": 581
       },
       "console": []
     },
@@ -86,7 +86,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 754
+        "chars": 532
       },
       "console": []
     },
@@ -102,7 +102,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 694
+        "chars": 472
       },
       "console": []
     },
@@ -118,14 +118,14 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 497
+        "chars": 277
       },
       "console": []
     },
     {
       "code": "AD08",
       "role": "admin",
-      "hash": "#/AD08?id=6a6e961c-4503-4668-8e0e-49800d36935a",
+      "hash": "#/AD08?id=ae00fa19-f7b6-458e-9f5a-44f9e6f550ec",
       "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD08.png",
       "diagnostics": {
         "bad": [],
@@ -134,7 +134,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 664
+        "chars": 444
       },
       "console": []
     },
@@ -150,14 +150,14 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 586
+        "chars": 366
       },
       "console": []
     },
     {
       "code": "AD10",
       "role": "admin",
-      "hash": "#/AD10?id=528d8fb7-31ae-4c4f-b6ef-9059c3af11d3",
+      "hash": "#/AD10?id=29fff6e7-e25e-47a1-9f4f-280e0eba615e",
       "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD10.png",
       "diagnostics": {
         "bad": [],
@@ -166,14 +166,14 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 472
+        "chars": 252
       },
       "console": []
     },
     {
       "code": "AD11",
       "role": "admin",
-      "hash": "#/AD11?id=445ecd19-54c1-4d09-b89b-4f5edef58777",
+      "hash": "#/AD11?id=cab07624-9d0c-4795-814a-3d58b345006b",
       "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD11.png",
       "diagnostics": {
         "bad": [],
@@ -182,7 +182,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 657
+        "chars": 437
       },
       "console": []
     },
@@ -198,7 +198,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 1017
+        "chars": 797
       },
       "console": []
     },
@@ -214,7 +214,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 525
+        "chars": 305
       },
       "console": []
     },
@@ -230,14 +230,14 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 713
+        "chars": 493
       },
       "console": []
     },
     {
       "code": "AD15",
       "role": "admin",
-      "hash": "#/AD15?id=96f81437-b303-4604-b12e-bf9b9986d4bc",
+      "hash": "#/AD15?id=d354c51f-c9c8-42d8-b100-48b927eb6ab6",
       "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD15.png",
       "diagnostics": {
         "bad": [],
@@ -246,7 +246,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 718
+        "chars": 498
       },
       "console": []
     },
@@ -262,7 +262,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 591
+        "chars": 371
       },
       "console": []
     },
@@ -278,14 +278,14 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 401
+        "chars": 181
       },
       "console": []
     },
     {
       "code": "AD18",
       "role": "admin",
-      "hash": "#/AD18?id=8e241e41-aa0c-48ee-a1ee-ccc46e299d0e",
+      "hash": "#/AD18?id=a90817a5-1f18-48e5-9340-4871cd2c9927",
       "screenshot": "..\\docs\\evidence\\screenshots\\light-en\\AD18.png",
       "diagnostics": {
         "bad": [],
@@ -294,7 +294,7 @@
           "frame": 0
         },
         "hasContent": true,
-        "chars": 604
+        "chars": 384
       },
       "console": []
     }
