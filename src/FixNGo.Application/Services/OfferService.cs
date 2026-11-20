@@ -24,7 +24,7 @@ public sealed class OfferService(
         var providers = await (from p in db.ProviderProfiles
                                join u in db.Users on p.UserId equals u.Id
                                where u.Role == role && p.IsOnline && u.Status == UserStatus.Active
-                                     && u.KycStatus == KycStatus.Approved && p.Latitude != null && p.Longitude != null
+                                     && u.KycStatus == KycStatus.Approved
                                select new { p, u }).ToListAsync(ct);
 
         var providerIds = providers.Select(x => x.p.UserId).ToList();
@@ -40,19 +40,29 @@ public sealed class OfferService(
                 })
                 .ToDictionaryAsync(x => x.ProviderId, x => x.RecommendPct, ct);
 
-        var candidates = new List<CandidateScore>();
+        var maxRadiusKm = Math.Max(r.RadiusKm * 4.0, s.SearchRadiusKm * 4.0);
+        var nearbyCandidates = new List<CandidateScore>();
+        var extendedCandidates = new List<CandidateScore>();
         var baseTotal = r.EstimateMinor ?? (r.Kind == RequestKind.Tow
             ? Pricing.TowTotalMinor(r.DistanceKm, s) : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s));
         foreach (var x in providers)
         {
-            var rawRoad = Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, x.p.Latitude!.Value, x.p.Longitude!.Value);
-            if (rawRoad > s.SearchRadiusKm * 4) continue;
+            var rawLat = x.p.Latitude ?? x.u.Latitude ?? 30.0444;
+            var rawLon = x.p.Longitude ?? x.u.Longitude ?? 31.2357;
+            var (pLat, pLon) = Geo.InferEgyptianCoordinates(x.p.CoverageArea ?? x.u.AreaLabel, rawLat, rawLon);
+            var rawRoad = Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, pLat, pLon);
             var road = Math.Max(0.5, Math.Round(rawRoad, 1));
-            var approachExtra = road > 2.0 ? (long)(Math.Round((road - 2.0) * 1.2) * 500L) : 0L;
+            var cappedApproachKm = Math.Min(road, 25.0);
+            var approachExtra = cappedApproachKm > 2.0 ? (long)(Math.Round((cappedApproachKm - 2.0) * 1.2) * 500L) : 0L;
             var candPrice = baseTotal + approachExtra;
             var effectiveRating = x.p.RatingCount > 0 ? x.p.Rating : 0m;
-            candidates.Add(new CandidateScore(x.p.UserId, road, Geo.EtaMinutes(road), effectiveRating, candPrice));
+            var scoreItem = new CandidateScore(x.p.UserId, road, Geo.EtaMinutes(road), effectiveRating, candPrice);
+            if (rawRoad <= maxRadiusKm) nearbyCandidates.Add(scoreItem);
+            else extendedCandidates.Add(scoreItem);
         }
+        var candidates = nearbyCandidates.Count >= 3
+            ? nearbyCandidates
+            : nearbyCandidates.Concat(extendedCandidates.OrderBy(c => c.DistanceKm).Take(12)).ToList();
         var ranked = Matching.Rank(candidates, sort);
         var result = new List<CandidateDto>();
         foreach (var c in ranked)
@@ -81,16 +91,16 @@ public sealed class OfferService(
         if (provider.Role != expected)
             throw new DomainException("offer.wrong_role", "Provider does not match the request type.");
         var existing = await db.Offers.FirstOrDefaultAsync(o => o.RequestId == requestId && o.ProviderId == req.ProviderId, ct);
-        if (existing is not null && existing.Status == OfferStatus.Pending && existing.ExpiresAt > clock.UtcNow)
-            throw new DomainException("offer.already_sent", "An offer is already pending for this provider.");
 
         var (s, _) = await settings.CurrentAsync(ct);
         var profile = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == req.ProviderId, ct);
-        var rawDistance = profile?.Latitude is not null
-            ? Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, profile.Latitude!.Value, profile.Longitude!.Value)
+        var rawLat = profile?.Latitude ?? provider.Latitude;
+        var rawLon = profile?.Longitude ?? provider.Longitude;
+        var rawDistance = rawLat is not null && rawLon is not null
+            ? Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, rawLat.Value, rawLon.Value)
             : r.DistanceKm;
         var distance = Math.Max(0.5, Math.Round(rawDistance, 1));
-        var seconds = r.Priority == RequestPriority.P0 ? s.P0TimeoutSeconds : s.OfferTimeoutSeconds;
+        var seconds = Math.Max(r.Priority == RequestPriority.P0 ? s.P0TimeoutSeconds : s.OfferTimeoutSeconds, 300);
         Offer offer;
         if (existing is not null)
         {
@@ -155,6 +165,12 @@ public sealed class OfferService(
             throw new DomainException("offer.request_already_assigned", "Another provider was assigned first.");
         }
 
+        var siblingProviders = await db.Offers
+            .Where(o => o.RequestId == r.Id && o.Id != offerId && o.Status == OfferStatus.Pending)
+            .Select(o => o.ProviderId)
+            .Distinct()
+            .ToListAsync(ct);
+
         // Withdraw all sibling offers for the same request.
         await db.Offers.Where(o => o.RequestId == r.Id && o.Id != offerId && o.Status == OfferStatus.Pending)
             .ExecuteUpdateAsync(set => set.SetProperty(o => o.Status, OfferStatus.Withdrawn), ct);
@@ -165,6 +181,9 @@ public sealed class OfferService(
         offer.Status = OfferStatus.Accepted;
         await notifier.NotifyUserAsync(r.CustomerId, NotificationType.RequestAccepted, "Provider assigned",
             "A provider accepted your request.", $"request:{r.Id}", ct);
+        await notifier.BroadcastUserEventAsync(r.CustomerId, "offer.accepted", new { requestId = r.Id, providerId }, ct);
+        foreach (var sibId in siblingProviders)
+            await notifier.BroadcastUserEventAsync(sibId, "request.updated", new { requestId = r.Id, status = nameof(RequestStatus.Accepted) }, ct);
         return Mappings.Offer(offer);
     }
 
@@ -181,17 +200,107 @@ public sealed class OfferService(
         if (updated == 0) throw new DomainException("offer.no_longer_available", "Offer already handled.");
         offer.Status = OfferStatus.Declined;
         await db.SaveChangesAsync(ct);
+        var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == offer.RequestId, ct);
+        if (r is not null)
+            await notifier.BroadcastUserEventAsync(r.CustomerId, "request.updated", new { requestId = r.Id, offerId = offer.Id }, ct);
         return Mappings.Offer(offer);
     }
 
     public async Task<IReadOnlyList<OfferDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default)
     {
+        // When an approved provider is Online, dynamically materialize/refresh offers for open recent requests
+        // matching their role (even if they went online AFTER the customer created the request).
+        var caller = await (from u in db.Users
+                            join p in db.ProviderProfiles on u.Id equals p.UserId
+                            where u.Id == providerId
+                            select new { u, p }).FirstOrDefaultAsync(ct);
+        if (caller is not null
+            && caller.p.IsOnline
+            && caller.u.Status == UserStatus.Active
+            && caller.u.KycStatus == KycStatus.Approved
+            && caller.u.Role is Role.Mechanic or Role.TowCaptain)
+        {
+            var expectedKind = caller.u.Role == Role.TowCaptain ? RequestKind.Tow : RequestKind.Mechanic;
+            var recentCutoff = clock.UtcNow.AddHours(-12);
+            var openRequests = await db.ServiceRequests
+                .Where(r => r.Kind == expectedKind
+                            && r.AssignedProviderId == null
+                            && (r.Status == RequestStatus.Searching || r.Status == RequestStatus.Offered)
+                            && r.CreatedAt >= recentCutoff)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(10)
+                .ToListAsync(ct);
+
+            if (openRequests.Count > 0)
+            {
+                var (s, _) = await settings.CurrentAsync(ct);
+                var rawLat = caller.p.Latitude ?? caller.u.Latitude ?? 30.0444;
+                var rawLon = caller.p.Longitude ?? caller.u.Longitude ?? 31.2357;
+                var (provLat, provLon) = Geo.InferEgyptianCoordinates(caller.p.CoverageArea ?? caller.u.AreaLabel, rawLat, rawLon);
+                var openIds = openRequests.Select(x => x.Id).ToList();
+                var existingByReq = await db.Offers
+                    .Where(o => o.ProviderId == providerId && openIds.Contains(o.RequestId))
+                    .ToDictionaryAsync(o => o.RequestId, ct);
+
+                var changed = false;
+                foreach (var openReq in openRequests)
+                {
+                    var road = Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(openReq.PickupLatitude, openReq.PickupLongitude, provLat, provLon), 1));
+                    var ttl = Math.Max(openReq.Priority == RequestPriority.P0 ? s.P0TimeoutSeconds : s.OfferTimeoutSeconds, 300);
+                    var price = openReq.EstimateMinor ?? (openReq.Kind == RequestKind.Tow
+                        ? Pricing.TowTotalMinor(openReq.DistanceKm, s)
+                        : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s));
+
+                    if (!existingByReq.TryGetValue(openReq.Id, out var existingOffer))
+                    {
+                        db.Offers.Add(new Offer
+                        {
+                            RequestId = openReq.Id,
+                            ProviderId = providerId,
+                            Status = OfferStatus.Pending,
+                            ExpiresAt = clock.UtcNow.AddSeconds(ttl),
+                            PriceMinor = price,
+                            DistanceKm = road,
+                            EtaMinutes = Geo.EtaMinutes(road),
+                            IsP0 = openReq.Priority == RequestPriority.P0
+                        });
+                        changed = true;
+                    }
+                    else if (existingOffer.Status == OfferStatus.Expired)
+                    {
+                        existingOffer.Status = OfferStatus.Pending;
+                        existingOffer.ExpiresAt = clock.UtcNow.AddSeconds(ttl);
+                        existingOffer.PriceMinor = price;
+                        existingOffer.DistanceKm = road;
+                        existingOffer.EtaMinutes = Geo.EtaMinutes(road);
+                        changed = true;
+                    }
+                }
+                if (changed)
+                {
+                    try { await db.SaveChangesAsync(ct); }
+                    catch (DbUpdateException) { /* concurrent materialization race is harmless */ }
+                }
+            }
+        }
+
         var list = await db.Offers
             .Include(o => o.Request).ThenInclude(r => r.Customer)
             .Include(o => o.Request).ThenInclude(r => r.Vehicle)
-            .Where(o => o.ProviderId == providerId && o.Status == OfferStatus.Pending && o.ExpiresAt > clock.UtcNow)
-            .OrderBy(o => o.ExpiresAt).ToListAsync(ct);
-        return list.Select(o =>
+            .Where(o => o.ProviderId == providerId
+                        && o.Status == OfferStatus.Pending
+                        && o.ExpiresAt > clock.UtcNow
+                        && (o.Request == null || (o.Request.AssignedProviderId == null
+                            && o.Request.Status != RequestStatus.Cancelled
+                            && o.Request.Status != RequestStatus.Completed)))
+            .ToListAsync(ct);
+
+        var ordered = list
+            .OrderByDescending(o => o.Request?.CreatedAt ?? o.CreatedAt)
+            .ThenBy(o => o.DistanceKm)
+            .ToList();
+
+        return ordered.Select(o =>
         {
             var dto = Mappings.Offer(o);
             var req = o.Request;

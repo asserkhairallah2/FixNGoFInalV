@@ -49,4 +49,6 @@ public interface INotifier
     Task NotifyUserAsync(Guid userId, NotificationType type, string title, string body, string? deepLink, CancellationToken ct = default);
     Task PushAsync(Guid userId, string title, string body, string? deepLink, CancellationToken ct = default);
     Task NotifyLocationAsync(Guid userId, Guid? requestId, double latitude, double longitude, CancellationToken ct = default) => Task.CompletedTask;
+    Task BroadcastRoleAsync(Role role, string eventName, object payload, CancellationToken ct = default) => Task.CompletedTask;
+    Task BroadcastUserEventAsync(Guid userId, string eventName, object payload, CancellationToken ct = default) => Task.CompletedTask;
 }

@@ -6,7 +6,7 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "d1e0d2b7-01d4-4234-94af-2aee053b89e9",
+      "id": "426e0aae-32ac-4b2f-9680-642c2c54ad35",
       "fullName": "Gate Two Administrator",
       "email": "admin@gate2.test",
       "phone": "+201000000001",
@@ -28,7 +28,7 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "6cda983a-b831-47d1-8f91-258973265132",
+      "id": "8fa79f05-720e-498b-989e-b7d82dce5b7f",
       "fullName": "Gate Two CarOwner",
       "email": "owner@gate2.test",
       "phone": "+201000000003",
@@ -50,7 +50,7 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "d97f2488-7116-4fbc-9f36-11baeb66ba8b",
+      "id": "36efcd51-6045-4474-98c6-8313ab43458d",
       "fullName": "Gate Two Mechanic",
       "email": "mechanic@gate2.test",
       "phone": "+201000000004",
@@ -75,7 +75,7 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "efd78b51-9a65-4620-a12c-85ad53f36b54",
+      "id": "ba3445c0-f256-49ce-a89c-186e101d94a2",
       "fullName": "Gate Two TowCaptain",
       "email": "captain@gate2.test",
       "phone": "+201000000005",
@@ -86,7 +86,9 @@
       "theme": "light",
       "twoFactorEnabled": false,
       "isSuperAdmin": false,
-      "otpOnLogin": false
+      "otpOnLogin": false,
+      "latitude": 30.0444,
+      "longitude": 31.2357
     },
     "hash": "#/T01"
   },
@@ -97,7 +99,7 @@
     "status": "PASS",
     "console": [],
     "me": {
-      "id": "581fa5fa-99d6-4a25-9616-457744f91ce0",
+      "id": "edb04451-6513-45eb-a2bf-557d8b1c7644",
       "fullName": "Gate Two ServiceCenter",
       "email": "center@gate2.test",
       "phone": "+201000000006",

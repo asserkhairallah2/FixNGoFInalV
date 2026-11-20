@@ -1060,3 +1060,75 @@ test('F16 iPhone frame, touch-dot cursor, drag-scroll (including on input fields
     await context.close();
   }
 });
+
+test('F17 two-browser live dispatch: Customer creates Mechanic request -> Offline Mechanic logs in & goes Online -> sees request immediately, accepts -> Customer C09 auto-transitions to C12 Live Tracking', async ({ browser }) => {
+  const ownerCtx = await browser.newContext();
+  const ownerPage = await ownerCtx.newPage();
+  const mechCtx = await browser.newContext();
+  const mechPage = await mechCtx.newPage();
+  const ownerLogs = attachConsoleWatch(ownerPage);
+  const mechLogs = attachConsoleWatch(mechPage);
+  try {
+    // 1. Ensure Mechanic starts OFFLINE before Customer creates the request
+    const mechAuth = await apiLogin('mechanic');
+    ok(await api('/providers/online', {
+      method: 'POST',
+      token: mechAuth.token,
+      body: { isOnline: false, latitude: 30.0561, longitude: 31.3301 }
+    }), 'set mechanic offline before test');
+
+    // 2. Browser 1 (Customer): create a Mechanic request via UI (C26 -> C08 -> C09) WITHOUT picking a specific mechanic
+    await loginUI(ownerPage, 'owner');
+    const origin = await ownerPage.evaluate(() => location.origin);
+    await ownerPage.evaluate(() => sessionStorage.removeItem('fixngo.flow'));
+    await ownerPage.goto(`${origin}/#/C26`);
+    const uniqueNote = `Live Mechanic Dispatch ${Date.now()}`;
+    await ownerPage.locator('[data-testid="field-pickupAddress"]').fill('Nasr City, Abbas El Akkad');
+    await ownerPage.locator('[data-testid="field-problem"]').fill(uniqueNote);
+    await ownerPage.locator('[data-testid="screen-primary"]').click();
+    await ownerPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C08'), null, { timeout: 15_000 });
+    await ownerPage.locator('[data-testid="screen-primary"]').click();
+    await ownerPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C09'), null, { timeout: 20_000 });
+
+    // 3. Browser 2 (Mechanic): log in on a separate browser, click Go Online on M01 -> immediately see the incoming request on M02!
+    await loginUI(mechPage, 'mechanic');
+    await mechPage.locator('[data-testid="screen-primary"]').click();
+    await mechPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/M02'), null, { timeout: 15_000 });
+    const liveCard = mechPage.locator('[data-testid="live-offer-card"]');
+    await expect(liveCard).toBeVisible({ timeout: 12_000 });
+    await expect(liveCard).toContainText(/Nasr City/i);
+
+    // 4. Mechanic clicks the incoming request card (M03) and clicks Accept -> lands on M04
+    await liveCard.click();
+    await mechPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/M03'), null, { timeout: 15_000 });
+    await mechPage.locator('[data-testid="screen-primary"]').click();
+    await mechPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/M04'), null, { timeout: 15_000 });
+
+    // 5. Browser 1 (Customer sitting on C09): MUST automatically transition to C12 (Mechanic Live Tracking) without manual reload!
+    await ownerPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C12'), null, { timeout: 12_000 });
+    await expect(ownerPage.locator('[data-testid="tracking-provider-name"]')).toContainText('Gate Two Mechanic', { timeout: 10_000 });
+
+    // Cleanup: cancel the active test request so subsequent runs stay clean
+    const ownerAuth = await apiLogin('owner');
+    const reqId = await ownerPage.evaluate(() => window.__fixngoRoute?.params?.id || '');
+    if (reqId) {
+      await api(`/requests/${reqId}/cancel`, {
+        method: 'POST',
+        token: ownerAuth.token,
+        body: { reasonKey: 'resolved', note: 'E2E cleanup' }
+      });
+    }
+
+    const cleanOwner = ownerLogs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    const cleanMech = mechLogs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(cleanOwner).toEqual([]);
+    expect(cleanMech).toEqual([]);
+    recordFlow('F17 two-browser live Customer->Mechanic dispatch & C09->C12 auto-transition', 'PASS', { reqId });
+  } catch (err) {
+    recordFlow('F17 two-browser live Customer->Mechanic dispatch & C09->C12 auto-transition', 'FAIL', { error: err.message });
+    throw err;
+  } finally {
+    await ownerCtx.close();
+    await mechCtx.close();
+  }
+});

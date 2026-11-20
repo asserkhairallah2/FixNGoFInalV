@@ -155,6 +155,8 @@ public sealed class PaymentService(
                 RecordedMinor = inv.TotalMinor, CustomerConfirmedMinor = 0, ProviderCollectedMinor = 0
             });
             await db.SaveChangesAsync(ct);
+            await NotifyInvoiceCounterpartAsync(inv, NotificationType.CashConfirmed, "Cash payment selected",
+                $"Customer selected cash settlement for {inv.Number}.", ct);
             return Mappings.Payment(payment);
         }
 
@@ -170,6 +172,8 @@ public sealed class PaymentService(
             await CreditProviderAsync(inv, payment, ct);
             await notifier.NotifyUserAsync(userId, NotificationType.PaymentVerified, "Payment successful",
                 $"Invoice {inv.Number} was paid.", $"invoice:{inv.Id}", ct);
+            await NotifyInvoiceCounterpartAsync(inv, NotificationType.PaymentVerified, "Payment received",
+                $"Invoice {inv.Number} ({inv.TotalMinor / 100m:0.00} EGP) was settled.", ct);
         }
         else
         {
@@ -234,7 +238,29 @@ public sealed class PaymentService(
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(customerId, NotificationType.CashConfirmed, "Cash confirmed",
             $"You confirmed cash payment for {inv.Number}.", $"invoice:{inv.Id}", ct);
+        await NotifyInvoiceCounterpartAsync(inv, NotificationType.CashConfirmed, "Cash payment confirmed",
+            $"Customer confirmed cash payment for {inv.Number}.", ct);
         return Mappings.Invoice(inv);
+    }
+
+    private async Task NotifyInvoiceCounterpartAsync(Invoice inv, NotificationType type, string title, string body, CancellationToken ct)
+    {
+        if (inv.RequestId is not null)
+        {
+            var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == inv.RequestId, ct);
+            if (r?.AssignedProviderId is not null)
+                await notifier.NotifyUserAsync(r.AssignedProviderId.Value, type, title, body, $"request:{r.Id}", ct);
+        }
+        else if (inv.BookingId is not null)
+        {
+            var b = await db.Bookings.FirstOrDefaultAsync(x => x.Id == inv.BookingId, ct);
+            if (b is not null)
+            {
+                var c = await db.ServiceCenters.FirstOrDefaultAsync(x => x.Id == b.CenterId, ct);
+                if (c is not null)
+                    await notifier.NotifyUserAsync(c.OwnerId, type, title, body, $"booking:{b.Id}", ct);
+            }
+        }
     }
 
     // ---- Wallet ----

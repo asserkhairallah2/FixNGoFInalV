@@ -22,9 +22,17 @@ public sealed class AppHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.UserIdentifier;
+        var userId = Context.User?.FindFirst("sub")?.Value
+            ?? Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? Context.UserIdentifier;
         if (!string.IsNullOrEmpty(userId))
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
+
+        var role = Context.User?.FindFirst("role")?.Value
+            ?? Context.User?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        if (!string.IsNullOrEmpty(role))
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"role:{role}");
+
         await base.OnConnectedAsync();
     }
 }

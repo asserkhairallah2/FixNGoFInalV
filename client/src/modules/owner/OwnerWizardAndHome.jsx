@@ -1591,10 +1591,17 @@ export function C08() {
 // ---------------------------------------------------------------------------
 export function C09({ params }) {
   const { t } = usePrefs();
-  const { go, back } = useNav();
+  const { go, replace, back } = useNav();
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
   const { data: candidates = [] } = useCandidates(reqId);
+
+  useEffect(() => {
+    if (!req?.id) return;
+    if (!['Searching', 'Offered', 'NoProviders', 'Cancelled'].includes(String(req.status || 'Searching'))) {
+      replace(req.kind === 'Mechanic' ? 'C12' : 'C11', { id: req.id });
+    }
+  }, [req?.id, req?.status, req?.kind, replace]);
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
@@ -1673,7 +1680,7 @@ export function C28({ params }) {
 // ---------------------------------------------------------------------------
 function OffersListScreen({ isMechanic = false, params }) {
   const { t, isAr } = usePrefs();
-  const { go, back } = useNav();
+  const { go, replace, back } = useNav();
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
   const { data: candidates = [], isLoading } = useCandidates(reqId);
@@ -1682,6 +1689,13 @@ function OffersListScreen({ isMechanic = false, params }) {
   const [reviewCand, setReviewCand] = useState(null);
   const { data: candReviews = [] } = useReviews('provider', reviewCand?.providerId);
   const [err, setErr] = useState('');
+
+  useEffect(() => {
+    if (!req?.id) return;
+    if (!['Searching', 'Offered', 'NoProviders', 'Cancelled'].includes(String(req.status || 'Searching'))) {
+      replace(isMechanic || req.kind === 'Mechanic' ? 'C12' : 'C11', { id: req.id });
+    }
+  }, [req?.id, req?.status, req?.kind, isMechanic, replace]);
 
   const sorted = useMemo(() => {
     const copy = [...candidates];

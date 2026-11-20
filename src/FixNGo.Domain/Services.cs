@@ -66,6 +66,57 @@ public static class Geo
             .Select(i => (lat1 + (lat2 - lat1) * i / (n - 1.0), lon1 + (lon2 - lon1) * i / (n - 1.0)))
             .ToList();
     }
+
+    private static readonly (string[] Keywords, double Lat, double Lon)[] EgyptianDistricts =
+    [
+        (["new cairo", "5th settlement", "fifth settlement", "90th", "التجمع", "القاهرة الجديدة", "شارع التسعين"], 30.0276, 31.4913),
+        (["rehab", "الرحاب"], 30.0595, 31.4950),
+        (["madinaty", "مدينتي"], 30.0826, 31.6295),
+        (["nasr city", "مدينة نصر", "عباس العقاد", "مكرم عبيد"], 30.0561, 31.3301),
+        (["heliopolis", "korba", "مصر الجديدة", "الكوربة", "روكسي"], 30.0909, 31.3227),
+        (["maadi", "المعادي", "زهراء المعادي"], 29.9602, 31.2569),
+        (["mokattam", "المقطم"], 30.0131, 31.2859),
+        (["zamalek", "الزمالك"], 30.0609, 31.2197),
+        (["downtown", "tahrir", "ramses", "وسط البلد", "التحرير", "رمسيس"], 30.0444, 31.2357),
+        (["shubra", "شبرا"], 30.0778, 31.2456),
+        (["dokki", "الدقي"], 30.0385, 31.2122),
+        (["mohandessin", "mohandeseen", "المهندسين"], 30.0540, 31.2019),
+        (["agouza", "العجوزة"], 30.0600, 31.2089),
+        (["haram", "faisal", "giza", "الهرم", "فيصل", "الجيزة"], 29.9943, 31.1605),
+        (["sheikh zayed", "zayed", "الشيخ زايد", "زايد"], 30.0381, 31.0124),
+        (["6th of october", "october", "أكتوبر", "السادس من أكتوبر", "6 اكتوبر"], 29.9723, 30.9401),
+        (["smouha", "سموحة"], 31.2156, 29.9420),
+        (["sidi gaber", "سيدي جابر"], 31.2240, 29.9424),
+        (["gleem", "stanley", "جليم", "ستانلي"], 31.2370, 29.9570),
+        (["miami", "sidi bishr", "ميامي", "سيدي بشر"], 31.2640, 29.9950),
+        (["alexandria", "alex", "الإسكندرية", "اسكندرية"], 31.2001, 29.9187),
+        (["mansoura", "المنصورة"], 31.0409, 31.3785),
+        (["tanta", "طنطا"], 30.7865, 31.0004)
+    ];
+
+    /// <summary>Resolves Egyptian neighborhood/city coordinates from free-text address when default coordinates were left unchanged.</summary>
+    public static (double Lat, double Lon) InferEgyptianCoordinates(
+        string? address,
+        double currentLat,
+        double currentLon,
+        double defaultLat = 30.0444,
+        double defaultLon = 31.2357)
+    {
+        if (string.IsNullOrWhiteSpace(address)) return (currentLat, currentLon);
+        if (Math.Abs(currentLat - defaultLat) > 0.0006 || Math.Abs(currentLon - defaultLon) > 0.0006)
+            return (currentLat, currentLon);
+
+        var norm = address.Trim().ToLowerInvariant();
+        foreach (var (keywords, lat, lon) in EgyptianDistricts)
+        {
+            foreach (var kw in keywords)
+            {
+                if (norm.Contains(kw, StringComparison.OrdinalIgnoreCase))
+                    return (lat, lon);
+            }
+        }
+        return (currentLat, currentLon);
+    }
 }
 
 /// <summary>Ranking of nearby candidates: 0.4·distance + 0.3·ETA + 0.2·(5−rating) + 0.1·price.</summary>

@@ -9,10 +9,9 @@ import {
   getScreen, homeForUser
 } from './app/stores.jsx';
 import './app/screens.jsx';
-import { get } from './api/http.js';
+import { get, post, ensureFileToken, clearFileToken } from './api/http.js';
 import { connectSignalR, disconnectSignalR } from './api/signalr.js';
 import { useLiveSync } from './api/live.js';
-import { ensureFileToken, clearFileToken } from './api/http.js';
 import { renderView } from './ui/renderers.jsx';
 import { useColors, PrimaryButton, ShieldLogo } from './ui/kit.jsx';
 import SimulatorDock from './sim/SimulatorDock.jsx';
@@ -485,6 +484,23 @@ function AuthenticatedApp({ user }) {
       disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked);
     };
   }, [user.id, nav.replace]);
+
+  useEffect(() => {
+    if (user.role !== 'Mechanic' && user.role !== 'TowCaptain') return undefined;
+    const hb = setInterval(() => {
+      get('/providers/me')
+        .then((prof) => {
+          if (prof?.isOnline) {
+            post('/providers/heartbeat', {
+              latitude: prof.latitude ?? null,
+              longitude: prof.longitude ?? null
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }, 25_000);
+    return () => clearInterval(hb);
+  }, [user.id, user.role]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;

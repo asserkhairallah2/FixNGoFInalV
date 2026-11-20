@@ -86,6 +86,8 @@ public sealed class ChatService(IAppDbContext db, IClock clock, INotifier notifi
         };
         db.ChatMessages.Add(m);
         await db.SaveChangesAsync(ct);
+        var other = t.CustomerId == userId ? t.CounterpartId : t.CustomerId;
+        await notifier.NotifyUserAsync(other, NotificationType.ChatMessage, "Location shared", "Shared live pin location.", $"chat:{t.Id}", ct);
         return Mappings.ChatMessage(m);
     }
 

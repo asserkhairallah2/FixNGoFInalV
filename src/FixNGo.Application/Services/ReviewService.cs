@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FixNGo.Application.Services;
 
 /// <summary>Reviews with one-per-completed-job rule and rolling provider/center rating aggregates.</summary>
-public sealed class ReviewService(IAppDbContext db, IClock clock) : IReviewService
+public sealed class ReviewService(IAppDbContext db, IClock clock, INotifier? notifier = null) : IReviewService
 {
     public async Task<ReviewDto> CreateAsync(Guid authorId, ReviewTargetType target, Guid targetId,
         Guid? requestId, Guid? bookingId, CreateReviewRequest req, CancellationToken ct = default)
@@ -47,6 +47,19 @@ public sealed class ReviewService(IAppDbContext db, IClock clock) : IReviewServi
         await db.SaveChangesAsync(ct);
         await RefreshAggregateAsync(target, targetId, ct);
         await db.SaveChangesAsync(ct);
+        if (notifier is not null)
+        {
+            if (target == ReviewTargetType.Provider)
+            {
+                await notifier.BroadcastUserEventAsync(targetId, "request.updated", new { reviewId = review.Id, stars = review.Stars }, ct);
+            }
+            else if (target == ReviewTargetType.Center)
+            {
+                var c = await db.ServiceCenters.FirstOrDefaultAsync(x => x.Id == targetId, ct);
+                if (c is not null)
+                    await notifier.BroadcastUserEventAsync(c.OwnerId, "request.updated", new { reviewId = review.Id, stars = review.Stars }, ct);
+            }
+        }
         var authorName = await db.Users.Where(u => u.Id == authorId).Select(u => u.FullName).FirstOrDefaultAsync(ct);
         return Mappings.Review(review, authorName, null);
     }

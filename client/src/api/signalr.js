@@ -5,6 +5,7 @@ import * as signalR from '@microsoft/signalr';
 import { hasToken } from './http.js';
 
 let connection = null;
+let connectedToken = null;
 const handlers = new Map();
 
 export const SERVER_EVENTS = [
@@ -24,21 +25,35 @@ function emit(event, payload) {
 }
 
 export async function connectSignalR() {
-  if (!hasToken() || connection) return connection;
-  connection = new signalR.HubConnectionBuilder()
+  const currentToken = sessionStorage.getItem('fixngo.access') || '';
+  if (!hasToken() || !currentToken) return null;
+  if (connection && connectedToken === currentToken) return connection;
+  if (connection) {
+    try { await connection.stop(); } catch { /* ignore */ }
+    connection = null;
+    connectedToken = null;
+  }
+  const activeConn = new signalR.HubConnectionBuilder()
     .withUrl('/hubs/app', { accessTokenFactory: () => sessionStorage.getItem('fixngo.access') || '' })
     .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
     .configureLogging(signalR.LogLevel.Warning)
     .build();
+  connection = activeConn;
+  connectedToken = currentToken;
 
-  SERVER_EVENTS.forEach((e) => connection.on(e, (payload) => emit(e, payload)));
-  connection.onreconnected(() => emit('connection.reconnected', {}));
-  connection.onclose(() => emit('connection.closed', {}));
-  try { await connection.start(); emit('connection.connected', {}); }
+  SERVER_EVENTS.forEach((e) => activeConn.on(e, (payload) => emit(e, payload)));
+  activeConn.onreconnected(() => emit('connection.reconnected', {}));
+  activeConn.onclose(() => emit('connection.closed', {}));
+  try { await activeConn.start(); emit('connection.connected', {}); }
   catch { /* offline banner handles this; reconnect will retry */ }
-  return connection;
+  return activeConn;
 }
 
 export async function disconnectSignalR() {
-  if (connection) { try { await connection.stop(); } catch { /* ignore */ } connection = null; }
+  if (connection) {
+    const prev = connection;
+    connection = null;
+    connectedToken = null;
+    try { await prev.stop(); } catch { /* ignore */ }
+  }
 }

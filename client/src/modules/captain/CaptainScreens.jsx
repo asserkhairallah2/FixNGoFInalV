@@ -111,9 +111,9 @@ function AvatarBadge({ name, className = 'w-10 h-10' }) {
 
 function formatCountdown(expiresAt) {
   const exp = toUtcDate(expiresAt);
-  if (!exp) return '00:30';
+  if (!exp) return '05:00';
   const rawDiff = Math.max(0, Math.floor((exp.getTime() - Date.now()) / 1000));
-  const diffSec = rawDiff > 300 ? 30 : rawDiff;
+  const diffSec = Math.min(rawDiff, 600);
   const mins = String(Math.floor(diffSec / 60)).padStart(2, '0');
   const secs = String(diffSec % 60).padStart(2, '0');
   return `${mins}:${secs}`;
@@ -307,6 +307,29 @@ export function T01Screen() {
 
       {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
 
+      {(provider?.kycStatus || user?.kycStatus) && (provider?.kycStatus || user?.kycStatus) !== 'Approved' && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-amber-600 dark:text-amber-400">
+              {isAr ? 'بانتظار اعتماد التوثيق' : 'Verification required to go on duty'}
+            </span>
+            <StatusBadge status={provider?.kycStatus || user?.kycStatus} />
+          </div>
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {isAr
+              ? 'يجب اعتماد أوراق الونش من الإدارة قبل استقبال طلبات السحب الحية.'
+              : 'Admin verification approval is required before receiving live tow requests.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => nav.go('A11')}
+            className="text-[11px] font-bold text-[#E51C23] underline"
+          >
+            {isAr ? 'مراجعة حالة التوثيق ←' : 'Check verification status →'}
+          </button>
+        </div>
+      )}
+
       <PrimaryButton onClick={handleGoOnline} disabled={goOnline.isPending} testId="screen-primary">
         {isAr ? 'بدء الخدمة (متاح الآن)' : 'Go Online'}
       </PrimaryButton>
@@ -328,6 +351,12 @@ export function T02Screen() {
   const earningsQ = useEarnings();
   const goOnline = useGoOnline();
   const [error, setError] = useState('');
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const provider = providerQ.data;
   const earnings = earningsQ.data;
@@ -342,7 +371,9 @@ export function T02Screen() {
   const completedCount = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
   const availableMinor = earnings?.availableMinor ?? 0;
 
-  const liveOffer = offers.find((o) => o.status === 'Pending') || offers[0] || null;
+  const pendingOffers = offers.filter((o) => !o.status || o.status === 'Pending');
+  const liveOffer = pendingOffers[0] || offers[0] || null;
+  const extraOffers = pendingOffers.slice(1, 5);
   const activeTrip = requests.find(
     (r) =>
       r.assignedProviderId &&
@@ -415,26 +446,52 @@ export function T02Screen() {
       </div>
 
       {liveOffer ? (
-        <div
-          onClick={() => nav.go('T03', { id: liveOffer.id })}
-          className="p-3.5 rounded-2xl border border-[#E51C23]/40 bg-[#E51C23]/10 space-y-1.5 cursor-pointer text-xs"
-          data-testid="live-offer-card"
-        >
-          <div className="flex justify-between text-[10px] font-bold text-[#E51C23]">
-            <span>{isAr ? 'طلب سحب جديد' : 'New tow request'}</span>
-            <span>{formatCountdown(liveOffer.expiresAt)}</span>
+        <>
+          <div
+            onClick={() => nav.go('T03', { id: liveOffer.id })}
+            className="p-3.5 rounded-2xl border border-[#E51C23]/40 bg-[#E51C23]/10 space-y-1.5 cursor-pointer text-xs"
+            data-testid="live-offer-card"
+          >
+            <div className="flex justify-between text-[10px] font-bold text-[#E51C23]">
+              <span>{`${isAr ? 'طلب سحب جديد' : 'New tow request'}${liveOffer.requestCode ? ` · ${liveOffer.requestCode}` : ''}`}</span>
+              <span dir="ltr">{formatCountdown(liveOffer.expiresAt)}</span>
+            </div>
+            <p className={`font-bold ${colors.text}`}>
+              {[liveOffer.vehicleMake, liveOffer.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}
+            </p>
+            <p className={`text-[11px] ${colors.secondaryText}`}>
+              {`${liveOffer.pickupArea || '—'} → ${liveOffer.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')} · ${fmtOptionalDistance(liveOffer.tripDistanceKm || liveOffer.distanceKm, lang)}`}
+            </p>
+            <div className={`flex justify-between pt-1 border-t ${colors.border} font-extrabold`}>
+              <span className={colors.secondaryText}>{isAr ? 'عرض الرحلة' : 'Trip offer'}</span>
+              <span className="text-[#E51C23]">{fmtMoney(liveOffer.priceMinor, lang)} →</span>
+            </div>
           </div>
-          <p className={`font-bold ${colors.text}`}>
-            {[liveOffer.vehicleMake, liveOffer.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}
-          </p>
-          <p className={`text-[11px] ${colors.secondaryText}`}>
-            {`${liveOffer.pickupArea || '—'} → ${liveOffer.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')} · ${fmtOptionalDistance(liveOffer.tripDistanceKm || liveOffer.distanceKm, lang)}`}
-          </p>
-          <div className={`flex justify-between pt-1 border-t ${colors.border} font-extrabold`}>
-            <span className={colors.secondaryText}>{isAr ? 'عرض الرحلة' : 'Trip offer'}</span>
-            <span className="text-[#E51C23]">{fmtMoney(liveOffer.priceMinor, lang)} →</span>
-          </div>
-        </div>
+          {extraOffers.length > 0 && (
+            <div className="space-y-1.5">
+              <p className={`text-[11px] font-bold ${colors.secondaryText}`}>
+                {isAr ? `طلبات سحب أخرى (${extraOffers.length})` : `More open tow requests (${extraOffers.length})`}
+              </p>
+              {extraOffers.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => nav.go('T03', { id: item.id })}
+                  className={`p-3 rounded-2xl border border-[#E51C23]/30 ${colors.surface} flex items-center justify-between cursor-pointer text-xs`}
+                >
+                  <div>
+                    <p className={`font-bold ${colors.text}`}>
+                      {`${[item.vehicleMake, item.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}${item.requestCode ? ` · ${item.requestCode}` : ''}`}
+                    </p>
+                    <p className={`text-[11px] ${colors.secondaryText}`}>
+                      {`${item.pickupArea || '—'} · ${fmtOptionalDistance(item.distanceKm, lang)}`}
+                    </p>
+                  </div>
+                  <span className="font-extrabold text-[#E51C23] shrink-0">{fmtMoney(item.priceMinor, lang)} →</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       ) : activeTrip ? (
         <div
           onClick={() => nav.go(screenForRequestStatus(activeTrip.status), { id: activeTrip.id })}
@@ -454,7 +511,19 @@ export function T02Screen() {
             {isAr ? 'متابعة الرحلة النشطة ←' : 'Continue Active Trip →'}
           </span>
         </div>
-      ) : null}
+      ) : (
+        <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between text-xs`}>
+          <div>
+            <p className={`font-bold ${colors.text}`}>
+              {isAr ? 'بانتظار طلبات السحب القريبة مباشرة' : 'Listening live for nearby tow requests'}
+            </p>
+            <p className={`text-[11px] ${colors.secondaryText}`}>
+              {isAr ? 'تظهر أي طلبات سحب جديدة هنا تلقائياً فور إرسالها.' : 'New customer tow requests appear here automatically in real time.'}
+            </p>
+          </div>
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+        </div>
+      )}
 
       <MapView
         label={provider?.coverageArea || provider?.areaLabel || (isAr ? 'منطقة التغطية' : 'Dispatch coverage zone')}

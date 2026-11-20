@@ -29,4 +29,10 @@ public sealed class SignalRNotifier(IAppDbContext db, IHubContext<AppHub> hub) :
 
     public Task NotifyLocationAsync(Guid userId, Guid? requestId, double latitude, double longitude, CancellationToken ct = default) =>
         hub.Clients.Group($"user:{userId}").SendAsync("location.updated", new { requestId, latitude, longitude }, ct);
+
+    public Task BroadcastRoleAsync(Role role, string eventName, object payload, CancellationToken ct = default) =>
+        hub.Clients.Group($"role:{role}").SendAsync(eventName, payload, ct);
+
+    public Task BroadcastUserEventAsync(Guid userId, string eventName, object payload, CancellationToken ct = default) =>
+        hub.Clients.Group($"user:{userId}").SendAsync(eventName, payload, ct);
 }

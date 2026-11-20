@@ -66,19 +66,32 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
 
     public async Task<ProviderDto> SetOnlineAsync(Guid userId, OnlineRequest req, CancellationToken ct = default)
     {
-        var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == userId, ct)
-            ?? throw new DomainException("provider.profile_not_found", "Provider profile not found.");
-        if (req.IsOnline)
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == userId, ct)
+            ?? throw new DomainException("user.not_found", "User not found.");
+        var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == userId, ct);
+        if (p is null)
         {
-            var u = await db.Users.FirstAsync(x => x.Id == userId, ct);
-            if (u.KycStatus != KycStatus.Approved)
-                throw new DomainException("provider.kyc_required", "KYC must be approved before going online.");
+            p = new ProviderProfile { UserId = userId };
+            db.ProviderProfiles.Add(p);
+        }
+        if (req.IsOnline && u.KycStatus != KycStatus.Approved)
+        {
+            throw new DomainException("provider.kyc_required", "KYC must be approved before going online.");
         }
         p.IsOnline = req.IsOnline;
-        p.Latitude = req.Latitude ?? p.Latitude;
-        p.Longitude = req.Longitude ?? p.Longitude;
+        var baseLat = req.Latitude ?? p.Latitude ?? u.Latitude ?? 30.0444;
+        var baseLon = req.Longitude ?? p.Longitude ?? u.Longitude ?? 31.2357;
+        var (resolvedLat, resolvedLon) = Geo.InferEgyptianCoordinates(p.CoverageArea ?? u.AreaLabel, baseLat, baseLon);
+        p.Latitude = resolvedLat;
+        p.Longitude = resolvedLon;
+        u.Latitude ??= resolvedLat;
+        u.Longitude ??= resolvedLon;
         p.LastHeartbeatAt = clock.UtcNow;
         await db.SaveChangesAsync(ct);
+
+        await notifier.BroadcastRoleAsync(Role.CarOwner, "request.updated",
+            new { providerId = userId, role = u.Role.ToString(), isOnline = req.IsOnline }, ct);
+
         return await ProfileAsync(userId, ct);
     }
 
@@ -230,6 +243,8 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
             Status = DocumentStatus.Pending
         });
         await db.SaveChangesAsync(ct);
+        await NotifyAdminsAsync(NotificationType.NewKycApplication, "KYC document uploaded",
+            $"{u.FullName} uploaded {doc.DocumentType} for {app.Code}.", app.Id, ct);
         app.User = u;
         return MapKyc(app);
     }

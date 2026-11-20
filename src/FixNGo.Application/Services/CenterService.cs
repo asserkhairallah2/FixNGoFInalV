@@ -388,6 +388,13 @@ public sealed class CenterService(
         b.Status = StateMachines.Booking.Transition(b.Status, BookingStatus.Cancelled);
         b.CancelReason = req.Reason;
         await db.SaveChangesAsync(ct);
+        var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.Id == b.CenterId, ct);
+        if (center is not null && center.OwnerId != callerId)
+            await notifier.NotifyUserAsync(center.OwnerId, NotificationType.BookingCancelled, "Booking cancelled",
+                $"Booking {b.Code} was cancelled.", $"booking:{b.Id}", ct);
+        if (b.CustomerId != callerId)
+            await notifier.NotifyUserAsync(b.CustomerId, NotificationType.BookingCancelled, "Booking cancelled",
+                $"Booking {b.Code} was cancelled.", $"booking:{b.Id}", ct);
         return Mappings.Booking(b);
     }
 
@@ -404,6 +411,10 @@ public sealed class CenterService(
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(b.CustomerId, NotificationType.BookingRescheduled, "Booking rescheduled",
             $"Booking {b.Code} moved to {req.SlotStart:u}.", $"booking:{b.Id}", ct);
+        var center = await db.ServiceCenters.FirstOrDefaultAsync(c => c.Id == b.CenterId, ct);
+        if (center is not null)
+            await notifier.NotifyUserAsync(center.OwnerId, NotificationType.BookingRescheduled, "Booking rescheduled",
+                $"Booking {b.Code} was rescheduled by the customer.", $"booking:{b.Id}", ct);
         return Mappings.Booking(b);
     }
 

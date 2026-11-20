@@ -54,6 +54,7 @@ public sealed class TokenService(byte[] signingKey, string issuer, string audien
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
             new(JwtRegisteredClaimNames.Email, email),
             new(ClaimTypes.Role, role.ToString()),
             new("role", role.ToString()),

@@ -42,14 +42,14 @@ const activePoll = (ms) => (query) => {
   const s = query.state.data?.status;
   return s && TERMINAL.has(s) ? false : ms;
 };
-export const useRequests = () => q(k.requests, '/requests', { refetchInterval: 10_000 });
-// Live fallback: active requests refresh every 5 s even if the SignalR socket drops.
-export const useRequest = (id) => q(['requests', id], `/requests/${id}`, { enabled: !!id, refetchInterval: activePoll(5_000) });
-export const useTimeline = (id) => q(['requests', id, 'timeline'], `/requests/${id}/timeline`, { enabled: !!id });
-export const useCandidates = (id) => q(['requests', id, 'candidates'], `/requests/${id}/candidates`, { enabled: !!id });
-export const useRequestOffers = (id) => q(['requests', id, 'offers'], `/requests/${id}/offers`, { enabled: !!id });
-export const useQuotes = (id) => q(['requests', id, 'quotes'], `/requests/${id}/quotes`, { enabled: !!id });
-export const useOffers = () => q(k.offers, '/offers', { refetchInterval: 15_000 });
+export const useRequests = () => q(k.requests, '/requests', { refetchInterval: 5_000 });
+// Live fallback: active requests refresh every 3.5 s even if the SignalR socket drops.
+export const useRequest = (id) => q(['requests', id], `/requests/${id}`, { enabled: !!id, refetchInterval: activePoll(3_500) });
+export const useTimeline = (id) => q(['requests', id, 'timeline'], `/requests/${id}/timeline`, { enabled: !!id, refetchInterval: 5_000 });
+export const useCandidates = (id) => q(['requests', id, 'candidates'], `/requests/${id}/candidates`, { enabled: !!id, refetchInterval: 4_000 });
+export const useRequestOffers = (id) => q(['requests', id, 'offers'], `/requests/${id}/offers`, { enabled: !!id, refetchInterval: 4_000 });
+export const useQuotes = (id) => q(['requests', id, 'quotes'], `/requests/${id}/quotes`, { enabled: !!id, refetchInterval: 4_000 });
+export const useOffers = () => q(k.offers, '/offers', { refetchInterval: 4_000 });
 export function useEstimate() { return useMutation({ mutationFn: (b) => post('/requests/estimate', b) }); }
 export function useCreateRequest() {
   const c = useQueryClient();
@@ -68,11 +68,24 @@ export function useAdvanceStatus() {
 }
 export function useSelectProvider(id) {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (providerId) => post(`/requests/${id}/offers`, { providerId }), onSuccess: () => c.invalidateQueries({ queryKey: ['requests', id, 'candidates'] }) });
+  return useMutation({
+    mutationFn: (providerId) => post(`/requests/${id}/offers`, { providerId }),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: ['requests', id, 'candidates'] });
+      c.invalidateQueries({ queryKey: k.requests });
+    }
+  });
 }
 export function useAcceptOffer() {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (id) => post(`/offers/${id}/accept`, {}), onSuccess: () => c.invalidateQueries({ queryKey: k.requests }) });
+  return useMutation({
+    mutationFn: (id) => post(`/offers/${id}/accept`, {}),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: k.offers });
+      c.invalidateQueries({ queryKey: k.requests });
+      c.invalidateQueries({ queryKey: k.provider });
+    }
+  });
 }
 export function useDeclineOffer() {
   const c = useQueryClient();
@@ -80,15 +93,36 @@ export function useDeclineOffer() {
 }
 export function useCreateQuote(id) {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (b) => post(`/requests/${id}/quotes`, b), onSuccess: () => c.invalidateQueries({ queryKey: ['requests', id, 'quotes'] }) });
+  return useMutation({
+    mutationFn: (b) => post(`/requests/${id}/quotes`, b),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: ['requests', id, 'quotes'] });
+      c.invalidateQueries({ queryKey: ['requests', id] });
+      c.invalidateQueries({ queryKey: k.requests });
+    }
+  });
 }
 export function useApproveQuote(id) {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (quoteId) => post(`/requests/${id}/quotes/${quoteId}/approve`, {}), onSuccess: () => c.invalidateQueries({ queryKey: k.requests }) });
+  return useMutation({
+    mutationFn: (quoteId) => post(`/requests/${id}/quotes/${quoteId}/approve`, {}),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: ['requests', id, 'quotes'] });
+      c.invalidateQueries({ queryKey: ['requests', id] });
+      c.invalidateQueries({ queryKey: k.requests });
+    }
+  });
 }
 export function useDispute(id) {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (b) => post(`/requests/${id}/dispute`, b), onSuccess: () => c.invalidateQueries({ queryKey: k.requests }) });
+  return useMutation({
+    mutationFn: (b) => post(`/requests/${id}/dispute`, b),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: ['requests', id, 'quotes'] });
+      c.invalidateQueries({ queryKey: ['requests', id] });
+      c.invalidateQueries({ queryKey: k.requests });
+    }
+  });
 }
 
 // ---- Payments ----
@@ -129,12 +163,12 @@ export const useCenter = (id) => q(['centers', id], `/centers/${id}`, { enabled:
 export const useCenterServices = (id) => q(['centers', id, 'services'], `/centers/${id}/services`, { enabled: !!id });
 export const useAvailability = (id, serviceId, day) => q(['centers', id, 'availability', serviceId, day],
   `/centers/${id}/availability?serviceId=${serviceId}&day=${encodeURIComponent(day || '')}`, { enabled: !!id && !!serviceId && !!day });
-export const useBookings = () => q(k.bookings, '/centers/bookings');
-export const useBooking = (id) => q(['bookings', id], `/centers/bookings/${id}`, { enabled: !!id });
+export const useBookings = () => q(k.bookings, '/centers/bookings', { refetchInterval: 5_000 });
+export const useBooking = (id) => q(['bookings', id], `/centers/bookings/${id}`, { enabled: !!id, refetchInterval: 5_000 });
 export const useCenterAdminServices = () => q(['center-admin', 'services'], '/center-admin/services');
 export const useCenterBays = () => q(['center-admin', 'bays'], '/center-admin/bays');
 export const useTechnicians = () => q(['center-admin', 'technicians'], '/center-admin/technicians');
-export const useWorkOrders = () => q(['center-admin', 'work-orders'], '/center-admin/work-orders');
+export const useWorkOrders = () => q(['center-admin', 'work-orders'], '/center-admin/work-orders', { refetchInterval: 5_000 });
 export function useCreateBooking() {
   const c = useQueryClient();
   return useMutation({ mutationFn: (b) => post('/centers/bookings', b), onSuccess: () => c.invalidateQueries({ queryKey: k.bookings }) });
@@ -143,17 +177,27 @@ export function useManageBooking() {
   const c = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action, body }) => post(`/center-admin/bookings/${id}/${action}`, body || {}),
-    onSuccess: () => c.invalidateQueries({ queryKey: k.bookings })
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: k.bookings });
+      c.invalidateQueries({ queryKey: ['center-admin', 'work-orders'] });
+    }
   });
 }
 
 // ---- Providers ----
 export const useProvider = () => q(k.provider, '/providers/me');
-export const useKyc = () => q(k.kyc, '/providers/kyc/me');
+export const useKyc = () => q(k.kyc, '/providers/kyc/me', { refetchInterval: 6_000 });
 export const useProviderHistory = () => q(k.providerHistory, '/providers/history');
 export function useGoOnline() {
   const c = useQueryClient();
-  return useMutation({ mutationFn: (b) => post('/providers/online', b), onSuccess: () => c.invalidateQueries({ queryKey: k.provider }) });
+  return useMutation({
+    mutationFn: (b) => post('/providers/online', b),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: k.provider });
+      c.invalidateQueries({ queryKey: k.offers });
+      c.invalidateQueries({ queryKey: k.requests });
+    }
+  });
 }
 export function useHeartbeat() { return useMutation({ mutationFn: (b) => post('/providers/heartbeat', b) }); }
 export function useSubmitKyc() {
@@ -163,28 +207,28 @@ export function useSubmitKyc() {
 
 // ---- Reviews / notifications / chat ----
 export const useReviews = (kind, id) => q(k.reviews(kind, id), `/reviews/${kind}/${id}`, { enabled: !!id });
-export const useNotifications = () => q(k.notifications, '/notifications', { refetchInterval: 30_000 });
-export const useUnreadCount = () => q(k.unread, '/notifications/unread-count', { refetchInterval: 30_000 });
+export const useNotifications = () => q(k.notifications, '/notifications', { refetchInterval: 15_000 });
+export const useUnreadCount = () => q(k.unread, '/notifications/unread-count', { refetchInterval: 15_000 });
 export function useMarkRead() {
   const c = useQueryClient();
   return useMutation({ mutationFn: (ids) => post('/notifications/read', { ids }), onSuccess: () => { c.invalidateQueries({ queryKey: k.notifications }); c.invalidateQueries({ queryKey: k.unread }); } });
 }
-export const useThreads = () => q(k.threads, '/chat/threads');
-export const useThread = (id) => q(['chat', 'threads', id], `/chat/threads/${id}`, { enabled: !!id });
+export const useThreads = () => q(k.threads, '/chat/threads', { refetchInterval: 4_000 });
+export const useThread = (id) => q(['chat', 'threads', id], `/chat/threads/${id}`, { enabled: !!id, refetchInterval: 4_000 });
 export function useSendMessage(id) {
   const c = useQueryClient();
   return useMutation({ mutationFn: (text) => post(`/chat/threads/${id}/messages`, { text }, { idempotencyKey: crypto.randomUUID() }), onSuccess: () => c.invalidateQueries({ queryKey: ['chat', 'threads', id] }) });
 }
 
 // ---- Support / admin ----
-export const useTickets = () => q(k.tickets, '/support/tickets');
+export const useTickets = () => q(k.tickets, '/support/tickets', { refetchInterval: 6_000 });
 export const useFaqs = () => q(k.faqs, '/support/faqs');
 export const useSos = () => q(k.sos, '/support/sos');
-export const useDashboard = () => q(k.dashboard, '/admin/dashboard');
+export const useDashboard = () => q(k.dashboard, '/admin/dashboard', { refetchInterval: 6_000 });
 export const useAdminUsers = () => q(k.adminUsers, '/admin/users');
-export const useKycQueue = () => q(k.kycQueue, '/admin/kyc/queue');
+export const useKycQueue = () => q(k.kycQueue, '/admin/kyc/queue', { refetchInterval: 6_000 });
 export const useAdminSettings = () => q(k.settings, '/admin/settings');
 export const useAdminReviews = () => q(['admin', 'reviews'], '/admin/reviews');
-export const useAdminTickets = () => q(['admin', 'tickets'], '/admin/tickets');
-export const useAdminReports = () => q(['admin', 'reports'], '/admin/reports');
+export const useAdminTickets = () => q(['admin', 'tickets'], '/admin/tickets', { refetchInterval: 6_000 });
+export const useAdminReports = () => q(['admin', 'reports'], '/admin/reports', { refetchInterval: 8_000 });
 export const useAudit = () => q(['admin', 'audit'], '/admin/audit');

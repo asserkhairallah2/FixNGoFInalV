@@ -302,6 +302,29 @@ export function M01Screen() {
         </div>
       )}
 
+      {(provider?.kycStatus || user?.kycStatus) && (provider?.kycStatus || user?.kycStatus) !== 'Approved' && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-amber-600 dark:text-amber-400">
+              {isAr ? 'بانتظار اعتماد التوثيق' : 'Verification required to go online'}
+            </span>
+            <StatusBadge status={provider?.kycStatus || user?.kycStatus} />
+          </div>
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {isAr
+              ? 'يجب اعتماد حسابك من الإدارة قبل استقبال طلبات الإصلاح الحية.'
+              : 'Admin verification approval is required before receiving live roadside requests.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => nav.go('A11')}
+            className="text-[11px] font-bold text-[#E51C23] underline"
+          >
+            {isAr ? 'مراجعة حالة التوثيق ←' : 'Check verification status →'}
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtNumber(todayJobs, lang)}</p>
@@ -360,6 +383,12 @@ export function M02Screen() {
   const { data: earnings } = useEarnings();
   const goOnline = useGoOnline();
   const heartbeat = useHeartbeat();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const tickTimer = setInterval(() => setTick((v) => v + 1), 1000);
+    return () => clearInterval(tickTimer);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -367,7 +396,7 @@ export function M02Screen() {
         latitude: provider?.latitude ?? 30.0444,
         longitude: provider?.longitude ?? 31.2357
       });
-    }, 10_000);
+    }, 15_000);
     return () => clearInterval(timer);
   }, [provider?.latitude, provider?.longitude]);
 
@@ -376,7 +405,9 @@ export function M02Screen() {
   const radius = provider?.coverageRadiusKm ?? 15;
   const offers = Array.isArray(offersData) ? offersData : offersData?.items || [];
   const requests = Array.isArray(requestsData) ? requestsData : requestsData?.items || [];
-  const liveOffer = offers.find((o) => !o.status || o.status === 'Pending') || offers[0] || null;
+  const pendingOffers = offers.filter((o) => !o.status || o.status === 'Pending');
+  const liveOffer = pendingOffers[0] || offers[0] || null;
+  const extraOffers = pendingOffers.slice(1, 5);
   const activeJob =
     requests.find(
       (r) =>
@@ -402,11 +433,14 @@ export function M02Screen() {
     nav.go('M01');
   };
 
-  const remainingSec = useMemo(() => {
-    if (!liveOffer?.expiresAt) return 30;
+  const remainingLabel = (() => {
+    if (!liveOffer?.expiresAt) return '05:00';
     const diff = Math.max(0, Math.round((new Date(liveOffer.expiresAt).getTime() - Date.now()) / 1000));
-    return diff > 300 ? 30 : diff;
-  }, [liveOffer?.expiresAt]);
+    const capped = Math.min(diff, 600);
+    const mins = String(Math.floor(capped / 60)).padStart(2, '0');
+    const secs = String(capped % 60).padStart(2, '0');
+    return `${mins}:${secs}`;
+  })();
 
   return (
     <MechanicShell code="M02">
@@ -467,8 +501,8 @@ export function M02Screen() {
           className="p-3.5 rounded-2xl bg-[#E51C23] text-white space-y-1.5 cursor-pointer shadow-md"
         >
           <div className="flex justify-between text-[10px] opacity-90 font-semibold">
-            <span>{isAr ? 'طلب قريب جديد' : 'New nearby request'}</span>
-            <span>{`${remainingSec}s`}</span>
+            <span>{`${isAr ? 'طلب قريب جديد' : 'New nearby request'}${liveOffer.requestCode ? ` · ${liveOffer.requestCode}` : ''}`}</span>
+            <span dir="ltr">{remainingLabel}</span>
           </div>
           <p className="text-xs font-extrabold">
             {`${getServiceLabel(liveOffer, isAr)}${liveOffer.customerFirstName ? ` · ${liveOffer.customerFirstName}` : ''}`}
@@ -480,6 +514,49 @@ export function M02Screen() {
             <span>{isAr ? 'أرباحك المقدرة' : 'Your estimated earnings'}</span>
             <span>{`${fmtMoney(liveOffer.priceMinor, lang)} →`}</span>
           </div>
+        </div>
+      )}
+
+      {extraOffers.length > 0 && (
+        <div className="space-y-1.5">
+          <p className={`text-[11px] font-bold ${colors.secondaryText}`}>
+            {isAr ? `طلبات أخرى متاحة (${extraOffers.length})` : `More open requests nearby (${extraOffers.length})`}
+          </p>
+          {extraOffers.map((item) => (
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => nav.go('M03', { id: item.id })}
+              className={`p-3 rounded-2xl border border-[#E51C23]/30 ${colors.surface} flex items-center justify-between cursor-pointer text-xs`}
+            >
+              <div>
+                <p className={`font-bold ${colors.text}`}>
+                  {`${getServiceLabel(item, isAr)}${item.requestCode ? ` · ${item.requestCode}` : ''}`}
+                </p>
+                <p className={`text-[11px] ${colors.secondaryText}`}>
+                  {`${item.pickupArea || area} · ${fmtDistance(item.distanceKm, lang)}`}
+                </p>
+              </div>
+              <span className="font-extrabold text-[#E51C23] shrink-0">
+                {`${fmtMoney(item.priceMinor, lang)} →`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!liveOffer && !activeJob && (
+        <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between text-xs`}>
+          <div>
+            <p className={`font-bold ${colors.text}`}>
+              {isAr ? 'بانتظار الطلبات القريبة مباشرة' : 'Listening live for nearby repair requests'}
+            </p>
+            <p className={`text-[11px] ${colors.secondaryText}`}>
+              {isAr ? 'تظهر أي طلبات جديدة هنا تلقائياً في اللحظة نفسها.' : 'Any new customer request appears here automatically in real time.'}
+            </p>
+          </div>
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
         </div>
       )}
 

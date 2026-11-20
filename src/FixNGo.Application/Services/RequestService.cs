@@ -37,8 +37,24 @@ public sealed class RequestService(
             throw new DomainException("request.address_required", "Pickup address is required.");
 
         var (s, version) = await settings.CurrentAsync(ct);
+        var (pickLat, pickLon) = Geo.InferEgyptianCoordinates(req.PickupAddress, req.PickupLatitude, req.PickupLongitude);
+        double? destLat = req.DestinationLatitude;
+        double? destLon = req.DestinationLongitude;
+        if (st.Kind == RequestKind.Tow && !string.IsNullOrWhiteSpace(req.DestinationAddress) && destLat.HasValue && destLon.HasValue)
+        {
+            var inferredDest = Geo.InferEgyptianCoordinates(req.DestinationAddress, destLat.Value, destLon.Value, 30.0595, 31.4950);
+            destLat = inferredDest.Lat;
+            destLon = inferredDest.Lon;
+        }
+
+        var distKm = req.DistanceKm;
+        if (st.Kind == RequestKind.Tow && distKm <= 0 && destLat.HasValue && destLon.HasValue)
+        {
+            distKm = Math.Max(1.0, Math.Round(Geo.RoadDistanceKm(pickLat, pickLon, destLat.Value, destLon.Value), 1));
+        }
+
         var total = st.Kind == RequestKind.Tow
-            ? Pricing.TowTotalMinor(req.DistanceKm, s)
+            ? Pricing.TowTotalMinor(distKm, s)
             : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s);
         var priority = req.Priority;
         if (priority == RequestPriority.Normal && await EscalatesAsync(req, ct)) priority = RequestPriority.P0;
@@ -49,10 +65,10 @@ public sealed class RequestService(
             CustomerId = customerId, VehicleId = req.VehicleId, Kind = st.Kind, Priority = priority,
             Status = RequestStatus.Searching, ServiceTypeId = st.Id, Problem = req.Problem,
             AnswersJson = req.AnswersJson ?? "{}", Note = req.Note,
-            PickupLatitude = req.PickupLatitude, PickupLongitude = req.PickupLongitude,
-            PickupAddress = req.PickupAddress.Trim(), DestinationLatitude = req.DestinationLatitude,
-            DestinationLongitude = req.DestinationLongitude, DestinationAddress = req.DestinationAddress,
-            DistanceKm = req.DistanceKm, RadiusKm = s.SearchRadiusKm, SettingsVersion = version,
+            PickupLatitude = pickLat, PickupLongitude = pickLon,
+            PickupAddress = req.PickupAddress.Trim(), DestinationLatitude = destLat,
+            DestinationLongitude = destLon, DestinationAddress = req.DestinationAddress,
+            DistanceKm = distKm, RadiusKm = s.SearchRadiusKm, SettingsVersion = version,
             EstimateMinor = total
         };
         db.ServiceRequests.Add(r);
@@ -66,6 +82,59 @@ public sealed class RequestService(
             }
         }
         await db.SaveChangesAsync(ct);
+
+        // Auto-broadcast offers to currently online approved providers of matching role (keeping Status = Searching).
+        var targetRole = st.Kind == RequestKind.Tow ? Role.TowCaptain : Role.Mechanic;
+        var onlineProviders = await (from p in db.ProviderProfiles
+                                     join u in db.Users on p.UserId equals u.Id
+                                     where u.Role == targetRole && p.IsOnline && u.Status == UserStatus.Active
+                                           && u.KycStatus == KycStatus.Approved
+                                     select new { p, u }).ToListAsync(ct);
+        if (onlineProviders.Count > 0)
+        {
+            var ttlSeconds = Math.Max(priority == RequestPriority.P0 ? s.P0TimeoutSeconds : s.OfferTimeoutSeconds, 300);
+            var scored = onlineProviders.Select(x =>
+            {
+                var pLat = x.p.Latitude ?? x.u.Latitude ?? pickLat;
+                var pLon = x.p.Longitude ?? x.u.Longitude ?? pickLon;
+                var road = Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(pickLat, pickLon, pLat, pLon), 1));
+                return new { x.p.UserId, RoadKm = road };
+            }).OrderBy(x => x.RoadKm).ToList();
+
+            var maxBroadcastKm = Math.Max(s.SearchRadiusKm * 12.0, 60.0);
+            var recipients = scored.Where(x => x.RoadKm <= maxBroadcastKm).Take(25).ToList();
+            if (recipients.Count == 0) recipients = scored.Take(15).ToList();
+
+            var createdOffers = new List<Offer>();
+            foreach (var rec in recipients)
+            {
+                var offer = new Offer
+                {
+                    RequestId = r.Id,
+                    ProviderId = rec.UserId,
+                    Status = OfferStatus.Pending,
+                    ExpiresAt = clock.UtcNow.AddSeconds(ttlSeconds),
+                    PriceMinor = total,
+                    DistanceKm = rec.RoadKm,
+                    EtaMinutes = Geo.EtaMinutes(rec.RoadKm),
+                    IsP0 = priority == RequestPriority.P0
+                };
+                db.Offers.Add(offer);
+                createdOffers.Add(offer);
+            }
+            await db.SaveChangesAsync(ct);
+
+            foreach (var offer in createdOffers)
+            {
+                await notifier.NotifyUserAsync(offer.ProviderId, NotificationType.NewOffer,
+                    $"New {r.Kind} request",
+                    $"{r.Code} near {r.PickupAddress} · {offer.PriceMinor / 100m:0.00} EGP.",
+                    $"offer:{offer.Id}", ct);
+            }
+        }
+        await notifier.BroadcastRoleAsync(targetRole, "offer.new", new { requestId = r.Id, code = r.Code, kind = r.Kind.ToString() }, ct);
+        await notifier.BroadcastRoleAsync(Role.Admin, "request.updated", new { requestId = r.Id, code = r.Code }, ct);
+
         return await GetAsync(customerId, true, r.Id, ct);
     }
 
@@ -92,6 +161,8 @@ public sealed class RequestService(
             db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = RequestStatus.Searching, Note = $"radius.{r.RadiusKm}km", ActorId = callerId, At = clock.UtcNow });
         }
         await db.SaveChangesAsync(ct);
+        var targetRole = r.Kind == RequestKind.Tow ? Role.TowCaptain : Role.Mechanic;
+        await notifier.BroadcastRoleAsync(targetRole, "offer.new", new { requestId = r.Id, code = r.Code, radiusKm = r.RadiusKm }, ct);
         return await GetAsync(callerId, isAdmin, id, ct);
     }
 
@@ -172,6 +243,12 @@ public sealed class RequestService(
         var r = await Visible(callerId, isAdmin, id, ct);
         if (!isAdmin && r.CustomerId != callerId)
             throw new DomainException("auth.forbidden", "Only the customer may cancel this request.");
+        var assignedId = r.AssignedProviderId;
+        var pendingProviderIds = await db.Offers
+            .Where(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending)
+            .Select(o => o.ProviderId)
+            .Distinct()
+            .ToListAsync(ct);
         r.Status = StateMachines.Request.Transition(r.Status, RequestStatus.Cancelled);
         r.CancellationReason = req.ReasonKey;
         db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = req.ReasonKey ?? req.Note, ActorId = callerId, At = clock.UtcNow });
@@ -179,6 +256,10 @@ public sealed class RequestService(
             o.Status = OfferStatus.Withdrawn;
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(r.CustomerId, NotificationType.StatusCompleted, "Request cancelled", $"Request {r.Code} was cancelled.", $"request:{r.Id}", ct);
+        if (assignedId is not null)
+            await notifier.NotifyUserAsync(assignedId.Value, NotificationType.OfferWithdrawn, "Request cancelled", $"Request {r.Code} was cancelled by the customer.", $"request:{r.Id}", ct);
+        foreach (var pid in pendingProviderIds.Where(pid => pid != assignedId))
+            await notifier.BroadcastUserEventAsync(pid, "request.updated", new { requestId = r.Id, status = nameof(RequestStatus.Cancelled) }, ct);
         return Mappings.Request(r);
     }
 

@@ -3,9 +3,9 @@ transforming...
 [32m✓[39m 1718 modules transformed.
 rendering chunks...
 computing gzip size...
-[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-silovp/wwwroot/[22m[35massets/fixngo-app.css  [39m[1m[2m   38.39 kB[22m[1m[22m[2m │ gzip:   8.03 kB[22m
-[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-silovp/wwwroot/[22m[36massets/fixngo-app.js   [39m[1m[33m1,082.79 kB[39m[22m[2m │ gzip: 274.48 kB[22m
-[32m✓ built in 6.36s[39m
+[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-ylcIFU/wwwroot/[22m[35massets/fixngo-app.css  [39m[1m[2m   38.39 kB[22m[1m[22m[2m │ gzip:   8.03 kB[22m
+[2m../../../../XPRENS~1/AppData/Local/Temp/2/fixngo-e2e-web-ylcIFU/wwwroot/[22m[36massets/fixngo-app.js   [39m[1m[33m1,090.01 kB[39m[22m[2m │ gzip: 276.17 kB[22m
+[32m✓ built in 7.26s[39m
 [33mnode_modules/@microsoft/signalr/dist/esm/Utils.js (189:0): A comment
 
 "/*#__PURE__*/"

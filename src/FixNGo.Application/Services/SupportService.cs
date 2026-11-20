@@ -42,6 +42,7 @@ public sealed class SupportService(IAppDbContext db, IClock clock, INotifier not
             TicketId = ticket.Id, FromSupport = false, AuthorName = user.FullName, Text = description, FileId = file?.Id
         });
         await db.SaveChangesAsync(ct);
+        await notifier.BroadcastRoleAsync(Role.Admin, "notification.new", new { ticketId = ticket.Id, code = ticket.Code }, ct);
         return (await ViewsAsync(db.SupportTickets.Where(t => t.Id == ticket.Id), ct)).Single();
     }
 
@@ -87,6 +88,7 @@ public sealed class SupportService(IAppDbContext db, IClock clock, INotifier not
         db.SupportMessages.Add(msg);
         t.Status = TicketStatus.AwaitingSupport;
         await db.SaveChangesAsync(ct);
+        await notifier.BroadcastRoleAsync(Role.Admin, "notification.new", new { ticketId = t.Id, code = t.Code }, ct);
         return new SupportThreadMessage(msg.Id, false, msg.AuthorName, msg.Text, msg.CreatedAt,
             file?.Id, file?.FileName, file?.ContentType, file?.SizeBytes);
     }
@@ -122,6 +124,8 @@ public sealed class SupportService(IAppDbContext db, IClock clock, INotifier not
             ?? throw new DomainException("ticket.not_found", "Ticket not found.");
         t.Status = TicketStatus.Closed;
         await db.SaveChangesAsync(ct);
+        await notifier.NotifyUserAsync(t.UserId, NotificationType.SupportTicketReply, "Ticket closed",
+            $"Support ticket {t.Code} was closed.", $"ticket:{t.Id}", ct);
     }
 
     /// <summary>Projects tickets with the customer's identity and the human code of the linked request/booking.</summary>

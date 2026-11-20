@@ -109,4 +109,60 @@ public sealed class OfferRaceAndPrivacyTests(ApiTestHost host)
         var (rCode, _) = await Http.Get(other, $"/api/v1/requests/{requestId}");
         rCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task OpenDispatch_CustomerCreatesMechanicRequestFirst_OfflineMechanicGoesOnlineAfter_SeesAndAccepts()
+    {
+        using var owner = host.Client(ApiTestHost.Owner);
+        using var mechanic = host.Client(ApiTestHost.Mechanic);
+
+        var boot = (await Http.Get(owner, "/api/v1/lookups/bootstrap")).Item2;
+        var mechType = boot.GetProperty("serviceTypes").EnumerateArray()
+            .First(s => s.GetProperty("key").GetString() == "mechanic").GetProperty("id").GetGuid();
+
+        // 1. Mechanic starts OFFLINE before customer submits the request.
+        (await Http.Post(mechanic, "/api/v1/providers/online",
+            new { isOnline = false, latitude = 30.0561, longitude = 31.3301 })).Item1.Should().Be(HttpStatusCode.OK);
+
+        // 2. Customer creates a Mechanic request WITHOUT selecting a specific provider.
+        var (createCode, created) = await Http.Post(owner, "/api/v1/requests", new
+        {
+            vehicleId = (Guid?)null,
+            serviceTypeId = mechType,
+            pickupLatitude = 30.0444,
+            pickupLongitude = 31.2357,
+            pickupAddress = "Smouha, Alexandria",
+            destinationLatitude = (double?)null,
+            destinationLongitude = (double?)null,
+            destinationAddress = (string?)null,
+            distanceKm = 0.0,
+            problem = "Alternator belt snapped",
+            answersJson = "{}",
+            note = "Two-browser live dispatch test",
+            priority = nameof(RequestPriority.Normal)
+        });
+        createCode.Should().Be(HttpStatusCode.OK);
+        var requestId = created.GuidOf("id");
+        created.Text("status").Should().Be(nameof(RequestStatus.Searching));
+
+        // 3. Mechanic goes ONLINE afterwards and checks incoming offers -> must immediately see the open request!
+        (await Http.Post(mechanic, "/api/v1/providers/online",
+            new { isOnline = true, latitude = 30.0561, longitude = 31.3301 })).Item1.Should().Be(HttpStatusCode.OK);
+
+        var (offersCode, offersBody) = await Http.Get(mechanic, "/api/v1/offers");
+        offersCode.Should().Be(HttpStatusCode.OK);
+        var matchedOffer = offersBody.EnumerateArray()
+            .FirstOrDefault(o => o.GetProperty("requestId").GetGuid() == requestId);
+        matchedOffer.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Object,
+            "newly-online mechanic must immediately receive open Searching mechanic requests");
+
+        var offerId = matchedOffer.GuidOf("id");
+        var (accCode, _) = await Http.Post(mechanic, $"/api/v1/offers/{offerId}/accept", new { });
+        accCode.Should().Be(HttpStatusCode.OK);
+
+        var (getCode, updatedReq) = await Http.Get(owner, $"/api/v1/requests/{requestId}");
+        getCode.Should().Be(HttpStatusCode.OK);
+        updatedReq.Text("status").Should().Be(nameof(RequestStatus.Accepted));
+        updatedReq.GuidOf("assignedProviderId").Should().Be(host.Id(ApiTestHost.Mechanic));
+    }
 }
