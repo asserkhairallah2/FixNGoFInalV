@@ -134,4 +134,95 @@ public sealed class MvcAndCleanArchitectureTests(ApiTestHost host)
         var body2 = await res2.Content.ReadAsStringAsync();
         body2.Should().Be(body1);
     }
+
+    [Fact]
+    public void SiteGateService_Apr1Md5_And_SignedCookie_Match_OpenSsl_Htpasswd_Spec()
+    {
+        // Reference vector generated via `openssl passwd -apr1 -salt 'testsalt' 'testpass'`
+        const string openSslApr1 = "$apr1$testsalt$.Zk.brPWPkBvHwW74p3WA1";
+        FixNGo.Web.Services.SiteGateService.Apr1Md5Hash("testpass", "testsalt").Should().Be(openSslApr1);
+        FixNGo.Web.Services.SiteGateService.VerifyHash("testpass", openSslApr1).Should().BeTrue();
+        FixNGo.Web.Services.SiteGateService.VerifyHash("wrongpass", openSslApr1).Should().BeFalse();
+
+        var tmpHtpasswd = Path.Combine(Path.GetTempPath(), $"fixngo-gate-{Guid.NewGuid():N}.htpasswd");
+        try
+        {
+            File.WriteAllText(tmpHtpasswd, $"gateuser:{openSslApr1}\n");
+            var key = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+            var svc = new FixNGo.Web.Services.SiteGateService(tmpHtpasswd, key);
+
+            svc.IsEnabled.Should().BeTrue();
+            svc.VerifyCredentials("gateuser", "testpass").Should().BeTrue();
+            svc.VerifyCredentials("gateuser", "bad").Should().BeFalse();
+
+            var cookie = svc.IssueGateCookieValue("gateuser", TimeSpan.FromDays(30));
+            svc.ValidateGateCookieValue(cookie).Should().BeTrue();
+            svc.ValidateGateCookieValue(cookie + "tampered").Should().BeFalse();
+        }
+        finally
+        {
+            if (File.Exists(tmpHtpasswd)) File.Delete(tmpHtpasswd);
+        }
+    }
+
+    [Fact]
+    public async Task SiteGateMiddleware_Renders_Mvc_Razor_Gate_Without_401_And_Unlocks_Via_Signed_Cookie()
+    {
+        const string openSslApr1 = "$apr1$testsalt$.Zk.brPWPkBvHwW74p3WA1";
+        var tmpHtpasswd = Path.Combine(Path.GetTempPath(), $"fixngo-http-gate-{Guid.NewGuid():N}.htpasswd");
+        File.WriteAllText(tmpHtpasswd, $"gateuser:{openSslApr1}\n");
+
+        try
+        {
+            await using var baseFactory = new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>();
+            await using var gatedFactory = baseFactory.WithWebHostBuilder(b =>
+            {
+                b.ConfigureAppConfiguration((_, c) => Microsoft.Extensions.Configuration.MemoryConfigurationBuilderExtensions.AddInMemoryCollection(
+                    c,
+                    new Dictionary<string, string?> { ["SiteGate:HtpasswdPath"] = tmpHtpasswd }));
+            });
+            using var client = gatedFactory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false,
+                HandleCookies = false
+            });
+
+            // 1. Unauthenticated GET / returns HTTP 200 with Razor Gate View (NEVER 401 Authorization Required).
+            using var resGate = await client.GetAsync("/");
+            resGate.StatusCode.Should().Be(HttpStatusCode.OK);
+            var gateHtml = await resGate.Content.ReadAsStringAsync();
+            gateHtml.Should().Contain("data-testid=\"site-gate-card\"");
+            gateHtml.Should().NotContain("401 Authorization Required");
+
+            // 2. Unauthenticated API request returns HTTP 403 JSON (NEVER HTTP 401).
+            using var resApiBlocked = await client.GetAsync("/api/v1/system/status");
+            resApiBlocked.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+            // 3. Submitting valid credentials to POST /__site-gate sets HttpOnly signed cookie and redirects to /.
+            using var loginRes = await client.PostAsync("/__site-gate", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["username"] = "gateuser",
+                ["password"] = "testpass"
+            }));
+            loginRes.StatusCode.Should().Be(HttpStatusCode.Redirect);
+            var setCookie = loginRes.Headers.GetValues("Set-Cookie").FirstOrDefault(c => c.StartsWith("fixngo_site_gate=", StringComparison.Ordinal));
+            setCookie.Should().NotBeNull();
+            setCookie.Should().Contain("httponly");
+
+            var cookiePair = setCookie!.Split(';')[0];
+
+            // 4. Subsequent GET / with cookie renders the full FixNGo MVC app shell!
+            using var authedReq = new HttpRequestMessage(HttpMethod.Get, "/");
+            authedReq.Headers.Add("Cookie", cookiePair);
+            using var authedRes = await client.SendAsync(authedReq);
+            authedRes.StatusCode.Should().Be(HttpStatusCode.OK);
+            var appHtml = await authedRes.Content.ReadAsStringAsync();
+            appHtml.Should().Contain("data-host=\"aspnet-core-mvc\"");
+            appHtml.Should().NotContain("data-testid=\"site-gate-card\"");
+        }
+        finally
+        {
+            if (File.Exists(tmpHtpasswd)) File.Delete(tmpHtpasswd);
+        }
+    }
 }

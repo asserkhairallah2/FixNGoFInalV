@@ -99,6 +99,8 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | GET | `/api/v1/files/{id}` | id | Bearer |
 | GET | `/health` | health | Bearer |
 | GET | `/api/v1/system/status` | status | Bearer |
+| GET | `/__site-gate` | __site-gate | Bearer |
+| POST | `/__site-gate` | __site-gate | Bearer |
 | GET | `/` |  | Bearer |
 | GET | `/api/v1/lookups/bootstrap` | bootstrap | Bearer |
 | GET | `/api/v1/notifications` | notifications | Bearer |

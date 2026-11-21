@@ -108,6 +108,13 @@ builder.Services.AddScoped<FluentValidationActionFilter>();
 FixNGo.Web.Controllers.SimulatorApiRegistration.AddSimulatorApi(builder.Services, builder.Configuration);
 builder.Services.AddScoped<INotifier, SignalRNotifier>();
 builder.Services.AddScoped<IFileStore, LocalFileStore>();
+builder.Services.AddSingleton<ISiteGateService>(sp =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var siteHtpasswd = Environment.GetEnvironmentVariable("FIXNGO_SITE_HTPASSWD")
+        ?? cfg["SiteGate:HtpasswdPath"];
+    return new SiteGateService(siteHtpasswd, signingKey);
+});
 builder.Services.AddHostedService<OfferExpiryWorker>();
 builder.Services.AddHostedService<BookingExpiryWorker>();
 builder.Services.AddHostedService<WithdrawalWorker>();
@@ -221,7 +228,9 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<SiteGateMiddleware>();
 app.UseStaticFiles();
+app.UseRouting();
 app.UseCors("spa");
 app.UseSwagger();
 if (simulatorsEnabled || app.Environment.IsDevelopment())

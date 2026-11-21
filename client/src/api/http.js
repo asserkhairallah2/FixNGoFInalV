@@ -64,19 +64,31 @@ export class ApiError extends Error {
   }
 }
 
-async function refresh() {
+let refreshPromise = null;
+export async function refreshAccessToken() {
   if (!refreshToken) return false;
-  try {
-    const res = await fetch('/api/v1/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
-    });
-    if (!res.ok) return false;
-    const data = await res.json();
-    setTokens(data.accessToken, data.refreshToken);
-    return true;
-  } catch { return false; }
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setTokens(data.accessToken, data.refreshToken);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('fixngo:token-refreshed'));
+      }
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
 }
 
 export async function api(path, options = {}) {
@@ -103,13 +115,16 @@ export async function api(path, options = {}) {
   }
 
   if (res.status === 401 && !_retried && refreshToken) {
-    if (await refresh()) return api(path, { ...options, _retried: true });
+    if (await refreshAccessToken()) return api(path, { ...options, _retried: true });
     clearTokens();
     window.dispatchEvent(new CustomEvent('fixngo:session-revoked'));
   }
 
   const text = await res.text();
   const payload = text ? (() => { try { return JSON.parse(text); } catch { return { detail: text }; } })() : null;
+  if (res.status === 403 && payload?.code === 'site.gate_required' && typeof window !== 'undefined') {
+    window.location.reload();
+  }
   if (!res.ok) throw new ApiError(res.status, payload, payload?.code);
   return payload;
 }

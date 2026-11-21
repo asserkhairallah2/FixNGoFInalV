@@ -9,7 +9,7 @@ import {
   getScreen, homeForUser
 } from './app/stores.jsx';
 import './app/screens.jsx';
-import { get, post, ensureFileToken, clearFileToken } from './api/http.js';
+import { get, post, ensureFileToken, clearFileToken, refreshAccessToken } from './api/http.js';
 import { connectSignalR, disconnectSignalR } from './api/signalr.js';
 import { useLiveSync } from './api/live.js';
 import { renderView } from './ui/renderers.jsx';
@@ -477,11 +477,22 @@ function AuthenticatedApp({ user }) {
     let cancelled = false;
     ensureFileToken().finally(() => { if (!cancelled) setFilesReady(true); });
     const refresher = setInterval(() => { ensureFileToken(true); }, 4 * 60_000);
+    // Proactively rotate the 15-minute access JWT every 10 minutes so active tabs never hit 401 mid-session.
+    const jwtRefresher = setInterval(() => {
+      refreshAccessToken().then((ok) => { if (ok) connectSignalR(); }).catch(() => {});
+    }, 10 * 60_000);
+    const onTokenRefreshed = () => { connectSignalR(); };
     const onRevoked = () => { nav.replace('A03'); };
+    window.addEventListener('fixngo:token-refreshed', onTokenRefreshed);
     window.addEventListener('fixngo:session-revoked', onRevoked);
     return () => {
-      cancelled = true; clearInterval(refresher); clearFileToken();
-      disconnectSignalR(); window.removeEventListener('fixngo:session-revoked', onRevoked);
+      cancelled = true;
+      clearInterval(refresher);
+      clearInterval(jwtRefresher);
+      clearFileToken();
+      disconnectSignalR();
+      window.removeEventListener('fixngo:token-refreshed', onTokenRefreshed);
+      window.removeEventListener('fixngo:session-revoked', onRevoked);
     };
   }, [user.id, nav.replace]);
 
