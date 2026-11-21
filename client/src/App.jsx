@@ -75,14 +75,14 @@ function SystemRibbon({ status }) {
   if (!status) return null;
   if (!status.setupComplete) {
     return (
-      <div className="fixed top-3 start-3 z-40 px-3 py-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold shadow-lg backdrop-blur">
+      <div className="fixed bottom-3 start-3 z-40 pointer-events-none px-3 py-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold shadow-lg backdrop-blur">
         System not set up — run setup.bat
       </div>
     );
   }
   if (status.mode === 'dummy') {
     return (
-      <div className="fixed top-3 start-3 z-40 px-3 py-1 rounded-full bg-slate-900/75 border border-white/10 text-slate-300 text-[10px] font-semibold shadow-lg backdrop-blur">
+      <div className="fixed bottom-3 start-3 z-40 pointer-events-none px-3 py-1 rounded-full bg-slate-900/75 border border-white/10 text-slate-300 text-[10px] font-semibold shadow-lg backdrop-blur">
         DUMMY DATA MODE
       </div>
     );
