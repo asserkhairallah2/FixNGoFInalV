@@ -21,9 +21,12 @@ public sealed class OfferService(
         var (s, _) = await settings.CurrentAsync(ct);
         var role = r.Kind == RequestKind.Tow ? Role.TowCaptain : Role.Mechanic;
 
+        var activeCutoff = clock.UtcNow.AddMinutes(-30);
         var providers = await (from p in db.ProviderProfiles
                                join u in db.Users on p.UserId equals u.Id
-                               where u.Role == role && p.IsOnline && u.Status == UserStatus.Active
+                               where u.Role == role && p.IsOnline
+                                     && p.LastHeartbeatAt != null && p.LastHeartbeatAt >= activeCutoff
+                                     && u.Status == UserStatus.Active
                                      && u.KycStatus == KycStatus.Approved
                                select new { p, u }).ToListAsync(ct);
 

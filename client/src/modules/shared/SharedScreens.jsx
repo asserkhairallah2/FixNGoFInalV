@@ -51,6 +51,7 @@ import {
   SecondaryButton,
   StatusBadge,
   ShieldLogo,
+  MapView,
   EmergencySOSBar,
   Skeleton,
   Toast,
@@ -165,8 +166,10 @@ export function SH01Screen({ id, params }) {
 
   const threadsQuery = useThreads();
   const requestsQuery = useRequests();
+  const bookingsQuery = useBookings();
   const threads = Array.isArray(threadsQuery.data) ? threadsQuery.data : [];
   const requests = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
+  const bookings = Array.isArray(bookingsQuery.data) ? bookingsQuery.data : [];
 
   const [selectedThreadId, setSelectedThreadId] = useState(() => id || params?.id || null);
   const [chatInput, setChatInput] = useState('');
@@ -217,10 +220,15 @@ export function SH01Screen({ id, params }) {
   const messages = Array.isArray(activeThread?.messages) ? activeThread.messages : [];
 
   const activeRequest = requests.find((r) => r.status !== 'Completed' && r.status !== 'Cancelled') || requests[0] || null;
+  const activeBooking = bookings.find((b) => !TERMINAL_BOOKING_STATUSES.has(b.status)) || bookings[0] || null;
   const counterpartLabel = activeRequest
     ? (user?.id === activeRequest.customerId
       ? (activeRequest.providerName || (isAr ? 'مقدم الخدمة' : 'Assigned Provider'))
       : (activeRequest.customerName || (isAr ? 'العميل' : 'Customer')))
+    : activeBooking
+    ? (user?.id === activeBooking.customerId
+      ? (activeBooking.centerName || (isAr ? 'مركز الخدمة' : 'Service Center'))
+      : (activeBooking.customerName || (isAr ? 'العميل' : 'Customer')))
     : (user?.fullName || (isAr ? 'محادثة مباشرة' : 'Direct Chat'));
 
   async function ensureThreadForAction() {
@@ -228,6 +236,15 @@ export function SH01Screen({ id, params }) {
     if (params?.requestId || activeRequest?.id) {
       const targetReqId = params?.requestId || activeRequest.id;
       const started = await post(`/requests/${targetReqId}/chat`, {});
+      if (started?.id) {
+        setSelectedThreadId(started.id);
+        qc.invalidateQueries({ queryKey: k.threads });
+        return started.id;
+      }
+    }
+    if (params?.bookingId || activeBooking?.id) {
+      const targetBookId = params?.bookingId || activeBooking.id;
+      const started = await post('/chat/threads', { bookingId: targetBookId });
       if (started?.id) {
         setSelectedThreadId(started.id);
         qc.invalidateQueries({ queryKey: k.threads });
@@ -294,11 +311,11 @@ export function SH01Screen({ id, params }) {
           <div className="flex items-start justify-between gap-2">
             <div>
               <h1 className={`text-lg font-extrabold ${colors.text}`}>
-                {isAr ? 'محادثة مع الكابتن' : 'Chat with your captain'}
+                {isAr ? 'المحادثات والرسائل المباشرة' : 'Messages & Direct Chat'}
               </h1>
               <p className={`text-[11px] ${colors.secondaryText}`}>
                 {counterpartLabel} · {isAr ? 'متصل' : 'Online'}
-                {activeRequest?.code ? ` · ${activeRequest.code}` : ''}
+                {activeRequest?.code ? ` · ${activeRequest.code}` : activeBooking?.code ? ` · ${activeBooking.code}` : ''}
                 {' · '}
                 {isAr ? 'خاص وآمن' : 'Private & secure'}
               </p>
@@ -3178,19 +3195,34 @@ export function SH19Screen() {
 
   const [busy, setBusy] = useState(false);
   const [sosSent, setSosSent] = useState(false);
+  const [sosRecord, setSosRecord] = useState(null);
   const [toast, setToast] = useState('');
 
   async function handleShareSos() {
     if (busy) return;
     setBusy(true);
     try {
-      const lat = activeReq?.pickupLatitude ?? user?.latitude ?? 30.0444;
-      const lng = activeReq?.pickupLongitude ?? user?.longitude ?? 31.2357;
-      await post('/support/sos', {
+      let lat = activeReq?.pickupLatitude ?? user?.latitude ?? 30.0444;
+      let lng = activeReq?.pickupLongitude ?? user?.longitude ?? 31.2357;
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        const gps = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: Number(pos.coords.latitude.toFixed(5)), lng: Number(pos.coords.longitude.toFixed(5)) }),
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 2500 }
+          );
+        });
+        if (gps) {
+          lat = gps.lat;
+          lng = gps.lng;
+        }
+      }
+      const created = await post('/support/sos', {
         latitude: lat,
         longitude: lng,
         note: 'Emergency SOS'
       });
+      setSosRecord(created);
       setSosSent(true);
       setToast(isAr ? 'تم إرسال بلاغ الطوارئ ومشاركة موقعك' : 'Emergency SOS sent with your live location');
     } finally {
@@ -3263,9 +3295,23 @@ export function SH19Screen() {
           </p>
         </div>
 
+        <MapView
+          height={140}
+          mode="pin"
+          pin={{
+            lat: Number(sosRecord?.latitude ?? activeReq?.pickupLatitude ?? user?.latitude ?? 30.0444),
+            lng: Number(sosRecord?.longitude ?? activeReq?.pickupLongitude ?? user?.longitude ?? 31.2357)
+          }}
+        />
+
         {sosSent && (
-          <div role="status" className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-500 font-bold">
-            {isAr ? '✓ تمت مشاركة موقعك مع فريق طوارئ FixNGo' : '✓ Location shared with FixNGo SOS safety team'}
+          <div role="status" className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-500 font-bold space-y-1">
+            <div>{isAr ? '✓ تمت مشاركة موقعك مع فريق طوارئ FixNGo' : '✓ Location shared with FixNGo SOS safety team'}</div>
+            {sosRecord?.id && (
+              <div className="text-[10px] font-mono opacity-90" dir="ltr">
+                #SOS-{String(sosRecord.id).slice(0, 6).toUpperCase()} ({Number(sosRecord.latitude).toFixed(4)}, {Number(sosRecord.longitude).toFixed(4)})
+              </div>
+            )}
           </div>
         )}
 

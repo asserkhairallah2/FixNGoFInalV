@@ -123,7 +123,7 @@ public sealed class HousekeepingWorker(IServiceScopeFactory scopes, ILogger<Hous
                 using var scope = scopes.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
                 var now = clock.UtcNow;
-                foreach (var p in db.ProviderProfiles.Where(p => p.IsOnline && p.LastHeartbeatAt != null && p.LastHeartbeatAt < now.AddMinutes(-30)))
+                foreach (var p in db.ProviderProfiles.Where(p => p.IsOnline && (p.LastHeartbeatAt == null || p.LastHeartbeatAt < now.AddMinutes(-30))))
                     p.IsOnline = false;
                 foreach (var req in db.AccountDeletionRequests.Where(r => r.ScheduledAt != null && r.ScheduledAt <= now && !r.Anonymised))
                 {

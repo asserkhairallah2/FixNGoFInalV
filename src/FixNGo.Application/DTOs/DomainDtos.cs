@@ -113,6 +113,25 @@ public sealed record ProviderDto(Guid Id, string FullName, decimal Rating, int R
     string? TruckMake = null, string? TruckModel = null, string? TruckPlate = null,
     string? TruckType = null, decimal? TruckCapacityTonnes = null, string? ExpertiseJson = null,
     int RecommendPercent = 0);
+public sealed record ProviderPublicProfileDto(
+    Guid Id,
+    string FullName,
+    string Role,
+    string? Phone,
+    string? AreaLabel,
+    decimal Rating,
+    int RatingCount,
+    int RecommendPercent,
+    int CompletedJobs,
+    int YearsExperience,
+    double CoverageRadiusKm,
+    string? TruckMake,
+    string? TruckType,
+    decimal? TruckCapacityTonnes,
+    bool IsVerified,
+    bool IsOnline,
+    IReadOnlyList<string> Specialties,
+    IReadOnlyList<ReviewDto> Reviews);
 
 // ---- Reviews, notifications, chat ----
 public sealed record CreateReviewRequest(int Stars, string? Text, bool Recommend = true);

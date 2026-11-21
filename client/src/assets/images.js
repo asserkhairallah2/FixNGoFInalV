@@ -102,5 +102,5 @@ const workshopSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 45
   <line x1="0" y1="345" x2="800" y2="345" stroke="#E51C23" stroke-width="4"/>
 </svg>`;
 
-export const NIGHT_CAR_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(carSvg)}`;
+export const NIGHT_CAR_IMAGE = '/brand/hero-car.jpeg';
 export const WORKSHOP_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(workshopSvg)}`;

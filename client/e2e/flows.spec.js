@@ -1132,3 +1132,111 @@ test('F17 two-browser live dispatch: Customer creates Mechanic request -> Offlin
     await mechCtx.close();
   }
 });
+
+test('F18 Landing Page + Mobile button -> A02 hero image + Tow/Mechanic filtering + Other custom input + Shortcuts skip C06 + Photo delete & clear + SOS + Unified Profiles', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  const logs = attachConsoleWatch(page);
+  const tinyPng = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64'
+  );
+  try {
+    // 1. Visiting '/' fresh shows Landing Page first; clicking Mobile App button opens live iPhone stage on A02 with /brand/hero-car.jpeg
+    const base = (await import('./helpers.js')).baseURL();
+    await page.goto(`${base}/`);
+    await expect(page.locator('[data-testid="open-mobile-app-btn"]')).toBeVisible();
+    expect(await page.locator('#phoneRoot').count()).toBe(0);
+
+    await page.locator('[data-testid="open-mobile-app-btn"]').click();
+    await expect(page.locator('#phoneRoot')).toBeVisible();
+    const heroImg = page.locator('[data-testid="view-hero"] img');
+    await expect(heroImg).toHaveAttribute('src', '/brand/hero-car.jpeg');
+
+    // Close button returns to Landing Page
+    await page.locator('[data-testid="close-mobile-app-btn"]').click();
+    expect(await page.locator('#phoneRoot').count()).toBe(0);
+
+    // 2. Login as owner -> verify Tow vs Mechanic filtering & zero auto-selection on C06
+    await loginUI(page, 'owner');
+    const origin = await page.evaluate(() => location.origin);
+    const phone = page.locator('.phone-frame');
+
+    await phone.getByText('Request a Tow', { exact: true }).click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C06'));
+    await expect(phone.locator('[data-testid="screen-primary"]')).toBeDisabled();
+    await expect(phone.locator('[data-testid^="service-card-"]')).toHaveCount(2);
+    await expect(phone.locator('[data-testid="service-card-flatbed_tow"]')).toBeVisible();
+    await expect(phone.locator('[data-testid="service-card-wheel_lift"]')).toBeVisible();
+    await phone.locator('[data-testid="topbar-back"]').click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C02'));
+
+    await phone.getByText('Mobile Mechanic', { exact: true }).click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C06'));
+    await expect(phone.locator('[data-testid="screen-primary"]')).toBeDisabled();
+    await expect(phone.locator('[data-testid^="service-card-"]')).toHaveCount(4);
+    await expect(phone.locator('[data-testid="service-card-battery"]')).toBeVisible();
+    await expect(phone.locator('[data-testid="service-card-other"]')).toBeVisible();
+
+    // Selecting "Other" reveals custom problem field and validates if empty
+    await phone.locator('[data-testid="service-card-other"]').click();
+    await expect(phone.locator('[data-testid="field-customProblem"]')).toBeVisible();
+    await phone.locator('[data-testid="screen-primary"]').click();
+    expect(await page.evaluate(() => window.__fixngoRoute?.path || '')).toContain('#/C06');
+    await phone.locator('[data-testid="field-customProblem"]').fill('Custom belt noise check');
+    await phone.locator('[data-testid="screen-primary"]').click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C26'));
+
+    // 3. Upload photo -> delete button works -> upload again -> back to C02 -> shortcut skips C06 with 0 stale photos
+    await phone.locator('input[type="file"]').setInputFiles({
+      name: 'car.png',
+      mimeType: 'image/png',
+      buffer: tinyPng
+    });
+    await expect(phone.locator('[data-testid="remove-breakdown-photo"]')).toHaveCount(1);
+    await phone.locator('[data-testid="remove-breakdown-photo"]').click();
+    await expect(phone.locator('[data-testid="remove-breakdown-photo"]')).toHaveCount(0);
+
+    await phone.locator('input[type="file"]').setInputFiles({
+      name: 'car2.png',
+      mimeType: 'image/png',
+      buffer: tinyPng
+    });
+    await expect(phone.locator('[data-testid="remove-breakdown-photo"]')).toHaveCount(1);
+    await phone.locator('[data-testid="nav-home"]').click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C02'));
+
+    // Battery shortcut skips C06 -> lands directly on C26 with 0 stale photos!
+    await phone.locator('[data-testid="shortcut-battery"]').click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C26'));
+    await expect(phone.locator('[data-testid="remove-breakdown-photo"]')).toHaveCount(0);
+
+    // Accident shortcut skips C06 -> lands directly on C07 with P0 banner!
+    await phone.locator('[data-testid="nav-home"]').click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C02'));
+    await phone.locator('[data-testid="shortcut-accident"]').click();
+    await page.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C07'));
+    await expect(phone.getByText(/Priority P0 Accident Recovery/i)).toBeVisible();
+
+    // 4. Emergency SOS C03 Trigger SOS button dispatches live & shows confirmation card
+    await page.goto(`${origin}/#/C03`);
+    await phone.locator('[data-testid="trigger-sos-btn"]').click();
+    await expect(phone.locator('[data-testid="sos-dispatched-card"]')).toBeVisible({ timeout: 10_000 });
+
+    // 5. C23 Profile has NO Quick Profile & Security Settings and HAS Messages & Active Chats
+    await page.goto(`${origin}/#/C23`);
+    await expect(phone.getByText(/Quick Profile & Security Settings/i)).toHaveCount(0);
+    await expect(phone.getByText(/Messages & Active Chats/i)).toBeVisible();
+
+    // 6. Service Center SC09 Profile matches unified layout and has Chat button
+    await loginUI(page, 'center');
+    await page.goto(`${origin}/#/SC09`);
+    await expect(phone.locator('[data-testid="goto-chat"]')).toBeVisible();
+
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F18 Landing + Mobile + Filtering + Shortcuts + Photos + SOS + Profiles', 'PASS', {});
+  } finally {
+    await context.close();
+  }
+});

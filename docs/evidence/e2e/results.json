@@ -4,9 +4,9 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "e2e/screens.spec.js",
+      "e2e/flows.spec.js",
       "-g",
-      "light-en: owner|dark-ar: owner"
+      "F18"
     ],
     "configFile": "C:\\Users\\xprenspel\\Desktop\\FixNGoFinal\\client\\playwright.config.js",
     "rootDir": "C:/Users/xprenspel/Desktop/FixNGoFinal/client/e2e",
@@ -109,104 +109,53 @@
   },
   "suites": [
     {
-      "title": "screens.spec.js",
-      "file": "screens.spec.js",
+      "title": "flows.spec.js",
+      "file": "flows.spec.js",
       "column": 0,
       "line": 0,
-      "specs": [],
-      "suites": [
+      "specs": [
         {
-          "title": "screen sweep light-en",
-          "file": "screens.spec.js",
-          "line": 66,
-          "column": 8,
-          "specs": [
+          "title": "F18 Landing Page + Mobile button -> A02 hero image + Tow/Mechanic filtering + Other custom input + Shortcuts skip C06 + Photo delete & clear + SOS + Unified Profiles",
+          "ok": true,
+          "tags": [],
+          "tests": [
             {
-              "title": "light-en: owner — 71 screens",
-              "ok": true,
-              "tags": [],
-              "tests": [
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
                 {
-                  "timeout": 180000,
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6016,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-11-21T21:29:31.643Z",
                   "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 20920,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-20T11:27:45.915Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
+                  "attachments": []
                 }
               ],
-              "id": "4e58ca2a3cb798687116-f1a24404b54809416c18",
-              "file": "screens.spec.js",
-              "line": 72,
-              "column": 7
+              "status": "expected"
             }
-          ]
-        },
-        {
-          "title": "screen sweep dark-ar",
-          "file": "screens.spec.js",
-          "line": 66,
-          "column": 8,
-          "specs": [
-            {
-              "title": "dark-ar: owner — 71 screens",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 180000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "",
-                  "projectName": "",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 20610,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-20T11:28:06.996Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "4e58ca2a3cb798687116-fc186794bfdb50c1bbbd",
-              "file": "screens.spec.js",
-              "line": 72,
-              "column": 7
-            }
-          ]
+          ],
+          "id": "50593df043d465c1094d-0e86355f56c27109bf0c",
+          "file": "flows.spec.js",
+          "line": 1136,
+          "column": 1
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-20T11:27:19.483Z",
-    "duration": 68486.333,
-    "expected": 2,
+    "startTime": "2026-11-21T21:29:01.178Z",
+    "duration": 37153.566999999995,
+    "expected": 1,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

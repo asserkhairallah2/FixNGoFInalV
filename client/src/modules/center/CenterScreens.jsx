@@ -20,9 +20,10 @@ import {
   Users,
   LogOut,
   CreditCard,
-  Wallet
+  Wallet,
+  MessageSquare
 } from 'lucide-react';
-import { usePrefs, useNav } from '../../app/stores.jsx';
+import { usePrefs, useNav, useSession } from '../../app/stores.jsx';
 import { get, post, put, del } from '../../api/http.js';
 import {
   useBootstrap,
@@ -37,6 +38,8 @@ import {
 import {
   useColors,
   AppTopBar,
+  Avatar,
+  BottomSheet,
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
@@ -187,6 +190,12 @@ export function SC01Screen({ code = 'SC01' }) {
       title: isAr ? 'التقارير' : 'Reports',
       meta: isAr ? 'الإيرادات والأداء' : 'Revenue & performance',
       target: 'SC08'
+    },
+    {
+      icon: MessageSquare,
+      title: isAr ? 'المحادثات مع العملاء' : 'Customer Messages',
+      meta: isAr ? 'مراسلة أصحاب الحجوزات مباشرة' : 'Direct chat with car owners',
+      target: 'SH01'
     }
   ];
 
@@ -518,7 +527,18 @@ export function SC03Screen({ id, params, code = 'SC03' }) {
                     )}
                   </div>
                 </div>
-                <CheckCircle2 size={16} className="text-emerald-500" />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    data-testid="chat-customer-btn"
+                    onClick={() => nav.go('SH01', { bookingId: booking.id })}
+                    className="px-2.5 py-1.5 rounded-xl bg-[#E51C23]/15 text-[#E51C23] font-bold text-[11px] inline-flex items-center gap-1"
+                  >
+                    <MessageSquare size={12} />
+                    <span>{isAr ? 'محادثة' : 'Chat'}</span>
+                  </button>
+                  <CheckCircle2 size={16} className="text-emerald-500" />
+                </div>
               </div>
               {booking.vehicleLabel && (
                 <div className="space-y-1 text-xs pt-1 border-t border-slate-500/10">
@@ -1492,16 +1512,16 @@ export function SC09Screen({ code = 'SC09' }) {
   const colors = useColors();
   const { isAr } = usePrefs();
   const nav = useNav();
+  const { user } = useSession();
   const queryClient = useQueryClient();
-  const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
 
   const profileQ = useCenterProfile();
-  const hoursQ = useCenterHours();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1514,20 +1534,6 @@ export function SC09Screen({ code = 'SC09' }) {
       setDescription(profileQ.data.description || '');
     }
   }, [profileQ.data]);
-
-  const hoursList = Array.isArray(hoursQ.data) ? hoursQ.data : [];
-  const weekPreview = useMemo(() => {
-    return DAY_NAMES.map((d) => {
-      const found = hoursList.find((h) => Number(h.dayOfWeek) === d.dow);
-      return {
-        label: isAr ? d.shortAr : d.shortEn,
-        isClosed: found ? !!found.isClosed : d.dow === 5,
-        open: trimTimeSpan(found?.openTime, '09:00'),
-        close: trimTimeSpan(found?.closeTime, '20:00'),
-        special: found?.isSpecial || d.dow === 5
-      };
-    });
-  }, [hoursList, isAr]);
 
   async function handleSave(e) {
     if (e) e.preventDefault();
@@ -1545,6 +1551,7 @@ export function SC09Screen({ code = 'SC09' }) {
       await queryClient.invalidateQueries({ queryKey: ['center-admin', 'profile'] });
       await queryClient.invalidateQueries({ queryKey: ['centers'] });
       setToast(isAr ? 'تم حفظ ملف المركز بنجاح' : 'Center profile saved');
+      setEditOpen(false);
     } catch (err) {
       setError(err.message || (isAr ? 'تعذر حفظ التغييرات.' : 'Could not save profile.'));
     } finally {
@@ -1552,205 +1559,163 @@ export function SC09Screen({ code = 'SC09' }) {
     }
   }
 
+  const centerName = profileQ.data?.name || user?.fullName || (isAr ? 'مركز الخدمة' : 'Service Center');
+  const centerRating = Number(profileQ.data?.rating ?? 0);
+  const centerReviews = Number(profileQ.data?.ratingCount ?? 0);
+
+  const links = [
+    { id: 'edit-center', icon: '🏢', en: 'Edit Center Public Profile', ar: 'تعديل بيانات المركز العامة', onClick: () => setEditOpen(true), testId: 'screen-primary' },
+    { id: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب', code: 'SH12' },
+    { id: 'SH01', icon: '💬', en: 'Messages & Customer Chats', ar: 'المحادثات مع العملاء', code: 'SH01', testId: 'goto-chat' },
+    { id: 'SC04', icon: '🛠️', en: 'Service Catalog & Pricing', ar: 'كتالوج الخدمات والأسعار', code: 'SC04' },
+    { id: 'SC15', icon: '🕒', en: 'Working Hours', ar: 'ساعات وأيام العمل', code: 'SC15', testId: 'goto-hours' },
+    { id: 'SC17', icon: '🔧', en: 'Bays & Technicians', ar: 'الحارات والفنيون', code: 'SC17', testId: 'goto-bays' },
+    { id: 'SC07', icon: '⭐', en: 'Driver Reviews', ar: 'تقييمات السائقين', code: 'SC07' },
+    { id: 'SC08', icon: '📊', en: 'Revenue & Financial Reports', ar: 'الإيرادات والتقارير المالية', code: 'SC08', testId: 'goto-reports' },
+    { id: 'SH14', icon: '🏦', en: 'Bank Accounts & Payouts', ar: 'الحسابات البنكية والتحويلات', code: 'SH14', testId: 'goto-banks' },
+    { id: 'SH06', icon: '🌐', en: 'App Settings (Language & Theme)', ar: 'إعدادات التطبيق (اللغة والمظهر)', code: 'SH06', testId: 'goto-settings' },
+    { id: 'SH10', icon: '⚙️', en: 'Notification Preferences', ar: 'تفضيلات الإشعارات', code: 'SH10' },
+    { id: 'SH02', icon: '🔒', en: 'Change Password', ar: 'تغيير كلمة المرور', code: 'SH02' },
+    { id: 'AD13', icon: '🛡️', en: 'Two-Factor Authentication (2FA)', ar: 'المصادقة الثنائية (2FA)', code: 'AD13' },
+    { id: 'AD14', icon: '📱', en: 'Active Devices & Sessions', ar: 'الأجهزة والجلسات النشطة', code: 'AD14' },
+    { id: 'SH07', icon: '🎧', en: 'Help & Support Center', ar: 'مركز المساعدة والدعم', code: 'SH07' },
+    { id: 'SH05', icon: '📜', en: 'Terms of Service & Privacy Policy', ar: 'الشروط وسياسة الخصوصية', code: 'SH05' },
+    { id: 'SH11', icon: 'ℹ️', en: 'About FixNGo', ar: 'عن منصة فيكس آند جو', code: 'SH11' },
+    { id: 'SH21', icon: '🗑️', en: 'Request Account Deletion', ar: 'طلب حذف الحساب', code: 'SH21', danger: true },
+    { id: 'SH13', icon: '🚪', en: 'Sign Out', ar: 'تسجيل الخروج', code: 'SH13', testId: 'goto-logout', danger: true },
+  ];
+
   return (
-    <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
-      <AppTopBar showBack={!CENTER_MAIN_SCREENS.includes(code)} onBack={() => nav.back()} />
+    <div className={`min-h-full flex flex-col pb-24 ${colors.bg}`} data-testid="screen">
+      <AppTopBar
+        title={isAr ? 'الملف الشخصي والإعدادات' : 'Profile & Settings'}
+        showBack={!CENTER_MAIN_SCREENS.includes(code)}
+        onBack={() => nav.back()}
+      />
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
-      <form onSubmit={handleSave} className="p-4 space-y-3 flex-1">
-        <div>
-          <h1 className={`text-lg font-extrabold ${colors.text}`}>
-            {isAr ? 'ملف المركز' : 'Center profile'}
-          </h1>
-          <p className={`text-xs ${colors.secondaryText}`}>
-            {isAr ? 'بياناتك العامة وساعات العمل.' : 'Your public details and working hours.'}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'اسم المركز' : 'Center name'}
-            </label>
-            <div className={`px-2.5 h-10 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
-              <input
-                data-testid="field-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
-                required
-              />
-              <Edit3 size={12} className={colors.secondaryText} />
+      <div className="p-4 space-y-4 flex-1">
+        <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} space-y-3`}>
+          <div className="flex items-start gap-3">
+            <div className="shrink-0">
+              <Avatar name={centerName} size={52} />
+            </div>
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className={`text-base font-extrabold truncate ${colors.text}`}>
+                  {centerName}
+                </div>
+                <StatusBadge status="Approved" text={isAr ? 'مركز معتمد' : 'Verified'} />
+              </div>
+              <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+                {user?.email || ''}
+              </div>
+              <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+                {profileQ.data?.phone || user?.phone || ''}
+              </div>
+              {profileQ.data?.address && (
+                <div className={`text-[11px] truncate ${colors.secondaryText}`}>
+                  📍 {profileQ.data.address}
+                </div>
+              )}
             </div>
           </div>
-          <div className="space-y-1">
-            <label className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'الهاتف' : 'Phone'}
-            </label>
-            <div className={`px-2.5 h-10 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
-              <input
-                data-testid="field-phone"
-                type="tel"
-                dir="ltr"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={`bg-transparent text-xs font-bold w-full focus:outline-none ${colors.text}`}
-              />
-              <Phone size={12} className={colors.secondaryText} />
+
+          <div className={`grid grid-cols-2 gap-2 pt-2 border-t ${colors.border} text-center text-xs`}>
+            <div>
+              <div className={`font-extrabold ${colors.text}`}>
+                {centerReviews > 0 ? `⭐ ${centerRating.toFixed(1)}` : '—'}
+              </div>
+              <div className={`text-[10px] ${colors.secondaryText}`}>
+                {centerReviews > 0 ? `${centerReviews} ${isAr ? 'تقييم' : 'reviews'}` : (isAr ? 'التقييم' : 'Rating')}
+              </div>
+            </div>
+            <div>
+              <div className={`font-extrabold ${colors.text}`}>
+                {profileQ.data?.recommendPercent ? `👍 ${profileQ.data.recommendPercent}%` : '100%'}
+              </div>
+              <div className={`text-[10px] ${colors.secondaryText}`}>
+                {isAr ? 'توصية السائقين' : 'Recommended'}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'الوصف' : 'Description'}
-          </label>
-          <div className={`px-2.5 h-10 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
+        <div className={`rounded-2xl border ${colors.border} ${colors.surface} overflow-hidden`}>
+          {links.map((item, idx) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid={item.testId}
+              onClick={item.onClick || (() => nav.go(item.code))}
+              className={`w-full px-4 py-3 text-start flex items-center justify-between text-xs font-bold transition-all ${
+                item.danger ? 'text-rose-500' : colors.text
+              } ${idx < links.length - 1 ? `border-b ${colors.border}` : ''}`}
+            >
+              <span className="flex items-center gap-2.5">
+                <span className="text-base">{item.icon}</span>
+                <span>{isAr ? item.ar : item.en}</span>
+              </span>
+              <span className={colors.secondaryText}>{isAr ? '‹' : '›'}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <BottomSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title={isAr ? 'تعديل بيانات المركز' : 'Edit Center Details'}
+      >
+        <form onSubmit={handleSave} className="space-y-3">
+          <div className="space-y-1">
+            <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'اسم المركز' : 'Center name'}</label>
             <input
-              data-testid="field-description"
+              data-testid="field-name"
               type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className={`bg-transparent text-xs w-full focus:outline-none ${colors.text}`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={`px-3 h-10 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold w-full ${colors.text}`}
+              required
             />
-            <Edit3 size={12} className={colors.secondaryText} />
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'العنوان' : 'Address'}
-          </label>
-          <div className={`px-2.5 h-10 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center`}>
+          <div className="space-y-1">
+            <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'الهاتف' : 'Phone'}</label>
+            <input
+              data-testid="field-phone"
+              type="tel"
+              dir="ltr"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={`px-3 h-10 rounded-xl border ${colors.border} ${colors.surface} text-xs font-bold w-full ${colors.text}`}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'العنوان' : 'Address'}</label>
             <input
               data-testid="field-address"
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className={`bg-transparent text-xs w-full focus:outline-none ${colors.text}`}
+              className={`px-3 h-10 rounded-xl border ${colors.border} ${colors.surface} text-xs w-full ${colors.text}`}
               required
             />
-            <MapPin size={12} className={colors.secondaryText} />
           </div>
-        </div>
-
-        <button
-          type="button"
-          data-testid="goto-hours"
-          onClick={() => nav.go('SC15')}
-          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} text-start space-y-2`}
-        >
-          <p className={`text-xs font-extrabold ${colors.text}`}>
-            {isAr ? 'ساعات العمل · اضغط للتعديل' : 'Working hours · Tap to edit'}
-          </p>
-          <div className="grid grid-cols-7 gap-1 text-center text-[9px]">
-            {weekPreview.map((day, idx) => (
-              <div
-                key={idx}
-                className={`p-1 rounded-lg ${
-                  day.isClosed ? 'bg-amber-500/15 text-amber-500' : colors.text
-                }`}
-              >
-                <p className={`font-bold ${colors.secondaryText}`}>{day.label}</p>
-                {day.isClosed ? (
-                  <p className="font-semibold">{isAr ? 'مغلق' : 'Closed'}</p>
-                ) : (
-                  <>
-                    <p className="font-semibold">{day.open}</p>
-                    <p className="font-semibold">{day.close}</p>
-                  </>
-                )}
-              </div>
-            ))}
+          <div className="space-y-1">
+            <label className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'الوصف' : 'Description'}</label>
+            <input
+              data-testid="field-description"
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className={`px-3 h-10 rounded-xl border ${colors.border} ${colors.surface} text-xs w-full ${colors.text}`}
+            />
           </div>
-        </button>
-
-        <button
-          type="button"
-          data-testid="goto-bays"
-          onClick={() => nav.go('SC17')}
-          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
-        >
-          <div className="flex items-center gap-2.5">
-            <Wrench size={16} className="text-red-500" />
-            <span className={`text-xs font-extrabold ${colors.text}`}>
-              {isAr ? 'الحارات والفنيون' : 'Bays & Technicians'}
-            </span>
-          </div>
-          <ForwardChevron size={14} className={colors.secondaryText} />
-        </button>
-
-        <button
-          type="button"
-          data-testid="goto-banks"
-          onClick={() => nav.go('SH14')}
-          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
-        >
-          <div className="flex items-center gap-2.5">
-            <CreditCard size={16} className="text-red-500" />
-            <span className={`text-xs font-extrabold ${colors.text}`}>
-              {isAr ? 'الحسابات البنكية والتحويلات' : 'Bank Accounts & Payouts'}
-            </span>
-          </div>
-          <ForwardChevron size={14} className={colors.secondaryText} />
-        </button>
-
-        <button
-          type="button"
-          data-testid="goto-reports"
-          onClick={() => nav.go('SC08')}
-          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
-        >
-          <div className="flex items-center gap-2.5">
-            <Wallet size={16} className="text-red-500" />
-            <span className={`text-xs font-extrabold ${colors.text}`}>
-              {isAr ? 'الإيرادات والتقارير المالية' : 'Revenue & Financial Reports'}
-            </span>
-          </div>
-          <ForwardChevron size={14} className={colors.secondaryText} />
-        </button>
-
-        <button
-          type="button"
-          data-testid="goto-settings"
-          onClick={() => nav.go('SH06')}
-          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
-        >
-          <div className="flex items-center gap-2.5">
-            <Settings size={16} className="text-red-500" />
-            <span className={`text-xs font-extrabold ${colors.text}`}>
-              {isAr ? 'إعدادات التطبيق' : 'App settings'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'اللغة والمظهر والتفضيلات' : 'Language, theme, and preferences'}
-            </span>
-            <ForwardChevron size={14} className={colors.secondaryText} />
-          </div>
-        </button>
-
-        <button
-          type="button"
-          data-testid="goto-logout"
-          onClick={() => nav.go('SH13')}
-          className={`w-full p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between`}
-        >
-          <div className="flex items-center gap-2.5">
-            <LogOut size={16} className="text-rose-500" />
-            <span className="text-xs font-extrabold text-rose-500">
-              {isAr ? 'تسجيل الخروج' : 'Log out'}
-            </span>
-          </div>
-          <ForwardChevron size={14} className={colors.secondaryText} />
-        </button>
-
-        {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
-
-        <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
-          {busy ? (isAr ? 'جارٍ الحفظ…' : 'Saving…') : (isAr ? 'حفظ التغييرات' : 'Save Changes')}
-        </PrimaryButton>
-      </form>
+          {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
+          <PrimaryButton type="submit" disabled={busy}>
+            {busy ? (isAr ? 'جارٍ الحفظ…' : 'Saving…') : (isAr ? 'حفظ التغييرات' : 'Save Changes')}
+          </PrimaryButton>
+        </form>
+      </BottomSheet>
     </div>
   );
 }
@@ -2108,6 +2073,10 @@ export function SC11Screen({ id, params, code = 'SC11' }) {
                   ? (isAr ? 'المتابعة لإتمام الخدمة والفاتورة' : 'Proceed to Complete Service & Invoice')
                   : (isAr ? 'بدء الخدمة' : 'Start Service')}
               </PrimaryButton>
+              <SecondaryButton onClick={() => nav.go('SH01', { bookingId: booking.id })}>
+                <MessageSquare size={14} />
+                {isAr ? 'محادثة مع العميل' : 'Chat with Customer'}
+              </SecondaryButton>
               <SecondaryButton onClick={() => nav.go('SC06', { id: booking.id })}>
                 {isAr ? 'عرض أوامر الشغل' : 'View Work Orders'}
               </SecondaryButton>

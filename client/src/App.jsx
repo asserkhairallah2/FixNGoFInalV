@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Loader2, WifiOff, ShieldAlert, Home, Wrench,
-  FileText, User, Car, Building2, CreditCard, Truck, Calendar
+  FileText, User, Car, Building2, CreditCard, Truck, Calendar, X
 } from 'lucide-react';
 import {
   PrefsProvider, usePrefs, SessionProvider, useSession, NavProvider, useNav,
@@ -15,6 +15,7 @@ import { useLiveSync } from './api/live.js';
 import { renderView } from './ui/renderers.jsx';
 import { useColors, PrimaryButton, ShieldLogo } from './ui/kit.jsx';
 import SimulatorDock from './sim/SimulatorDock.jsx';
+import LandingPage from './landing/LandingPage.jsx';
 
 const TAPPABLE_SELECTOR =
   'button, a, input, select, textarea, label, [role="button"], [data-testid^="nav-"], [data-testid="data-row"]';
@@ -125,12 +126,13 @@ function PhoneStatusBar() {
   );
 }
 
-function usePhoneInteractions(stageRef, frameRef, cursorRef) {
+function usePhoneInteractions(stageRef, frameRef, cursorRef, isOpen) {
   useEffect(() => {
+    if (!isOpen) return undefined;
     const stage = stageRef.current;
     const frame = frameRef.current;
     const cursor = cursorRef.current;
-    if (!stage || !frame || !cursor) return;
+    if (!stage || !frame || !cursor) return undefined;
 
     const hitTappable = (el) => !!(el && el.closest && el.closest(TAPPABLE_SELECTOR));
 
@@ -375,7 +377,7 @@ function usePhoneInteractions(stageRef, frameRef, cursorRef) {
       window.removeEventListener('pointercancel', endGesture);
       window.removeEventListener('blur', onWindowBlur);
     };
-  }, [stageRef, frameRef, cursorRef]);
+  }, [stageRef, frameRef, cursorRef, isOpen]);
 }
 
 function NotFound({ code }) {
@@ -564,6 +566,7 @@ function GuestApp() {
 
 function Shell() {
   const { user, ready } = useSession();
+  const { isAr } = usePrefs();
   const qc = useQueryClient();
   const prevUserId = useRef(undefined);
   const stageRef = useRef(null);
@@ -571,8 +574,39 @@ function Shell() {
   const cursorRef = useRef(null);
   const [status, setStatus] = useState(null);
   const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [phoneOpen, setPhoneOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      if (sessionStorage.getItem('fixngo.phoneOpen') === '1') return true;
+      if (sessionStorage.getItem('fixngo.phoneOpen') === '0') return false;
+      if (sessionStorage.getItem('fixngo.access')) return true;
+    } catch {}
+    return false;
+  });
 
-  usePhoneInteractions(stageRef, frameRef, cursorRef);
+  const openPhone = () => {
+    try { sessionStorage.setItem('fixngo.phoneOpen', '1'); } catch {}
+    setPhoneOpen(true);
+  };
+
+  const closePhone = () => {
+    try { sessionStorage.setItem('fixngo.phoneOpen', '0'); } catch {}
+    setPhoneOpen(false);
+  };
+
+  usePhoneInteractions(stageRef, frameRef, cursorRef, phoneOpen);
+
+  useEffect(() => {
+    const onOpenEvt = () => setPhoneOpen(true);
+    window.addEventListener('fixngo:phone-open', onOpenEvt);
+    return () => window.removeEventListener('fixngo:phone-open', onOpenEvt);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    document.body.style.overflow = phoneOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [phoneOpen]);
 
   useEffect(() => {
     const nextId = user?.id || null;
@@ -593,28 +627,53 @@ function Shell() {
   return (
     <>
       <SystemRibbon status={status} />
-      <div className="min-h-screen w-full flex items-center justify-center p-3 md:p-5">
-        <div ref={stageRef} className="phone-stage" id="phoneRoot">
-          <div ref={frameRef} className="phone-frame iphone-frame shrink-0">
-            <div className="iphone-inner">
-              <div className="iphone-screen" data-screen>
-                {!online && (
-                  <div data-testid="offline-banner" className="shrink-0 bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1">
-                    <WifiOff size={12} />Offline — requests will replay
+      <div aria-hidden={phoneOpen ? 'true' : undefined}>
+        <LandingPage onOpenMobile={openPhone} />
+      </div>
+
+      {phoneOpen && (
+        <>
+          <div
+            className="fn-phone-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closePhone();
+            }}
+          >
+            <button
+              type="button"
+              onClick={closePhone}
+              data-phone-close="true"
+              data-testid="close-mobile-app-btn"
+              className="fn-phone-close-btn"
+              aria-label={isAr ? 'العودة لصفحة الموقع' : 'Back to Landing Page'}
+            >
+              <X size={15} />
+              <span>{isAr ? 'الموقع الرئيسي' : 'Landing Page'}</span>
+            </button>
+
+            <div ref={stageRef} className="phone-stage" id="phoneRoot">
+              <div ref={frameRef} className="phone-frame iphone-frame shrink-0">
+                <div className="iphone-inner">
+                  <div className="iphone-screen" data-screen>
+                    {!online && (
+                      <div data-testid="offline-banner" className="shrink-0 bg-amber-500 text-white text-center text-[10px] py-1 flex items-center justify-center gap-1">
+                        <WifiOff size={12} />Offline — requests will replay
+                      </div>
+                    )}
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      {blocked ? <SetupNeeded /> : !ready ? (
+                        <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
+                      ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
+                    </div>
                   </div>
-                )}
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  {blocked ? <SetupNeeded /> : !ready ? (
-                    <div className="h-full grid place-items-center"><Loader2 className="animate-spin text-[#E51C23]" size={32} /></div>
-                  ) : user ? <AuthenticatedApp user={user} /> : <GuestApp />}
                 </div>
               </div>
+              <span ref={cursorRef} className="mob-cursor" data-cursor aria-hidden="true" />
             </div>
           </div>
-          <span ref={cursorRef} className="mob-cursor" data-cursor aria-hidden="true" />
-        </div>
-      </div>
-      {status?.simulatorsEnabled && <SimulatorDock />}
+          {status?.simulatorsEnabled && <SimulatorDock />}
+        </>
+      )}
     </>
   );
 }

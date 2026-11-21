@@ -46,7 +46,7 @@ public sealed record SafetyReportDto(Guid Id, string Category, Guid ReporterId, 
     string Description, SafetyReportStatus Status, string? ReviewNote, DateTime CreatedAt);
 public sealed record SupportMessageDto(Guid Id, bool FromSupport, string? AuthorName, string Text, DateTime CreatedAt);
 public sealed record TicketDetailDto(TicketDto Ticket, IReadOnlyList<SupportMessageDto> Messages);
-public sealed record SosDto(Guid Id, double Latitude, double Longitude, bool Resolved, DateTime CreatedAt);
+public sealed record SosDto(Guid Id, double Latitude, double Longitude, bool Resolved, DateTime CreatedAt, string? Note = null);
 public sealed record WithdrawalProcessRequest(WithdrawalStatus Status, string? FailureReason = null);
 
 // ---- Reviews / chat ----

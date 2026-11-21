@@ -60,6 +60,20 @@ public static class DummyDataConsistencySync
             .OrderBy(p => p.UserId)
             .ToListAsync(ct);
 
+        // Always reset stale or never-heartbeated online flags (e.g. seeded dummy providers with LastHeartbeatAt == null)
+        // so matched-provider counts reflect only genuinely active online providers.
+        var staleCutoff = DateTime.UtcNow.AddMinutes(-30);
+        var staleOnlineFixed = false;
+        foreach (var prof in profiles.Where(p => p.IsOnline && (p.LastHeartbeatAt == null || p.LastHeartbeatAt < staleCutoff)))
+        {
+            prof.IsOnline = false;
+            staleOnlineFixed = true;
+        }
+        if (staleOnlineFixed)
+        {
+            await db.SaveChangesAsync(ct);
+        }
+
         // Idempotency check: skip if centers already have consistent non-zero ratings & distinct names
         var duplicateCenterNames = centers.GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
         var inconsistentCenters = centers.Any(c => (c.RatingCount == 0 && c.RecommendPercent > 0) || (c.Owner != null && c.Owner.KycStatus == KycStatus.Approved && c.RatingCount == 0));

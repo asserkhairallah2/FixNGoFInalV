@@ -17,7 +17,7 @@ public sealed class AuthService(
     ILogger<AuthService> logger,
     AuthOptions options) : IAuthService
 {
-    private static readonly TimeSpan OtpTtl = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan OtpTtl = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan LockoutWindow = TimeSpan.FromMinutes(15);
     private const int MaxFailedAttempts = 5;

@@ -43,6 +43,7 @@ import {
 import {
   useColors,
   AppTopBar,
+  Avatar,
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
@@ -1177,104 +1178,77 @@ export function AD05Screen() {
  * ===================================================================== */
 export function AD06Screen() {
   const colors = useColors();
-  const { isAr, lang } = usePrefs();
+  const { isAr } = usePrefs();
   const { user } = useSession();
   const nav = useNav();
-  const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
-  const todayLabel = fmtDate(new Date().toISOString(), lang);
+
+  const adminName = user?.fullName || (isAr ? 'مشرف المنصة' : 'Administrator');
+
+  const links = [
+    { code: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب' },
+    { code: 'AD05', icon: '⚙️', en: 'Platform Pricing & Settings', ar: 'إعدادات وتسعير المنصة' },
+    { code: 'AD18', icon: '🎧', en: 'Support Tickets Inbox', ar: 'صندوق تذاكر الدعم الفني' },
+    { code: 'SH06', icon: '🌐', en: 'App Settings (Language & Theme)', ar: 'إعدادات التطبيق (اللغة والمظهر)' },
+    { code: 'SH10', icon: '🔔', en: 'Notification Preferences', ar: 'تفضيلات الإشعارات' },
+    { code: 'SH02', icon: '🔒', en: 'Change Password', ar: 'تغيير كلمة المرور' },
+    { code: 'AD13', icon: '🛡️', en: 'Security & Two-Factor Auth (2FA)', ar: 'الأمان والمصادقة الثنائية (2FA)' },
+    { code: 'AD14', icon: '📱', en: 'Active Devices & Sessions', ar: 'الأجهزة والجلسات النشطة' },
+    { code: 'SH05', icon: '📜', en: 'Terms of Service & Privacy Policy', ar: 'الشروط وسياسة الخصوصية' },
+    { code: 'SH11', icon: 'ℹ️', en: 'About FixNGo', ar: 'عن منصة فيكس آند جو' },
+    { code: 'SH13', icon: '🚪', en: 'Sign Out', ar: 'تسجيل الخروج', danger: true },
+  ];
 
   return (
     <AdminShell code="AD06">
       <div>
         <h1 className={`text-lg font-extrabold ${colors.text}`}>
-          {isAr ? 'الملف الشخصي' : 'Profile'}
+          {isAr ? 'الملف الشخصي والإعدادات' : 'Profile & Settings'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {isAr ? `مساحة المشرف · ${todayLabel}` : `Admin workspace · ${todayLabel}`}
+          {isAr ? 'إعدادات حساب المشرف وأمان المنصة.' : 'Administrator profile & security preferences.'}
         </p>
       </div>
 
-      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 shrink-0 rounded-xl bg-red-600/15 text-red-500 flex items-center justify-center font-extrabold text-xs">
-            {initialsOf(user?.fullName)}
+      <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} space-y-3`}>
+        <div className="flex items-start gap-3">
+          <div className="shrink-0">
+            <Avatar name={adminName} size={52} />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className={`font-extrabold truncate ${colors.text}`}>{user?.fullName || (isAr ? 'المشرف' : 'Administrator')}</p>
-            <p className={`text-[11px] truncate text-start ${colors.secondaryText}`} dir="ltr">{user?.email || '—'}</p>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className={`text-base font-extrabold truncate ${colors.text}`}>{adminName}</div>
+              <StatusBadge
+                status="Active"
+                text={user?.isSuperAdmin ? (isAr ? 'مشرف عام' : 'Super Admin') : (isAr ? 'مشرف' : 'Admin')}
+              />
+            </div>
+            <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+              {user?.email || ''}
+            </div>
+            <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+              {user?.phone || ''}
+            </div>
           </div>
-        </div>
-        <div className="flex justify-between pt-1 border-t border-slate-500/10">
-          <span className={colors.secondaryText}>{isAr ? 'الدور' : 'Role'}</span>
-          <span className={`font-bold ${colors.text}`}>
-            {user?.isSuperAdmin
-              ? isAr
-                ? 'مشرف عام'
-                : 'Super Admin'
-              : isAr
-              ? 'مشرف المنصة'
-              : 'Administrator'}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className={colors.secondaryText}>{isAr ? 'المصادقة الثنائية' : 'Two-factor auth'}</span>
-          <span className={`font-bold ${colors.text}`}>
-            {user?.twoFactorEnabled ? (isAr ? 'مفعّلة' : 'Enabled') : isAr ? 'غير مفعّلة' : 'Not enabled'}
-          </span>
         </div>
       </div>
 
-      <div className="space-y-2">
-        {[
-          {
-            icon: Settings,
-            title: isAr ? 'إعدادات التطبيق' : 'App settings',
-            sub: isAr ? 'اللغة والمظهر والتفضيلات' : 'Language, appearance, and preferences',
-            target: 'SH06'
-          },
-          {
-            icon: Lock,
-            title: isAr ? 'الأمان والمصادقة الثنائية' : 'Security & 2FA',
-            sub: isAr ? 'كلمة المرور وتطبيق المصادقة TOTP' : 'Password and TOTP authenticator enrollment',
-            target: 'AD13'
-          },
-          {
-            icon: Smartphone,
-            title: isAr ? 'الجلسات النشطة' : 'Active sessions',
-            sub: isAr ? 'مراجعة الأجهزة وإلغاء الوصول' : 'Review active devices and revoke sessions',
-            target: 'AD14'
-          },
-          {
-            icon: Bell,
-            title: isAr ? 'الإشعارات' : 'Notifications',
-            sub: isAr ? 'تنبيهات الدفع والبريد والتوثيق' : 'Push, email, and verification alerts',
-            target: 'SH10'
-          },
-          {
-            icon: LogOut,
-            title: isAr ? 'تسجيل الخروج' : 'Log out',
-            sub: isAr ? 'إنهاء جلسة المشرف الحالية' : 'End your current administrator session',
-            target: 'SH13'
-          }
-        ].map((row) => {
-          const IconComp = row.icon;
-          return (
-            <button
-              key={row.target}
-              onClick={() => nav.go(row.target)}
-              className={`w-full p-3.5 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between text-start`}
-            >
-              <div className="flex items-center gap-2.5">
-                <IconComp size={16} className={colors.secondaryText} />
-                <div>
-                  <p className={`text-xs font-extrabold ${colors.text}`}>{row.title}</p>
-                  <p className={`text-[10px] ${colors.secondaryText}`}>{row.sub}</p>
-                </div>
-              </div>
-              <ForwardChevron size={14} className={colors.secondaryText} />
-            </button>
-          );
-        })}
+      <div className={`rounded-2xl border ${colors.border} ${colors.surface} overflow-hidden`}>
+        {links.map((item, idx) => (
+          <button
+            key={item.code}
+            type="button"
+            onClick={() => nav.go(item.code)}
+            className={`w-full px-4 py-3 text-start flex items-center justify-between text-xs font-bold transition-all ${
+              item.danger ? 'text-rose-500' : colors.text
+            } ${idx < links.length - 1 ? `border-b ${colors.border}` : ''}`}
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="text-base">{item.icon}</span>
+              <span>{isAr ? item.ar : item.en}</span>
+            </span>
+            <span className={colors.secondaryText}>{isAr ? '‹' : '›'}</span>
+          </button>
+        ))}
       </div>
     </AdminShell>
   );

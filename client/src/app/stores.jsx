@@ -191,6 +191,10 @@ function readInitialRoute() {
   }
   stripBrowserUrl();
   if (incoming) {
+    try {
+      sessionStorage.setItem('fixngo.phoneOpen', '1');
+      window.dispatchEvent(new CustomEvent('fixngo:phone-open'));
+    } catch {}
     return persistRouteState(parseHashString(incoming));
   }
   try {
@@ -238,6 +242,10 @@ export function NavProvider({ children }) {
       const incoming = window.location.hash;
       stripBrowserUrl();
       if (!incoming) return;
+      try {
+        sessionStorage.setItem('fixngo.phoneOpen', '1');
+        window.dispatchEvent(new CustomEvent('fixngo:phone-open'));
+      } catch {}
       const parsed = parseHashString(incoming);
       setRoute(persistRouteState(parsed));
     };

@@ -171,7 +171,7 @@ public static class DummyGenerator
                         {
                             User = user, UserId = user.Id, YearsExperience = 1 + rng.Next(15),
                             ExpertiseJson = "[\"general\"]", CoverageArea = area, CoverageRadiusKm = 5 + rng.Next(15),
-                            IsOnline = n % 3 != 0, Latitude = user.Latitude, Longitude = user.Longitude,
+                            IsOnline = false, Latitude = user.Latitude, Longitude = user.Longitude,
                             CompletedJobs = rng.Next(3, 90),
                             TruckType = role == Role.TowCaptain ? TruckType.Flatbed : null,
                             TruckPlate = role == Role.TowCaptain ? $"T{n:D3}-{rng.Next(1000, 9999)}" : null

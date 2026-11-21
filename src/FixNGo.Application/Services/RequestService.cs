@@ -85,9 +85,12 @@ public sealed class RequestService(
 
         // Auto-broadcast offers to currently online approved providers of matching role (keeping Status = Searching).
         var targetRole = st.Kind == RequestKind.Tow ? Role.TowCaptain : Role.Mechanic;
+        var activeCutoff = clock.UtcNow.AddMinutes(-30);
         var onlineProviders = await (from p in db.ProviderProfiles
                                      join u in db.Users on p.UserId equals u.Id
-                                     where u.Role == targetRole && p.IsOnline && u.Status == UserStatus.Active
+                                     where u.Role == targetRole && p.IsOnline
+                                           && p.LastHeartbeatAt != null && p.LastHeartbeatAt >= activeCutoff
+                                           && u.Status == UserStatus.Active
                                            && u.KycStatus == KycStatus.Approved
                                      select new { p, u }).ToListAsync(ct);
         if (onlineProviders.Count > 0)
@@ -280,9 +283,14 @@ public sealed class RequestService(
             if (prof is not null) prof.CompletedJobs++;
 
             var (s, _) = await settings.CurrentAsync(ct);
-            var total = r.QuoteMinor ?? r.EstimateMinor ?? 0;
-            var fee = total >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0;
-            var subtotal = Math.Max(0, total - fee);
+            var latestQuote = await db.Quotes
+                .Where(q => q.RequestId == r.Id && q.Status != QuoteStatus.Rejected)
+                .OrderByDescending(q => q.Status == QuoteStatus.Approved)
+                .ThenByDescending(q => q.Version)
+                .FirstOrDefaultAsync(ct);
+            var total = latestQuote?.TotalMinor ?? r.QuoteMinor ?? r.EstimateMinor ?? 0;
+            var fee = latestQuote?.ServiceFeeMinor ?? (total <= 0 ? 0 : total >= 25_000 ? s.ServiceFeeMinor : (long)Math.Round(total / 1.10 * 0.10));
+            var subtotal = latestQuote?.ProviderNetMinor ?? Math.Max(0, total - fee);
             var inv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == r.Id, ct);
             if (inv is null)
             {
@@ -297,12 +305,18 @@ public sealed class RequestService(
                     Method = r.PaymentMethod ?? PaymentMethodType.Cash,
                     Status = InvoiceStatus.Paid,
                     CustomerCashConfirmed = true,
-                    LinesJson = System.Text.Json.JsonSerializer.Serialize(new[] { new { label = "service", amountMinor = subtotal } })
+                    LinesJson = System.Text.Json.JsonSerializer.Serialize(new[] { new { label = "Service", amountMinor = subtotal } })
                 };
                 db.Invoices.Add(inv);
             }
             else
             {
+                if (inv.Status != InvoiceStatus.Paid)
+                {
+                    inv.SubtotalMinor = subtotal;
+                    inv.ServiceFeeMinor = fee;
+                    inv.TotalMinor = total;
+                }
                 inv.Status = InvoiceStatus.Paid;
                 inv.Method ??= r.PaymentMethod ?? PaymentMethodType.Cash;
             }

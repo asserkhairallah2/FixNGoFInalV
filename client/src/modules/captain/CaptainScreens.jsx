@@ -36,6 +36,7 @@ import {
 } from '../../api/hooks.js';
 import {
   AppTopBar,
+  Avatar,
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
@@ -1479,13 +1480,12 @@ export function T09Screen() {
 // ==========================================
 export function T10Screen() {
   const colors = useColors();
-  const { isAr, lang } = usePrefs();
+  const { isAr } = usePrefs();
   const nav = useNav();
   const { user } = useSession();
   const providerQ = useProvider();
   const kycQ = useKyc();
 
-  const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
   const provider = providerQ.data;
   const kyc = kycQ.data;
 
@@ -1496,138 +1496,106 @@ export function T10Screen() {
   const trips = provider?.completedJobs ?? 0;
   const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
-  const capacityText = provider?.truckCapacityTonnes != null ? `${provider.truckCapacityTonnes}t` : '—';
   const kycStatus = provider?.kycStatus || kyc?.status || 'Approved';
-  const docs = Array.isArray(kyc?.documents) ? kyc.documents : [];
+
+  const links = [
+    { code: 'T15', icon: '🛻', en: 'Edit Captain & Truck Profile', ar: 'تعديل الملف وبيانات الونش', primary: true },
+    { code: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب' },
+    { code: 'SH01', icon: '💬', en: 'Messages & Customer Chats', ar: 'المحادثات مع العملاء' },
+    { code: 'T09', icon: '💰', en: 'Wallet & Earnings', ar: 'المحفظة والأرباح' },
+    { code: 'T12', icon: '🧾', en: 'Trip History', ar: 'سجل الرحلات' },
+    { code: 'SH17', icon: '📄', en: 'Verification Documents (KYC)', ar: 'مستندات الرخصة والونش' },
+    { code: 'SH14', icon: '🏦', en: 'Bank Accounts & Payouts', ar: 'الحسابات البنكية والتحويلات' },
+    { code: 'SH06', icon: '🌐', en: 'App Settings (Language & Theme)', ar: 'إعدادات التطبيق (اللغة والمظهر)' },
+    { code: 'SH10', icon: '⚙️', en: 'Notification Preferences', ar: 'تفضيلات الإشعارات' },
+    { code: 'SH02', icon: '🔒', en: 'Change Password', ar: 'تغيير كلمة المرور' },
+    { code: 'AD13', icon: '🛡️', en: 'Two-Factor Authentication (2FA)', ar: 'المصادقة الثنائية (2FA)' },
+    { code: 'AD14', icon: '📱', en: 'Active Devices & Sessions', ar: 'الأجهزة والجلسات النشطة' },
+    { code: 'SH07', icon: '🎧', en: 'Help & Support Center', ar: 'مركز المساعدة والدعم' },
+    { code: 'SH05', icon: '📜', en: 'Terms of Service & Privacy Policy', ar: 'الشروط وسياسة الخصوصية' },
+    { code: 'SH11', icon: 'ℹ️', en: 'About FixNGo', ar: 'عن منصة فيكس آند جو' },
+    { code: 'SH21', icon: '🗑️', en: 'Request Account Deletion', ar: 'طلب حذف الحساب', danger: true },
+    { code: 'SH13', icon: '🚪', en: 'Sign Out', ar: 'تسجيل الخروج', danger: true },
+  ];
 
   return (
     <CaptainShell code="T10">
       <div>
-        <h1 className={`text-lg font-bold ${colors.text}`}>
-          {isAr ? 'الملف الشخصي للكابتن' : 'Captain profile'}
+        <h1 className={`text-lg font-extrabold ${colors.text}`}>
+          {isAr ? 'الملف الشخصي والإعدادات' : 'Profile & Settings'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {isAr ? 'هويتك المهنية لخدمات السحب والإنقاذ.' : 'Your professional towing identity.'}
+          {isAr ? 'هويتك المهنية لخدمات السحب والإنقاذ وإعدادات الحساب.' : 'Your verified towing profile & account settings.'}
         </p>
       </div>
 
-      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
-        <div className="flex items-center gap-2.5">
-          <AvatarBadge name={displayName} className="w-11 h-11" />
+      <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} space-y-3`}>
+        <div className="flex items-start gap-3">
+          <div className="shrink-0">
+            <Avatar name={displayName} size={52} />
+          </div>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className={`text-base font-extrabold truncate ${colors.text}`}>{displayName}</div>
+              <StatusBadge
+                status={kycStatus}
+                text={kycStatus === 'Approved' ? (isAr ? 'كابتن ونش معتمد' : 'Verified Captain') : undefined}
+              />
+            </div>
+            <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+              {user?.email || provider?.email || ''}
+            </div>
+            <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+              {provider?.phone || user?.phone || ''}
+            </div>
+          </div>
+        </div>
+
+        <div className={`grid grid-cols-3 gap-2 pt-2 border-t ${colors.border} text-center text-xs`}>
           <div>
-            <p className={`font-bold ${colors.text}`}>{displayName}</p>
-            <p className={`text-[10px] ${colors.secondaryText}`}>
-              {ratingCount > 0
-                ? `${providerLabel('TowCaptain', isAr)} · ${rating} ★ (${ratingCount}) · 👍 ${recommendPercent}% · ${plural(trips, 'trip', isAr)}`
-                : `${providerLabel('TowCaptain', isAr)} · ${plural(trips, 'trip', isAr)}`}
-            </p>
+            <div className={`font-extrabold ${colors.text}`}>
+              {ratingCount > 0 ? `⭐ ${rating}` : '—'}
+            </div>
+            <div className={`text-[10px] ${colors.secondaryText}`}>
+              {ratingCount > 0 ? `${ratingCount} · 👍 ${recommendPercent}%` : (isAr ? 'التقييم' : 'Rating')}
+            </div>
+          </div>
+          <div>
+            <div className={`font-extrabold ${colors.text}`}>{trips}</div>
+            <div className={`text-[10px] ${colors.secondaryText}`}>
+              {isAr ? 'رحلات مكتملة' : 'Trips Done'}
+            </div>
+          </div>
+          <div>
+            <div className={`font-extrabold truncate ${colors.text}`} dir="ltr">
+              {truckPlate}
+            </div>
+            <div className={`text-[10px] truncate ${colors.secondaryText}`}>
+              {truckMake}
+            </div>
           </div>
         </div>
-        {user?.phone && (
-          <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
-            <span className={colors.secondaryText}>{isAr ? 'رقم الهاتف' : 'Phone'}</span>
-            <span className={`font-bold ${colors.text}`} dir="ltr">{provider?.phone || user.phone}</span>
-          </div>
-        )}
-        <StatusBadge
-          status={kycStatus}
-          text={
-            kycStatus === 'Approved'
-              ? isAr
-                ? 'كابتن ونش معتمد'
-                : 'Verified Tow Captain'
-              : undefined
-          }
-        />
       </div>
 
-      <div className={`rounded-2xl border ${colors.border} ${colors.surface} overflow-hidden text-xs`}>
-        <img src={FLATBED_SVG} alt="Flatbed" className="w-full h-24 object-cover" />
-        <div className="p-3 space-y-1">
-          <p className={`font-bold ${colors.text}`}>{truckMake}</p>
-          <div className="flex justify-between">
-            <span className={colors.secondaryText}>{isAr ? 'نوع الونش' : 'Truck type'}</span>
-            <span className={`font-bold ${colors.text}`}>
-              {provider?.truckType ? providerLabel(provider.truckType, isAr) : truckMake}
+      <div className={`rounded-2xl border ${colors.border} ${colors.surface} overflow-hidden`}>
+        {links.map((item, idx) => (
+          <button
+            key={item.code}
+            type="button"
+            data-testid={item.primary ? 'screen-primary' : undefined}
+            onClick={() => nav.go(item.code)}
+            className={`w-full px-4 py-3 text-start flex items-center justify-between text-xs font-bold transition-all ${
+              item.danger ? 'text-rose-500' : colors.text
+            } ${idx < links.length - 1 ? `border-b ${colors.border}` : ''}`}
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="text-base">{item.icon}</span>
+              <span>{isAr ? item.ar : item.en}</span>
             </span>
-          </div>
-          <div className="flex justify-between">
-            <span className={colors.secondaryText}>{isAr ? 'رقم اللوحة' : 'Truck plate'}</span>
-            <span className={`font-bold ${colors.text}`} dir="ltr">{truckPlate}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className={colors.secondaryText}>{isAr ? 'الحمولة' : 'Capacity'}</span>
-            <span className={`font-bold ${colors.text}`} dir="ltr">{capacityText}</span>
-          </div>
-        </div>
+            <span className={colors.secondaryText}>{isAr ? '‹' : '›'}</span>
+          </button>
+        ))}
       </div>
-
-      {docs.length > 0 ? (
-        docs.map((doc) => (
-          <button
-            key={doc.id}
-            type="button"
-            onClick={() => nav.go('SH17', { id: doc.id })}
-            className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
-          >
-            <div>
-              <p className={`font-bold ${colors.text}`}>{providerLabel(doc.documentType, isAr)}</p>
-              <p className={`text-[10px] ${colors.secondaryText}`}>
-                {`${providerLabel(doc.status, isAr)} · ${fmtDate(doc.createdAt, lang)}`}
-              </p>
-            </div>
-            <ForwardChevron size={14} className={colors.secondaryText} />
-          </button>
-        ))
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => nav.go('SH17')}
-            className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
-          >
-            <div>
-              <p className={`font-bold ${colors.text}`}>{providerLabel('DrivingLicense', isAr)}</p>
-              <p className={`text-[10px] ${colors.secondaryText}`}>{providerLabel(kycStatus, isAr)}</p>
-            </div>
-            <ForwardChevron size={14} className={colors.secondaryText} />
-          </button>
-          <button
-            type="button"
-            onClick={() => nav.go('SH17')}
-            className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
-          >
-            <div>
-              <p className={`font-bold ${colors.text}`}>
-                {providerLabel('TruckRegistration', isAr)}
-              </p>
-              <p className={`text-[10px] ${colors.secondaryText}`}>{providerLabel(kycStatus, isAr)}</p>
-            </div>
-            <ForwardChevron size={14} className={colors.secondaryText} />
-          </button>
-        </>
-      )}
-
-      <button
-        type="button"
-        onClick={() => nav.go('SH06')}
-        className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
-      >
-        <div>
-          <p className={`font-bold ${colors.text}`}>{isAr ? 'إعدادات التطبيق' : 'App settings'}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'اللغة، الإشعارات، والمظهر' : 'Language, notifications, and preferences'}
-          </p>
-        </div>
-        <ForwardChevron size={14} className={colors.secondaryText} />
-      </button>
-
-      <PrimaryButton onClick={() => nav.go('T15')} testId="screen-primary">
-        {isAr ? 'تعديل الملف والونش' : 'Edit Profile'}
-      </PrimaryButton>
-      <SecondaryButton onClick={() => nav.go('SH13')}>
-        {isAr ? 'تسجيل الخروج' : 'Log out'}
-      </SecondaryButton>
     </CaptainShell>
   );
 }

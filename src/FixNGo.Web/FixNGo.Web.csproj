@@ -16,4 +16,9 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.10.0" />
   </ItemGroup>
+  <Target Name="EnsureClientAssets" BeforeTargets="Build" Condition="!Exists('$(MSBuildProjectDirectory)\wwwroot\assets\fixngo-app.js') And Exists('$(MSBuildProjectDirectory)\..\..\client\package.json')">
+    <Message Importance="High" Text="[FixNGo.Web] Building client assets into wwwroot for Visual Studio / first-time build..." />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)\..\..\client" Command="npm install --no-audit --no-fund" Condition="!Exists('$(MSBuildProjectDirectory)\..\..\client\node_modules')" />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)\..\..\client" Command="npm run build" />
+  </Target>
 </Project>

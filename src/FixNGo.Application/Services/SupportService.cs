@@ -206,12 +206,12 @@ public sealed class SupportService(IAppDbContext db, IClock clock, INotifier not
         var admins = await db.Users.Where(u => u.Role == Role.Admin).Select(u => u.Id).ToListAsync(ct);
         foreach (var id in admins)
             await notifier.NotifyUserAsync(id, NotificationType.NewSafetyReport, "SOS triggered", $"SOS at {req.Latitude},{req.Longitude}.", $"sos:{e.Id}", ct);
-        return new SosDto(e.Id, e.Latitude, e.Longitude, e.Resolved, e.CreatedAt);
+        return new SosDto(e.Id, e.Latitude, e.Longitude, e.Resolved, e.CreatedAt, e.Note);
     }
 
     public async Task<IReadOnlyList<SosDto>> MySosAsync(Guid userId, CancellationToken ct = default) =>
         await db.EmergencyEvents.Where(e => e.UserId == userId).OrderByDescending(e => e.CreatedAt)
-            .Select(e => new SosDto(e.Id, e.Latitude, e.Longitude, e.Resolved, e.CreatedAt)).ToListAsync(ct);
+            .Select(e => new SosDto(e.Id, e.Latitude, e.Longitude, e.Resolved, e.CreatedAt, e.Note)).ToListAsync(ct);
 
     public async Task<SafetyReportDto> ReportAsync(Guid userId, SafetyReportRequest req, CancellationToken ct = default)
     {

@@ -160,6 +160,7 @@ public interface IProviderService
     Task<KycApplicationDto> ReviewKycAsync(Guid adminId, Guid appId, ReviewKycRequest req, CancellationToken ct = default);
     Task<object> DocumentsAsync(Guid appId, CancellationToken ct = default);
     Task<IReadOnlyList<ProviderDto>> NearbyAsync(double lat, double lng, string role, CancellationToken ct = default);
+    Task<ProviderPublicProfileDto> PublicProfileAsync(Guid providerId, CancellationToken ct = default);
 }
 
 public interface INotificationService

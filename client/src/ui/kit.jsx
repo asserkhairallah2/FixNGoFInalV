@@ -1,11 +1,12 @@
 // Shared UI kit — stable top-level components moved out of the legacy App().
 // Visual design kept 1:1; all content comes from props/context, never mock data.
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import {
   ChevronLeft, ChevronRight, AlertTriangle, Phone, Navigation, Check,
-  MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck
+  MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck, LocateFixed
 } from 'lucide-react';
 import { usePrefs, useNav, useSession, useNavigate } from '../app/stores.jsx';
+import { get as apiGet } from '../api/http.js';
 import { fmtMoney } from '../i18n/format.js';
 import { checkPasswordRules } from './validation.js';
 
@@ -281,11 +282,250 @@ export function StatusBadge({ status, text }) {
   );
 }
 
-// ---- Map (label/subtitle/markers/pin are data-driven; interactive click-to-pin supported) ----
-export function MapView({ label, subtitle, mode = 'route', height, markers = [], pin = null, onPick, interactive = false }) {
+// ---- Google Cloud Maps, Geocoding, Places & Routes Integration ----
+let _gmapsPromise = null;
+
+function readServerBootstrapMapsKey() {
+  if (typeof document === 'undefined') return '';
+  try {
+    const el = document.getElementById('fixngo-server-bootstrap');
+    if (el?.textContent) {
+      const parsed = JSON.parse(el.textContent);
+      if (parsed?.googleMapsApiKey) return String(parsed.googleMapsApiKey);
+    }
+  } catch { /* ignore */ }
+  return '';
+}
+
+function isLocalLoopbackHost() {
+  if (typeof window === 'undefined') return true;
+  if (window.__enableGoogleMapsOnLocalhost) return false;
+  const h = window.location?.hostname ?? '';
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '';
+}
+
+export function loadGoogleMapsSdk() {
+  if (typeof window === 'undefined' || isLocalLoopbackHost()) return Promise.resolve(null);
+  if (window.google?.maps?.Map) return Promise.resolve(window.google.maps);
+  if (_gmapsPromise) return _gmapsPromise;
+
+  const key = readServerBootstrapMapsKey();
+  if (!key) return Promise.resolve(null);
+
+  _gmapsPromise = new Promise((resolve) => {
+    const existing = document.querySelector('script[data-fixngo-gmaps]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(window.google?.maps ?? null));
+      existing.addEventListener('error', () => resolve(null));
+      return;
+    }
+    window.gm_authFailure = () => {
+      window.__fixngoMapsAuthFailed = true;
+      resolve(null);
+    };
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places,geometry&v=weekly`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.fixngoGmaps = '1';
+    script.onload = () => resolve(window.google?.maps ?? null);
+    script.onerror = () => resolve(null);
+    document.head.appendChild(script);
+  });
+  return _gmapsPromise;
+}
+
+export async function reverseGeocodeCoords(lat, lng) {
+  const gmaps = await loadGoogleMapsSdk();
+  if (gmaps?.Geocoder && !window.__fixngoMapsAuthFailed) {
+    try {
+      const geocoder = new gmaps.Geocoder();
+      const resp = await geocoder.geocode({ location: { lat: Number(lat), lng: Number(lng) } });
+      const first = resp?.results?.[0];
+      if (first?.formatted_address) {
+        const sublocality = first.address_components?.find((ac) =>
+          ac.types?.includes('sublocality') || ac.types?.includes('neighborhood') || ac.types?.includes('locality')
+        )?.long_name;
+        return {
+          label: sublocality || first.formatted_address.split(',')[0],
+          address: first.formatted_address,
+          latitude: Number(lat),
+          longitude: Number(lng)
+        };
+      }
+    } catch { /* fall through to backend Places API */ }
+  }
+  try {
+    return await apiGet(`/lookups/reverse-geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+  } catch {
+    return {
+      label: 'Pinned Location',
+      address: `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`,
+      latitude: Number(lat),
+      longitude: Number(lng)
+    };
+  }
+}
+
+export async function searchGeoPlaces(query) {
+  const q = String(query ?? '').trim();
+  if (q.length < 2) return [];
+  try {
+    const res = await apiGet(`/lookups/geocode?q=${encodeURIComponent(q)}`);
+    return Array.isArray(res) ? res : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function computeDrivingRoute(originLat, originLng, destLat, destLng) {
+  try {
+    return await apiGet(
+      `/lookups/route?originLat=${encodeURIComponent(originLat)}&originLng=${encodeURIComponent(originLng)}&destLat=${encodeURIComponent(destLat)}&destLng=${encodeURIComponent(destLng)}`
+    );
+  } catch {
+    return null;
+  }
+}
+
+const DARK_MAP_STYLES = [
+  { elementType: 'geometry', stylers: [{ color: '#111827' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#111827' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#334155' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#090d16' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] }
+];
+
+// ---- Map (live Google Map on allowed domains + instant interactive fallback) ----
+export function MapView({ label, subtitle, mode = 'route', height, markers = [], pin = null, onPick, interactive = false, encodedPolyline = null }) {
   const c = useColors(); const { isDark, isAr } = usePrefs();
   const canPick = Boolean(onPick) || interactive;
-  // Project Cairo-region coordinates (~29.95..30.15 lat, ~31.10..31.55 lng) onto [16..84]% box.
+  const mapHostRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const mapOverlaysRef = useRef([]);
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
+  const [liveMapReady, setLiveMapReady] = useState(false);
+
+  const pickupCoord = pin || markers[0] || null;
+  const providerCoord = markers.length > 1 ? markers[1] : null;
+  const centerLat = Number(pickupCoord?.lat ?? providerCoord?.lat ?? 30.0444);
+  const centerLng = Number(pickupCoord?.lng ?? pickupCoord?.lon ?? providerCoord?.lng ?? providerCoord?.lon ?? 31.2357);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadGoogleMapsSdk().then((gmaps) => {
+      if (cancelled || !gmaps?.Map || !mapHostRef.current || window.__fixngoMapsAuthFailed) return;
+      if (!mapInstanceRef.current) {
+        const map = new gmaps.Map(mapHostRef.current, {
+          center: { lat: Number.isFinite(centerLat) ? centerLat : 30.0444, lng: Number.isFinite(centerLng) ? centerLng : 31.2357 },
+          zoom: 14,
+          disableDefaultUI: true,
+          zoomControl: true,
+          clickableIcons: false,
+          gestureHandling: 'greedy',
+          styles: isDark ? DARK_MAP_STYLES : []
+        });
+        map.addListener('click', (ev) => {
+          if (!onPickRef.current || !ev?.latLng) return;
+          onPickRef.current({
+            lat: Number(ev.latLng.lat().toFixed(6)),
+            lng: Number(ev.latLng.lng().toFixed(6))
+          });
+        });
+        mapInstanceRef.current = map;
+      }
+      setLiveMapReady(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const gmaps = typeof window !== 'undefined' ? window.google?.maps : null;
+    if (!liveMapReady || !map || !gmaps) return;
+    map.setOptions({ styles: isDark ? DARK_MAP_STYLES : [] });
+
+    mapOverlaysRef.current.forEach((o) => o?.setMap?.(null));
+    mapOverlaysRef.current = [];
+
+    const validPickup = pickupCoord && Number.isFinite(Number(pickupCoord.lat)) && Number.isFinite(Number(pickupCoord.lng ?? pickupCoord.lon))
+      ? { lat: Number(pickupCoord.lat), lng: Number(pickupCoord.lng ?? pickupCoord.lon) }
+      : null;
+    const validProvider = providerCoord && Number.isFinite(Number(providerCoord.lat)) && Number.isFinite(Number(providerCoord.lng ?? providerCoord.lon))
+      ? { lat: Number(providerCoord.lat), lng: Number(providerCoord.lng ?? providerCoord.lon) }
+      : null;
+
+    if (validPickup) {
+      const m = new gmaps.Marker({
+        position: validPickup,
+        map,
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: '#E51C23',
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 2.5
+        }
+      });
+      mapOverlaysRef.current.push(m);
+    }
+
+    if (validProvider && !canPick && mode !== 'pin') {
+      const pm = new gmaps.Marker({
+        position: validProvider,
+        map,
+        icon: {
+          path: gmaps.SymbolPath.FORWARD_CLOSED_ARROW,
+          scale: 5.5,
+          fillColor: '#0F172A',
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 2
+        }
+      });
+      mapOverlaysRef.current.push(pm);
+    }
+
+    if (encodedPolyline && gmaps.geometry?.encoding) {
+      try {
+        const decoded = gmaps.geometry.encoding.decodePath(encodedPolyline);
+        const line = new gmaps.Polyline({
+          path: decoded,
+          geodesic: true,
+          strokeColor: '#E51C23',
+          strokeOpacity: 0.92,
+          strokeWeight: 4,
+          map
+        });
+        mapOverlaysRef.current.push(line);
+      } catch { /* ignore invalid polyline */ }
+    } else if (validPickup && validProvider && mode === 'route') {
+      const line = new gmaps.Polyline({
+        path: [validProvider, validPickup],
+        geodesic: true,
+        strokeColor: '#E51C23',
+        strokeOpacity: 0.9,
+        strokeWeight: 3.5,
+        map
+      });
+      mapOverlaysRef.current.push(line);
+    }
+
+    if (validPickup && validProvider && !canPick) {
+      const bounds = new gmaps.LatLngBounds();
+      bounds.extend(validPickup);
+      bounds.extend(validProvider);
+      map.fitBounds(bounds, 28);
+    } else if (validPickup) {
+      map.panTo(validPickup);
+    }
+  }, [liveMapReady, isDark, pickupCoord?.lat, pickupCoord?.lng, pickupCoord?.lon, providerCoord?.lat, providerCoord?.lng, providerCoord?.lon, canPick, mode, encodedPolyline]);
+
+  // Project Cairo-region coordinates (~29.95..30.15 lat, ~31.10..31.55 lng) onto [16..84]% box for instant fallback.
   const project = (lat, lng, fallbackX, fallbackY) => {
     if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
       return { x: fallbackX, y: fallbackY };
@@ -296,7 +536,7 @@ export function MapView({ label, subtitle, mode = 'route', height, markers = [],
   };
 
   const handleMapClick = (e) => {
-    if (!onPick) return;
+    if (!onPick || liveMapReady) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const xRatio = Math.min(1, Math.max(0, (e.clientX - rect.left) / Math.max(1, rect.width)));
     const yRatio = Math.min(1, Math.max(0, (e.clientY - rect.top) / Math.max(1, rect.height)));
@@ -305,8 +545,6 @@ export function MapView({ label, subtitle, mode = 'route', height, markers = [],
     onPick({ lat, lng });
   };
 
-  const pickupCoord = pin || markers[0] || null;
-  const providerCoord = markers.length > 1 ? markers[1] : null;
   const destPt = project(pickupCoord?.lat, pickupCoord?.lng ?? pickupCoord?.lon, canPick ? 50 : 78, canPick ? 50 : 74);
   const provPt = providerCoord
     ? project(providerCoord.lat, providerCoord.lng ?? providerCoord.lon, 24, 28)
@@ -314,7 +552,7 @@ export function MapView({ label, subtitle, mode = 'route', height, markers = [],
 
   return (
     <div
-      onClick={canPick ? handleMapClick : undefined}
+      onClick={canPick && !liveMapReady ? handleMapClick : undefined}
       role={canPick ? 'button' : undefined}
       tabIndex={canPick ? 0 : undefined}
       aria-label={canPick ? (isAr ? 'اضغط لتحديد الموقع على الخريطة' : 'Click map to set pin location') : undefined}
@@ -322,38 +560,43 @@ export function MapView({ label, subtitle, mode = 'route', height, markers = [],
       className={`relative w-full ${height ? '' : 'h-36'} rounded-2xl overflow-hidden border ${c.border} ${isDark ? 'bg-[#0D1017]' : 'bg-[#F1F5F9]'} ${canPick ? 'cursor-crosshair select-none' : ''}`}
       data-testid="map-view"
     >
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(to right, #64748B 1px, transparent 1px), linear-gradient(to bottom, #64748B 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-28 h-28 rounded-full border border-[#E51C23]/30 bg-[#E51C23]/5 animate-pulse" /></div>
-      {!canPick && mode === 'route' && (
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path d={`M ${provPt.x} ${provPt.y} L ${(provPt.x + destPt.x) / 2} ${provPt.y} L ${(provPt.x + destPt.x) / 2} ${destPt.y} L ${destPt.x} ${destPt.y}`} fill="none" stroke="#E51C23" strokeWidth="2.4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        </svg>
-      )}
-      {!canPick && mode !== 'pin' && (
-        <div style={{ left: `${provPt.x}%`, top: `${provPt.y}%` }} className="absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#E51C23] text-white flex items-center justify-center shadow-lg pointer-events-none"><Navigation size={12} /></div>
+      <div ref={mapHostRef} className={`absolute inset-0 w-full h-full ${liveMapReady ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'}`} />
+      {!liveMapReady && (
+        <>
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(to right, #64748B 1px, transparent 1px), linear-gradient(to bottom, #64748B 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-28 h-28 rounded-full border border-[#E51C23]/30 bg-[#E51C23]/5 animate-pulse" /></div>
+          {!canPick && mode === 'route' && (
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path d={`M ${provPt.x} ${provPt.y} L ${(provPt.x + destPt.x) / 2} ${provPt.y} L ${(provPt.x + destPt.x) / 2} ${destPt.y} L ${destPt.x} ${destPt.y}`} fill="none" stroke="#E51C23" strokeWidth="2.4" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            </svg>
+          )}
+          {!canPick && mode !== 'pin' && (
+            <div style={{ left: `${provPt.x}%`, top: `${provPt.y}%` }} className="absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#E51C23] text-white flex items-center justify-center shadow-lg pointer-events-none"><Navigation size={12} /></div>
+          )}
+        </>
       )}
       {mode === 'arrived' ? (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <div className="px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 shadow-lg"><Check size={12} /> {isAr ? 'وصل مقدم الخدمة' : 'Provider at pickup'}</div>
         </div>
       ) : (!canPick || pickupCoord) ? (
         <div
           data-testid="map-pin"
-          style={{ left: `${destPt.x}%`, top: `${destPt.y}%` }}
-          className={`absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${canPick ? 'bg-[#E51C23] text-white border-2 border-white' : 'bg-white text-[#090A0D] border-2 border-[#090A0D]'} flex items-center justify-center shadow-lg pointer-events-none`}
+          style={liveMapReady ? { left: '50%', top: '50%', opacity: 0.01 } : { left: `${destPt.x}%`, top: `${destPt.y}%` }}
+          className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full ${canPick ? 'bg-[#E51C23] text-white border-2 border-white' : 'bg-white text-[#090A0D] border-2 border-[#090A0D]'} flex items-center justify-center shadow-lg pointer-events-none`}
         >
           <MapPin size={13} />
         </div>
       ) : null}
-      {subtitle && <div className="absolute top-2 left-3 right-3 truncate text-[9px] font-bold uppercase tracking-wider text-slate-400 pointer-events-none">{subtitle}</div>}
+      {subtitle && <div className="absolute z-10 top-2 left-3 right-3 truncate text-[9px] font-bold uppercase tracking-wider text-slate-400 pointer-events-none drop-shadow">{subtitle}</div>}
       {canPick && !pickupCoord && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <span className="px-3 py-1 rounded-full bg-black/75 text-white text-[10px] font-semibold">
             {isAr ? 'اضغط على الخريطة لتحديد الموقع' : 'Tap anywhere on the map to drop pin'}
           </span>
         </div>
       )}
-      {label && <div className="absolute bottom-2 left-3 max-w-[85%] truncate px-2 py-0.5 rounded-lg bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1 pointer-events-none"><Navigation size={10} className="text-[#E51C23] shrink-0" /><span className="truncate">{label}</span></div>}
+      {label && <div className="absolute z-10 bottom-2 left-3 max-w-[85%] truncate px-2 py-0.5 rounded-lg bg-black/80 text-white text-[10px] font-semibold flex items-center gap-1 pointer-events-none"><Navigation size={10} className="text-[#E51C23] shrink-0" /><span className="truncate">{label}</span></div>}
     </div>
   );
 }

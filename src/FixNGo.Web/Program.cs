@@ -94,6 +94,17 @@ if (!string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnore
 
 // ---- Clean Architecture Layer Registration ----
 builder.Services.AddFixNGoInfrastructure(paths, connection, providers, databaseProvider);
+var emailOptions = new ZohoEmailOptions { RecordSimMessages = simulatorsEnabled };
+builder.Configuration.GetSection("Email").Bind(emailOptions);
+builder.Services.AddSingleton(emailOptions);
+if (emailOptions.IsConfigured)
+{
+    builder.Services.AddSingleton<IOtpSender, ZohoSmtpOtpSender>();
+}
+var mapsOptions = new GoogleMapsOptions();
+builder.Configuration.GetSection("Maps").Bind(mapsOptions);
+builder.Services.AddSingleton(mapsOptions);
+builder.Services.AddHttpClient<GoogleMapsService>(client => client.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddFixNGoTokenService(signingKey, issuer, audience, accessMinutes);
 builder.Services.AddSingleton(new AuthOptions
 {
@@ -246,7 +257,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapHub<FixNGo.Web.Hubs.AppHub>("/hubs/app");
 app.MapGet("/health", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }));
-app.MapGet("/api/v1/system/status", async (ISystemStatusService statusService, CancellationToken ct) =>
+app.MapGet("/api/v1/system/status", async (ISystemStatusService statusService, GoogleMapsOptions gm, ZohoEmailOptions em, CancellationToken ct) =>
 {
     var st = await statusService.GetStatusAsync(simulatorsEnabled, ct);
     return Results.Ok(new
@@ -254,7 +265,9 @@ app.MapGet("/api/v1/system/status", async (ISystemStatusService statusService, C
         setupComplete = st.SetupComplete,
         mode = st.Mode,
         version = st.Version,
-        simulatorsEnabled = st.SimulatorsEnabled
+        simulatorsEnabled = st.SimulatorsEnabled,
+        googleMapsApiKey = gm.ApiKey,
+        emailConfigured = em.IsConfigured
     });
 });
 

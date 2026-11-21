@@ -125,7 +125,7 @@ public sealed class AdminService(IAppDbContext db, IClock clock, SettingsService
         var q = db.EmergencyEvents.AsQueryable();
         if (openOnly) q = q.Where(e => !e.Resolved);
         return await q.OrderByDescending(e => e.CreatedAt)
-            .Select(e => new SosDto(e.Id, e.Latitude, e.Longitude, e.Resolved, e.CreatedAt)).ToListAsync(ct);
+            .Select(e => new SosDto(e.Id, e.Latitude, e.Longitude, e.Resolved, e.CreatedAt, e.Note)).ToListAsync(ct);
     }
 
     public async Task ResolveEmergencyAsync(Guid id, CancellationToken ct = default)

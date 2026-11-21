@@ -4,7 +4,8 @@ import {
   usePrefs, useNav, useSession,
   AppTopBar, Card, SectionHeader, StatusBadge, Chip, PrimaryButton, SecondaryButton,
   InputField, SelectField, ToggleSwitch, EmptyState, Banner, Divider, Avatar,
-  StarRating, MapView, BottomSheet, Skeleton, egp, formatLabel, pluralCount, FormValidationProvider
+  StarRating, MapView, BottomSheet, Skeleton, Toast, egp, formatLabel, pluralCount, FormValidationProvider,
+  reverseGeocodeCoords, searchGeoPlaces, computeDrivingRoute
 } from '../../ui/kit.jsx';
 
 function useColors() {
@@ -13,7 +14,7 @@ function useColors() {
     ? {
         bg: '#090A0D', surface: '#12141A', surface2: '#1A1D26', border: '#262936',
         text: '#FFFFFF', text2: '#94A3B8', text3: '#64748B',
-        accent: '#F59E0B', accentBg: 'rgba(245, 158, 11, 0.14)',
+        accent: '#E51C23', accentBg: 'rgba(229, 28, 35, 0.14)',
         danger: '#F43F5E', dangerBg: 'rgba(244, 63, 94, 0.14)',
         success: '#10B981', successBg: 'rgba(16, 185, 129, 0.14)',
         info: '#38BDF8', infoBg: 'rgba(56, 189, 248, 0.14)',
@@ -21,7 +22,7 @@ function useColors() {
     : {
         bg: '#F8FAFC', surface: '#FFFFFF', surface2: '#F1F5F9', border: '#E2E8F0',
         text: '#0F172A', text2: '#475569', text3: '#64748B',
-        accent: '#D97706', accentBg: 'rgba(245, 158, 11, 0.14)',
+        accent: '#E51C23', accentBg: 'rgba(229, 28, 35, 0.10)',
         danger: '#E11D48', dangerBg: 'rgba(225, 29, 72, 0.1)',
         success: '#059669', successBg: 'rgba(16, 185, 129, 0.12)',
         info: '#0284C7', infoBg: 'rgba(2, 132, 199, 0.12)',
@@ -34,7 +35,7 @@ import {
   useApproveQuote, useDispute, useMethods, useInvoiceForRequest,
   useAddCard, usePay, useConfirmCash, useBookings, useUnreadCount, useSos, useReviews, k
 } from '../../api/hooks.js';
-import { post, put, uploadFile, fileUrl } from '../../api/http.js';
+import { get, post, put, uploadFile, fileUrl } from '../../api/http.js';
 import { fmtDateTime } from '../../i18n/format.js';
 
 function useActiveRequest(params) {
@@ -72,28 +73,71 @@ function luhnCheck(numStr) {
 // ---------------------------------------------------------------------------
 function HomeScreen() {
   const { t, isAr } = usePrefs();
-  const { go, flow, updateFlow } = useNav();
+  const { go, flow, updateFlow, clearFlow } = useNav();
   const { user } = useSession();
   const c = useColors();
+  const { data: bootstrap } = useBootstrap();
   const { data: vehicles = [] } = useVehicles();
   const { data: requests = [] } = useRequests();
   const { data: bookings = [] } = useBookings();
   const { data: unread } = useUnreadCount();
 
+  const serviceTypes = bootstrap?.serviceTypes || [];
   const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
   const activeReq = requests.find((r) => !['Completed', 'Cancelled'].includes(r.status)) || null;
   const nextBooking = bookings.find((b) => ['Pending', 'Confirmed', 'InProgress'].includes(b.status)) || null;
   const firstName = (user?.fullName || t('Driver', 'سائق')).split(' ')[0];
   const unreadCount = unread?.count ?? 0;
 
-  const startWizard = (kind, problemKey) => {
+  const startWizard = (category) => {
+    clearFlow();
     updateFlow({
-      kind,
-      problemKey: problemKey || null,
-      serviceTypeKey: problemKey || null,
+      category,
+      kind: category,
       vehicleId: primaryVehicle?.id || null,
     });
-    go('C06', { kind, ...(problemKey ? { problemKey } : {}) });
+    go('C06', { category, kind: category });
+  };
+
+  const startShortcut = (item) => {
+    clearFlow();
+    if (item.key === 'accident') {
+      const towSt = serviceTypes.find((s) => s.key === 'flatbed_tow') || serviceTypes.find((s) => s.kind === 'Tow') || null;
+      updateFlow({
+        category: 'Tow',
+        kind: 'Tow',
+        serviceTypeId: towSt?.id || null,
+        serviceTypeKey: towSt?.key || 'flatbed_tow',
+        serviceTypeName: t('Emergency Accident Recovery Tow', 'ونش طوارئ للحوادث'),
+        priority: 'P0',
+        isAccident: true,
+        customProblem: t('Emergency Accident Recovery', 'إنقاذ طوارئ حادث'),
+        vehicleId: primaryVehicle?.id || null,
+      });
+      go('C07', {
+        ...(towSt?.id ? { serviceTypeId: towSt.id } : {}),
+        serviceTypeKey: towSt?.key || 'flatbed_tow',
+        kind: 'Tow',
+        priority: 'P0',
+        accident: '1',
+      });
+      return;
+    }
+
+    const mechSt = serviceTypes.find((s) => s.key === item.key) || serviceTypes.find((s) => s.kind === 'Mechanic') || null;
+    updateFlow({
+      category: 'Mechanic',
+      kind: 'Mechanic',
+      serviceTypeId: mechSt?.id || null,
+      serviceTypeKey: mechSt?.key || item.key,
+      serviceTypeName: isAr ? (mechSt?.nameAr || item.ar) : (mechSt?.nameEn || item.en),
+      vehicleId: primaryVehicle?.id || null,
+    });
+    go('C26', {
+      ...(mechSt?.id ? { serviceTypeId: mechSt.id } : {}),
+      serviceTypeKey: mechSt?.key || item.key,
+      kind: 'Mechanic',
+    });
   };
 
   return (
@@ -179,7 +223,7 @@ function HomeScreen() {
               <button
                 type="button"
                 onClick={() => go(activeReq.kind === 'Mechanic' ? 'C12' : 'C11', { id: activeReq.id })}
-                className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-950"
+                className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white"
                 style={{ backgroundColor: c.accent }}
               >
                 {t('Track Live →', 'تتبع مباشر ←')}
@@ -224,7 +268,7 @@ function HomeScreen() {
                     {primaryVehicle.make} {primaryVehicle.model} ({primaryVehicle.year})
                   </div>
                   <div className="text-xs flex items-center gap-2 mt-0.5" style={{ color: c.text2 }}>
-                    <span className="font-mono font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600">
+                    <span className="font-mono font-semibold px-2 py-0.5 rounded" style={{ backgroundColor: c.accentBg, color: c.accent }}>
                       {primaryVehicle.plate}
                     </span>
                     <span>• {primaryVehicle.color}</span>
@@ -249,7 +293,7 @@ function HomeScreen() {
               <button
                 type="button"
                 onClick={() => go('C05')}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-950"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-white"
                 style={{ backgroundColor: c.accent }}
               >
                 {t('+ Add Car', '+ أضف سيارة')}
@@ -265,7 +309,7 @@ function HomeScreen() {
             subtitle={t('Select what you need right now', 'اختر الخدمة التي تحتاجها الآن')}
           />
           <div className="grid grid-cols-2 gap-3">
-            <Card onClick={() => startWizard('Tow', 'flatbed_tow')} className="hover:shadow-md transition-all">
+            <Card onClick={() => startWizard('Tow')} className="hover:shadow-md transition-all">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2" style={{ backgroundColor: c.accentBg }}>
                 🛻
               </div>
@@ -273,7 +317,7 @@ function HomeScreen() {
               <div className="text-[11px] mt-0.5" style={{ color: c.text2 }}>{t('Flatbed & wheel-lift tow trucks', 'ونش سطحة أو رفع عجل')}</div>
             </Card>
 
-            <Card onClick={() => startWizard('Mechanic', 'mechanic')} className="hover:shadow-md transition-all">
+            <Card onClick={() => startWizard('Mechanic')} className="hover:shadow-md transition-all">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2" style={{ backgroundColor: c.infoBg }}>
                 🔧
               </div>
@@ -314,7 +358,8 @@ function HomeScreen() {
               <button
                 key={item.key}
                 type="button"
-                onClick={() => startWizard(item.kind, item.key)}
+                data-testid={`shortcut-${item.key}`}
+                onClick={() => startShortcut(item)}
                 className="p-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-center transition-all"
                 style={{ backgroundColor: c.surface, border: `1px solid ${c.border}` }}
               >
@@ -378,56 +423,138 @@ export const C02 = () => <HomeScreen />;
 // C03 — EMERGENCY SOS SCREEN
 // ---------------------------------------------------------------------------
 export function C03({ params }) {
-  const { t } = usePrefs();
-  const { go, back } = useNav();
+  const { t, isAr } = usePrefs();
+  const { go, back, flow, updateFlow, clearFlow } = useNav();
+  const { user } = useSession();
   const c = useColors();
   const qc = useQueryClient();
+  const { data: bootstrap } = useBootstrap();
   const { data: sosList = [] } = useSos();
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
   const [sentAlert, setSentAlert] = useState(null);
+  const [sosAddress, setSosAddress] = useState('');
+  const [err, setErr] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
+
+  const [coords, setCoords] = useState(() => ({
+    lat: Number(flow?.pickupLatitude ?? user?.latitude ?? 30.0444),
+    lng: Number(flow?.pickupLongitude ?? user?.longitude ?? 31.2357),
+  }));
+
+  useEffect(() => {
+    let active = true;
+    const resolveCoords = (lat, lng) => {
+      if (!active) return;
+      setCoords({ lat, lng });
+      reverseGeocodeCoords(lat, lng).then((geo) => {
+        if (active && geo?.address) setSosAddress(geo.address);
+      });
+    };
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolveCoords(Number(pos.coords.latitude.toFixed(5)), Number(pos.coords.longitude.toFixed(5))),
+        () => resolveCoords(coords.lat, coords.lng),
+        { enableHighAccuracy: true, timeout: 3500, maximumAge: 60000 }
+      );
+    } else {
+      resolveCoords(coords.lat, coords.lng);
+    }
+    return () => { active = false; };
+  }, []);
 
   const triggerSos = async () => {
     setSending(true);
+    setErr('');
     try {
+      let lat = coords.lat;
+      let lng = coords.lng;
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        const gps = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: Number(pos.coords.latitude.toFixed(5)), lng: Number(pos.coords.longitude.toFixed(5)) }),
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 2500, maximumAge: 30000 }
+          );
+        });
+        if (gps) {
+          lat = gps.lat;
+          lng = gps.lng;
+          setCoords(gps);
+        }
+      }
       const created = await post('/support/sos', {
-        latitude: 30.0444,
-        longitude: 31.2357,
+        latitude: lat,
+        longitude: lng,
         note: note.trim() || null
       });
       setSentAlert(created);
+      setNote('');
+      setToastMsg(t('Emergency SOS dispatched to FixNGo Safety Desk!', 'تم إرسال استغاثة الطوارئ لمكتب أمان فيكس آند جو!'));
       qc.invalidateQueries({ queryKey: k.sos });
+      setTimeout(() => setToastMsg(''), 4000);
+    } catch (ex) {
+      setErr(ex.message || t('Could not dispatch SOS right now. Call 123 or 122 immediately.', 'تعذر إرسال البلاغ حالياً. اتصل بـ ١٢٣ أو ١٢٢ فوراً.'));
     } finally {
       setSending(false);
     }
   };
 
+  const handleAccidentTow = () => {
+    const serviceTypes = bootstrap?.serviceTypes || [];
+    const towSt = serviceTypes.find((s) => s.key === 'flatbed_tow') || serviceTypes.find((s) => s.kind === 'Tow') || null;
+    clearFlow();
+    updateFlow({
+      category: 'Tow',
+      kind: 'Tow',
+      serviceTypeId: towSt?.id || null,
+      serviceTypeKey: towSt?.key || 'flatbed_tow',
+      serviceTypeName: t('Emergency Accident Recovery Tow', 'ونش طوارئ للحوادث'),
+      pickupLatitude: coords.lat,
+      pickupLongitude: coords.lng,
+      pickupAddress: sosAddress || flow?.pickupAddress || '',
+      priority: 'P0',
+      isAccident: true,
+      customProblem: t('Emergency Accident Recovery', 'إنقاذ طوارئ حادث'),
+    });
+    go('C07', {
+      ...(towSt?.id ? { serviceTypeId: towSt.id } : {}),
+      serviceTypeKey: towSt?.key || 'flatbed_tow',
+      kind: 'Tow',
+      priority: 'P0',
+      accident: '1',
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
+      <Toast message={toastMsg} type="ok" />
       <AppTopBar title={t('Emergency SOS', 'استغاثة طوارئ SOS')} onBack={back} />
       <div className="px-4 pt-4 space-y-4">
+        {err && <Banner tone="danger" title={err} />}
         <div
-          className="rounded-2xl p-5 text-center"
+          className="rounded-2xl p-4 text-center"
           style={{ backgroundColor: c.dangerBg, border: `1.5px solid ${c.danger}` }}
         >
-          <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-3xl text-white shadow-lg" style={{ backgroundColor: c.danger }}>
+          <div className="w-14 h-14 rounded-full mx-auto mb-2.5 flex items-center justify-center text-2xl text-white shadow-lg" style={{ backgroundColor: c.danger }}>
             🚨
           </div>
-          <h2 className="text-lg font-extrabold" style={{ color: c.danger }}>
+          <h2 className="text-base font-extrabold" style={{ color: c.danger }}>
             {t('Priority Emergency Dispatch', 'إرسال طوارئ ذو أولوية قصوى')}
           </h2>
           <p className="text-xs mt-1" style={{ color: c.text2 }}>
-            {t('Shares your live GPS coordinates (30.0444° N, 31.2357° E) with FixNGo Safety Desk & nearby P0 captains.', 'يشارك إحداثيات موقعك المباشرة مع مكتب أمان فيكس آند جو وأقرب كباتن الطوارئ.')}
+            {sosAddress
+              ? `${sosAddress} (${coords.lat.toFixed(4)}° N, ${coords.lng.toFixed(4)}° E)`
+              : t(`Shares your live GPS coordinates (${coords.lat.toFixed(4)}° N, ${coords.lng.toFixed(4)}° E) with FixNGo Safety Desk & nearby P0 captains.`, 'يشارك إحداثيات موقعك المباشرة مع مكتب أمان فيكس آند جو وأقرب كباتن الطوارئ.')}
           </p>
         </div>
 
-        {sentAlert && (
-          <Banner
-            tone="success"
-            title={t('SOS Alert Dispatched', 'تم إرسال بلاغ الطوارئ')}
-            subtitle={t('Safety desk notified. Keep your hazard lights on and stay in a safe spot.', 'تم إبلاغ مكتب الأمان. قم بتشغيل أضواء الانتظار وابقَ في مكان آمن.')}
-          />
-        )}
+        <MapView
+          height={150}
+          pin={coords}
+          mode="pin"
+          label={sosAddress || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`}
+        />
 
         <Card>
           <InputField
@@ -435,10 +562,34 @@ export function C03({ params }) {
             placeholder={t('E.g. Highway collision on Ring Road, need ambulance & flatbed...', 'مثال: تصادم على الطريق الدائري، نحتاج إسعاف وونش...')}
             value={note}
             onChange={setNote}
+            testId="field-sosNote"
           />
-          <PrimaryButton tone="danger" onClick={triggerSos} disabled={sending}>
+          <PrimaryButton tone="danger" testId="trigger-sos-btn" onClick={triggerSos} disabled={sending}>
             {sending ? t('Sending SOS Alert...', 'جارٍ إرسال الاستغاثة...') : t('Trigger Emergency SOS Now', 'إرسال استغاثة طوارئ الآن')}
           </PrimaryButton>
+
+          {sentAlert && (
+            <div
+              data-testid="sos-dispatched-card"
+              className="mt-3 rounded-xl p-3 border space-y-1.5"
+              style={{ backgroundColor: c.successBg, borderColor: c.success }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold" style={{ color: c.success }}>
+                  ✓ {t('SOS Alert Dispatched Live', 'تم إرسال بلاغ الطوارئ فوراً')}
+                </span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20" style={{ color: c.success }}>
+                  #SOS-{String(sentAlert.id || '').slice(0, 6).toUpperCase()}
+                </span>
+              </div>
+              <p className="text-[11px]" style={{ color: c.text }}>
+                {t('FixNGo Safety Desk has received your live coordinates. Keep hazard lights on and stay in a safe spot.', 'استلم فريق الأمان إحداثيات موقعك المباشرة. قم بتشغيل أضواء الانتظار وابقَ في مكان آمن.')}
+              </p>
+              <div className="text-[10px] font-mono" dir="ltr" style={{ color: c.text2 }}>
+                GPS: {Number(sentAlert.latitude ?? coords.lat).toFixed(4)}, {Number(sentAlert.longitude ?? coords.lng).toFixed(4)}
+              </div>
+            </div>
+          )}
         </Card>
 
         <Card>
@@ -483,8 +634,13 @@ export function C03({ params }) {
             </div>
             <div className="space-y-2">
               {sosList.slice(0, 3).map((s) => (
-                <div key={s.id} className="flex items-center justify-between text-xs py-1.5 border-b last:border-b-0" style={{ borderColor: c.border }}>
-                  <span style={{ color: c.text }}>{s.latitude.toFixed(4)}, {s.longitude.toFixed(4)}</span>
+                <div key={s.id} className="flex items-center justify-between gap-2 text-xs py-1.5 border-b last:border-b-0" style={{ borderColor: c.border }}>
+                  <div className="min-w-0">
+                    <div className="font-mono font-semibold" dir="ltr" style={{ color: c.text }}>
+                      {s.latitude.toFixed(4)}, {s.longitude.toFixed(4)}
+                    </div>
+                    {s.note && <div className="text-[11px] truncate" style={{ color: c.text2 }}>{s.note}</div>}
+                  </div>
                   <StatusBadge status={s.resolved ? 'Resolved' : 'Escalated'} />
                 </div>
               ))}
@@ -492,7 +648,7 @@ export function C03({ params }) {
           </Card>
         )}
 
-        <SecondaryButton onClick={() => go('C06', { kind: 'Tow', priority: 'P0' })}>
+        <SecondaryButton onClick={handleAccidentTow}>
           {t('Request Priority P0 Accident Tow', 'طلب ونش طوارئ للحوادث (أولوية قصوى)')}
         </SecondaryButton>
       </div>
@@ -540,7 +696,7 @@ export function C04() {
           <button
             type="button"
             onClick={() => go('C05')}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-950"
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-white"
             style={{ backgroundColor: c.accent }}
           >
             {t('+ Add', '+ إضافة')}
@@ -840,16 +996,33 @@ export const C24 = (props) => <VehicleFormScreen isEdit={true} {...props} />;
 // ---------------------------------------------------------------------------
 export function C06({ params }) {
   const { t, isAr } = usePrefs();
-  const { go, back, flow, updateFlow } = useNav();
+  const { go, back, flow, updateFlow, clearFlow } = useNav();
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
 
   const serviceTypes = bootstrap?.serviceTypes || [];
-  const [selectedKey, setSelectedKey] = useState(params?.problemKey || flow?.serviceTypeKey || '');
+  const category = params?.category || params?.kind || flow?.category || '';
+  const visibleTypes = useMemo(() => {
+    const towKeys = ['flatbed_tow', 'wheel_lift'];
+    const mechKeys = ['battery', 'tire', 'fuel', 'other'];
+    if (category === 'Tow') {
+      return towKeys.map((kName) => serviceTypes.find((s) => s.key === kName)).filter(Boolean);
+    }
+    if (category === 'Mechanic') {
+      return mechKeys.map((kName) => serviceTypes.find((s) => s.key === kName)).filter(Boolean);
+    }
+    return serviceTypes.filter((s) => s.key !== 'mechanic');
+  }, [serviceTypes, category]);
+
+  const [selectedKey, setSelectedKey] = useState(() => flow?.userPickedKey ?? '');
+  const [customProblem, setCustomProblem] = useState(() => flow?.customProblem ?? '');
   const [isP0, setIsP0] = useState(params?.priority === 'P0' || flow?.priority === 'P0');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [err, setErr] = useState('');
 
-  const chosenType = serviceTypes.find((s) => s.key === selectedKey || s.id === selectedKey) || null;
+  const chosenType = visibleTypes.find((s) => s.key === selectedKey || s.id === selectedKey)
+    || serviceTypes.find((s) => s.key === selectedKey || s.id === selectedKey)
+    || null;
 
   const handleContinue = () => {
     setErr('');
@@ -857,11 +1030,23 @@ export function C06({ params }) {
       setErr(t('Please select a service or breakdown type first.', 'يرجى اختيار نوع العطل أو الخدمة أولاً.'));
       return;
     }
+    if (chosenType.key === 'other' && !customProblem.trim()) {
+      const msg = t('Please describe the issue or service you need.', 'يرجى كتابة المشكلة أو الخدمة التي تحتاجها.');
+      setFieldErrors({ customProblem: msg });
+      setErr(msg);
+      return;
+    }
+    setFieldErrors({});
     const kind = chosenType.kind || (String(selectedKey).includes('tow') ? 'Tow' : 'Mechanic');
+    const resolvedProblem = chosenType.key === 'other'
+      ? customProblem.trim()
+      : (isAr ? (chosenType.nameAr || chosenType.nameEn) : chosenType.nameEn);
     updateFlow({
+      userPickedKey: chosenType.key,
       serviceTypeId: chosenType.id,
       serviceTypeKey: chosenType.key,
-      serviceTypeName: isAr ? (chosenType.nameAr || chosenType.nameEn) : chosenType.nameEn,
+      serviceTypeName: resolvedProblem,
+      customProblem: chosenType.key === 'other' ? customProblem.trim() : '',
       kind,
       priority: isP0 ? 'P0' : 'Normal',
     });
@@ -894,66 +1079,95 @@ export function C06({ params }) {
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('What Happened?', 'ما هي المشكلة؟')} onBack={back} />
-      <div className="px-4 pt-4 space-y-4">
-        {err && <Banner tone="danger" title={err} />}
-        <SectionHeader
-          title={t('1. Choose Service / Breakdown Type', '١. اختر نوع العطل أو الخدمة')}
-          subtitle={t('We match the right equipment and specialist for your situation', 'نقوم بمطابقة المعدات والفني المناسب لحالتك')}
-        />
+      <AppTopBar
+        title={
+          category === 'Tow'
+            ? t('Select Tow Service', 'اختر نوع الونش')
+            : category === 'Mechanic'
+            ? t('Mobile Mechanic Services', 'خدمات الميكانيكي المتنقل')
+            : t('What Happened?', 'ما هي المشكلة؟')
+        }
+        onBack={() => {
+          clearFlow();
+          back();
+        }}
+      />
+      <FormValidationProvider errors={fieldErrors} onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '' }))}>
+        <div className="px-4 pt-4 space-y-4">
+          {err && <Banner tone="danger" title={err} />}
+          <SectionHeader
+            title={t('1. Choose Service / Breakdown Type', '١. اختر نوع العطل أو الخدمة')}
+            subtitle={t('We match the right equipment and specialist for your situation', 'نقوم بمطابقة المعدات والفني المناسب لحالتك')}
+          />
 
-        <div className="grid grid-cols-2 gap-3">
-          {serviceTypes.map((st) => {
-            const active = st.key === selectedKey || st.id === selectedKey;
-            return (
-              <button
-                key={st.id || st.key}
-                type="button"
-                data-testid={`service-card-${st.key}`}
-                onClick={() => setSelectedKey(st.key)}
-                className="p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between"
-                style={{
-                  backgroundColor: active ? c.accentBg : c.surface,
-                  border: `2px solid ${active ? c.accent : c.border}`,
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl">{pickIcon(st.key, st.kind)}</span>
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: c.surface2, color: c.text2 }}
-                  >
-                    {st.kind === 'Tow' ? t('Tow Service', 'خدمة ونش') : t('Roadside', 'مساعدة طريق')}
-                  </span>
-                </div>
-                <div className="text-sm font-bold" style={{ color: c.text }}>
-                  {isAr ? st.nameAr : st.nameEn}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* P0 Accident Escalation Toggle */}
-        <Card>
-          <div className="flex items-center justify-between">
-            <div className="pe-3">
-              <div className="text-sm font-bold flex items-center gap-1.5" style={{ color: isP0 ? c.danger : c.text }}>
-                <span>🚨</span>
-                <span>{t('Accident / Unsafe Highway Location (P0)', 'حادث أو موقع خطر على طريق سريع (أولوية قصوى)')}</span>
-              </div>
-              <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
-                {t('Prioritizes immediate dispatch and alerts FixNGo safety desk', 'يمنح أولوية إرسال فورية وينبه فريق الأمان')}
-              </div>
-            </div>
-            <ToggleSwitch checked={isP0} onChange={setIsP0} />
+          <div className="grid grid-cols-2 gap-3">
+            {visibleTypes.map((st) => {
+              const active = st.key === selectedKey || st.id === selectedKey;
+              return (
+                <button
+                  key={st.id || st.key}
+                  type="button"
+                  data-testid={`service-card-${st.key}`}
+                  onClick={() => {
+                    setSelectedKey(st.key);
+                    setErr('');
+                  }}
+                  className="p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between"
+                  style={{
+                    backgroundColor: active ? c.accentBg : c.surface,
+                    border: `2px solid ${active ? c.accent : c.border}`,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-2xl">{pickIcon(st.key, st.kind)}</span>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: c.surface2, color: c.text2 }}
+                    >
+                      {st.kind === 'Tow' ? t('Tow Service', 'خدمة ونش') : t('Roadside', 'مساعدة طريق')}
+                    </span>
+                  </div>
+                  <div className="text-sm font-bold" style={{ color: c.text }}>
+                    {isAr ? st.nameAr : st.nameEn}
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </Card>
 
-        <PrimaryButton testId="screen-primary" onClick={handleContinue} disabled={!chosenType}>
-          {t('Continue to Details →', 'المتابعة للتفاصيل ←')}
-        </PrimaryButton>
-      </div>
+          {selectedKey === 'other' && (
+            <Card>
+              <InputField
+                label={t('Describe the Issue You Need Help With', 'اكتب المشكلة أو الخدمة التي تحتاجها')}
+                value={customProblem}
+                onChange={setCustomProblem}
+                testId="field-customProblem"
+                placeholder={t('E.g. Starter motor clicks, belt snapped, electrical check...', 'مثال: صوت في المارش، سير مقطوع، فحص كهرباء...')}
+              />
+            </Card>
+          )}
+
+          {/* P0 Accident Escalation Toggle */}
+          <Card>
+            <div className="flex items-center justify-between">
+              <div className="pe-3">
+                <div className="text-sm font-bold flex items-center gap-1.5" style={{ color: isP0 ? c.danger : c.text }}>
+                  <span>🚨</span>
+                  <span>{t('Accident / Unsafe Highway Location (P0)', 'حادث أو موقع خطر على طريق سريع (أولوية قصوى)')}</span>
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
+                  {t('Prioritizes immediate dispatch and alerts FixNGo safety desk', 'يمنح أولوية إرسال فورية وينبه فريق الأمان')}
+                </div>
+              </div>
+              <ToggleSwitch checked={isP0} onChange={setIsP0} />
+            </div>
+          </Card>
+
+          <PrimaryButton testId="screen-primary" onClick={handleContinue} disabled={!chosenType}>
+            {t('Continue to Details →', 'المتابعة للتفاصيل ←')}
+          </PrimaryButton>
+        </div>
+      </FormValidationProvider>
     </div>
   );
 }
@@ -963,7 +1177,7 @@ export function C06({ params }) {
 // ---------------------------------------------------------------------------
 function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
   const { t, isAr } = usePrefs();
-  const { go, back, flow, updateFlow } = useNav();
+  const { go, back, flow, updateFlow, clearFlow } = useNav();
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
   const { data: vehicles = [] } = useVehicles();
@@ -973,31 +1187,44 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
   const serviceTypes = bootstrap?.serviceTypes || [];
   const chosenType = useMemo(() => {
     if (params?.serviceTypeId) return serviceTypes.find((s) => s.id === params.serviceTypeId) || serviceTypes[0];
+    if (params?.serviceTypeKey) return serviceTypes.find((s) => s.key === params.serviceTypeKey) || serviceTypes[0];
     if (flow?.serviceTypeId) return serviceTypes.find((s) => s.id === flow.serviceTypeId) || serviceTypes[0];
+    if (flow?.serviceTypeKey) return serviceTypes.find((s) => s.key === flow.serviceTypeKey) || serviceTypes[0];
     return serviceTypes.find((s) => s.kind === defaultKind) || serviceTypes[0] || null;
-  }, [serviceTypes, params?.serviceTypeId, flow?.serviceTypeId, defaultKind]);
+  }, [serviceTypes, params?.serviceTypeId, params?.serviceTypeKey, flow?.serviceTypeId, flow?.serviceTypeKey, defaultKind]);
 
+  const hasSubmittedBefore = Boolean(flow?.requestId);
   const defaultPickLat = 30.0444;
   const defaultPickLon = 31.2357;
   const defaultDestLat = 30.0595;
   const defaultDestLon = 31.4950;
   const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
   const [vehicleId, setVehicleId] = useState(flow?.vehicleId || primaryVehicle?.id || '');
-  const [pickupAddress, setPickupAddress] = useState(flow?.pickupAddress || '');
-  const [destAddress, setDestAddress] = useState(flow?.destinationAddress || '');
-  const [distanceKm, setDistanceKm] = useState(flow?.distanceKm ? String(flow.distanceKm) : '');
-  const [note, setNote] = useState(flow?.note || '');
-  const [answers, setAnswers] = useState(flow?.answers || {});
-  const [photoIds, setPhotoIds] = useState(flow?.photoFileIds || []);
+  const [pickupAddress, setPickupAddress] = useState(hasSubmittedBefore ? '' : (flow?.pickupAddress || ''));
+  const [destAddress, setDestAddress] = useState(hasSubmittedBefore ? '' : (flow?.destinationAddress || ''));
+  const [distanceKm, setDistanceKm] = useState(!hasSubmittedBefore && flow?.distanceKm ? String(flow.distanceKm) : '');
+  const [customProblem, setCustomProblem] = useState(hasSubmittedBefore ? '' : (flow?.customProblem || ''));
+  const [note, setNote] = useState(hasSubmittedBefore ? '' : (flow?.note || ''));
+  const [answers, setAnswers] = useState(hasSubmittedBefore ? {} : (flow?.answers || {}));
+  const [photoIds, setPhotoIds] = useState(hasSubmittedBefore ? [] : (flow?.photoFileIds || []));
   const [uploading, setUploading] = useState(false);
-  const [estimate, setEstimate] = useState(flow?.estimate || null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [estimate, setEstimate] = useState(hasSubmittedBefore ? null : (flow?.estimate || null));
   const [err, setErr] = useState('');
 
   const isTowKind = (chosenType?.kind || defaultKind) === 'Tow';
+  const isAccidentMode = params?.accident === '1' || params?.priority === 'P0' || flow?.isAccident || flow?.priority === 'P0';
 
   useEffect(() => {
     if (!vehicleId && primaryVehicle?.id) setVehicleId(primaryVehicle.id);
   }, [primaryVehicle?.id, vehicleId]);
+
+  useEffect(() => {
+    if (flow?.pickupAddress && flow.pickupAddress !== pickupAddress && !hasSubmittedBefore) {
+      setPickupAddress(flow.pickupAddress);
+    }
+  }, [flow?.pickupAddress]);
 
   useEffect(() => {
     if (chosenType?.id) {
@@ -1016,6 +1243,66 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const questions = chosenType?.questions || [];
 
+  const handleUseCurrentGps = async () => {
+    setGpsLoading(true);
+    setErr('');
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+          reject(new Error('Geolocation unavailable'));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+      });
+      const lat = Number(pos.coords.latitude.toFixed(5));
+      const lng = Number(pos.coords.longitude.toFixed(5));
+      const geo = await reverseGeocodeCoords(lat, lng);
+      const addr = geo?.address || `${lat}, ${lng}`;
+      setPickupAddress(addr);
+      updateFlow({ pickupLatitude: lat, pickupLongitude: lng, pickupAddress: addr });
+    } catch {
+      const fallback = await reverseGeocodeCoords(defaultPickLat, defaultPickLon);
+      const addr = fallback?.address || 'Tahrir Square, Downtown, Cairo';
+      setPickupAddress(addr);
+      updateFlow({ pickupLatitude: defaultPickLat, pickupLongitude: defaultPickLon, pickupAddress: addr });
+    } finally {
+      setGpsLoading(false);
+    }
+  };
+
+  const handleAutoRoute = async () => {
+    if (!pickupAddress.trim() || !destAddress.trim()) {
+      setErr(t('Enter both pickup and drop-off addresses first to calculate route distance.', 'أدخل عنوان الالتقاط والوجهة أولاً لحساب المسافة تلقائياً.'));
+      return;
+    }
+    setRouteLoading(true);
+    setErr('');
+    try {
+      const [pickPlaces, destPlaces] = await Promise.all([
+        searchGeoPlaces(pickupAddress),
+        searchGeoPlaces(destAddress),
+      ]);
+      const pLat = pickPlaces[0]?.latitude ?? flow?.pickupLatitude ?? defaultPickLat;
+      const pLng = pickPlaces[0]?.longitude ?? flow?.pickupLongitude ?? defaultPickLon;
+      const dLat = destPlaces[0]?.latitude ?? flow?.destinationLatitude ?? defaultDestLat;
+      const dLng = destPlaces[0]?.longitude ?? flow?.destinationLongitude ?? defaultDestLon;
+      const routeInfo = await computeDrivingRoute(pLat, pLng, dLat, dLng);
+      if (routeInfo?.distanceKm) {
+        setDistanceKm(String(routeInfo.distanceKm));
+        updateFlow({
+          pickupLatitude: pLat,
+          pickupLongitude: pLng,
+          destinationLatitude: dLat,
+          destinationLongitude: dLng,
+          distanceKm: routeInfo.distanceKm,
+          encodedPolyline: routeInfo.encodedPolyline ?? null,
+        });
+      }
+    } finally {
+      setRouteLoading(false);
+    }
+  };
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1024,24 +1311,41 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
     try {
       const uploaded = await uploadFile(file, 'request');
       if (uploaded?.id) {
-        setPhotoIds((prev) => [...prev, uploaded.id]);
+        setPhotoIds((prev) => {
+          const next = [...prev, uploaded.id];
+          updateFlow({ photoFileIds: next });
+          return next;
+        });
       }
     } catch (ex) {
       setErr(ex.message || t('Photo upload failed', 'فشل رفع الصورة'));
     } finally {
+      if (e.target) e.target.value = '';
       setUploading(false);
     }
+  };
+
+  const handleRemovePhoto = (fid) => {
+    setPhotoIds((prev) => {
+      const next = prev.filter((id) => id !== fid);
+      updateFlow({ photoFileIds: next });
+      return next;
+    });
   };
 
   const saveDraftToFlow = () => {
     const escalated = questions.some((q) => q.escalatesToP0WhenYes && answers[q.key] === 'yes');
     const parsedDist = Number(distanceKm);
     const dist = isTowKind ? (parsedDist > 0 ? parsedDist : 0) : 0;
+    const problemText = chosenType?.key === 'other' && customProblem.trim()
+      ? customProblem.trim()
+      : (customProblem.trim() || (isAr ? chosenType?.nameAr : chosenType?.nameEn));
     const draft = {
       vehicleId: vehicleId || primaryVehicle?.id || null,
       serviceTypeId: chosenType?.id,
       serviceTypeKey: chosenType?.key,
       serviceTypeName: isAr ? chosenType?.nameAr : chosenType?.nameEn,
+      customProblem: customProblem.trim(),
       kind: chosenType?.kind || defaultKind,
       pickupLatitude: flow?.pickupLatitude ?? defaultPickLat,
       pickupLongitude: flow?.pickupLongitude ?? defaultPickLon,
@@ -1050,10 +1354,10 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
       destinationLongitude: isTowKind ? (flow?.destinationLongitude ?? defaultDestLon) : null,
       destinationAddress: isTowKind ? (destAddress.trim() || null) : null,
       distanceKm: dist,
-      problem: isAr ? chosenType?.nameAr : chosenType?.nameEn,
+      problem: problemText,
       answers,
       note: note.trim(),
-      priority: escalated || flow?.priority === 'P0' ? 'P0' : 'Normal',
+      priority: escalated || isAccidentMode ? 'P0' : 'Normal',
       photoFileIds: photoIds,
       estimate,
     };
@@ -1065,6 +1369,9 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const validateDetails = () => {
     const nextErrors = {};
+    if (chosenType?.key === 'other' && !customProblem.trim()) {
+      nextErrors.customProblem = t('Please describe the issue you need help with.', 'يرجى كتابة المشكلة التي تحتاج المساعدة فيها.');
+    }
     if (!pickupAddress.trim()) {
       nextErrors.pickupAddress = t('Please enter or pin your pickup location.', 'يرجى إدخال أو تحديد موقع السيارة الحالي.');
     }
@@ -1118,6 +1425,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
         photoFileIds: draft.photoFileIds,
         idempotencyKey: crypto.randomUUID(),
       });
+      clearFlow();
       updateFlow({ requestId: created.id });
       go('C09', { id: created.id });
     } catch (ex) {
@@ -1129,15 +1437,40 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar
         title={
-          (chosenType?.kind || defaultKind) === 'Tow'
+          isAccidentMode
+            ? t('Priority P0 Accident Tow', 'طلب ونش طوارئ للحوادث (P0)')
+            : (chosenType?.kind || defaultKind) === 'Tow'
             ? t('Tow Request Details', 'تفاصيل طلب الونش')
-            : t('Diagnostic & Problem Details', 'تفاصيل العطل والفحص')
+            : `${chosenType ? (isAr ? chosenType.nameAr : chosenType.nameEn) : t('Diagnostic & Problem Details', 'تفاصيل العطل والفحص')}`
         }
-        onBack={back}
+        onBack={() => {
+          updateFlow({ photoFileIds: [], note: '', answers: {} });
+          back();
+        }}
       />
       <FormValidationProvider errors={fieldErrors} onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '' }))}>
       <div className="px-4 pt-4 space-y-3">
         {err && <Banner tone="danger" title={err} />}
+
+        {isAccidentMode && (
+          <Banner
+            tone="danger"
+            title={t('🚨 Priority P0 Accident Recovery Enabled', '🚨 تم تفعيل وضع طوارئ الحوادث (أولوية قصوى P0)')}
+            subtitle={t('Immediate flatbed tow dispatch with priority alert to nearby captains & FixNGo Safety Desk.', 'إرسال ونش سطحة بأولوية فورية مع تنبيه مكتب الأمان وأقرب الكباتن.')}
+          />
+        )}
+
+        {chosenType?.key === 'other' && (
+          <Card>
+            <InputField
+              label={t('What Issue Do You Need Help With?', 'ما المشكلة التي تحتاج المساعدة فيها؟')}
+              value={customProblem}
+              onChange={setCustomProblem}
+              testId="field-customProblem"
+              placeholder={t('Describe the issue (e.g. engine overheating, starter motor...)', 'صف المشكلة (مثال: ارتفاع حرارة المحرك، عطل المارش...)')}
+            />
+          </Card>
+        )}
 
         {/* Vehicle Selection */}
         <Card>
@@ -1166,19 +1499,30 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
         {/* Pickup & Dropoff Location */}
         <Card>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2">
             <span className="text-xs font-bold" style={{ color: c.text2 }}>{t('Location & Route', 'الموقع والمسار')}</span>
-            <button
-              type="button"
-              onClick={() => {
-                saveDraftToFlow();
-                go('C25');
-              }}
-              className="text-xs font-bold"
-              style={{ color: c.accent }}
-            >
-              {t('Pin on Map 📍', 'تحديد على الخريطة 📍')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleUseCurrentGps}
+                disabled={gpsLoading}
+                className="text-[11px] font-bold px-2 py-1 rounded-lg"
+                style={{ backgroundColor: c.surface2, color: c.text }}
+              >
+                {gpsLoading ? t('Locating...', 'جارٍ التحديد...') : t('🎯 GPS', '🎯 موقعي')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  saveDraftToFlow();
+                  go('C25');
+                }}
+                className="text-xs font-bold"
+                style={{ color: c.accent }}
+              >
+                {t('Pin on Map 📍', 'تحديد على الخريطة 📍')}
+              </button>
+            </div>
           </div>
           <InputField
             label={t('Pickup Location', 'موقع السيارة الحالي')}
@@ -1196,15 +1540,28 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                 testId="field-destinationAddress"
                 placeholder={t('Enter workshop or drop-off address...', 'أدخل عنوان مركز الصيانة أو وجهة التوصيل...')}
               />
-              <InputField
-                label={t('Estimated Distance (km)', 'المسافة التقديرية (كم)')}
-                type="number"
-                value={distanceKm}
-                onChange={setDistanceKm}
-                dir="ltr"
-                testId="field-distanceKm"
-                placeholder="8.5"
-              />
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <InputField
+                    label={t('Estimated Distance (km)', 'المسافة التقديرية (كم)')}
+                    type="number"
+                    value={distanceKm}
+                    onChange={setDistanceKm}
+                    dir="ltr"
+                    testId="field-distanceKm"
+                    placeholder="8.5"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAutoRoute}
+                  disabled={routeLoading}
+                  className="mb-3 px-3 py-2.5 rounded-xl text-[11px] font-bold shrink-0"
+                  style={{ backgroundColor: c.accentBg, color: c.accent }}
+                >
+                  {routeLoading ? '...' : t('Auto-Calc Route', 'حساب المسافة')}
+                </button>
+              </div>
             </>
           )}
         </Card>
@@ -1241,7 +1598,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                             className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
                             style={{
                               backgroundColor: val === choice ? c.accent : c.surface2,
-                              color: val === choice ? '#0F172A' : c.text2,
+                              color: val === choice ? '#FFFFFF' : c.text2,
                             }}
                           >
                             {formatLabel(choice, isAr)}
@@ -1258,7 +1615,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
                             className="px-3 py-1 rounded-lg text-xs font-bold transition-all"
                             style={{
                               backgroundColor: val === choice ? c.accent : c.surface2,
-                              color: val === choice ? '#0F172A' : c.text2,
+                              color: val === choice ? '#FFFFFF' : c.text2,
                             }}
                           >
                             {choice === 'yes' ? t('Yes', 'نعم') : t('No', 'لا')}
@@ -1287,15 +1644,26 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
             <div className="text-xs font-semibold mb-1.5" style={{ color: c.text2 }}>
               {t('Breakdown Photos (Optional)', 'صور العطل أو السيارة (اختياري)')}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {photoIds.map((fid) => (
-                <img
-                  key={fid}
-                  src={fileUrl(fid)}
-                  alt="Uploaded"
-                  className="w-14 h-14 rounded-xl object-cover border"
-                  style={{ borderColor: c.border }}
-                />
+                <div key={fid} className="relative inline-block">
+                  <img
+                    src={fileUrl(fid)}
+                    alt="Uploaded"
+                    className="w-14 h-14 rounded-xl object-cover border"
+                    style={{ borderColor: c.border }}
+                  />
+                  <button
+                    type="button"
+                    data-testid="remove-breakdown-photo"
+                    aria-label={t('Remove photo', 'حذف الصورة')}
+                    onClick={() => handleRemovePhoto(fid)}
+                    className="absolute -top-1.5 -end-1.5 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center text-white shadow"
+                    style={{ backgroundColor: c.danger }}
+                  >
+                    ✕
+                  </button>
+                </div>
               ))}
               <label
                 className="px-3 py-2 rounded-xl text-xs font-bold cursor-pointer inline-flex items-center gap-1.5"
@@ -1364,16 +1732,61 @@ export function C25() {
       : null
   );
   const [customAddress, setCustomAddress] = useState(flow?.pickupAddress || '');
+  const [suggestions, setSuggestions] = useState([]);
+  const [gpsBusy, setGpsBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const handleMapPick = ({ lat, lng }) => {
+  useEffect(() => {
+    const q = customAddress.trim();
+    if (q.length < 3) {
+      setSuggestions([]);
+      return undefined;
+    }
+    let active = true;
+    const timer = setTimeout(() => {
+      searchGeoPlaces(q).then((res) => {
+        if (active) setSuggestions(res.slice(0, 4));
+      });
+    }, 350);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [customAddress]);
+
+  const handleMapPick = async ({ lat, lng }) => {
     setPin({ lat, lng });
-    if (!customAddress.trim()) {
+    setErr('');
+    const geo = await reverseGeocodeCoords(lat, lng);
+    if (geo?.address) {
+      setCustomAddress(geo.address);
+    } else {
       setCustomAddress(
         isAr
           ? `موقع محدد على الخريطة (${lat.toFixed(4)}, ${lng.toFixed(4)})`
           : `Pinned Cairo Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
       );
+    }
+  };
+
+  const handleUseGps = async () => {
+    setGpsBusy(true);
+    setErr('');
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+          reject(new Error('Geolocation unavailable'));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 });
+      });
+      const lat = Number(pos.coords.latitude.toFixed(5));
+      const lng = Number(pos.coords.longitude.toFixed(5));
+      await handleMapPick({ lat, lng });
+    } catch {
+      await handleMapPick({ lat: 30.0444, lng: 31.2357 });
+    } finally {
+      setGpsBusy(false);
     }
   };
 
@@ -1394,7 +1807,21 @@ export function C25() {
 
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('Confirm Pickup Location', 'تأكيد موقع الالتقاط')} onBack={back} />
+      <AppTopBar
+        title={t('Confirm Pickup Location', 'تأكيد موقع الالتقاط')}
+        onBack={back}
+        right={
+          <button
+            type="button"
+            onClick={handleUseGps}
+            disabled={gpsBusy}
+            className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-white"
+            style={{ backgroundColor: c.accent }}
+          >
+            {gpsBusy ? t('GPS...', 'تحديد...') : t('🎯 My GPS', '🎯 موقعي')}
+          </button>
+        }
+      />
       <div className="px-4 pt-4 space-y-4">
         {err && <Banner tone="danger" title={err} />}
         <MapView
@@ -1402,7 +1829,7 @@ export function C25() {
           pin={pin}
           onPick={handleMapPick}
           interactive
-          label={pin ? `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}` : undefined}
+          label={customAddress || (pin ? `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}` : undefined)}
         />
 
         <Card>
@@ -1411,8 +1838,35 @@ export function C25() {
             value={customAddress}
             onChange={setCustomAddress}
             testId="field-pickupAddress"
-            placeholder={t('Tap map above or type your street & district...', 'اضغط على الخريطة أعلاه أو اكتب اسم الشارع والمنطقة...')}
+            placeholder={t('Search street, district or tap map above...', 'ابحث عن الشارع أو المنطقة أو اضغط على الخريطة...')}
           />
+
+          {suggestions.length > 0 && (
+            <div className="mb-3 space-y-1.5">
+              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: c.accent }}>
+                {t('Google Maps Search Results', 'نتائج بحث خرائط جوجل')}
+              </div>
+              {suggestions.map((sItem, i) => (
+                <button
+                  key={`${sItem.latitude}-${sItem.longitude}-${i}`}
+                  type="button"
+                  onClick={() => {
+                    setPin({ lat: sItem.latitude, lng: sItem.longitude });
+                    setCustomAddress(sItem.address);
+                    setSuggestions([]);
+                  }}
+                  className="w-full p-2 rounded-xl text-start text-xs flex items-center justify-between"
+                  style={{ backgroundColor: c.surface2, color: c.text, border: `1px solid ${c.border}` }}
+                >
+                  <span className="truncate pe-2">📍 {sItem.address}</span>
+                  <span className="text-[10px] font-mono shrink-0" dir="ltr" style={{ color: c.text3 }}>
+                    {Number(sItem.latitude).toFixed(3)}, {Number(sItem.longitude).toFixed(3)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="text-xs font-bold mb-2" style={{ color: c.text2 }}>
             {t('Quick Landmarks in Greater Cairo', 'معالم سريعة في القاهرة الكبرى')}
           </div>
@@ -1456,7 +1910,7 @@ export function C25() {
 // ---------------------------------------------------------------------------
 export function C08() {
   const { t, isAr } = usePrefs();
-  const { go, back, flow, updateFlow } = useNav();
+  const { go, back, flow, updateFlow, clearFlow } = useNav();
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
   const { data: vehicles = [] } = useVehicles();
@@ -1513,6 +1967,7 @@ export function C08() {
         photoFileIds: flow?.photoFileIds || [],
         idempotencyKey: crypto.randomUUID(),
       });
+      clearFlow();
       updateFlow({ requestId: created.id });
       go('C09', { id: created.id });
     } catch (ex) {
@@ -1607,23 +2062,33 @@ export function C09({ params }) {
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
       <AppTopBar title={t('Searching Nearby Providers', 'البحث عن مقدمي الخدمة')} onBack={() => back('C08')} />
       <div className="px-4 pt-4 space-y-4">
-        <MapView height={200} />
+        <MapView
+          height={200}
+          pin={req?.pickupLatitude && req?.pickupLongitude ? { lat: req.pickupLatitude, lng: req.pickupLongitude } : null}
+          mode="pin"
+          label={req?.pickupAddress || undefined}
+        />
 
         <Card className="text-center py-5">
           <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl animate-pulse" style={{ backgroundColor: c.accentBg, color: c.accent }}>
             📡
           </div>
           <div className="text-base font-extrabold" style={{ color: c.text }}>
-            {t('Scanning Verified Providers Around You...', 'جارٍ البحث عن مقدمي خدمة معتمدين بالقرب منك...')}
+            {candidates.length > 0
+              ? t('Verified Specialists Ready Nearby!', 'يوجد مقدمو خدمة معتمدون متصلون بالقرب منك!')
+              : t('Waiting for Online Providers Nearby...', 'بانتظار اتصال مقدمي الخدمة بالقرب منك...')}
           </div>
           <div className="text-xs mt-1" style={{ color: c.text2 }}>
             {req?.code ? `${t('Request', 'طلب')} ${req.code} • ` : ''}
-            {t(`${candidates.length} nearby providers matched`, `تم العثور على ${candidates.length} مقدم خدمة قريب`)}
+            {candidates.length > 0
+              ? t(`${candidates.length} online provider${candidates.length === 1 ? '' : 's'} matched`, `تم العثور على ${candidates.length} مقدم خدمة متصل الآن`)
+              : t('0 providers online right now — live updates automatically when a specialist goes online', '٠ مقدم خدمة متصل حالياً — يتم التحديث تلقائياً فور اتصال أي فني')}
           </div>
         </Card>
 
         <div className="space-y-2">
           <PrimaryButton
+            testId="view-matched-providers-btn"
             onClick={() => go(req?.kind === 'Mechanic' ? 'C27' : 'C10', { id: reqId })}
           >
             {t(`View Matched Providers (${candidates.length}) →`, `عرض مقدمي الخدمة المتاحين (${candidates.length}) ←`)}
@@ -1687,8 +2152,30 @@ function OffersListScreen({ isMechanic = false, params }) {
   const selectMut = useSelectProvider(reqId);
   const [sortBy, setSortBy] = useState('recommended');
   const [reviewCand, setReviewCand] = useState(null);
+  const [pubProfile, setPubProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const { data: candReviews = [] } = useReviews('provider', reviewCand?.providerId);
   const [err, setErr] = useState('');
+
+  useEffect(() => {
+    if (!reviewCand?.providerId) {
+      setPubProfile(null);
+      return undefined;
+    }
+    let active = true;
+    setProfileLoading(true);
+    get(`/providers/${reviewCand.providerId}/public-profile`)
+      .then((res) => {
+        if (active) setPubProfile(res);
+      })
+      .catch(() => {
+        if (active) setPubProfile(null);
+      })
+      .finally(() => {
+        if (active) setProfileLoading(false);
+      });
+    return () => { active = false; };
+  }, [reviewCand?.providerId]);
 
   useEffect(() => {
     if (!req?.id) return;
@@ -1771,12 +2258,19 @@ function OffersListScreen({ isMechanic = false, params }) {
 
             return (
               <Card key={cand.providerId}>
-                <div className="flex items-start justify-between gap-2">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  data-testid={`provider-card-${cand.providerId}`}
+                  onClick={() => setReviewCand(cand)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setReviewCand(cand); }}
+                  className="flex items-start justify-between gap-2 cursor-pointer"
+                >
                   <div className="flex items-start gap-3 min-w-0">
                     <Avatar name={cand.name} size={44} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold truncate" style={{ color: c.text }}>{cand.name}</span>
+                        <span className="text-sm font-bold truncate underline decoration-dotted underline-offset-2" style={{ color: c.text }}>{cand.name}</span>
                         {idx === 0 && (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
                             {sortBy === 'fastest'
@@ -1791,18 +2285,14 @@ function OffersListScreen({ isMechanic = false, params }) {
                       </div>
                       <div className="text-xs flex items-center flex-wrap gap-1.5 mt-1" style={{ color: c.text2 }}>
                         {revCount > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => setReviewCand(cand)}
-                            className="inline-flex items-center gap-1 underline hover:opacity-80"
-                          >
+                          <span className="inline-flex items-center gap-1">
                             <StarRating value={ratingVal} size={11} />
                             <span className="font-bold" style={{ color: c.accent }}>{ratingVal.toFixed(1)}</span>
                             <span>({revCount})</span>
                             <span>• 👍 {recPct}%</span>
-                          </button>
+                          </span>
                         ) : (
-                          <span>{t('New specialist', 'مختص جديد')}</span>
+                          <span>{t('New specialist · Tap to view profile', 'مختص جديد · اضغط لعرض الملف')}</span>
                         )}
                       </div>
                       <div className="text-[11px] flex items-center flex-wrap gap-1.5 mt-0.5" style={{ color: c.text3 }}>
@@ -1840,28 +2330,121 @@ function OffersListScreen({ isMechanic = false, params }) {
         <BottomSheet
           open={Boolean(reviewCand)}
           onClose={() => setReviewCand(null)}
-          title={reviewCand ? `${reviewCand.name} · ${t('Customer Reviews', 'تقييمات العملاء')}` : ''}
+          title={reviewCand ? t('Provider Profile & Reviews', 'ملف مقدم الخدمة والتقييمات') : ''}
         >
-          <div className="max-h-72 overflow-y-auto space-y-2.5">
-            {candReviews.length === 0 ? (
-              <p className="text-xs" style={{ color: c.text2 }}>
-                {t('No written reviews yet.', 'لا توجد تقييمات مكتوبة بعد.')}
-              </p>
-            ) : (
-              candReviews.slice(0, 6).map((r) => (
-                <div key={r.id} className="rounded-xl p-3 border space-y-1" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold" style={{ color: c.text }}>{r.authorName || t('Verified Driver', 'عميل موثق')}</span>
-                    <StarRating value={r.stars} size={12} />
+          {reviewCand && (
+            <div className="space-y-3" data-testid="provider-profile-sheet">
+              <div className="flex items-start justify-between gap-3 p-3 rounded-2xl border" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar name={pubProfile?.fullName || reviewCand.name} size={48} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-extrabold truncate" style={{ color: c.text }}>
+                        {pubProfile?.fullName || reviewCand.name}
+                      </span>
+                      <StatusBadge status="Approved" text={t('Verified', 'موثق')} />
+                    </div>
+                    <div className="text-xs mt-0.5" style={{ color: c.text2 }}>
+                      📍 {pubProfile?.areaLabel || reviewCand.areaLabel || t('Greater Cairo', 'القاهرة الكبرى')}
+                      {pubProfile?.yearsExperience ? ` • ${pubProfile.yearsExperience} ${t('yrs exp', 'سنوات خبرة')}` : ''}
+                    </div>
+                    {pubProfile?.phone && (
+                      <div className="text-xs font-mono font-bold mt-1" dir="ltr" style={{ color: c.accent }}>
+                        📞 {pubProfile.phone}
+                      </div>
+                    )}
                   </div>
-                  {r.text && <p className="text-xs" style={{ color: c.text2 }}>{r.text}</p>}
                 </div>
-              ))
-            )}
-          </div>
-          <SecondaryButton onClick={() => setReviewCand(null)}>
-            {t('Done', 'تم')}
-          </SecondaryButton>
+                {pubProfile?.phone && (
+                  <a
+                    href={`tel:${pubProfile.phone}`}
+                    className="px-3 py-2 rounded-xl text-xs font-bold shrink-0 text-white"
+                    style={{ backgroundColor: c.success }}
+                  >
+                    {t('Call', 'اتصال')}
+                  </a>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2.5 rounded-xl border" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
+                  <div className="text-sm font-extrabold" style={{ color: c.accent }}>
+                    ⭐ {Number(pubProfile?.rating ?? reviewCand.rating ?? 0).toFixed(1)}
+                  </div>
+                  <div className="text-[10px]" style={{ color: c.text3 }}>
+                    {Number(pubProfile?.ratingCount ?? reviewCand.ratingCount ?? 0)} {t('reviews', 'تقييم')}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-xl border" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
+                  <div className="text-sm font-extrabold" style={{ color: c.text }}>
+                    👍 {Number(pubProfile?.recommendPercent ?? reviewCand.recommendPercent ?? 0)}%
+                  </div>
+                  <div className="text-[10px]" style={{ color: c.text3 }}>
+                    {t('Recommended', 'موصى به')}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-xl border" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
+                  <div className="text-sm font-extrabold" style={{ color: c.text }}>
+                    ✓ {Number(pubProfile?.completedJobs ?? reviewCand.completedJobs ?? 0)}
+                  </div>
+                  <div className="text-[10px]" style={{ color: c.text3 }}>
+                    {t('Completed Jobs', 'مهمة مكتملة')}
+                  </div>
+                </div>
+              </div>
+
+              {pubProfile?.specialties?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {pubProfile.specialties.map((sp) => (
+                    <span key={sp} className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
+                      {formatLabel(sp, isAr)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div>
+                <div className="text-xs font-bold mb-2" style={{ color: c.text }}>
+                  {t('Customer Reviews', 'تقييمات العملاء')}
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {profileLoading && !pubProfile ? (
+                    <p className="text-xs" style={{ color: c.text2 }}>{t('Loading profile & reviews...', 'جارٍ تحميل الملف والتقييمات...')}</p>
+                  ) : ((pubProfile?.reviews?.length ? pubProfile.reviews : candReviews).length === 0) ? (
+                    <p className="text-xs" style={{ color: c.text2 }}>
+                      {t('No written reviews yet.', 'لا توجد تقييمات مكتوبة بعد.')}
+                    </p>
+                  ) : (
+                    (pubProfile?.reviews?.length ? pubProfile.reviews : candReviews).slice(0, 8).map((r) => (
+                      <div key={r.id} className="rounded-xl p-2.5 border space-y-1" style={{ borderColor: c.border, backgroundColor: c.surface2 }}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold" style={{ color: c.text }}>{r.authorName || t('Verified Driver', 'عميل موثق')}</span>
+                          <StarRating value={r.stars} size={12} />
+                        </div>
+                        {r.text && <p className="text-xs" style={{ color: c.text2 }}>{r.text}</p>}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <SecondaryButton onClick={() => setReviewCand(null)}>
+                  {t('Close', 'إغلاق')}
+                </SecondaryButton>
+                <PrimaryButton
+                  onClick={() => {
+                    const chosen = reviewCand;
+                    setReviewCand(null);
+                    handleSelect(chosen);
+                  }}
+                  disabled={selectMut.isPending}
+                >
+                  {t('Select & Dispatch', 'اختيار وإرسال')}
+                </PrimaryButton>
+              </div>
+            </div>
+          )}
         </BottomSheet>
       </div>
     </div>

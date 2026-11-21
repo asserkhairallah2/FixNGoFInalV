@@ -433,8 +433,10 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
     public async Task<IReadOnlyList<ProviderDto>> NearbyAsync(double lat, double lng, string role, CancellationToken ct = default)
     {
         var result = new List<ProviderDto>();
+        var activeCutoff = clock.UtcNow.AddMinutes(-30);
         var rows = await (from p in db.ProviderProfiles join u in db.Users on p.UserId equals u.Id
-                          where p.IsOnline && u.KycStatus == KycStatus.Approved && u.Role.ToString() == role
+                          where p.IsOnline && p.LastHeartbeatAt != null && p.LastHeartbeatAt >= activeCutoff
+                                && u.KycStatus == KycStatus.Approved && u.Role.ToString() == role
                           select new { p, u }).ToListAsync(ct);
         foreach (var x in rows)
         {
@@ -443,6 +445,108 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
                 result.Add(Mappings.Provider(x.u, x.p));
         }
         return result;
+    }
+
+    public async Task<ProviderPublicProfileDto> PublicProfileAsync(Guid providerId, CancellationToken ct = default)
+    {
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == providerId, ct)
+            ?? throw new DomainException("provider.not_found", "Provider not found.");
+        var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == providerId, ct) ?? new ProviderProfile();
+        var activeCutoff = clock.UtcNow.AddMinutes(-30);
+        var isLiveOnline = p.IsOnline && p.LastHeartbeatAt != null && p.LastHeartbeatAt >= activeCutoff;
+
+        var rawReviews = await (from rv in db.Reviews
+                                join author in db.Users on rv.AuthorId equals author.Id into authorJoin
+                                from author in authorJoin.DefaultIfEmpty()
+                                where !rv.IsHidden && rv.ProviderId == providerId
+                                orderby rv.CreatedAt descending
+                                select new
+                                {
+                                    rv.Id,
+                                    rv.ProviderId,
+                                    rv.CenterId,
+                                    rv.Stars,
+                                    rv.Text,
+                                    rv.Recommend,
+                                    rv.CreatedAt,
+                                    rv.RequestId,
+                                    AuthorName = author != null ? author.FullName : "Verified Driver"
+                                }).Take(20).ToListAsync(ct);
+
+        var recPct = 0;
+        if (p.RatingCount > 0)
+        {
+            var allRecs = await db.Reviews.Where(r => !r.IsHidden && r.ProviderId == providerId).Select(r => r.Recommend).ToListAsync(ct);
+            if (allRecs.Count > 0) recPct = (int)Math.Round(100.0 * allRecs.Count(x => x) / allRecs.Count);
+        }
+
+        var specialties = new List<string>();
+        if (!string.IsNullOrWhiteSpace(p.ExpertiseJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(p.ExpertiseJson);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    var guidList = new List<Guid>();
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        var val = el.ValueKind == JsonValueKind.String ? el.GetString() : null;
+                        if (string.IsNullOrWhiteSpace(val)) continue;
+                        if (Guid.TryParse(val, out var gid)) guidList.Add(gid);
+                        else specialties.Add(val.Replace('_', ' '));
+                    }
+                    if (guidList.Count > 0)
+                    {
+                        var stNames = await db.ServiceTypes.Where(s => guidList.Contains(s.Id)).Select(s => s.NameEn).ToListAsync(ct);
+                        var ptNames = await db.ProblemTypes.Where(s => guidList.Contains(s.Id)).Select(s => s.NameEn).ToListAsync(ct);
+                        specialties.AddRange(stNames);
+                        specialties.AddRange(ptNames);
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Ignore malformed legacy expertise payloads.
+            }
+        }
+        if (specialties.Count == 0)
+        {
+            specialties.Add(u.Role == Role.TowCaptain ? "24/7 Flatbed & Wheel-Lift Recovery" : "Mobile Diagnostics & On-Spot Repair");
+        }
+
+        var reviews = rawReviews
+            .Select(r => new ReviewDto(
+                r.Id,
+                r.ProviderId,
+                r.CenterId,
+                r.Stars,
+                r.Text,
+                r.Recommend,
+                r.CreatedAt,
+                r.AuthorName,
+                u.Role == Role.TowCaptain ? "Roadside Tow Service" : "Mobile Mechanic Service"))
+            .ToList();
+
+        return new ProviderPublicProfileDto(
+            u.Id,
+            u.FullName,
+            u.Role.ToString(),
+            u.Phone,
+            p.CoverageArea ?? u.AreaLabel ?? "Greater Cairo",
+            p.RatingCount > 0 ? p.Rating : 0m,
+            p.RatingCount,
+            recPct,
+            p.CompletedJobs,
+            p.YearsExperience,
+            p.CoverageRadiusKm > 0 ? p.CoverageRadiusKm : 15,
+            p.TruckMake,
+            p.TruckType?.ToString(),
+            p.TruckCapacityTonnes,
+            u.KycStatus == KycStatus.Approved,
+            isLiveOnline,
+            specialties.Distinct(StringComparer.OrdinalIgnoreCase).Take(6).ToList(),
+            reviews);
     }
 
     private async Task SeedInitialCenterServicesAsync(Guid centerId, IReadOnlyList<Guid> serviceIds, CancellationToken ct)

@@ -14,7 +14,7 @@ function useColors() {
     ? {
         bg: '#090A0D', surface: '#12141A', surface2: '#1A1D26', border: '#262936',
         text: '#FFFFFF', text2: '#94A3B8', text3: '#64748B',
-        accent: '#F59E0B', accentBg: 'rgba(245, 158, 11, 0.14)',
+        accent: '#E51C23', accentBg: 'rgba(229, 28, 35, 0.14)',
         danger: '#F43F5E', dangerBg: 'rgba(244, 63, 94, 0.14)',
         success: '#10B981', successBg: 'rgba(16, 185, 129, 0.14)',
         info: '#38BDF8', infoBg: 'rgba(56, 189, 248, 0.14)',
@@ -22,7 +22,7 @@ function useColors() {
     : {
         bg: '#F8FAFC', surface: '#FFFFFF', surface2: '#F1F5F9', border: '#E2E8F0',
         text: '#0F172A', text2: '#475569', text3: '#64748B',
-        accent: '#D97706', accentBg: 'rgba(245, 158, 11, 0.14)',
+        accent: '#E51C23', accentBg: 'rgba(229, 28, 35, 0.10)',
         danger: '#E11D48', dangerBg: 'rgba(225, 29, 72, 0.1)',
         success: '#059669', successBg: 'rgba(16, 185, 129, 0.12)',
         info: '#0284C7', infoBg: 'rgba(2, 132, 199, 0.12)',
@@ -392,7 +392,7 @@ export function C18({ params }) {
                   <button
                     type="button"
                     onClick={() => go('C19', { centerId: center?.id, serviceId: svc.id })}
-                    className="mt-1 px-3 py-1 rounded-lg text-xs font-bold text-slate-950"
+                    className="mt-1 px-3 py-1 rounded-lg text-xs font-bold text-white"
                     style={{ backgroundColor: c.accent }}
                   >
                     {t('Book Slot', 'احجز موعداً')}
@@ -563,7 +563,7 @@ export function C19({ params }) {
                         color: !slot.available
                           ? c.text3
                           : isSelected
-                          ? '#0F172A'
+                          ? '#FFFFFF'
                           : c.text,
                         border: `1.5px solid ${isSelected ? c.accent : c.border}`,
                         opacity: slot.available ? 1 : 0.45,
@@ -688,7 +688,7 @@ export function C37() {
           <button
             type="button"
             onClick={() => go('C17')}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-950"
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-white"
             style={{ backgroundColor: c.accent }}
           >
             {t('+ Book New', '+ حجز جديد')}
@@ -940,7 +940,7 @@ export function C39({ params }) {
                     className="py-2.5 px-2 rounded-xl text-xs font-bold"
                     style={{
                       backgroundColor: active ? c.accent : c.surface,
-                      color: active ? '#0F172A' : c.text,
+                      color: active ? '#FFFFFF' : c.text,
                       border: `1.5px solid ${active ? c.accent : c.border}`,
                       opacity: slot.available ? 1 : 0.45,
                     }}
@@ -1466,69 +1466,14 @@ export function C22() {
 }
 
 export function C23() {
-  const { t, isAr, lang, theme, setLang, setTheme } = usePrefs();
+  const { t, isAr } = usePrefs();
   const { go } = useNav();
-  const { user, setUser } = useSession();
+  const { user } = useSession();
   const c = useColors();
-
-  const [fullName, setFullName] = useState(user?.fullName || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [preferredLang, setPreferredLang] = useState(user?.language || lang || 'en');
-  const [preferredTheme, setPreferredTheme] = useState(user?.theme || theme || 'light');
-  const [otpOnLogin, setOtpOnLogin] = useState(!!user?.otpOnLogin);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [err, setErr] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-
-  useEffect(() => {
-    if (user) {
-      setFullName(user.fullName || '');
-      setPhone(user.phone || '');
-    }
-  }, [user?.id]);
-
-  const handleSave = async (e) => {
-    if (e?.preventDefault) e.preventDefault();
-    setErr('');
-    setSaved(false);
-    const nextErrors = {};
-    if (!fullName.trim()) {
-      nextErrors.fullName = t('Full name is required.', 'الاسم الكامل مطلوب.');
-    } else if (fullName.trim().length < 2) {
-      nextErrors.fullName = t('Full name must be at least 2 characters.', 'يجب أن يتكون الاسم من حرفين على الأقل.');
-    }
-    const phoneErr = validateEgyptPhoneField(phone, isAr);
-    if (phoneErr) nextErrors.phone = phoneErr;
-    if (Object.keys(nextErrors).length > 0) {
-      setFieldErrors(nextErrors);
-      setErr(Object.values(nextErrors)[0]);
-      return;
-    }
-    setFieldErrors({});
-    setSaving(true);
-    try {
-      const updated = await put('/auth/me', {
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        language: preferredLang,
-        theme: preferredTheme,
-        otpOnLogin,
-      });
-      if (updated) setUser((prev) => ({ ...(prev || {}), ...updated }));
-      setLang(preferredLang);
-      setTheme(preferredTheme);
-      setSaved(true);
-    } catch (ex) {
-      if (ex.fieldErrors) setFieldErrors(ex.fieldErrors);
-      setErr(ex.message || t('Could not update profile', 'تعذر تحديث الملف الشخصي'));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const links = [
     { code: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب' },
+    { code: 'SH01', icon: '💬', en: 'Messages & Active Chats', ar: 'المحادثات والرسائل النشطة' },
     { code: 'C04', icon: '🚗', en: 'My Vehicles', ar: 'مركباتي المحفوظة' },
     { code: 'C34', icon: '💳', en: 'Saved Payment Methods', ar: 'وسائل الدفع المحفوظة' },
     { code: 'C37', icon: '📅', en: 'My Service Center Bookings', ar: 'حجوزات مراكز الخدمة' },
@@ -1567,47 +1512,6 @@ export function C23() {
             </div>
           </div>
         </Card>
-
-        <FormValidationProvider
-          errors={fieldErrors}
-          onClearField={(kName) => setFieldErrors((p) => ({ ...p, [kName]: '' }))}
-        >
-          <form noValidate onSubmit={handleSave} className="space-y-3">
-            {err && <Banner tone="danger" title={err} />}
-            {saved && <Banner tone="success" title={t('Profile updated successfully', 'تم حفظ التعديلات بنجاح')} />}
-
-            <Card>
-              <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: c.text3 }}>
-                {t('Quick Profile & Security Settings', 'إعدادات الحساب السريعة')}
-              </div>
-              <InputField
-                label={t('Full Name', 'الاسم الكامل')}
-                value={fullName}
-                onChange={setFullName}
-                testId="field-fullName"
-                placeholder={t('Your Full Name', 'الاسم الكامل')}
-              />
-              <InputField
-                label={t('Egypt Mobile Number', 'رقم الهاتف المحمول')}
-                value={phone}
-                onChange={setPhone}
-                testId="field-phone"
-                dir="ltr"
-                placeholder="+201012345678"
-              />
-              <div className="flex items-center justify-between pt-2 mb-3">
-                <div>
-                  <div className="text-xs font-bold" style={{ color: c.text }}>{t('Require OTP on Every Login', 'طلب رمز التحقق عند كل تسجيل دخول')}</div>
-                  <div className="text-[11px]" style={{ color: c.text2 }}>{t('Extra security for new devices', 'حماية إضافية عند الدخول من جهاز جديد')}</div>
-                </div>
-                <ToggleSwitch checked={otpOnLogin} onChange={setOtpOnLogin} />
-              </div>
-              <PrimaryButton type="submit" testId="screen-primary" disabled={saving}>
-                {saving ? t('Saving Changes...', 'جارٍ الحفظ...') : t('Save Profile Changes', 'حفظ التغييرات')}
-              </PrimaryButton>
-            </Card>
-          </form>
-        </FormValidationProvider>
 
         <Card className="p-0 overflow-hidden">
           {links.map((item, idx) => (

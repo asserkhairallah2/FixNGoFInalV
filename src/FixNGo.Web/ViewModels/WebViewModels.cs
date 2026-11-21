@@ -10,6 +10,7 @@ public sealed class AppShellViewModel
     public string ServerTimestampUtc { get; init; } = DateTime.UtcNow.ToString("O");
     public string JsBundlePath { get; init; } = "/assets/fixngo-app.js";
     public string CssBundlePath { get; init; } = "/assets/fixngo-app.css";
+    public string? GoogleMapsApiKey { get; init; }
 }
 
 /// <summary>Platform status projection for Razor Views and ViewComponents (never a Domain entity).</summary>

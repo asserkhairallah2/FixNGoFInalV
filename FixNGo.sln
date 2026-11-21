@@ -5,13 +5,13 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BC717B8B-CCB8-44BB-B7E9-3CB00A42DB07}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixNGo.Web", "src\FixNGo.Web\FixNGo.Web.csproj", "{B16867A8-D308-45BA-94B2-5475A7E862D8}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixNGo.Domain", "src\FixNGo.Domain\FixNGo.Domain.csproj", "{AA26672C-0CEF-439D-97AF-E59F8593DEDB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixNGo.Application", "src\FixNGo.Application\FixNGo.Application.csproj", "{9874B7F7-E48A-4700-806E-1361570A86F7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixNGo.Infrastructure", "src\FixNGo.Infrastructure\FixNGo.Infrastructure.csproj", "{6A1DDA82-601F-432C-BA92-3A941283CCDE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixNGo.Web", "src\FixNGo.Web\FixNGo.Web.csproj", "{B16867A8-D308-45BA-94B2-5475A7E862D8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixNGo.Cli", "src\FixNGo.Cli\FixNGo.Cli.csproj", "{BFFA7991-E0F2-42F2-B3DA-7B661021935C}"
 EndProject

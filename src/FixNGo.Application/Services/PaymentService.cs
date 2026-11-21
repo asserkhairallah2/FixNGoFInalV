@@ -75,15 +75,14 @@ public sealed class PaymentService(
     // ---- Invoices & charges ----
     public async Task<InvoiceDto> InvoiceForRequestAsync(Guid callerId, bool isAdmin, Guid requestId, CancellationToken ct = default)
     {
-        var inv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId, ct);
-        if (inv is null) return await EnsureInvoiceAsync(requestId, ct);
-        if (!isAdmin && inv.CustomerId != callerId)
+        var invDto = await EnsureInvoiceAsync(requestId, ct);
+        if (!isAdmin && invDto.Id != Guid.Empty)
         {
             var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct);
-            if (r?.AssignedProviderId != callerId)
+            if (r is not null && r.CustomerId != callerId && r.AssignedProviderId != callerId)
                 throw new DomainException("auth.forbidden", "You cannot view this invoice.");
         }
-        return Mappings.Invoice(inv);
+        return invDto;
     }
 
     public async Task<IReadOnlyList<InvoiceDto>> InvoicesAsync(Guid userId, CancellationToken ct = default) =>
@@ -93,19 +92,60 @@ public sealed class PaymentService(
     /// <summary>Issue (idempotently) an invoice for a completed request using its approved quote or estimate.</summary>
     public async Task<InvoiceDto> EnsureInvoiceAsync(Guid requestId, CancellationToken ct = default)
     {
-        var existing = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId, ct);
-        if (existing is not null) return Mappings.Invoice(existing);
         var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
             ?? throw new DomainException("request.not_found", "Request not found.");
-        var total = r.QuoteMinor ?? r.EstimateMinor ?? 0;
+        var latestQuote = await db.Quotes
+            .Where(q => q.RequestId == requestId && q.Status != QuoteStatus.Rejected)
+            .OrderByDescending(q => q.Status == QuoteStatus.Approved)
+            .ThenByDescending(q => q.Version)
+            .FirstOrDefaultAsync(ct);
+
         var (s, _) = await settings.CurrentAsync(ct);
-        var fee = total >= s.ServiceFeeMinor ? s.ServiceFeeMinor : 0;
-        var subtotal = Math.Max(0, total - fee);
+        long subtotal;
+        long fee;
+        long total;
+        string linesJson;
+
+        if (latestQuote is not null)
+        {
+            subtotal = latestQuote.ProviderNetMinor;
+            fee = latestQuote.ServiceFeeMinor;
+            total = latestQuote.TotalMinor;
+            var lines = new List<object>();
+            if (latestQuote.CalloutMinor > 0) lines.Add(new { label = "Callout & Inspection", amountMinor = latestQuote.CalloutMinor });
+            if (latestQuote.LaborMinor > 0) lines.Add(new { label = "Repair Labor", amountMinor = latestQuote.LaborMinor });
+            if (latestQuote.PartsMinor > 0) lines.Add(new { label = "Spare Parts", amountMinor = latestQuote.PartsMinor });
+            if (lines.Count == 0) lines.Add(new { label = "Service", amountMinor = subtotal });
+            linesJson = JsonSerializer.Serialize(lines);
+        }
+        else
+        {
+            total = r.QuoteMinor ?? r.EstimateMinor ?? 0;
+            fee = total <= 0 ? 0 : total >= 25_000 ? s.ServiceFeeMinor : (long)Math.Round(total / 1.10 * 0.10);
+            subtotal = Math.Max(0, total - fee);
+            linesJson = JsonSerializer.Serialize(new[] { new { label = "Service", amountMinor = subtotal } });
+        }
+
+        var existing = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId, ct);
+        if (existing is not null)
+        {
+            if (existing.Status != InvoiceStatus.Paid &&
+                (existing.TotalMinor != total || existing.SubtotalMinor != subtotal || existing.ServiceFeeMinor != fee))
+            {
+                existing.SubtotalMinor = subtotal;
+                existing.ServiceFeeMinor = fee;
+                existing.TotalMinor = total;
+                existing.LinesJson = linesJson;
+                await db.SaveChangesAsync(ct);
+            }
+            return Mappings.Invoice(existing);
+        }
+
         var inv = new Invoice
         {
             Number = await Codes.NextAsync(db, "INV", ct), RequestId = requestId, CustomerId = r.CustomerId,
             SubtotalMinor = subtotal, ServiceFeeMinor = fee, TotalMinor = total,
-            LinesJson = JsonSerializer.Serialize(new[] { new { label = "service", amountMinor = subtotal } })
+            LinesJson = linesJson
         };
         db.Invoices.Add(inv);
         await db.SaveChangesAsync(ct);
@@ -148,15 +188,32 @@ public sealed class PaymentService(
 
         if (req.Method == PaymentMethodType.Cash)
         {
+            payment.Status = PaymentStatus.Succeeded;
+            payment.SettledAt = clock.UtcNow;
             inv.Method = PaymentMethodType.Cash;
+            inv.Status = InvoiceStatus.Paid;
+            inv.CustomerCashConfirmed = true;
+            if (inv.RequestId is not null)
+            {
+                var reqEntity = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == inv.RequestId, ct);
+                if (reqEntity is not null)
+                {
+                    reqEntity.PaymentMethod = PaymentMethodType.Cash;
+                    reqEntity.CustomerCashConfirmed = true;
+                }
+            }
             db.PaymentReviews.Add(new PaymentReview
             {
                 PaymentId = payment.Id, RequestId = inv.RequestId ?? Guid.Empty,
-                RecordedMinor = inv.TotalMinor, CustomerConfirmedMinor = 0, ProviderCollectedMinor = 0
+                RecordedMinor = inv.TotalMinor, CustomerConfirmedMinor = inv.TotalMinor, ProviderCollectedMinor = inv.TotalMinor,
+                Status = PaymentReviewStatus.Resolved
             });
+            await CreditProviderAsync(inv, payment, ct);
             await db.SaveChangesAsync(ct);
-            await NotifyInvoiceCounterpartAsync(inv, NotificationType.CashConfirmed, "Cash payment selected",
-                $"Customer selected cash settlement for {inv.Number}.", ct);
+            await notifier.NotifyUserAsync(userId, NotificationType.CashConfirmed, "Cash payment settled",
+                $"Cash payment for {inv.Number} ({inv.TotalMinor / 100m:0.00} EGP) was recorded.", $"invoice:{inv.Id}", ct);
+            await NotifyInvoiceCounterpartAsync(inv, NotificationType.PaymentVerified, "Payment received",
+                $"Cash payment for {inv.Number} ({inv.SubtotalMinor / 100m:0.00} EGP net) was credited to your wallet.", ct);
             return Mappings.Payment(payment);
         }
 

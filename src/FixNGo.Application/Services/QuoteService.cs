@@ -21,18 +21,30 @@ public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notif
             throw new DomainException("quote.amount_invalid", "Amounts cannot be negative.");
         var (s, _) = await new SettingsService(db).CurrentAsync(ct);
         var version = await db.Quotes.Where(q => q.RequestId == requestId).MaxAsync(q => (int?)q.Version, ct) ?? 0;
-        var fee = s.ServiceFeeMinor;
+        var subtotal = req.CalloutMinor + req.LaborMinor + req.PartsMinor;
+        var fee = subtotal <= 0
+            ? 0L
+            : subtotal >= 25_000L
+                ? s.ServiceFeeMinor
+                : (long)Math.Round(subtotal * 0.10);
         var quote = new Quote
         {
             RequestId = requestId, Version = version + 1, Status = QuoteStatus.Pending,
             Diagnosis = req.Diagnosis, CalloutMinor = req.CalloutMinor, LaborMinor = req.LaborMinor,
             PartsMinor = req.PartsMinor, ServiceFeeMinor = fee,
-            TotalMinor = req.CalloutMinor + req.LaborMinor + req.PartsMinor + fee,
-            ProviderNetMinor = req.CalloutMinor + req.LaborMinor + req.PartsMinor,
+            TotalMinor = subtotal + fee,
+            ProviderNetMinor = subtotal,
             CreatedBy = providerId
         };
         db.Quotes.Add(quote);
         r.QuoteMinor = quote.TotalMinor;
+        var existingInv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId && i.Status != InvoiceStatus.Paid, ct);
+        if (existingInv is not null)
+        {
+            existingInv.SubtotalMinor = quote.ProviderNetMinor;
+            existingInv.ServiceFeeMinor = quote.ServiceFeeMinor;
+            existingInv.TotalMinor = quote.TotalMinor;
+        }
         if (r.Status != RequestStatus.QuotePending)
         {
             r.Status = StateMachines.Request.Transition(r.Status, RequestStatus.QuotePending);
@@ -67,6 +79,13 @@ public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notif
             other.Status = QuoteStatus.Rejected;
         r.Status = StateMachines.Request.Transition(r.Status, RequestStatus.QuoteApproved);
         r.QuoteMinor = q.TotalMinor;
+        var existingInv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == requestId && i.Status != InvoiceStatus.Paid, ct);
+        if (existingInv is not null)
+        {
+            existingInv.SubtotalMinor = q.ProviderNetMinor;
+            existingInv.ServiceFeeMinor = q.ServiceFeeMinor;
+            existingInv.TotalMinor = q.TotalMinor;
+        }
         db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = "quote.approved", ActorId = customerId, At = clock.UtcNow });
         await db.SaveChangesAsync(ct);
         if (r.AssignedProviderId is not null)

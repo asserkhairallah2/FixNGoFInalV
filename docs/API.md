@@ -103,6 +103,9 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/__site-gate` | __site-gate | Bearer |
 | GET | `/` |  | Bearer |
 | GET | `/api/v1/lookups/bootstrap` | bootstrap | Bearer |
+| GET | `/api/v1/lookups/geocode` | geocode | Bearer |
+| GET | `/api/v1/lookups/reverse-geocode` | reverse-geocode | Bearer |
+| GET | `/api/v1/lookups/route` | route | Bearer |
 | GET | `/api/v1/notifications` | notifications | Bearer |
 | GET | `/api/v1/notifications/unread-count` | unread-count | Bearer |
 | POST | `/api/v1/notifications/read` | read | Bearer |
@@ -133,6 +136,7 @@ For the exact per-role allow/deny matrix, see `docs/evidence/test-output/authz-m
 | POST | `/api/v1/payments/withdrawals` | withdrawals | Bearer |
 | GET | `/api/v1/providers/me` | me | Bearer |
 | PUT | `/api/v1/providers/me` | me | Bearer |
+| GET | `/api/v1/providers/{id}/public-profile` | public-profile | Bearer |
 | POST | `/api/v1/providers/online` | online | Bearer |
 | POST | `/api/v1/providers/heartbeat` | heartbeat | Bearer |
 | GET | `/api/v1/providers/nearby` | nearby | Bearer |

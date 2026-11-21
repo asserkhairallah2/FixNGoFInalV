@@ -39,6 +39,7 @@ import {
 import {
   useColors,
   AppTopBar,
+  Avatar,
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
@@ -862,7 +863,7 @@ export function M04Screen({ id }) {
           {isAr ? 'السعر التقديري للعميل' : 'Estimated customer price'}
         </span>
         <span className={`font-bold ${colors.text}`}>
-          {fmtMoney(req?.quoteMinor ?? req?.estimateMinor ?? 40000, lang)}
+          {fmtMoney(req?.quoteMinor ?? req?.estimateMinor ?? 0, lang)}
         </span>
       </div>
 
@@ -1005,7 +1006,7 @@ export function M11Screen({ id }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const serviceFeeMinor = boot.data?.pricing?.serviceFeeMinor ?? 5000;
+  const defaultServiceFeeMinor = boot.data?.pricing?.serviceFeeMinor ?? 5000;
   const baseHintEgp = boot.data?.pricing?.mechanicBaseMinor
     ? String(Math.round(boot.data.pricing.mechanicBaseMinor / 100))
     : '0';
@@ -1018,6 +1019,7 @@ export function M11Screen({ id }) {
     (Number.isFinite(lVal) && lVal >= 0 ? lVal : 0) +
     (Number.isFinite(pVal) && pVal >= 0 ? pVal : 0);
   const netMinor = Math.round(netEgp * 100);
+  const serviceFeeMinor = netMinor <= 0 ? 0 : netMinor >= 25000 ? defaultServiceFeeMinor : Math.round(netMinor * 0.10);
   const totalMinor = netMinor > 0 ? netMinor + serviceFeeMinor : 0;
 
   const handleSendQuote = async () => {
@@ -1152,7 +1154,7 @@ export function M11Screen({ id }) {
 
       <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-xs`}>
         <div className="flex justify-between">
-          <span className={colors.secondaryText}>{isAr ? 'رسوم الخدمة' : 'Service fee · Fixed'}</span>
+          <span className={colors.secondaryText}>{isAr ? 'رسوم الخدمة (١٠٪ بحد أقصى ٥٠ ج.م)' : 'Platform service fee (10% · max 50 EGP)'}</span>
           <span className={colors.text}>{fmtMoney(serviceFeeMinor, lang)}</span>
         </div>
         <div className="flex justify-between font-bold">
@@ -1191,11 +1193,13 @@ export function M06Screen({ id }) {
 
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
   const latestQuote = quotes[quotes.length - 1] || null;
-  const calloutMinor = latestQuote?.calloutMinor ?? 15000;
-  const laborMinor = latestQuote?.laborMinor ?? 20000;
+  const fallbackTotal = req?.quoteMinor ?? req?.estimateMinor ?? 0;
+  const fallbackFee = fallbackTotal <= 0 ? 0 : fallbackTotal >= 25000 ? 5000 : Math.round((fallbackTotal / 1.10) * 0.10);
+  const calloutMinor = latestQuote?.calloutMinor ?? Math.max(0, fallbackTotal - fallbackFee);
+  const laborMinor = latestQuote?.laborMinor ?? 0;
   const partsMinor = latestQuote?.partsMinor ?? 0;
-  const feeMinor = latestQuote?.serviceFeeMinor ?? 5000;
-  const totalMinor = latestQuote?.totalMinor ?? req?.quoteMinor ?? calloutMinor + laborMinor + partsMinor + feeMinor;
+  const feeMinor = latestQuote?.serviceFeeMinor ?? fallbackFee;
+  const totalMinor = latestQuote?.totalMinor ?? fallbackTotal;
 
   const checkItems = [
     isAr ? 'تأمين موقع المركبة وفحص السلامة' : 'Vehicle site secured and safety verified',
@@ -1349,11 +1353,12 @@ export function M12Screen({ id }) {
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
   const latestQuote = quotes[quotes.length - 1] || null;
   const totalMinor =
-    invoice?.totalMinor ??
     latestQuote?.totalMinor ??
+    invoice?.totalMinor ??
     req?.quoteMinor ??
     req?.estimateMinor ??
-    40000;
+    0;
+  const isInvoicePaid = invoice?.status === 'Paid';
 
   const finalChecks = [
     isAr ? 'تم تركيب القطعة وتأمين المركبة بالكامل' : 'Part fitted and vehicle secured',
@@ -1429,13 +1434,15 @@ export function M12Screen({ id }) {
           </span>
         </div>
         <div className="flex justify-between">
-          <span className={colors.secondaryText}>{isAr ? 'المبلغ المطلوب تحصيله' : 'Amount to collect'}</span>
+          <span className={colors.secondaryText}>{isInvoicePaid ? (isAr ? 'تم سداد الفاتورة' : 'Settled invoice amount') : (isAr ? 'المبلغ المطلوب تحصيله' : 'Amount to collect')}</span>
           <span className="font-extrabold text-[#E51C23]">{fmtMoney(totalMinor, lang)}</span>
         </div>
       </div>
 
       <PrimaryButton onClick={handleFinish} disabled={busy} testId="screen-primary">
-        {isAr
+        {isInvoicePaid
+          ? (isAr ? `إتمام المهمة · مسدد (${fmtMoney(totalMinor, lang)})` : `Finish Completed Job · Paid (${fmtMoney(totalMinor, lang)})`)
+          : isAr
           ? `تأكيد استلام النقدية · ${fmtMoney(totalMinor, lang)}`
           : `Confirm Cash Received · ${fmtMoney(totalMinor, lang)}`}
       </PrimaryButton>
@@ -1453,13 +1460,14 @@ export function M13Screen({ id }) {
   const { req } = useActiveRequest(id);
   const { data: timelineData } = useTimeline(req?.id);
   const { data: quotesData } = useQuotes(req?.id);
+  const { data: invoice } = useInvoiceForRequest(req?.id);
 
   const events = Array.isArray(timelineData) ? timelineData : timelineData?.events || timelineData?.items || [];
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
   const latestQuote = quotes[quotes.length - 1] || null;
-  const totalMinor = latestQuote?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 40000;
-  const feeMinor = latestQuote?.serviceFeeMinor ?? 5000;
-  const netMinor = latestQuote?.providerNetMinor ?? Math.max(0, totalMinor - feeMinor);
+  const totalMinor = latestQuote?.totalMinor ?? invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
+  const feeMinor = latestQuote?.serviceFeeMinor ?? invoice?.serviceFeeMinor ?? (totalMinor <= 0 ? 0 : totalMinor >= 25000 ? 5000 : Math.round((totalMinor / 1.10) * 0.10));
+  const netMinor = latestQuote?.providerNetMinor ?? invoice?.subtotalMinor ?? Math.max(0, totalMinor - feeMinor);
 
   return (
     <MechanicShell code="M13">
@@ -1769,7 +1777,6 @@ export function M09Screen() {
   const { user } = useSession();
   const { data: provider } = useProvider();
   const { data: kyc } = useKyc();
-  const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
 
   const fullName = getFullName(user, provider, isAr);
   const area = getArea(provider, user, isAr);
@@ -1780,99 +1787,106 @@ export function M09Screen() {
   const years = provider?.yearsExperience ?? 0;
   const radius = provider?.coverageRadiusKm ?? 10;
   const kycStatus = kyc?.status || provider?.kycStatus || user?.kycStatus || 'Approved';
-  const docs = Array.isArray(kyc?.documents) ? kyc.documents : [];
+
+  const links = [
+    { code: 'M14', icon: '🔧', en: 'Edit Professional Profile', ar: 'تعديل الملف المهني', primary: true },
+    { code: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب' },
+    { code: 'SH01', icon: '💬', en: 'Messages & Customer Chats', ar: 'المحادثات مع العملاء' },
+    { code: 'M15', icon: '📍', en: 'Coverage Area & Availability', ar: 'نطاق التغطية والتواجد' },
+    { code: 'M07', icon: '💰', en: 'Wallet & Earnings', ar: 'المحفظة والأرباح' },
+    { code: 'M08', icon: '🧾', en: 'Service History', ar: 'سجل الخدمات والمهام' },
+    { code: 'SH17', icon: '📄', en: 'Verification Documents (KYC)', ar: 'مستندات التوثيق المهني' },
+    { code: 'SH14', icon: '🏦', en: 'Bank Accounts & Payouts', ar: 'الحسابات البنكية والتحويلات' },
+    { code: 'SH06', icon: '🌐', en: 'App Settings (Language & Theme)', ar: 'إعدادات التطبيق (اللغة والمظهر)' },
+    { code: 'SH10', icon: '⚙️', en: 'Notification Preferences', ar: 'تفضيلات الإشعارات' },
+    { code: 'SH02', icon: '🔒', en: 'Change Password', ar: 'تغيير كلمة المرور' },
+    { code: 'AD13', icon: '🛡️', en: 'Two-Factor Authentication (2FA)', ar: 'المصادقة الثنائية (2FA)' },
+    { code: 'AD14', icon: '📱', en: 'Active Devices & Sessions', ar: 'الأجهزة والجلسات النشطة' },
+    { code: 'SH07', icon: '🎧', en: 'Help & Support Center', ar: 'مركز المساعدة والدعم' },
+    { code: 'SH05', icon: '📜', en: 'Terms of Service & Privacy Policy', ar: 'الشروط وسياسة الخصوصية' },
+    { code: 'SH11', icon: 'ℹ️', en: 'About FixNGo', ar: 'عن منصة فيكس آند جو' },
+    { code: 'SH21', icon: '🗑️', en: 'Request Account Deletion', ar: 'طلب حذف الحساب', danger: true },
+    { code: 'SH13', icon: '🚪', en: 'Sign Out', ar: 'تسجيل الخروج', danger: true },
+  ];
 
   return (
     <MechanicShell code="M09">
       <div>
-        <h1 className={`text-lg font-bold ${colors.text}`}>
-          {isAr ? 'الملف الشخصي للميكانيكي' : 'Provider profile'}
+        <h1 className={`text-lg font-extrabold ${colors.text}`}>
+          {isAr ? 'الملف الشخصي والإعدادات' : 'Profile & Settings'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {isAr ? 'هويتك المهنية للمساعدة على الطريق.' : 'Your professional roadside identity.'}
+          {isAr ? 'هويتك المهنية وإعدادات حسابك على المنصة.' : 'Your verified specialist profile & account settings.'}
         </p>
       </div>
 
-      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
-        <div className="flex items-center gap-2.5">
-          <AvatarBadge name={fullName} />
-          <div>
-            <p className={`font-bold ${colors.text}`}>{fullName}</p>
-            <p className={`text-[10px] ${colors.secondaryText}`}>
-              {ratingCount > 0
-                ? `${rating} ★ (${ratingCount}) · 👍 ${recommendPercent}% · ${pluralCount(completedJobs, 'completed job', 'completed jobs', 'مهمة مكتملة', 'مهام مكتملة', 'مهمة مكتملة', isAr)}`
-                : `${isAr ? 'بدون تقييمات بعد' : 'No reviews yet'} · ${pluralCount(completedJobs, 'completed job', 'completed jobs', 'مهمة مكتملة', 'مهام مكتملة', 'مهمة مكتملة', isAr)}`}
-            </p>
+      <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} space-y-3`}>
+        <div className="flex items-start gap-3">
+          <div className="shrink-0">
+            <Avatar name={fullName} size={52} />
+          </div>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className={`text-base font-extrabold truncate ${colors.text}`}>{fullName}</div>
+              <StatusBadge
+                status={kycStatus}
+                text={kycStatus === 'Approved' ? (isAr ? 'ميكانيكي معتمد' : 'Verified Mechanic') : providerLabel(kycStatus, isAr)}
+              />
+            </div>
+            <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+              {user?.email || provider?.email || ''}
+            </div>
+            <div className={`text-xs truncate text-start ${colors.secondaryText}`} dir="ltr">
+              {provider?.phone || user?.phone || ''}
+            </div>
           </div>
         </div>
-        <StatusBadge
-          status={kycStatus}
-          text={kycStatus === 'Approved' ? (isAr ? 'ميكانيكي معتمد' : 'Verified Mechanic') : providerLabel(kycStatus, isAr)}
-        />
-        <div className={`flex justify-between pt-1.5 border-t ${colors.border}`}>
-          <span className={colors.secondaryText}>{isAr ? 'الخبرة' : 'Experience'}</span>
-          <span className={`font-bold ${colors.text}`}>
-            {plural(years, 'year', isAr)}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className={colors.secondaryText}>{isAr ? 'نطاق التغطية' : 'Coverage'}</span>
-          <span className={`font-bold ${colors.text}`}>
-            {`${area} · ${fmtDistance(radius, lang)}`}
-          </span>
-        </div>
-      </div>
 
-      <div className="space-y-1.5">
-        <p className={`text-xs font-bold ${colors.text}`}>
-          {isAr ? 'المستندات والتوثيق' : 'Documents & verification'}
-        </p>
-        {docs.length === 0 ? (
-          <button
-            type="button"
-            onClick={() => nav.go('SH17')}
-            className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
-          >
-            <div>
-              <p className={`font-bold ${colors.text}`}>
-                {isAr ? 'مستندات التوثيق المهني' : 'Verification documents'}
-              </p>
-              <p className={`text-[10px] ${colors.secondaryText}`}>
-                {providerLabel(kycStatus, isAr)}
-              </p>
+        <div className={`grid grid-cols-3 gap-2 pt-2 border-t ${colors.border} text-center text-xs`}>
+          <div>
+            <div className={`font-extrabold ${colors.text}`}>
+              {ratingCount > 0 ? `⭐ ${rating}` : '—'}
             </div>
-            <ForwardChevron size={14} className={colors.secondaryText} />
-          </button>
-        ) : (
-          docs.map((doc) => (
-            <button
-              key={doc.id || doc.documentType}
-              type="button"
-              onClick={() => nav.go('SH17', { id: doc.id })}
-              className={`w-full p-2.5 rounded-xl border ${colors.border} ${colors.surface} flex justify-between items-center text-start text-xs`}
-            >
-              <div>
-                <p className={`font-bold ${colors.text}`}>{providerLabel(doc.documentType, isAr)}</p>
-                <p className={`text-[10px] ${colors.secondaryText}`}>{providerLabel(doc.status, isAr)}</p>
-              </div>
-              <ForwardChevron size={14} className={colors.secondaryText} />
-            </button>
-          ))
-        )}
+            <div className={`text-[10px] ${colors.secondaryText}`}>
+              {ratingCount > 0 ? `${ratingCount} · 👍 ${recommendPercent}%` : (isAr ? 'التقييم' : 'Rating')}
+            </div>
+          </div>
+          <div>
+            <div className={`font-extrabold ${colors.text}`}>{completedJobs}</div>
+            <div className={`text-[10px] ${colors.secondaryText}`}>
+              {isAr ? 'مهام مكتملة' : 'Jobs Done'}
+            </div>
+          </div>
+          <div>
+            <div className={`font-extrabold truncate ${colors.text}`}>
+              {fmtDistance(radius, lang)}
+            </div>
+            <div className={`text-[10px] truncate ${colors.secondaryText}`}>
+              {area || `${years}y`}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <PrimaryButton onClick={() => nav.go('M14')} testId="screen-primary">
-        {isAr ? 'تعديل الملف المهني' : 'Edit Profile'}
-      </PrimaryButton>
-      <SecondaryButton onClick={() => nav.go('M15')}>
-        {isAr ? 'نطاق التغطية والتواجد' : 'Coverage & Availability'}
-      </SecondaryButton>
-      <SecondaryButton onClick={() => nav.go('SH06')}>
-        {isAr ? 'إعدادات التطبيق' : 'App Settings'}
-      </SecondaryButton>
-      <SecondaryButton onClick={() => nav.go('SH13')}>
-        {isAr ? 'تسجيل الخروج' : 'Log Out'}
-      </SecondaryButton>
+      <div className={`rounded-2xl border ${colors.border} ${colors.surface} overflow-hidden`}>
+        {links.map((item, idx) => (
+          <button
+            key={item.code}
+            type="button"
+            data-testid={item.primary ? 'screen-primary' : undefined}
+            onClick={() => nav.go(item.code)}
+            className={`w-full px-4 py-3 text-start flex items-center justify-between text-xs font-bold transition-all ${
+              item.danger ? 'text-rose-500' : colors.text
+            } ${idx < links.length - 1 ? `border-b ${colors.border}` : ''}`}
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="text-base">{item.icon}</span>
+              <span>{isAr ? item.ar : item.en}</span>
+            </span>
+            <span className={colors.secondaryText}>{isAr ? '‹' : '›'}</span>
+          </button>
+        ))}
+      </div>
     </MechanicShell>
   );
 }

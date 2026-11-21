@@ -50,7 +50,8 @@ public sealed class HomeController(
             SystemStatus = statusVm,
             Preferences = prefs,
             InitialRouteHint = initialRoute,
-            ServerTimestampUtc = DateTime.UtcNow.ToString("O")
+            ServerTimestampUtc = DateTime.UtcNow.ToString("O"),
+            GoogleMapsApiKey = configuration["Maps:ApiKey"]
         };
 
         return View("~/Views/Home/Index.cshtml", vm);
