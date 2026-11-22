@@ -34,7 +34,13 @@ public sealed record RequestDto(
     string? Problem = null, string? Note = null, IReadOnlyList<Guid>? PhotoFileIds = null,
     DateTime? AcceptedAt = null, DateTime? CompletedAt = null,
     double? ProviderLatitude = null, double? ProviderLongitude = null,
-    double? PickupDistanceKm = null, string? ProviderTruckType = null);
+    double? PickupDistanceKm = null, string? ProviderTruckType = null,
+    Guid? PendingProviderId = null, string? PendingProviderName = null,
+    decimal? PendingProviderRating = null, int? PendingProviderRatingCount = null,
+    int? PendingProviderJobs = null, double? PendingProviderDistanceKm = null,
+    int? PendingProviderEtaMinutes = null, long? PendingProviderPriceMinor = null,
+    DateTime? CustomerConfirmDeadlineAt = null, int CustomerRejectionCount = 0,
+    DateTime? SearchExpiresAt = null, Guid? ServiceTypeId = null, string? ServiceTypeKey = null);
 public sealed record RequestEventDto(RequestStatus Status, string? Note, DateTime At);
 public sealed record CancelRequestRequest(string ReasonKey, string? Note = null);
 public sealed record StatusRequest(RequestStatus Status, string? Note = null);
@@ -42,15 +48,20 @@ public sealed record StatusRequest(RequestStatus Status, string? Note = null);
 // ---- Matching & offers ----
 public sealed record CandidateDto(Guid ProviderId, string Name, decimal Rating, int RatingCount,
     double DistanceKm, int EtaMinutes, long PriceMinor, double Score, string? AreaLabel, string? TruckMake,
-    int RecommendPercent = 0, int CompletedJobs = 0);
+    int RecommendPercent = 0, int CompletedJobs = 0, bool ProviderAccepted = false);
 public sealed record SelectProviderRequest(Guid ProviderId);
 public sealed record OfferDto(Guid Id, Guid RequestId, Guid ProviderId, OfferStatus Status,
     DateTime ExpiresAt, long PriceMinor, double DistanceKm, int EtaMinutes, bool IsP0,
     string? RequestCode = null, string? CustomerFirstName = null, string? PickupArea = null,
     string? DestinationAddress = null, string? VehicleMake = null, string? VehicleModel = null,
     int? VehicleYear = null, string? VehicleColor = null, string? Problem = null,
-    double? TripDistanceKm = null);
+    double? TripDistanceKm = null, Guid? CustomerId = null, string? CustomerName = null,
+    decimal? CustomerRating = null, int? CustomerRatingCount = null, int? CustomerCompletedTrips = null,
+    string? VehiclePlate = null, string? ServiceName = null, bool CustomerSelected = false,
+    long? ServiceFeeMinor = null, long? ProviderNetMinor = null,
+    bool AwaitingCustomerConfirm = false, DateTime? CustomerConfirmDeadlineAt = null);
 public sealed record DeclineOfferRequest(string? Reason = null);
+public sealed record PassProviderRequest(string? Reason = null);
 
 // ---- Quotes ----
 public sealed record CreateQuoteRequest(long CalloutMinor, long LaborMinor, long PartsMinor, string? Diagnosis);
@@ -132,15 +143,33 @@ public sealed record ProviderPublicProfileDto(
     bool IsOnline,
     IReadOnlyList<string> Specialties,
     IReadOnlyList<ReviewDto> Reviews);
+public sealed record CustomerPublicProfileDto(
+    Guid Id,
+    string FullName,
+    string? Phone,
+    string? AreaLabel,
+    bool IsVerified,
+    DateTime MemberSince,
+    decimal Rating,
+    int RatingCount,
+    int RecommendPercent,
+    int CompletedTrips,
+    IReadOnlyList<string> Vehicles,
+    IReadOnlyList<ReviewDto> Reviews);
 
 // ---- Reviews, notifications, chat ----
 public sealed record CreateReviewRequest(int Stars, string? Text, bool Recommend = true);
 public sealed record ReviewDto(Guid Id, Guid? ProviderId, Guid? CenterId, int Stars, string? Text, bool Recommend, DateTime CreatedAt,
-    string? AuthorName = null, string? ContextLabel = null);
+    string? AuthorName = null, string? ContextLabel = null, Guid? CustomerId = null);
 public sealed record NotificationDto(Guid Id, NotificationType Type, string Title, string Body, string? DeepLink, bool IsRead, DateTime CreatedAt);
 public sealed record SendMessageRequest(string Text);
-public sealed record ChatMessageDto(Guid Id, Guid ThreadId, Guid SenderId, string MessageType, string? Text, DateTime SentAt, DateTime? ReadAt);
-public sealed record ChatThreadDto(Guid Id, Guid CustomerId, Guid CounterpartId, IReadOnlyList<ChatMessageDto> Messages);
+public sealed record ChatMessageDto(Guid Id, Guid ThreadId, Guid SenderId, string MessageType, string? Text, DateTime SentAt, DateTime? ReadAt,
+    double? Latitude = null, double? Longitude = null);
+public sealed record ChatThreadDto(Guid Id, Guid CustomerId, Guid CounterpartId, IReadOnlyList<ChatMessageDto> Messages,
+    Guid? RequestId = null, string? RequestCode = null, string? RequestKind = null, string? RequestStatus = null,
+    Guid? BookingId = null, string? BookingCode = null, string? BookingStatus = null,
+    string? OtherPartyName = null, string? OtherPartyRole = null, string? OtherPartyPhone = null,
+    int UnreadCount = 0, bool IsReadOnly = false);
 
 // ---- Support / legal / safety ----
 public sealed record CreateTicketRequest(string Category, string Subject, string Description, string? ReferenceType = null, Guid? ReferenceId = null, Guid? AttachmentFileId = null);

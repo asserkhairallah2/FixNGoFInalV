@@ -185,8 +185,23 @@ export default async function globalSetup() {
   }}), 'create vehicle');
   seeded.ids.vehicleId = vehicle.id;
 
+  const createFixtureVehicle = async (idx) => assertOk(await api('/vehicles', {
+    method: 'POST',
+    token: auth.owner.accessToken,
+    body: {
+      make: 'Hyundai',
+      model: 'Elantra',
+      year: 2021,
+      plate: `FXT-900${idx}`,
+      color: 'White',
+      fuel: 'Petrol',
+      isPrimary: false
+    }
+  }), `create fixture vehicle ${idx}`);
+
+  const fxtVeh1 = await createFixtureVehicle(1);
   const request = assertOk(await api('/requests', { method: 'POST', token: auth.owner.accessToken, body: {
-    vehicleId: vehicle.id, serviceTypeId: towService.id,
+    vehicleId: fxtVeh1.id, serviceTypeId: towService.id,
     pickupLatitude: 30.0444, pickupLongitude: 31.2357,
     pickupAddress: 'E2E pickup point, Cairo',
     destinationLatitude: 30.05, destinationLongitude: 31.24,
@@ -209,17 +224,22 @@ export default async function globalSetup() {
     seeded.prerequisites.offerAccepted = false;
   }
 
-  // Helper for the additional provider fixtures below.
-  const createRequest = async (serviceTypeId, problem) => assertOk(await api('/requests', {
-    method: 'POST',
-    token: auth.owner.accessToken,
-    body: {
-      vehicleId: vehicle.id, serviceTypeId,
-      pickupLatitude: 30.0444, pickupLongitude: 31.2357,
-      pickupAddress: `E2E ${problem}, Cairo`, distanceKm: 4,
-      problem: `E2E seeded ${problem}`, answersJson: '{}', note: 'E2E provider fixture'
-    }
-  }), `create ${problem} request`);
+  // Helper for the additional provider fixtures below (each on its own non-primary fixture vehicle
+  // so the primary vehicle stays free for active-request E2E flows while honoring duplicate-request guards).
+  let fxtCounter = 2;
+  const createRequest = async (serviceTypeId, problem) => {
+    const fv = await createFixtureVehicle(fxtCounter++);
+    return assertOk(await api('/requests', {
+      method: 'POST',
+      token: auth.owner.accessToken,
+      body: {
+        vehicleId: fv.id, serviceTypeId,
+        pickupLatitude: 30.0444, pickupLongitude: 31.2357,
+        pickupAddress: `E2E ${problem}, Cairo`, distanceKm: 4,
+        problem: `E2E seeded ${problem}`, answersJson: '{}', note: 'E2E provider fixture'
+      }
+    }), `create ${problem} request`);
+  };
 
   // Mechanic screens: /offers/{id} only returns PENDING offers, so the incoming
   // offer screen needs a separate unaccepted offer from the assigned request.

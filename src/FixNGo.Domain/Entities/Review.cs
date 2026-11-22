@@ -6,6 +6,7 @@ public class Review : BaseEntity
     public ReviewTargetType TargetType { get; set; }
     public Guid? ProviderId { get; set; }
     public Guid? CenterId { get; set; }
+    public Guid? CustomerId { get; set; }
     public Guid? RequestId { get; set; }
     public Guid? BookingId { get; set; }
     public Guid AuthorId { get; set; }

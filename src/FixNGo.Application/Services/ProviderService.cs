@@ -87,6 +87,11 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
         u.Latitude ??= resolvedLat;
         u.Longitude ??= resolvedLon;
         p.LastHeartbeatAt = clock.UtcNow;
+        if (!req.IsOnline)
+        {
+            foreach (var staleOffer in db.Offers.Where(o => o.ProviderId == userId && o.Status == OfferStatus.Pending && !o.CustomerSelected))
+                staleOffer.Status = OfferStatus.Withdrawn;
+        }
         await db.SaveChangesAsync(ct);
 
         await notifier.BroadcastRoleAsync(Role.CarOwner, "request.updated",
@@ -546,6 +551,62 @@ public sealed class ProviderService(IAppDbContext db, IClock clock, INotifier no
             u.KycStatus == KycStatus.Approved,
             isLiveOnline,
             specialties.Distinct(StringComparer.OrdinalIgnoreCase).Take(6).ToList(),
+            reviews);
+    }
+
+    public async Task<CustomerPublicProfileDto> CustomerPublicProfileAsync(Guid customerId, CancellationToken ct = default)
+    {
+        var u = await db.Users.FirstOrDefaultAsync(x => x.Id == customerId, ct)
+            ?? throw new DomainException("user.not_found", "Customer not found.");
+
+        var completedTrips = await db.ServiceRequests
+            .CountAsync(r => r.CustomerId == customerId && r.Status == RequestStatus.Completed, ct);
+
+        var vehicles = await db.Vehicles
+            .Where(v => v.OwnerId == customerId)
+            .OrderByDescending(v => v.IsPrimary)
+            .Select(v => $"{v.Make} {v.Model} ({v.Year})")
+            .ToListAsync(ct);
+
+        var rawReviews = await (from r in db.Reviews
+                                where !r.IsHidden && r.CustomerId == customerId
+                                join a in db.Users on r.AuthorId equals a.Id into aj
+                                from author in aj.DefaultIfEmpty()
+                                join sr in db.ServiceRequests on r.RequestId equals sr.Id into srj
+                                from req in srj.DefaultIfEmpty()
+                                orderby r.CreatedAt descending
+                                select new
+                                {
+                                    r.Id,
+                                    r.CustomerId,
+                                    r.Stars,
+                                    r.Text,
+                                    r.Recommend,
+                                    r.CreatedAt,
+                                    AuthorName = author != null ? author.FullName : "Verified Specialist",
+                                    Context = req != null ? (req.Kind == RequestKind.Tow ? "Tow Trip" : "Mechanic Visit") : "Roadside Trip"
+                                }).Take(15).ToListAsync(ct);
+
+        var count = rawReviews.Count;
+        var avg = count == 0 ? 5.0m : Math.Round((decimal)rawReviews.Average(x => x.Stars), 1);
+        var recPct = count == 0 ? 100 : (int)Math.Round(100.0 * rawReviews.Count(x => x.Recommend) / count);
+
+        var reviews = rawReviews
+            .Select(r => new ReviewDto(r.Id, null, null, r.Stars, r.Text, r.Recommend, r.CreatedAt, r.AuthorName, r.Context, r.CustomerId))
+            .ToList();
+
+        return new CustomerPublicProfileDto(
+            u.Id,
+            u.FullName,
+            u.Phone,
+            u.AreaLabel ?? "Greater Cairo",
+            u.EmailVerified || u.Status == UserStatus.Active,
+            u.CreatedAt,
+            avg,
+            count,
+            recPct,
+            completedTrips,
+            vehicles,
             reviews);
     }
 

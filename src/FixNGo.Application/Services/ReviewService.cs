@@ -6,13 +6,47 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FixNGo.Application.Services;
 
-/// <summary>Reviews with one-per-completed-job rule and rolling provider/center rating aggregates.</summary>
+/// <summary>Reviews with one-per-completed-job rule and rolling provider/center/customer rating aggregates.</summary>
 public sealed class ReviewService(IAppDbContext db, IClock clock, INotifier? notifier = null) : IReviewService
 {
     public async Task<ReviewDto> CreateAsync(Guid authorId, ReviewTargetType target, Guid targetId,
         Guid? requestId, Guid? bookingId, CreateReviewRequest req, CancellationToken ct = default)
     {
         if (req.Stars < 1 || req.Stars > 5) throw new DomainException("review.stars_invalid", "Stars must be 1–5.");
+
+        if (target == ReviewTargetType.Customer)
+        {
+            if (requestId is null)
+                throw new DomainException("review.request_required", "A request reference is required to rate a customer.");
+            var cr = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
+                ?? throw new DomainException("request.not_found", "Request not found.");
+            if (cr.AssignedProviderId != authorId)
+                throw new DomainException("auth.forbidden", "Only the assigned specialist may rate the customer.");
+            if (cr.Status is not (RequestStatus.Completed or RequestStatus.AwaitingPayment or RequestStatus.Working))
+                throw new DomainException("review.request_incomplete", "Request is not completed yet.");
+            targetId = cr.CustomerId;
+            if (await db.Reviews.AnyAsync(x => x.RequestId == requestId && x.AuthorId == authorId, ct))
+                throw new DomainException("review.duplicate", "You already reviewed this customer for this job.");
+
+            var custReview = new Review
+            {
+                TargetType = ReviewTargetType.Customer,
+                CustomerId = targetId,
+                RequestId = requestId,
+                AuthorId = authorId,
+                Stars = req.Stars,
+                Text = req.Text,
+                Recommend = req.Recommend,
+                CreatedAt = clock.UtcNow
+            };
+            db.Reviews.Add(custReview);
+            await db.SaveChangesAsync(ct);
+            if (notifier is not null)
+                await notifier.BroadcastUserEventAsync(targetId, "request.updated", new { reviewId = custReview.Id, stars = custReview.Stars }, ct);
+            var provAuthorName = await db.Users.Where(u => u.Id == authorId).Select(u => u.FullName).FirstOrDefaultAsync(ct);
+            return Mappings.Review(custReview, provAuthorName, cr.Kind.ToString());
+        }
+
         if (requestId is not null)
         {
             var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == requestId, ct)
@@ -66,6 +100,7 @@ public sealed class ReviewService(IAppDbContext db, IClock clock, INotifier? not
 
     private async Task RefreshAggregateAsync(ReviewTargetType target, Guid id, CancellationToken ct)
     {
+        if (target == ReviewTargetType.Customer) return;
         var reviews = await db.Reviews.Where(r => !r.IsHidden && (target == ReviewTargetType.Provider ? r.ProviderId == id : r.CenterId == id)).ToListAsync(ct);
         var count = reviews.Count;
         var avg = count == 0 ? 0 : (decimal)reviews.Sum(r => r.Stars) / count;
@@ -75,7 +110,7 @@ public sealed class ReviewService(IAppDbContext db, IClock clock, INotifier? not
             var p = await db.ProviderProfiles.FirstOrDefaultAsync(x => x.UserId == id, ct);
             if (p is not null) { p.Rating = Math.Round(avg, 2); p.RatingCount = count; }
         }
-        else
+        else if (target == ReviewTargetType.Center)
         {
             var c = await db.ServiceCenters.FirstOrDefaultAsync(x => x.Id == id, ct);
             if (c is not null) { c.Rating = Math.Round(avg, 2); c.RatingCount = count; c.RecommendPercent = recommend; }
@@ -106,6 +141,20 @@ public sealed class ReviewService(IAppDbContext db, IClock clock, INotifier? not
                           from bk in bj.DefaultIfEmpty()
                           orderby r.CreatedAt descending
                           select new { r, AuthorName = author != null ? author.FullName : null, Context = bk != null && bk.Service != null ? bk.Service.Name : null })
+                         .ToListAsync(ct);
+        return rows.Select(x => Mappings.Review(x.r, x.AuthorName, x.Context)).ToList();
+    }
+
+    public async Task<IReadOnlyList<ReviewDto>> ForCustomerAsync(Guid customerId, CancellationToken ct = default)
+    {
+        var rows = await (from r in db.Reviews
+                          where r.CustomerId == customerId && !r.IsHidden
+                          join u in db.Users on r.AuthorId equals u.Id into uj
+                          from author in uj.DefaultIfEmpty()
+                          join req in db.ServiceRequests on r.RequestId equals req.Id into rq
+                          from sreq in rq.DefaultIfEmpty()
+                          orderby r.CreatedAt descending
+                          select new { r, AuthorName = author != null ? author.FullName : null, Context = sreq != null ? sreq.Kind.ToString() : null })
                          .ToListAsync(ct);
         return rows.Select(x => Mappings.Review(x.r, x.AuthorName, x.Context)).ToList();
     }

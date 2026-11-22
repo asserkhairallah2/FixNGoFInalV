@@ -176,6 +176,10 @@ public sealed class CenterService(
         var bays = await db.Bays.CountAsync(b => b.CenterId == centerId && b.IsActive, ct);
         if (hours is null || hours.IsClosed || bays == 0) return [];
         var date = day.Date;
+        var nowUtc = clock.UtcNow;
+        var cairoToday = nowUtc.AddHours(2).Date;
+        if (date < cairoToday) return [];
+
         // Working hours are entered in Africa/Cairo local time (UTC+2); store and return slots in UTC.
         var open = DateTime.SpecifyKind(date.Add(hours.OpenTime).AddHours(-2), DateTimeKind.Utc);
         var close = DateTime.SpecifyKind(date.Add(hours.CloseTime).AddHours(-2), DateTimeKind.Utc);
@@ -188,6 +192,7 @@ public sealed class CenterService(
         var slots = new List<AvailabilityDto>();
         for (var start = open; start + duration <= close; start += duration)
         {
+            if (start <= nowUtc) continue;
             var overlapping = existing.Count(s => DateTime.SpecifyKind(s, DateTimeKind.Utc) < start + duration
                 && start < DateTime.SpecifyKind(s, DateTimeKind.Utc).Add(duration));
             slots.Add(new AvailabilityDto(start, start + duration, overlapping < bays));
@@ -201,14 +206,19 @@ public sealed class CenterService(
             ?? throw new DomainException("center.service_not_found", "Service not found.");
         if (req.VehicleId is not null && !await db.Vehicles.AnyAsync(v => v.Id == req.VehicleId && v.OwnerId == customerId, ct))
             throw new DomainException("request.vehicle_not_owned", "Vehicle not found.");
+        var slotStartUtc = req.SlotStart.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(req.SlotStart, DateTimeKind.Utc)
+            : req.SlotStart.ToUniversalTime();
+        if (slotStartUtc <= clock.UtcNow.AddMinutes(-1))
+            throw new DomainException("booking.past_slot", "Cannot book a date or time slot that has already passed.");
         var (s, _) = await settings.CurrentAsync(ct);
-        var end = req.SlotStart.AddMinutes(service.DurationMinutes);
-        if (await BookingsFull(req.CenterId, req.SlotStart, end, ct))
+        var end = slotStartUtc.AddMinutes(service.DurationMinutes);
+        if (await BookingsFull(req.CenterId, slotStartUtc, end, ct))
             throw new DomainException("booking.slot_full", "This slot is no longer available.");
         var b = new Booking
         {
             Code = await Codes.NextAsync(db, "BK", ct), CenterId = req.CenterId, ServiceId = req.ServiceId,
-            CustomerId = customerId, VehicleId = req.VehicleId, SlotStart = req.SlotStart, SlotEnd = end,
+            CustomerId = customerId, VehicleId = req.VehicleId, SlotStart = slotStartUtc, SlotEnd = end,
             PriceMinor = service.PriceMinor, Status = BookingStatus.Pending, Note = req.Note,
             CreatedAt = clock.UtcNow
         };
@@ -404,10 +414,15 @@ public sealed class CenterService(
         if (b.CustomerId != callerId) throw new DomainException("auth.forbidden", "Only the customer may reschedule.");
         if (b.Status != BookingStatus.Pending && b.Status != BookingStatus.Confirmed)
             throw new DomainException("booking.stage_invalid", "Booking cannot be rescheduled.");
-        var end = req.SlotStart.AddMinutes((await db.CenterServices.FirstAsync(s => s.Id == b.ServiceId, ct)).DurationMinutes);
-        if (await BookingsFull(b.CenterId, req.SlotStart, end, ct))
+        var slotStartUtc = req.SlotStart.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(req.SlotStart, DateTimeKind.Utc)
+            : req.SlotStart.ToUniversalTime();
+        if (slotStartUtc <= clock.UtcNow.AddMinutes(-1))
+            throw new DomainException("booking.past_slot", "Cannot reschedule to a date or time slot that has already passed.");
+        var end = slotStartUtc.AddMinutes((await db.CenterServices.FirstAsync(s => s.Id == b.ServiceId, ct)).DurationMinutes);
+        if (await BookingsFull(b.CenterId, slotStartUtc, end, ct))
             throw new DomainException("booking.slot_full", "Slot is full.");
-        b.SlotStart = req.SlotStart; b.SlotEnd = end; b.Status = BookingStatus.Pending;
+        b.SlotStart = slotStartUtc; b.SlotEnd = end; b.Status = BookingStatus.Pending;
         await db.SaveChangesAsync(ct);
         await notifier.NotifyUserAsync(b.CustomerId, NotificationType.BookingRescheduled, "Booking rescheduled",
             $"Booking {b.Code} moved to {req.SlotStart:u}.", $"booking:{b.Id}", ct);

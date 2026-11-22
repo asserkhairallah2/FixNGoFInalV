@@ -32,6 +32,11 @@ public class ServiceRequest : BaseEntity
     public string? CancellationReason { get; set; }
     public DateTime? AcceptedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public Guid? PendingProviderId { get; set; }
+    public Guid? PendingOfferId { get; set; }
+    public DateTime? CustomerConfirmDeadlineAt { get; set; }
+    public int CustomerRejectionCount { get; set; }
+    public DateTime? SearchExpiresAt { get; set; }
     public bool CustomerCashConfirmed { get; set; }
     public byte[] RowVersion { get; set; } = new byte[8];
 

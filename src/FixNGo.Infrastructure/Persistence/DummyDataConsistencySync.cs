@@ -74,6 +74,9 @@ public static class DummyDataConsistencySync
             await db.SaveChangesAsync(ct);
         }
 
+        // Always enforce strict ChatThread participant integrity & seed realistic Customer reviews for providers to inspect
+        await SynchronizeChatsAndCustomerRatingsAsync(db, ct);
+
         // Idempotency check: skip if centers already have consistent non-zero ratings & distinct names
         var duplicateCenterNames = centers.GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
         var inconsistentCenters = centers.Any(c => (c.RatingCount == 0 && c.RecommendPercent > 0) || (c.Owner != null && c.Owner.KycStatus == KycStatus.Approved && c.RatingCount == 0));
@@ -316,6 +319,109 @@ public static class DummyDataConsistencySync
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    private static readonly string[] CustomerFeedbackComments =
+    [
+        "Accurate GPS pickup pin, clear vehicle description, and polite driver.",
+        "Ready at the vehicle with hazard lights on and smooth payment.",
+        "Respectful car owner and responsive on direct chat.",
+        "Clear communication on breakdown symptoms before arrival."
+    ];
+
+    private static async Task SynchronizeChatsAndCustomerRatingsAsync(AppDbContext db, CancellationToken ct)
+    {
+        var threads = await db.ChatThreads.Include(t => t.Messages).ToListAsync(ct);
+        if (threads.Count > 0)
+        {
+            var reqIds = threads.Where(t => t.RequestId != null).Select(t => t.RequestId!.Value).Distinct().ToList();
+            var bookIds = threads.Where(t => t.BookingId != null).Select(t => t.BookingId!.Value).Distinct().ToList();
+
+            var reqMap = reqIds.Count == 0
+                ? new Dictionary<Guid, ServiceRequest>()
+                : await db.ServiceRequests.Where(r => reqIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, ct);
+            var bkMap = bookIds.Count == 0
+                ? new Dictionary<Guid, Booking>()
+                : await db.Bookings.Include(b => b.Center).Where(b => bookIds.Contains(b.Id)).ToDictionaryAsync(b => b.Id, ct);
+
+            var chatModified = false;
+            foreach (var t in threads)
+            {
+                if (t.RequestId is Guid rid)
+                {
+                    if (!reqMap.TryGetValue(rid, out var req) || req.AssignedProviderId is null)
+                    {
+                        db.ChatThreads.Remove(t);
+                        chatModified = true;
+                        continue;
+                    }
+                    if (t.CustomerId != req.CustomerId || t.CounterpartId != req.AssignedProviderId.Value)
+                    {
+                        t.CustomerId = req.CustomerId;
+                        t.CounterpartId = req.AssignedProviderId.Value;
+                        chatModified = true;
+                    }
+                    foreach (var m in t.Messages)
+                    {
+                        if (m.SenderId != req.CustomerId && m.SenderId != req.AssignedProviderId.Value)
+                        {
+                            m.SenderId = req.AssignedProviderId.Value;
+                            chatModified = true;
+                        }
+                    }
+                }
+                else if (t.BookingId is Guid bid)
+                {
+                    if (!bkMap.TryGetValue(bid, out var bk) || bk.Center is null)
+                    {
+                        db.ChatThreads.Remove(t);
+                        chatModified = true;
+                        continue;
+                    }
+                    if (t.CustomerId != bk.CustomerId || t.CounterpartId != bk.Center.OwnerId)
+                    {
+                        t.CustomerId = bk.CustomerId;
+                        t.CounterpartId = bk.Center.OwnerId;
+                        chatModified = true;
+                    }
+                }
+            }
+            if (chatModified)
+                await db.SaveChangesAsync(ct);
+        }
+
+        var hasCustomerReviews = await db.Reviews.AnyAsync(r => r.CustomerId != null, ct);
+        if (!hasCustomerReviews)
+        {
+            var completedReqs = await db.ServiceRequests
+                .Where(r => r.Status == RequestStatus.Completed && r.AssignedProviderId != null)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(60)
+                .ToListAsync(ct);
+
+            var idx = 0;
+            foreach (var r in completedReqs)
+            {
+                var provId = r.AssignedProviderId!.Value;
+                if (await db.Reviews.AnyAsync(rv => rv.RequestId == r.Id && rv.AuthorId == provId, ct))
+                    continue;
+                var stars = idx % 5 == 3 ? 4 : 5;
+                db.Reviews.Add(new Review
+                {
+                    TargetType = ReviewTargetType.Customer,
+                    CustomerId = r.CustomerId,
+                    RequestId = r.Id,
+                    AuthorId = provId,
+                    Stars = stars,
+                    Recommend = true,
+                    Text = CustomerFeedbackComments[idx % CustomerFeedbackComments.Length],
+                    CreatedAt = (r.CompletedAt ?? r.CreatedAt).AddMinutes(12)
+                });
+                idx++;
+            }
+            if (idx > 0)
+                await db.SaveChangesAsync(ct);
+        }
     }
 
     private static int PickStars(int tier, int index) => tier switch

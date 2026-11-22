@@ -46,10 +46,33 @@ export const useRequests = () => q(k.requests, '/requests', { refetchInterval: 5
 // Live fallback: active requests refresh every 3.5 s even if the SignalR socket drops.
 export const useRequest = (id) => q(['requests', id], `/requests/${id}`, { enabled: !!id, refetchInterval: activePoll(3_500) });
 export const useTimeline = (id) => q(['requests', id, 'timeline'], `/requests/${id}/timeline`, { enabled: !!id, refetchInterval: 5_000 });
-export const useCandidates = (id) => q(['requests', id, 'candidates'], `/requests/${id}/candidates`, { enabled: !!id, refetchInterval: 4_000 });
+export const useCandidates = (id, sort = 'nearest') => q(['requests', id, 'candidates', sort], `/requests/${id}/candidates?sort=${encodeURIComponent(sort || 'nearest')}`, { enabled: !!id, refetchInterval: 3_000 });
 export const useRequestOffers = (id) => q(['requests', id, 'offers'], `/requests/${id}/offers`, { enabled: !!id, refetchInterval: 4_000 });
 export const useQuotes = (id) => q(['requests', id, 'quotes'], `/requests/${id}/quotes`, { enabled: !!id, refetchInterval: 4_000 });
-export const useOffers = () => q(k.offers, '/offers', { refetchInterval: 4_000 });
+export const useOffers = () => q(k.offers, '/offers', { refetchInterval: 3_000 });
+export const useCustomerPublicProfile = (customerId) => q(['customers', 'public-profile', customerId], `/providers/customers/${customerId}/public-profile`, { enabled: !!customerId });
+export function useConfirmProvider(id) {
+  const c = useQueryClient();
+  return useMutation({
+    mutationFn: () => post(`/requests/${id}/confirm-provider`, {}),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: ['requests', id] });
+      c.invalidateQueries({ queryKey: k.requests });
+      c.invalidateQueries({ queryKey: ['requests', id, 'candidates'] });
+    }
+  });
+}
+export function usePassProvider(id) {
+  const c = useQueryClient();
+  return useMutation({
+    mutationFn: (reason) => post(`/requests/${id}/pass-provider`, { reason: reason || 'passed_by_customer' }),
+    onSuccess: () => {
+      c.invalidateQueries({ queryKey: ['requests', id] });
+      c.invalidateQueries({ queryKey: k.requests });
+      c.invalidateQueries({ queryKey: ['requests', id, 'candidates'] });
+    }
+  });
+}
 export function useEstimate() { return useMutation({ mutationFn: (b) => post('/requests/estimate', b) }); }
 export function useCreateRequest() {
   const c = useQueryClient();

@@ -13,6 +13,7 @@ public sealed class ProviderController(IProviderService svc, IPaymentService pay
 {
     [HttpGet("me")] [Authorize(Policy = "Provider")] public async Task<IActionResult> Profile(CancellationToken ct) => Ok(await svc.ProfileAsync(this.UserId(), ct));
     [HttpGet("{id:guid}/public-profile")] public async Task<IActionResult> PublicProfile(Guid id, CancellationToken ct) => Ok(await svc.PublicProfileAsync(id, ct));
+    [HttpGet("customers/{id:guid}/public-profile")] public async Task<IActionResult> CustomerPublicProfile(Guid id, CancellationToken ct) => Ok(await svc.CustomerPublicProfileAsync(id, ct));
     [HttpPut("me")] [Authorize(Policy = "Provider")] public async Task<IActionResult> UpdateProfile([FromBody] UpdateProviderProfileRequest req, CancellationToken ct) => Ok(await svc.UpdateProfileAsync(this.UserId(), req, ct));
     [HttpPost("online")] [Authorize(Policy = "Provider")] public async Task<IActionResult> Online([FromBody] OnlineRequest req, CancellationToken ct) => Ok(await svc.SetOnlineAsync(this.UserId(), req, ct));
     [HttpPost("heartbeat")] [Authorize(Policy = "Provider")] public async Task<IActionResult> Heartbeat([FromBody] HeartbeatRequest req, CancellationToken ct) { await svc.HeartbeatAsync(this.UserId(), req, ct); return NoContent(); }

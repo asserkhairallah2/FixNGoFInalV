@@ -47,6 +47,7 @@ import {
 import {
   useColors,
   AppTopBar,
+  Avatar,
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
@@ -155,7 +156,7 @@ function TicketAttachment({ message, isAr }) {
 }
 
 /* =====================================================================
- * SH01: Chat with your provider / customer
+ * SH01: Chat with your provider / customer (Strictly isolated 1-to-1)
  * ===================================================================== */
 export function SH01Screen({ id, params }) {
   const colors = useColors();
@@ -171,80 +172,142 @@ export function SH01Screen({ id, params }) {
   const requests = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
   const bookings = Array.isArray(bookingsQuery.data) ? bookingsQuery.data : [];
 
-  const [selectedThreadId, setSelectedThreadId] = useState(() => id || params?.id || null);
+  const explicitThreadParam = params?.threadId || params?.id || null;
+  const idLooksLikeRequest = Boolean(id && requests.some((r) => r.id === id) && !threads.some((t) => t.id === id));
+  const idLooksLikeBooking = Boolean(id && bookings.some((b) => b.id === id) && !threads.some((t) => t.id === id));
+  const targetRequestId = params?.requestId || (idLooksLikeRequest ? id : null);
+  const targetBookingId = params?.bookingId || (idLooksLikeBooking ? id : null);
+
+  const [selectedThreadId, setSelectedThreadId] = useState(() => {
+    if (explicitThreadParam) return explicitThreadParam;
+    if (id && !params?.requestId && !params?.bookingId) return id;
+    return null;
+  });
+  const [resolvingContext, setResolvingContext] = useState(Boolean(params?.requestId || params?.bookingId));
   const [chatInput, setChatInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [locBusy, setLocBusy] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
 
-  // Start or resolve thread by requestId or bookingId if passed via params
+  // Resolve or start strictly isolated thread by requestId or bookingId
   useEffect(() => {
     let cancelled = false;
     async function resolveContextThread() {
-      const reqId = params?.requestId || (id && requests.some((r) => r.id === id) ? id : null);
-      const bookId = params?.bookingId || null;
-      if (reqId) {
+      if (targetRequestId) {
+        const existing = threads.find((t) => t.requestId === targetRequestId);
+        if (existing?.id) {
+          setSelectedThreadId(existing.id);
+          setResolvingContext(false);
+          return;
+        }
+        setResolvingContext(true);
         try {
-          const started = await post(`/requests/${reqId}/chat`, {});
+          const started = await post(`/requests/${targetRequestId}/chat`, {});
           if (!cancelled && started?.id) {
             setSelectedThreadId(started.id);
             qc.invalidateQueries({ queryKey: k.threads });
           }
         } catch (err) {
           if (!cancelled) setError(err.message || '');
+        } finally {
+          if (!cancelled) setResolvingContext(false);
         }
-      } else if (bookId) {
+      } else if (targetBookingId) {
+        const existing = threads.find((t) => t.bookingId === targetBookingId);
+        if (existing?.id) {
+          setSelectedThreadId(existing.id);
+          setResolvingContext(false);
+          return;
+        }
+        setResolvingContext(true);
         try {
-          const started = await post('/chat/threads', { bookingId: bookId });
+          const started = await post('/chat/threads', { bookingId: targetBookingId });
           if (!cancelled && started?.id) {
             setSelectedThreadId(started.id);
             qc.invalidateQueries({ queryKey: k.threads });
           }
         } catch (err) {
           if (!cancelled) setError(err.message || '');
+        } finally {
+          if (!cancelled) setResolvingContext(false);
         }
+      } else {
+        setResolvingContext(false);
       }
     }
-    if (params?.requestId || params?.bookingId) {
+    if (targetRequestId || targetBookingId) {
       resolveContextThread();
     }
     return () => { cancelled = true; };
-  }, [params?.requestId, params?.bookingId, id, requests, qc]);
+  }, [targetRequestId, targetBookingId, threads.length, qc]);
 
-  // Default to first thread when threads load
-  const activeThreadId = selectedThreadId || id || params?.id || threads[0]?.id || null;
+  const validSelectedId = selectedThreadId && (
+    threads.some((t) => t.id === selectedThreadId) || (!idLooksLikeRequest && !idLooksLikeBooking)
+  ) ? selectedThreadId : null;
+
+  const activeThreadId = resolvingContext
+    ? validSelectedId
+    : (validSelectedId || explicitThreadParam || threads[0]?.id || null);
+
   const threadQuery = useThread(activeThreadId);
-
   const activeThread = threadQuery.data || threads.find((t) => t.id === activeThreadId) || null;
   const messages = Array.isArray(activeThread?.messages) ? activeThread.messages : [];
 
-  const activeRequest = requests.find((r) => r.status !== 'Completed' && r.status !== 'Cancelled') || requests[0] || null;
-  const activeBooking = bookings.find((b) => !TERMINAL_BOOKING_STATUSES.has(b.status)) || bookings[0] || null;
-  const counterpartLabel = activeRequest
-    ? (user?.id === activeRequest.customerId
-      ? (activeRequest.providerName || (isAr ? 'مقدم الخدمة' : 'Assigned Provider'))
-      : (activeRequest.customerName || (isAr ? 'العميل' : 'Customer')))
-    : activeBooking
-    ? (user?.id === activeBooking.customerId
-      ? (activeBooking.centerName || (isAr ? 'مركز الخدمة' : 'Service Center'))
-      : (activeBooking.customerName || (isAr ? 'العميل' : 'Customer')))
-    : (user?.fullName || (isAr ? 'محادثة مباشرة' : 'Direct Chat'));
+  // Mark incoming unread messages as read when viewing thread
+  useEffect(() => {
+    if (!activeThreadId || !activeThread) return;
+    const hasUnread = Number(activeThread.unreadCount ?? 0) > 0 ||
+      messages.some((m) => m.senderId && m.senderId !== user?.id && !m.readAt);
+    if (!hasUnread) return;
+    post(`/chat/threads/${activeThreadId}/read`, {})
+      .then(() => qc.invalidateQueries({ queryKey: k.threads }))
+      .catch(() => {});
+  }, [activeThreadId, activeThread?.unreadCount, messages.length, user?.id, qc]);
+
+  // Contextual request/booking ONLY for starting a brand-new thread when none exists yet
+  const assignableRequest = useMemo(() => {
+    if (targetRequestId) return requests.find((r) => r.id === targetRequestId) || null;
+    return requests.find((r) => r.providerId && !TERMINAL_REQUEST_STATUSES.has(r.status)) || null;
+  }, [requests, targetRequestId]);
+
+  const assignableBooking = useMemo(() => {
+    if (targetBookingId) return bookings.find((b) => b.id === targetBookingId) || null;
+    return bookings.find((b) => !TERMINAL_BOOKING_STATUSES.has(b.status)) || null;
+  }, [bookings, targetBookingId]);
+
+  const headerName = activeThread?.otherPartyName
+    || (assignableRequest
+      ? (user?.id === assignableRequest.customerId
+          ? (assignableRequest.providerName || (isAr ? 'مقدم الخدمة' : 'Assigned Provider'))
+          : (assignableRequest.customerName || (isAr ? 'العميل' : 'Customer')))
+      : assignableBooking
+        ? (user?.id === assignableBooking.customerId
+            ? (assignableBooking.centerName || (isAr ? 'مركز الخدمة' : 'Service Center'))
+            : (assignableBooking.customerName || (isAr ? 'العميل' : 'Customer')))
+        : (isAr ? 'المحادثات المباشرة' : 'Direct Conversations'));
+
+  const headerRole = activeThread?.otherPartyRole
+    ? formatLabel(activeThread.otherPartyRole, isAr)
+    : '';
+  const headerCode = activeThread?.requestCode
+    || activeThread?.bookingCode
+    || (!activeThread && (assignableRequest?.code || assignableBooking?.code))
+    || '';
+  const headerPhone = activeThread?.otherPartyPhone || '';
 
   async function ensureThreadForAction() {
     if (activeThreadId) return activeThreadId;
-    if (params?.requestId || activeRequest?.id) {
-      const targetReqId = params?.requestId || activeRequest.id;
-      const started = await post(`/requests/${targetReqId}/chat`, {});
+    if (assignableRequest?.id && assignableRequest.providerId) {
+      const started = await post(`/requests/${assignableRequest.id}/chat`, {});
       if (started?.id) {
         setSelectedThreadId(started.id);
         qc.invalidateQueries({ queryKey: k.threads });
         return started.id;
       }
     }
-    if (params?.bookingId || activeBooking?.id) {
-      const targetBookId = params?.bookingId || activeBooking.id;
-      const started = await post('/chat/threads', { bookingId: targetBookId });
+    if (assignableBooking?.id) {
+      const started = await post('/chat/threads', { bookingId: assignableBooking.id });
       if (started?.id) {
         setSelectedThreadId(started.id);
         qc.invalidateQueries({ queryKey: k.threads });
@@ -262,7 +325,11 @@ export function SH01Screen({ id, params }) {
     try {
       const tid = await ensureThreadForAction();
       if (!tid) {
-        throw new Error(isAr ? 'لا توجد محادثة نشطة حالياً.' : 'No active conversation thread selected.');
+        throw new Error(
+          isAr
+            ? 'لا توجد محادثة نشطة حالياً. تبدأ المحادثة تلقائياً فور تعيين فني للطلب أو تأكيد حجز المركز.'
+            : 'No active conversation selected. Chats open automatically once a specialist is assigned or a center booking is active.'
+        );
       }
       await post(`/chat/threads/${tid}/messages`, { text: chatInput.trim() }, { idempotencyKey: crypto.randomUUID() });
       setChatInput('');
@@ -286,8 +353,8 @@ export function SH01Screen({ id, params }) {
       if (!tid) {
         throw new Error(isAr ? 'لا توجد محادثة نشطة لمشاركة الموقع.' : 'No active conversation to share location.');
       }
-      const lat = user?.latitude ?? activeRequest?.pickupLatitude ?? 30.0444;
-      const lng = user?.longitude ?? activeRequest?.pickupLongitude ?? 31.2357;
+      const lat = user?.latitude ?? assignableRequest?.pickupLatitude ?? 30.0444;
+      const lng = user?.longitude ?? assignableRequest?.pickupLongitude ?? 31.2357;
       await post(`/chat/threads/${tid}/location`, { latitude: lat, longitude: lng });
       setToast(isAr ? 'تمت مشاركة موقعك المباشر' : 'Live location shared');
       await Promise.all([
@@ -308,67 +375,104 @@ export function SH01Screen({ id, params }) {
 
       <div className="p-4 flex-1 flex flex-col justify-between gap-3">
         <div className="space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h1 className={`text-lg font-extrabold ${colors.text}`}>
-                {isAr ? 'المحادثات والرسائل المباشرة' : 'Messages & Direct Chat'}
-              </h1>
-              <p className={`text-[11px] ${colors.secondaryText}`}>
-                {counterpartLabel} · {isAr ? 'متصل' : 'Online'}
-                {activeRequest?.code ? ` · ${activeRequest.code}` : activeBooking?.code ? ` · ${activeBooking.code}` : ''}
-                {' · '}
-                {isAr ? 'خاص وآمن' : 'Private & secure'}
-              </p>
+          {/* Active Counterpart Header */}
+          <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between gap-2`}>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Avatar name={headerName} size={38} />
+              <div className="min-w-0">
+                <h1 className={`text-sm font-extrabold truncate ${colors.text}`} data-testid="chat-active-counterpart">
+                  {headerName}
+                </h1>
+                <p className={`text-[10.5px] truncate ${colors.secondaryText}`}>
+                  {[
+                    headerRole || (isAr ? 'محادثة خاصة ١ إلى ١' : '1-to-1 Private Chat'),
+                    headerCode,
+                    isAr ? 'مشفر وآمن' : 'Private'
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleShareLocation}
-              disabled={locBusy}
-              data-testid="share-location-btn"
-              className={`px-2.5 py-1.5 rounded-xl border ${colors.border} ${colors.surface} text-[11px] font-bold text-[#E51C23] flex items-center gap-1 shrink-0 hover:opacity-80`}
-            >
-              <MapPin size={13} />
-              <span>{isAr ? 'مشاركة الموقع' : 'Share Location'}</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {headerPhone && (
+                <a
+                  href={`tel:${headerPhone}`}
+                  aria-label="Call"
+                  className={`p-2 rounded-xl border ${colors.border} ${colors.elevated} text-emerald-600 dark:text-emerald-400 hover:opacity-80`}
+                >
+                  <Phone size={14} />
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={handleShareLocation}
+                disabled={locBusy}
+                data-testid="share-location-btn"
+                className={`px-2.5 py-2 rounded-xl border ${colors.border} ${colors.elevated} text-[11px] font-bold text-[#E51C23] flex items-center gap-1 shrink-0 hover:opacity-80`}
+              >
+                <MapPin size={13} />
+                <span>{isAr ? 'مشاركة الموقع' : 'Share Location'}</span>
+              </button>
+            </div>
           </div>
 
+          {/* Strictly Isolated Thread Switcher */}
           {threads.length > 0 && (
             <div className="space-y-1.5">
               <p className={`text-[10px] font-bold uppercase ${colors.secondaryText}`}>
-                {isAr ? 'المحادثات النشطة' : 'Active conversations'} ({threads.length})
+                {isAr ? 'محادثاتك المستقلة' : 'Your Conversations'} ({threads.length})
               </p>
-              <div className="space-y-1.5 max-h-28 overflow-y-auto">
-                {threads.map((t, index) => {
+              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                {threads.map((t) => {
                   const lastMsg = t.messages?.[t.messages.length - 1];
                   const isSelected = t.id === activeThreadId;
+                  const rowName = t.otherPartyName || (isAr ? 'طرف المحادثة' : 'Conversation Partner');
+                  const rowRole = t.otherPartyRole ? formatLabel(t.otherPartyRole, isAr) : '';
+                  const rowCode = t.requestCode || t.bookingCode || '';
+                  const unread = Number(t.unreadCount ?? 0);
                   return (
                     <button
                       key={t.id}
                       type="button"
                       data-testid="data-row"
-                      onClick={() => setSelectedThreadId(t.id)}
-                      className={`w-full p-2.5 rounded-xl border text-start flex items-center justify-between text-xs transition ${
+                      onClick={() => {
+                        setError('');
+                        setSelectedThreadId(t.id);
+                      }}
+                      className={`w-full p-2.5 rounded-xl border text-start flex items-center justify-between gap-2 text-xs transition ${
                         isSelected
                           ? 'border-[#E51C23] bg-[#E51C23]/10'
                           : `${colors.border} ${colors.surface}`
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MessageSquare size={14} className={isSelected ? 'text-[#E51C23]' : colors.secondaryText} />
-                        <div className="truncate">
-                          <p className={`font-bold truncate ${colors.text}`}>
-                            {counterpartLabel} #{index + 1}
-                          </p>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Avatar name={rowName} size={32} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`font-bold truncate ${colors.text}`}>{rowName}</span>
+                            {rowCode && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-mono font-bold bg-slate-500/10 text-[#E51C23]">
+                                {rowCode}
+                              </span>
+                            )}
+                          </div>
                           <p className={`text-[10px] truncate ${colors.secondaryText}`}>
+                            {rowRole ? `${rowRole} · ` : ''}
                             {lastMsg?.messageType === 'location'
                               ? (isAr ? '📍 موقع مباشر' : '📍 Live location')
-                              : (lastMsg?.text || (isAr ? 'بدء المحادثة' : 'Start conversation'))}
+                              : (lastMsg?.text || (isAr ? 'اضغط لعرض الرسائل' : 'Tap to open messages'))}
                           </p>
                         </div>
                       </div>
-                      <span className={`text-[10px] ${colors.secondaryText} shrink-0`}>
-                        {lastMsg?.sentAt ? fmtTime(lastMsg.sentAt, lang) : ''}
-                      </span>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className={`text-[10px] ${colors.secondaryText}`}>
+                          {lastMsg?.sentAt ? fmtTime(lastMsg.sentAt, lang) : ''}
+                        </span>
+                        {unread > 0 && !isSelected && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-[#E51C23] text-white">
+                            {unread}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
@@ -376,55 +480,75 @@ export function SH01Screen({ id, params }) {
             </div>
           )}
 
-          <div className="space-y-2.5 overflow-y-auto max-h-80 px-1">
-            {messages.length === 0 ? (
-              <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} text-center text-xs ${colors.secondaryText}`}>
-                {isAr
-                  ? 'لا توجد رسائل في هذه المحادثة بعد. اكتب رسالة أو شارك موقعك بالأسفل.'
-                  : 'No messages in this thread yet. Send a message or share your live location below.'}
-              </div>
-            ) : (
-              messages.map((m, idx) => {
-                const isMine = m.senderId === user?.id || m.fromMe || m.isMine;
-                if (m.messageType === 'location') {
+          {/* Message Stream */}
+          {resolvingContext ? (
+            <Skeleton rows={3} />
+          ) : (
+            <div className="space-y-2.5 overflow-y-auto max-h-80 px-1" data-testid="chat-messages-list">
+              {messages.length === 0 ? (
+                <div className={`p-4 rounded-2xl border ${colors.border} ${colors.surface} text-center text-xs ${colors.secondaryText}`}>
+                  {activeThread || assignableRequest?.providerId || assignableBooking
+                    ? (isAr
+                        ? 'لا توجد رسائل في هذه المحادثة بعد. اكتب رسالتك بالأسفل للتواصل المباشر.'
+                        : 'No messages in this conversation yet. Send a message or share your live location below.')
+                    : (isAr
+                        ? 'لا توجد محادثات نشطة حالياً. تُفتح المحادثة الخاصة تلقائياً مع الفني المعيّن أو مركز الخدمة.'
+                        : 'No active conversations yet. Private 1-to-1 chats open automatically with your assigned specialist or service center.')}
+                </div>
+              ) : (
+                messages.map((m, idx) => {
+                  const isMine = m.senderId === user?.id || m.fromMe || m.isMine;
+                  if (m.messageType === 'location') {
+                    const mapHref = m.latitude != null && m.longitude != null
+                      ? `https://www.google.com/maps?q=${m.latitude},${m.longitude}`
+                      : null;
+                    return (
+                      <div
+                        key={m.id || idx}
+                        className={`p-2.5 rounded-2xl border ${colors.border} ${colors.surface} max-w-[78%] space-y-1 ${
+                          isMine ? (isAr ? 'mr-auto' : 'ml-auto') : ''
+                        }`}
+                      >
+                        <div className="h-10 rounded-xl bg-slate-500/10 flex items-center justify-between px-3 gap-2">
+                          <span className="text-[10px] font-bold text-[#E51C23] truncate">
+                            {mapHref ? (
+                              <a href={mapHref} target="_blank" rel="noreferrer" className="underline">
+                                {isAr ? 'فتح الموقع على الخريطة' : 'Open Live Pin in Maps'}
+                              </a>
+                            ) : (isAr ? 'موقع مباشر' : 'LIVE PIN')}
+                          </span>
+                          <MapPin size={14} className="text-[#E51C23] shrink-0" />
+                        </div>
+                        <p className={`text-[10px] font-bold ${colors.text}`}>
+                          {!isMine && m.senderName ? `${m.senderName} · ` : ''}
+                          {isAr ? 'موقع مباشر' : 'Live location shared'}
+                          {m.sentAt ? ` · ${fmtTime(m.sentAt, lang)}` : ''}
+                        </p>
+                      </div>
+                    );
+                  }
                   return (
                     <div
                       key={m.id || idx}
-                      className={`p-2.5 rounded-2xl border ${colors.border} ${colors.surface} max-w-[78%] space-y-1 ${
-                        isMine ? (isAr ? 'mr-auto' : 'ml-auto') : ''
+                      className={`p-3 rounded-2xl text-xs max-w-[85%] ${
+                        isMine
+                          ? `${isAr ? 'mr-auto' : 'ml-auto'} bg-[#E51C23] text-white`
+                          : `${colors.surface} border ${colors.border} ${colors.text}`
                       }`}
                     >
-                      <div className="h-10 rounded-xl bg-slate-500/10 flex items-center justify-between px-3">
-                        <span className="text-[10px] font-bold text-red-500">
-                          {user?.areaLabel || activeRequest?.pickupAddress || (isAr ? 'موقع مباشر' : 'LIVE PIN')}
-                        </span>
-                        <MapPin size={14} className="text-red-500" />
-                      </div>
-                      <p className={`text-[10px] font-bold ${colors.text}`}>
-                        {isAr ? 'تمت مشاركة الموقع المباشر' : 'Live location shared'}
-                        {m.sentAt ? ` · ${fmtTime(m.sentAt, lang)}` : ''}
+                      {!isMine && m.senderName && (
+                        <p className="text-[10px] font-extrabold text-[#E51C23] mb-0.5">{m.senderName}</p>
+                      )}
+                      <p>{m.text}</p>
+                      <p className="text-[9px] opacity-75 text-end mt-1">
+                        {m.sentAt ? fmtTime(m.sentAt, lang) : ''}
                       </p>
                     </div>
                   );
-                }
-                return (
-                  <div
-                    key={m.id || idx}
-                    className={`p-3 rounded-2xl text-xs max-w-[85%] ${
-                      isMine
-                        ? `${isAr ? 'mr-auto' : 'ml-auto'} bg-[#E51C23] text-white`
-                        : `${colors.surface} border ${colors.border} ${colors.text}`
-                    }`}
-                  >
-                    <p>{m.text}</p>
-                    <p className="text-[9px] opacity-75 text-end mt-1">
-                      {m.sentAt ? fmtTime(m.sentAt, lang) : ''}
-                    </p>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                })
+              )}
+            </div>
+          )}
 
           {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
         </div>

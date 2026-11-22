@@ -14,6 +14,7 @@ public class Offer : BaseEntity
     public int EtaMinutes { get; set; }
     public double Score { get; set; }
     public bool IsP0 { get; set; }
+    public bool CustomerSelected { get; set; }
     public string? DeclineReason { get; set; }
     public byte[] RowVersion { get; set; } = new byte[8];
 }

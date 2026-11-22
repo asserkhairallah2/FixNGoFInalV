@@ -338,8 +338,14 @@ const SessionContext = createContext(null);
 export function SessionProvider({ children }) {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
+  const activeUidRef = useRef(undefined);
 
   const updateUser = useCallback((nextUser) => {
+    const nextId = nextUser?.id || null;
+    if (activeUidRef.current !== undefined && activeUidRef.current !== nextId) {
+      try { window.__fixngoClearQueryCache?.(); } catch {}
+    }
+    activeUidRef.current = nextId;
     setUser(nextUser);
     try {
       if (nextUser?.role) sessionStorage.setItem('fixngo.role', nextUser.role);

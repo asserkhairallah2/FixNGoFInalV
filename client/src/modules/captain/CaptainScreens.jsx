@@ -18,6 +18,7 @@ import { usePrefs, useNav, useSession } from '../../app/stores.jsx';
 import { post, put, fileUrl, uploadFile } from '../../api/http.js';
 import {
   k,
+  useBootstrap,
   useCenters,
   useProvider,
   useOffers,
@@ -40,6 +41,9 @@ import {
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
+  StarRating,
+  CustomerProfileSheet,
+  ProviderReviewsSheet,
   MapView,
   Toast,
   useColors,
@@ -120,17 +124,18 @@ function formatCountdown(expiresAt) {
   return `${mins}:${secs}`;
 }
 
-function computeTowBreakdown(totalMinor) {
+function computeTowBreakdown(totalMinor, pricing) {
   const total = Math.max(0, Number(totalMinor ?? 0));
   if (total === 0) {
-    return { baseMinor: 0, distanceMinor: 0, feeMinor: 0, totalMinor: 0 };
+    return { baseMinor: 0, distanceMinor: 0, feeMinor: 0, netMinor: 0, totalMinor: 0 };
   }
-  const feeMinor = total >= 5000 ? 5000 : Math.round(total * 0.08);
+  const cfgFee = Number(pricing?.serviceFeeMinor ?? 5000);
+  const cfgBase = Number(pricing?.towBaseMinor ?? 25000);
+  const feeMinor = total >= cfgFee * 2 ? cfgFee : Math.round(total * 0.10);
   const net = Math.max(0, total - feeMinor);
-  const capped = Math.min(net, 45000);
-  const baseMinor = capped > 0 ? capped : Math.round(net * 0.75);
+  const baseMinor = Math.min(net, cfgBase);
   const distanceMinor = Math.max(0, net - baseMinor);
-  return { baseMinor, distanceMinor, feeMinor, totalMinor: total };
+  return { baseMinor, distanceMinor, feeMinor, netMinor: net, totalMinor: total };
 }
 
 function fmtOptionalDistance(km, lang) {
@@ -198,6 +203,7 @@ export function T01Screen() {
   const earningsQ = useEarnings();
   const goOnline = useGoOnline();
   const [error, setError] = useState('');
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const provider = providerQ.data;
   const earnings = earningsQ.data;
@@ -212,6 +218,7 @@ export function T01Screen() {
   const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
   const capacityText = provider?.truckCapacityTonnes != null ? `${provider.truckCapacityTonnes}t` : '—';
+  const ratingCount = Number(provider?.ratingCount ?? 0);
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -292,12 +299,21 @@ export function T01Screen() {
             {isAr ? 'رحلات اليوم' : "Today's trips"}
           </p>
         </div>
-        <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
-          <p className={`text-sm font-extrabold ${colors.text}`}>{rating}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'التقييم' : 'Rating'}
+        <button
+          type="button"
+          data-testid="open-my-reviews-btn"
+          onClick={() => setReviewsOpen(true)}
+          className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface} hover:border-[#E51C23]/50 transition`}
+        >
+          <p className="text-sm font-extrabold text-[#E51C23]">
+            {ratingCount > 0 ? `⭐ ${rating}` : rating}
           </p>
-        </div>
+          <p className={`text-[10px] underline ${colors.secondaryText}`}>
+            {ratingCount > 0
+              ? (isAr ? `التقييم (${ratingCount})` : `Reviews (${ratingCount})`)
+              : (isAr ? 'التقييمات' : 'Reviews')}
+          </p>
+        </button>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(todayMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
@@ -334,6 +350,13 @@ export function T01Screen() {
       <PrimaryButton onClick={handleGoOnline} disabled={goOnline.isPending} testId="screen-primary">
         {isAr ? 'بدء الخدمة (متاح الآن)' : 'Go Online'}
       </PrimaryButton>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
     </CaptainShell>
   );
 }
@@ -351,7 +374,11 @@ export function T02Screen() {
   const requestsQ = useRequests();
   const earningsQ = useEarnings();
   const goOnline = useGoOnline();
+  const acceptM = useAcceptOffer();
+  const declineM = useDeclineOffer();
   const [error, setError] = useState('');
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [inspectOffer, setInspectOffer] = useState(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -368,12 +395,14 @@ export function T02Screen() {
   const truckMake = provider?.truckMake || (provider?.truckType ? providerLabel(provider.truckType, isAr) : (isAr ? 'ونش سطحة' : 'Flatbed Tow Truck'));
   const truckPlate = provider?.truckPlate || '—';
   const capacityText = provider?.truckCapacityTonnes != null ? `${provider.truckCapacityTonnes}t` : null;
+  const ratingCount = Number(provider?.ratingCount ?? 0);
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
   const completedCount = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
   const availableMinor = earnings?.availableMinor ?? 0;
 
-  const pendingOffers = offers.filter((o) => !o.status || o.status === 'Pending');
-  const liveOffer = pendingOffers[0] || offers[0] || null;
+  const awaitingConfirmOffer = offers.find((o) => o.awaitingCustomerConfirm) || null;
+  const pendingOffers = offers.filter((o) => (!o.status || o.status === 'Pending') && !o.awaitingCustomerConfirm);
+  const liveOffer = pendingOffers[0] || null;
   const extraOffers = pendingOffers.slice(1, 5);
   const activeTrip = requests.find(
     (r) =>
@@ -381,6 +410,31 @@ export function T02Screen() {
       String(r.assignedProviderId) === String(user?.id) &&
       !['Completed', 'Cancelled', 'NoProviders', 'Searching', 'Offered'].includes(String(r.status))
   );
+
+  const handleQuickAccept = async (targetOffer, e) => {
+    e?.stopPropagation?.();
+    if (!targetOffer?.id) return;
+    setError('');
+    try {
+      const accepted = await acceptM.mutateAsync(targetOffer.id);
+      setInspectOffer(null);
+      if (accepted && !accepted.awaitingCustomerConfirm) {
+        nav.go('T04', { id: accepted.requestId || targetOffer.requestId });
+      }
+    } catch (err) {
+      setError(err?.message || (isAr ? 'تعذر قبول الطلب.' : 'Could not accept offer.'));
+    }
+  };
+
+  const handleQuickIgnore = async (targetOffer, e) => {
+    e?.stopPropagation?.();
+    if (!targetOffer?.id) return;
+    setError('');
+    try {
+      await declineM.mutateAsync({ id: targetOffer.id, reason: 'ignored' });
+      setInspectOffer(null);
+    } catch {}
+  };
 
   const handleGoOffline = async () => {
     setError('');
@@ -432,12 +486,21 @@ export function T02Screen() {
             {isAr ? 'رحلات مكتملة' : 'Completed trips'}
           </p>
         </div>
-        <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
-          <p className={`text-sm font-extrabold ${colors.text}`}>{rating}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'التقييم' : 'Rating'}
+        <button
+          type="button"
+          data-testid="open-my-reviews-btn"
+          onClick={() => setReviewsOpen(true)}
+          className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface} hover:border-[#E51C23]/50 transition`}
+        >
+          <p className="text-sm font-extrabold text-[#E51C23]">
+            {ratingCount > 0 ? `⭐ ${rating}` : rating}
           </p>
-        </div>
+          <p className={`text-[10px] underline ${colors.secondaryText}`}>
+            {ratingCount > 0
+              ? (isAr ? `التقييم (${ratingCount})` : `Reviews (${ratingCount})`)
+              : (isAr ? 'التقييمات' : 'Reviews')}
+          </p>
+        </button>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(availableMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
@@ -446,26 +509,93 @@ export function T02Screen() {
         </div>
       </div>
 
+      {awaitingConfirmOffer && !activeTrip && (
+        <div
+          data-testid="awaiting-customer-confirm-card"
+          className="p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-500/10 space-y-1.5 text-xs"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+              {isAr
+                ? `⏳ بانتظار تأكيد ${awaitingConfirmOffer.customerName || awaitingConfirmOffer.customerFirstName || 'العميل'}`
+                : `⏳ Waiting for ${awaitingConfirmOffer.customerName || awaitingConfirmOffer.customerFirstName || 'Customer'} to confirm`}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-mono font-extrabold text-[11px]" dir="ltr">
+              {formatCountdown(awaitingConfirmOffer.customerConfirmDeadlineAt)}
+            </span>
+          </div>
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {isAr
+              ? 'قبلت طلب السحب — سيتم فتح الملاحة تلقائياً فور ضغط العميل على تأكيد.'
+              : 'You accepted this tow request — navigation starts automatically once the customer confirms.'}
+          </p>
+        </div>
+      )}
+
       {liveOffer ? (
         <>
           <div
             onClick={() => nav.go('T03', { id: liveOffer.id })}
-            className="p-3.5 rounded-2xl border border-[#E51C23]/40 bg-[#E51C23]/10 space-y-1.5 cursor-pointer text-xs"
+            className="p-3.5 rounded-2xl border border-[#E51C23]/40 bg-[#E51C23]/10 space-y-2 cursor-pointer text-xs"
             data-testid="live-offer-card"
           >
             <div className="flex justify-between text-[10px] font-bold text-[#E51C23]">
-              <span>{`${isAr ? 'طلب سحب جديد' : 'New tow request'}${liveOffer.requestCode ? ` · ${liveOffer.requestCode}` : ''}`}</span>
+              <span>
+                {liveOffer.customerSelected
+                  ? (isAr ? `طلب موجه لك مباشرة · ${liveOffer.requestCode || ''}` : `Direct tow request · ${liveOffer.requestCode || ''}`)
+                  : `${isAr ? 'طلب سحب جديد' : 'New tow request'}${liveOffer.requestCode ? ` · ${liveOffer.requestCode}` : ''}`}
+              </span>
               <span dir="ltr">{formatCountdown(liveOffer.expiresAt)}</span>
             </div>
-            <p className={`font-bold ${colors.text}`}>
-              {[liveOffer.vehicleMake, liveOffer.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className={`font-extrabold truncate ${colors.text}`}>
+                  {`${liveOffer.customerName || liveOffer.customerFirstName || (isAr ? 'عميل' : 'Customer')} · ⭐ ${Number(liveOffer.customerRating ?? 5.0).toFixed(1)}`}
+                </p>
+                <p className={`text-[11px] truncate ${colors.secondaryText}`}>
+                  {liveOffer.vehicleSummary || [liveOffer.vehicleMake, liveOffer.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}
+                </p>
+              </div>
+              <button
+                type="button"
+                data-testid="inspect-customer-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInspectOffer(liveOffer);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-[#E51C23]/15 text-[#E51C23] hover:opacity-85 text-[10.5px] font-extrabold shrink-0"
+              >
+                {isAr ? 'ملف العميل' : 'View Profile'}
+              </button>
+            </div>
             <p className={`text-[11px] ${colors.secondaryText}`}>
-              {`${liveOffer.pickupArea || '—'} → ${liveOffer.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')} · ${fmtOptionalDistance(liveOffer.tripDistanceKm || liveOffer.distanceKm, lang)}`}
+              {`📍 ${liveOffer.pickupArea || '—'} → ${liveOffer.destinationAddress || (isAr ? 'وجهة التسليم' : 'Drop-off destination')} · ${fmtOptionalDistance(liveOffer.tripDistanceKm || liveOffer.distanceKm, lang)}`}
             </p>
             <div className={`flex justify-between pt-1 border-t ${colors.border} font-extrabold`}>
-              <span className={colors.secondaryText}>{isAr ? 'عرض الرحلة' : 'Trip offer'}</span>
-              <span className="text-[#E51C23]">{fmtMoney(liveOffer.priceMinor, lang)} →</span>
+              <span className={colors.secondaryText}>{isAr ? 'صافي أرباحك من الرحلة' : 'Your net earnings'}</span>
+              <span className="text-[#E51C23]">
+                {`${fmtMoney(liveOffer.providerNetMinor ?? Math.max(0, (liveOffer.priceMinor ?? 0) - 5000), lang)} (${isAr ? 'إجمالي' : 'Fare'}: ${fmtMoney(liveOffer.priceMinor, lang)})`}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                data-testid="live-offer-ignore-btn"
+                onClick={(e) => handleQuickIgnore(liveOffer, e)}
+                disabled={declineM.isPending || acceptM.isPending}
+                className={`py-2 rounded-xl border ${colors.border} ${colors.surface} ${colors.text} text-xs font-bold`}
+              >
+                {isAr ? 'تجاهل' : 'Ignore'}
+              </button>
+              <button
+                type="button"
+                data-testid="live-offer-accept-btn"
+                onClick={(e) => handleQuickAccept(liveOffer, e)}
+                disabled={acceptM.isPending || declineM.isPending}
+                className="py-2 rounded-xl bg-[#E51C23] text-white text-xs font-extrabold shadow"
+              >
+                {isAr ? 'قبول الطلب' : 'Accept'}
+              </button>
             </div>
           </div>
           {extraOffers.length > 0 && (
@@ -479,15 +609,17 @@ export function T02Screen() {
                   onClick={() => nav.go('T03', { id: item.id })}
                   className={`p-3 rounded-2xl border border-[#E51C23]/30 ${colors.surface} flex items-center justify-between cursor-pointer text-xs`}
                 >
-                  <div>
-                    <p className={`font-bold ${colors.text}`}>
-                      {`${[item.vehicleMake, item.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}${item.requestCode ? ` · ${item.requestCode}` : ''}`}
+                  <div className="min-w-0">
+                    <p className={`font-bold truncate ${colors.text}`}>
+                      {`${item.customerName || item.customerFirstName || (isAr ? 'عميل' : 'Customer')} · ${[item.vehicleMake, item.vehicleModel].filter(Boolean).join(' ') || (isAr ? 'ونش سطحة' : 'Flatbed Tow')}`}
                     </p>
-                    <p className={`text-[11px] ${colors.secondaryText}`}>
-                      {`${item.pickupArea || '—'} · ${fmtOptionalDistance(item.distanceKm, lang)}`}
+                    <p className={`text-[11px] truncate ${colors.secondaryText}`}>
+                      {`⭐ ${Number(item.customerRating ?? 5.0).toFixed(1)} · ${item.pickupArea || '—'} · ${fmtOptionalDistance(item.distanceKm, lang)}`}
                     </p>
                   </div>
-                  <span className="font-extrabold text-[#E51C23] shrink-0">{fmtMoney(item.priceMinor, lang)} →</span>
+                  <span className="font-extrabold text-[#E51C23] shrink-0">
+                    {fmtMoney(item.providerNetMinor ?? Math.max(0, (item.priceMinor ?? 0) - 5000), lang)} →
+                  </span>
                 </div>
               ))}
             </div>
@@ -536,6 +668,24 @@ export function T02Screen() {
       <SecondaryButton onClick={handleGoOffline} disabled={goOnline.isPending} testId="screen-primary">
         {isAr ? 'إيقاف الخدمة' : 'Go Off Duty'}
       </SecondaryButton>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
+
+      <CustomerProfileSheet
+        open={Boolean(inspectOffer)}
+        customerId={inspectOffer?.customerId}
+        fallbackName={inspectOffer?.customerName || inspectOffer?.customerFirstName}
+        vehicleSummary={inspectOffer?.vehicleSummary}
+        busy={acceptM.isPending || declineM.isPending}
+        onClose={() => setInspectOffer(null)}
+        onAccept={inspectOffer ? () => handleQuickAccept(inspectOffer) : undefined}
+        onIgnore={inspectOffer ? () => handleQuickIgnore(inspectOffer) : undefined}
+      />
     </CaptainShell>
   );
 }
@@ -547,10 +697,15 @@ export function T03Screen({ id }) {
   const colors = useColors();
   const { isAr, lang } = usePrefs();
   const nav = useNav();
+  const { user } = useSession();
+  const boot = useBootstrap();
   const offersQ = useOffers();
+  const requestsQ = useRequests();
   const acceptM = useAcceptOffer();
   const declineM = useDeclineOffer();
   const [error, setError] = useState('');
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+  const [acceptedPending, setAcceptedPending] = useState(null);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -559,6 +714,7 @@ export function T03Screen({ id }) {
   }, []);
 
   const offers = Array.isArray(offersQ.data) ? offersQ.data : [];
+  const requests = Array.isArray(requestsQ.data) ? requestsQ.data : [];
   const offer = useMemo(() => {
     if (id) {
       const matched = offers.find((o) => String(o.id) === String(id) || String(o.requestId) === String(id));
@@ -566,6 +722,27 @@ export function T03Screen({ id }) {
     }
     return offers[0] || null;
   }, [id, offers]);
+
+  const targetRequestId = acceptedPending?.requestId || offer?.requestId || id || null;
+  const assignedRequest = useMemo(() => {
+    if (!targetRequestId) return null;
+    return requests.find(
+      (r) =>
+        String(r.id) === String(targetRequestId) &&
+        String(r.assignedProviderId) === String(user?.id) &&
+        !['Searching', 'Offered', 'Cancelled', 'NoProviders'].includes(String(r.status))
+    ) || null;
+  }, [requests, targetRequestId, user?.id]);
+
+  useEffect(() => {
+    if (assignedRequest?.id) {
+      nav.go('T04', { id: assignedRequest.id });
+    }
+  }, [assignedRequest?.id]);
+
+  const isAwaitingCustomer = Boolean(offer?.awaitingCustomerConfirm || acceptedPending?.awaitingCustomerConfirm);
+  const confirmDeadlineIso = offer?.customerConfirmDeadlineAt || acceptedPending?.customerConfirmDeadlineAt;
+  const confirmCountdown = formatCountdown(confirmDeadlineIso);
 
   const handleAccept = async () => {
     setError('');
@@ -575,6 +752,11 @@ export function T03Screen({ id }) {
     }
     try {
       const accepted = await acceptM.mutateAsync(offer.id);
+      setCustomerSheetOpen(false);
+      if (accepted?.awaitingCustomerConfirm) {
+        setAcceptedPending(accepted);
+        return;
+      }
       nav.go('T04', { id: accepted?.requestId || offer.requestId });
     } catch (err) {
       setError(err?.message || (isAr ? 'تعذر قبول العرض.' : 'Could not accept offer.'));
@@ -583,19 +765,27 @@ export function T03Screen({ id }) {
 
   const handleDecline = async () => {
     setError('');
+    setCustomerSheetOpen(false);
     if (!offer) {
       nav.go('T02');
       return;
     }
     try {
-      await declineM.mutateAsync({ id: offer.id, reason: 'declined_by_captain' });
+      await declineM.mutateAsync({ id: offer.id, reason: 'ignored' });
       nav.go('T02');
     } catch (err) {
       setError(err?.message || (isAr ? 'تعذر رفض العرض.' : 'Could not decline offer.'));
     }
   };
 
-  const vehicleLabel = offer
+  const customerFullName = offer?.customerName || offer?.customerFirstName || (isAr ? 'العميل' : 'Customer');
+  const customerRating = Number(offer?.customerRating ?? 5.0).toFixed(1);
+  const customerTrips = Number(offer?.customerCompletedTrips ?? 0);
+  const feeMinor = boot.data?.pricing?.serviceFeeMinor ?? 5000;
+  const priceMinor = offer?.priceMinor ?? 0;
+  const netMinor = offer?.providerNetMinor ?? Math.max(0, priceMinor - feeMinor);
+
+  const vehicleLabel = offer?.vehicleSummary || (offer
     ? [
         offer.vehicleMake,
         offer.vehicleModel,
@@ -603,9 +793,7 @@ export function T03Screen({ id }) {
       ]
         .filter(Boolean)
         .join(' ')
-    : isAr
-    ? 'مركبة العميل'
-    : 'Customer vehicle';
+    : '') || (isAr ? 'مركبة العميل' : 'Customer vehicle');
 
   const pickupDistText = fmtOptionalDistance(offer?.distanceKm, lang);
   const towRouteKm =
@@ -619,7 +807,7 @@ export function T03Screen({ id }) {
       <div>
         <div className="flex items-center justify-between gap-2">
           <h1 className={`text-lg font-bold ${colors.text}`}>
-            {isAr ? 'طلب سحب وارد' : 'Incoming tow request'}
+            {isAr ? 'طلب سحب وارد من عميل' : 'Incoming customer tow request'}
           </h1>
           {offer?.isP0 && (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white">
@@ -629,18 +817,48 @@ export function T03Screen({ id }) {
           )}
         </div>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {[offer?.requestCode, offer?.customerFirstName].filter(Boolean).join(' · ') || (isAr ? 'طلب سحب نشط' : 'Active tow offer')}
+          {[offer?.requestCode, customerFullName].filter(Boolean).join(' · ') || (isAr ? 'طلب سحب نشط' : 'Active tow offer')}
         </p>
         <div className="pt-1">
           <StatusBadge
-            status="Pending"
+            status={isAwaitingCustomer ? 'Offered' : 'Pending'}
             text={
-              isAr
+              isAwaitingCustomer
+                ? (isAr ? 'بانتظار تأكيد العميل' : 'Waiting for customer confirmation')
+                : offer?.customerSelected
+                ? (isAr ? 'اختارك العميل بالاسم' : 'Customer selected you directly')
+                : isAr
                 ? `الرد خلال ${formatCountdown(offer?.expiresAt)}`
                 : `Respond in ${formatCountdown(offer?.expiresAt)}`
             }
           />
         </div>
+      </div>
+
+      {/* Tappable Customer Profile & Rating Card */}
+      <div
+        role="button"
+        tabIndex={0}
+        data-testid="inspect-customer-btn"
+        onClick={() => setCustomerSheetOpen(true)}
+        className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between gap-2 cursor-pointer hover:border-[#E51C23]/50 transition text-xs`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <AvatarBadge name={customerFullName} />
+          <div className="min-w-0">
+            <p className={`font-extrabold truncate underline decoration-dotted ${colors.text}`}>
+              {customerFullName}
+            </p>
+            <p className={`text-[10.5px] ${colors.secondaryText}`}>
+              {`⭐ ${customerRating}`}
+              {customerTrips > 0 ? ` · ✓ ${customerTrips} ${isAr ? 'رحلة' : 'trips'}` : ''}
+              {` · ${isAr ? 'اضغط لعرض الملف والتقييمات' : 'Tap to view profile & reviews'}`}
+            </p>
+          </div>
+        </div>
+        <span className="text-[11px] font-bold text-[#E51C23] shrink-0">
+          {isAr ? 'الملف ←' : 'Profile →'}
+        </span>
       </div>
 
       <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
@@ -665,7 +883,7 @@ export function T03Screen({ id }) {
       </div>
 
       <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} flex justify-between items-center text-xs`}>
-        <span className={`font-bold ${colors.text}`}>{vehicleLabel}</span>
+        <span className={`font-bold ${colors.text}`}>🚗 {vehicleLabel}</span>
         <span className={`text-[10px] ${colors.secondaryText}`}>
           {isAr ? 'تظهر اللوحة بعد القبول' : 'Plate shown after accept'}
         </span>
@@ -690,28 +908,75 @@ export function T03Screen({ id }) {
         </div>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className="text-xs font-extrabold text-emerald-500">
-            {fmtMoney(offer?.priceMinor ?? 0, lang)}
+            {fmtMoney(netMinor, lang)}
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'التكلفة' : 'Price'}
+            {isAr ? 'صافي ربحك' : 'Net Earn'}
           </p>
+        </div>
+      </div>
+
+      <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} text-xs space-y-1`}>
+        <div className="flex justify-between">
+          <span className={colors.secondaryText}>{isAr ? 'إجمالي تكلفة السحب للعميل' : 'Fixed customer tow fare'}</span>
+          <span className={`font-bold ${colors.text}`}>{fmtMoney(priceMinor, lang)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className={colors.secondaryText}>{isAr ? 'رسوم المنصة' : 'Platform service fee'}</span>
+          <span className={`font-bold ${colors.text}`}>{fmtMoney(feeMinor, lang)}</span>
         </div>
       </div>
 
       {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
 
-      <PrimaryButton
-        onClick={handleAccept}
-        disabled={acceptM.isPending}
-        testId="screen-primary"
-      >
-        {isAr
-          ? `قبول طلب السحب · ${fmtMoney(offer?.priceMinor ?? 0, lang)}`
-          : `Accept Tow · ${fmtMoney(offer?.priceMinor ?? 0, lang)}`}
-      </PrimaryButton>
-      <SecondaryButton onClick={handleDecline} disabled={declineM.isPending}>
-        {isAr ? 'رفض' : 'Decline'}
-      </SecondaryButton>
+      {isAwaitingCustomer ? (
+        <div
+          data-testid="awaiting-customer-confirm-card"
+          className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-500/10 space-y-2 text-center"
+        >
+          <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+            {isAr
+              ? `✓ تم القبول! بانتظار تأكيد ${customerFullName} (${confirmCountdown})`
+              : `✓ Accepted! Waiting for ${customerFullName} to confirm (${confirmCountdown})`}
+          </p>
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {isAr
+              ? 'ستفتح شاشة التحرك لنقطة الالتقاء تلقائياً فور ضغط العميل على تأكيد.'
+              : 'Navigation to pickup opens automatically the moment the customer confirms.'}
+          </p>
+          <SecondaryButton onClick={() => nav.go('T02')}>
+            {isAr ? 'العودة للوحة الكابتن' : 'Back to Dashboard'}
+          </SecondaryButton>
+        </div>
+      ) : (
+        <>
+          <PrimaryButton
+            onClick={handleAccept}
+            disabled={acceptM.isPending}
+            testId="screen-primary"
+          >
+            {isAr
+              ? `قبول طلب السحب · ${fmtMoney(priceMinor, lang)}`
+              : `Accept Tow · ${fmtMoney(priceMinor, lang)}`}
+          </PrimaryButton>
+          <SecondaryButton onClick={handleDecline} disabled={declineM.isPending}>
+            <span data-testid="ignore-offer-btn">
+              {isAr ? 'تجاهل / اعتذار' : 'Ignore / Decline'}
+            </span>
+          </SecondaryButton>
+        </>
+      )}
+
+      <CustomerProfileSheet
+        open={customerSheetOpen}
+        customerId={offer?.customerId}
+        fallbackName={customerFullName}
+        vehicleSummary={vehicleLabel}
+        busy={acceptM.isPending || declineM.isPending}
+        onClose={() => setCustomerSheetOpen(false)}
+        onAccept={!isAwaitingCustomer ? handleAccept : undefined}
+        onIgnore={!isAwaitingCustomer ? handleDecline : undefined}
+      />
     </CaptainShell>
   );
 }
@@ -1237,13 +1502,35 @@ export function T08Screen({ id }) {
   const nav = useNav();
   const { req } = useActiveTowRequest(id);
   const providerQ = useProvider();
+  const boot = useBootstrap();
   const invoiceQ = useInvoiceForRequest(req?.id);
+  const [custStars, setCustStars] = useState(0);
+  const [custComment, setCustComment] = useState('');
+  const [custRated, setCustRated] = useState(false);
+  const [rateBusy, setRateBusy] = useState(false);
 
   const totalMinor = invoiceQ.data?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
-  const breakdown = computeTowBreakdown(totalMinor);
+  const breakdown = computeTowBreakdown(totalMinor, boot.data?.pricing);
   const liveRating = Number(req?.providerRating ?? providerQ.data?.rating ?? 0);
   const ratingText = liveRating > 0 ? `${liveRating.toFixed(1)} ★` : isAr ? 'لم يقيّم بعد' : 'Not rated yet';
   const durationMins = computeTripMinutes(req);
+
+  const handleRateCustomer = async () => {
+    if (!req?.customerId || !req?.id || rateBusy || custStars < 1) return;
+    setRateBusy(true);
+    try {
+      await post(`/reviews/customer/${req.customerId}?requestId=${req.id}`, {
+        stars: custStars,
+        text: custComment.trim() || null,
+        recommend: custStars >= 4
+      });
+      setCustRated(true);
+    } catch {
+      setCustRated(true);
+    } finally {
+      setRateBusy(false);
+    }
+  };
 
   return (
     <CaptainShell code="T08">
@@ -1319,6 +1606,32 @@ export function T08Screen({ id }) {
         </div>
       </div>
 
+      {req?.customerId && (
+        <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
+          <p className={`font-bold ${colors.text}`}>
+            {isAr ? `قيّم تعامل العميل (${req?.customerName || 'العميل'})` : `Rate Car Owner (${req?.customerName || 'Customer'})`}
+          </p>
+          {custRated ? (
+            <p className="text-emerald-500 font-bold">
+              {isAr ? '✓ شكراً! تم تسجيل تقييمك للعميل.' : '✓ Thank you! Customer rating submitted.'}
+            </p>
+          ) : (
+            <>
+              <StarRating value={custStars} size={18} onChange={setCustStars} />
+              <input
+                value={custComment}
+                onChange={(e) => setCustComment(e.target.value)}
+                placeholder={isAr ? 'ملاحظة اختيارية عن العميل...' : 'Optional feedback about the customer...'}
+                className={`w-full px-3 h-9 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
+              />
+              <PrimaryButton onClick={handleRateCustomer} disabled={rateBusy || custStars < 1}>
+                {isAr ? 'إرسال تقييم العميل' : 'Submit Customer Rating'}
+              </PrimaryButton>
+            </>
+          )}
+        </div>
+      )}
+
       <SecondaryButton onClick={() => nav.go('T11')}>
         {isAr ? 'مركز الرحلات' : 'Trips Hub'}
       </SecondaryButton>
@@ -1338,6 +1651,7 @@ export function T09Screen() {
   const earningsQ = useEarnings();
   const walletQ = useWallet();
   const [period, setPeriod] = useState('week');
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const provider = providerQ.data;
   const earnings = earningsQ.data;
@@ -1431,10 +1745,14 @@ export function T09Screen() {
           </p>
           <p className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'الإجمالي' : 'Lifetime'}</p>
         </div>
-        <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
-          <p className={`text-sm font-extrabold ${colors.text}`}>{rating}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>{isAr ? 'التقييم' : 'Rating'}</p>
-        </div>
+        <button
+          type="button"
+          onClick={() => setReviewsOpen(true)}
+          className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface} hover:border-[#E51C23]/50 transition`}
+        >
+          <p className="text-sm font-extrabold text-[#E51C23]">⭐ {rating}</p>
+          <p className={`text-[10px] underline ${colors.secondaryText}`}>{isAr ? 'التقييمات' : 'Reviews'}</p>
+        </button>
       </div>
 
       <div className="space-y-1.5">
@@ -1471,6 +1789,13 @@ export function T09Screen() {
       <SecondaryButton onClick={() => nav.go('SH14')}>
         {isAr ? 'الحسابات البنكية' : 'Bank Accounts'}
       </SecondaryButton>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
     </CaptainShell>
   );
 }
@@ -1485,6 +1810,7 @@ export function T10Screen() {
   const { user } = useSession();
   const providerQ = useProvider();
   const kycQ = useKyc();
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const provider = providerQ.data;
   const kyc = kycQ.data;
@@ -1500,6 +1826,7 @@ export function T10Screen() {
 
   const links = [
     { code: 'T15', icon: '🛻', en: 'Edit Captain & Truck Profile', ar: 'تعديل الملف وبيانات الونش', primary: true },
+    { code: 'REVIEWS', action: () => setReviewsOpen(true), icon: '⭐', en: `Customer Ratings & Reviews (${ratingCount})`, ar: `تقييمات وآراء العملاء (${ratingCount})`, testId: 'captain-reviews-link' },
     { code: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب' },
     { code: 'SH01', icon: '💬', en: 'Messages & Customer Chats', ar: 'المحادثات مع العملاء' },
     { code: 'T09', icon: '💰', en: 'Wallet & Earnings', ar: 'المحفظة والأرباح' },
@@ -1552,14 +1879,18 @@ export function T10Screen() {
         </div>
 
         <div className={`grid grid-cols-3 gap-2 pt-2 border-t ${colors.border} text-center text-xs`}>
-          <div>
-            <div className={`font-extrabold ${colors.text}`}>
+          <button
+            type="button"
+            onClick={() => setReviewsOpen(true)}
+            className="hover:opacity-80 transition"
+          >
+            <div className="font-extrabold text-[#E51C23]">
               {ratingCount > 0 ? `⭐ ${rating}` : '—'}
             </div>
-            <div className={`text-[10px] ${colors.secondaryText}`}>
-              {ratingCount > 0 ? `${ratingCount} · 👍 ${recommendPercent}%` : (isAr ? 'التقييم' : 'Rating')}
+            <div className={`text-[10px] underline ${colors.secondaryText}`}>
+              {ratingCount > 0 ? `${ratingCount} · 👍 ${recommendPercent}%` : (isAr ? 'التقييمات' : 'Reviews')}
             </div>
-          </div>
+          </button>
           <div>
             <div className={`font-extrabold ${colors.text}`}>{trips}</div>
             <div className={`text-[10px] ${colors.secondaryText}`}>
@@ -1582,8 +1913,8 @@ export function T10Screen() {
           <button
             key={item.code}
             type="button"
-            data-testid={item.primary ? 'screen-primary' : undefined}
-            onClick={() => nav.go(item.code)}
+            data-testid={item.primary ? 'screen-primary' : item.testId}
+            onClick={() => (item.action ? item.action() : nav.go(item.code))}
             className={`w-full px-4 py-3 text-start flex items-center justify-between text-xs font-bold transition-all ${
               item.danger ? 'text-rose-500' : colors.text
             } ${idx < links.length - 1 ? `border-b ${colors.border}` : ''}`}
@@ -1596,6 +1927,13 @@ export function T10Screen() {
           </button>
         ))}
       </div>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
     </CaptainShell>
   );
 }

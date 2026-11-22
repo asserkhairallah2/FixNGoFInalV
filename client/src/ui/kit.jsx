@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { usePrefs, useNav, useSession, useNavigate } from '../app/stores.jsx';
 import { get as apiGet } from '../api/http.js';
-import { fmtMoney } from '../i18n/format.js';
+import { useUnreadCount, useReviews, useCustomerPublicProfile } from '../api/hooks.js';
+import { fmtMoney, fmtDate } from '../i18n/format.js';
 import { checkPasswordRules } from './validation.js';
 
 export { usePrefs, useNav, useSession, useNavigate };
@@ -58,10 +59,61 @@ export function useColors() {
         text: 'text-[#0F172A]', secondaryText: 'text-[#64748B]', inputBg: 'bg-[#F8FAFC]' };
 }
 
+const ROLE_PROFILE_SCREEN = {
+  CarOwner: 'C23',
+  Mechanic: 'M09',
+  TowCaptain: 'T10',
+  ServiceCenter: 'SC09',
+  Admin: 'AD06'
+};
+
+export function RoleHeaderActions() {
+  const c = useColors();
+  const { isAr } = usePrefs();
+  const nav = useNav();
+  const session = useSession();
+  const user = session?.user;
+  const unreadQ = useUnreadCount();
+  if (!user) return null;
+  const unreadCount = Number(unreadQ.data?.count ?? 0);
+  const profileScreen = ROLE_PROFILE_SCREEN[user.role] || 'C23';
+
+  return (
+    <div className="flex items-center gap-2 shrink-0" data-testid="role-header-actions">
+      <button
+        type="button"
+        data-testid="topbar-notifications"
+        onClick={() => nav.go('C22')}
+        aria-label={isAr ? 'الإشعارات' : 'Notifications'}
+        className={`relative w-9 h-9 rounded-full flex items-center justify-center border ${c.border} ${c.elevated} hover:opacity-85 transition`}
+      >
+        <span className="text-sm leading-none">🔔</span>
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -end-1 min-w-[17px] h-[17px] px-1 rounded-full text-[9.5px] font-extrabold flex items-center justify-center bg-[#E51C23] text-white shadow">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </button>
+      <button
+        type="button"
+        data-testid="topbar-profile-avatar"
+        onClick={() => nav.go(profileScreen)}
+        aria-label={isAr ? 'الملف الشخصي' : 'Profile'}
+        className="hover:opacity-90 transition"
+      >
+        <Avatar name={user.fullName || user.email || 'U'} size={36} />
+      </button>
+    </div>
+  );
+}
+
 export function AppTopBar({ showBack, onBack, title, right }) {
   const c = useColors(); const { isAr } = usePrefs();
   const nav = useNav();
+  const session = useSession();
+  const user = session?.user;
   const canBack = showBack !== undefined ? Boolean(showBack) : Boolean(onBack);
+  const effectiveRight = right || (!canBack && user ? <RoleHeaderActions /> : null);
   return (
     <div className={`w-full px-4 py-2.5 border-b ${c.border} ${c.bg} sticky top-0 z-30`}>
       <div className="flex items-center justify-between gap-2">
@@ -80,7 +132,7 @@ export function AppTopBar({ showBack, onBack, title, right }) {
           )}
           <BrandLockup />
         </div>
-        {right && <div className="flex items-center gap-2 shrink-0">{right}</div>}
+        {effectiveRight && <div className="flex items-center gap-2 shrink-0">{effectiveRight}</div>}
       </div>
       {title && (
         <div className={`mt-1.5 text-xs font-extrabold ${c.text} truncate`}>
@@ -938,12 +990,201 @@ export function BottomSheet({ open, onClose, title, children }) {
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-full max-w-md rounded-t-3xl border-t ${c.border} ${c.surface} p-5 space-y-3`}
+        className={`w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl border-t ${c.border} ${c.surface} p-5 space-y-3`}
       >
         {title && <div className={`text-sm font-extrabold ${c.text}`}>{title}</div>}
         {children}
       </div>
     </div>
+  );
+}
+
+export function CustomerProfileSheet({
+  open,
+  customerId,
+  fallbackName,
+  vehicleSummary,
+  onClose,
+  onAccept,
+  onIgnore,
+  busy = false
+}) {
+  const c = useColors();
+  const { isAr, lang } = usePrefs();
+  const profQ = useCustomerPublicProfile(open ? customerId : null);
+  const prof = profQ.data;
+  const name = prof?.fullName || fallbackName || (isAr ? 'مالك السيارة' : 'Car Owner');
+  const ratingVal = Number(prof?.rating ?? 5.0);
+  const ratingCount = Number(prof?.ratingCount ?? 0);
+  const trips = Number(prof?.completedTrips ?? 0);
+  const vehicles = Array.isArray(prof?.vehicles) && prof.vehicles.length > 0
+    ? prof.vehicles
+    : (vehicleSummary ? [vehicleSummary] : []);
+  const reviews = Array.isArray(prof?.reviews) ? prof.reviews : [];
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={isAr ? 'ملف العميل وتقييماته' : 'Customer Profile & Rating'}
+    >
+      <div className="space-y-3" data-testid="customer-profile-sheet">
+        <div className={`p-3.5 rounded-2xl border ${c.border} ${c.elevated} flex items-center gap-3`}>
+          <Avatar name={name} size={46} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-sm font-extrabold truncate ${c.text}`}>{name}</span>
+              <StatusBadge status="Verified" text={isAr ? 'عميل موثق' : 'Verified Driver'} />
+            </div>
+            <p className={`text-[11px] mt-0.5 ${c.secondaryText}`}>
+              📍 {prof?.areaLabel || (isAr ? 'القاهرة الكبرى' : 'Greater Cairo')}
+              {prof?.memberSince ? ` · ${isAr ? 'عضو منذ' : 'Since'} ${fmtDate(prof.memberSince, lang)}` : ''}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated}`}>
+            <p className="text-sm font-extrabold text-[#E51C23]">⭐ {ratingVal.toFixed(1)}</p>
+            <p className={`text-[10px] ${c.secondaryText}`}>
+              {ratingCount > 0
+                ? `${ratingCount} ${isAr ? 'تقييم' : 'reviews'}`
+                : (isAr ? 'عميل ممتاز' : 'Top rating')}
+            </p>
+          </div>
+          <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated}`}>
+            <p className={`text-sm font-extrabold ${c.text}`}>✓ {trips}</p>
+            <p className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'طلبات مكتملة' : 'Completed trips'}</p>
+          </div>
+          <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated}`}>
+            <p className={`text-sm font-extrabold ${c.text}`}>👍 {prof?.recommendPercent ?? 100}%</p>
+            <p className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'التزام وموثوقية' : 'Reliability'}</p>
+          </div>
+        </div>
+
+        {vehicles.length > 0 && (
+          <div className={`p-3 rounded-xl border ${c.border} ${c.elevated} space-y-1 text-xs`}>
+            <p className={`text-[10px] font-bold uppercase ${c.secondaryText}`}>
+              {isAr ? 'المركبة المسجلة' : 'Registered Vehicle'}
+            </p>
+            <p className={`font-bold ${c.text}`}>🚗 {vehicles[0]}</p>
+          </div>
+        )}
+
+        <div>
+          <p className={`text-xs font-bold mb-1.5 ${c.text}`}>
+            {isAr ? 'آراء الفنيين السابقين عن العميل' : 'Previous Specialist Feedback'}
+          </p>
+          <div className="max-h-40 overflow-y-auto space-y-2">
+            {profQ.isLoading && !prof ? (
+              <p className={`text-xs ${c.secondaryText}`}>{isAr ? 'جارٍ تحميل التقييمات...' : 'Loading customer reviews...'}</p>
+            ) : reviews.length === 0 ? (
+              <p className={`text-xs ${c.secondaryText}`}>
+                {isAr ? 'سجل نظيف وموثق بدون أي بلاغات سابقة.' : 'Clean verified account with 100% positive standing.'}
+              </p>
+            ) : (
+              reviews.slice(0, 6).map((rv) => (
+                <div key={rv.id} className={`p-2.5 rounded-xl border ${c.border} ${c.elevated} space-y-1 text-xs`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`font-bold ${c.text}`}>{rv.authorName || (isAr ? 'فني معتمد' : 'Verified Specialist')}</span>
+                    <StarRating value={rv.stars} size={11} />
+                  </div>
+                  {rv.text && <p className={`text-[11px] ${c.secondaryText}`}>{rv.text}</p>}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          {onIgnore ? (
+            <SecondaryButton onClick={onIgnore} disabled={busy}>
+              {isAr ? 'تجاهل الطلب' : 'Ignore'}
+            </SecondaryButton>
+          ) : (
+            <SecondaryButton onClick={onClose}>
+              {isAr ? 'إغلاق' : 'Close'}
+            </SecondaryButton>
+          )}
+          {onAccept ? (
+            <PrimaryButton onClick={onAccept} disabled={busy} testId="customer-sheet-accept">
+              {isAr ? 'قبول الطلب' : 'Accept Request'}
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton onClick={onClose}>
+              {isAr ? 'تم' : 'Done'}
+            </PrimaryButton>
+          )}
+        </div>
+      </div>
+    </BottomSheet>
+  );
+}
+
+export function ProviderReviewsSheet({ open, providerId, provider, onClose }) {
+  const c = useColors();
+  const { isAr, lang } = usePrefs();
+  const reviewsQ = useReviews('provider', open ? providerId : null);
+  const reviews = Array.isArray(reviewsQ.data) ? reviewsQ.data : [];
+  const ratingVal = Number(provider?.rating ?? 0);
+  const ratingCount = Number(provider?.ratingCount ?? reviews.length);
+  const recPct = reviews.length > 0
+    ? Math.round((reviews.filter((r) => r.recommend !== false).length / reviews.length) * 100)
+    : Number(provider?.recommendPercent ?? 0);
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={isAr ? 'تقييمات وآراء العملاء عنك' : 'Your Customer Ratings & Reviews'}
+    >
+      <div className="space-y-3" data-testid="provider-my-reviews-sheet">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated}`}>
+            <p className="text-sm font-extrabold text-[#E51C23]">
+              {ratingCount > 0 ? `⭐ ${ratingVal.toFixed(1)}` : '—'}
+            </p>
+            <p className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'متوسط التقييم' : 'Avg. Rating'}</p>
+          </div>
+          <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated}`}>
+            <p className={`text-sm font-extrabold ${c.text}`}>{ratingCount}</p>
+            <p className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'إجمالي التقييمات' : 'Total Reviews'}</p>
+          </div>
+          <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated}`}>
+            <p className={`text-sm font-extrabold ${c.text}`}>{ratingCount > 0 ? `👍 ${recPct}%` : '—'}</p>
+            <p className={`text-[10px] ${c.secondaryText}`}>{isAr ? 'نسبة التوصية' : 'Recommended'}</p>
+          </div>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto space-y-2">
+          {reviewsQ.isLoading ? (
+            <p className={`text-xs ${c.secondaryText}`}>{isAr ? 'جارٍ تحميل تقييمات العملاء...' : 'Loading customer reviews...'}</p>
+          ) : reviews.length === 0 ? (
+            <div className={`p-4 rounded-2xl border ${c.border} ${c.elevated} text-center text-xs ${c.secondaryText}`}>
+              {isAr ? 'لا توجد تقييمات مكتوبة من العملاء حتى الآن.' : 'No customer reviews recorded yet.'}
+            </div>
+          ) : (
+            reviews.map((rv) => (
+              <div key={rv.id} className={`p-3 rounded-2xl border ${c.border} ${c.elevated} space-y-1 text-xs`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`font-bold ${c.text}`}>{rv.authorName || (isAr ? 'عميل موثق' : 'Verified Driver')}</span>
+                  <StarRating value={rv.stars} size={12} />
+                </div>
+                {rv.text && <p className={c.text}>{rv.text}</p>}
+                <div className={`flex items-center justify-between text-[10px] ${c.secondaryText}`}>
+                  <span>{rv.recommend !== false ? (isAr ? '👍 يوصي بخدمتك' : '👍 Recommends you') : ''}</span>
+                  <span>{rv.createdAt ? fmtDate(rv.createdAt, lang) : ''}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <PrimaryButton onClick={onClose}>
+          {isAr ? 'إغلاق' : 'Close'}
+        </PrimaryButton>
+      </div>
+    </BottomSheet>
   );
 }
 

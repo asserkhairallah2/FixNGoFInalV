@@ -43,7 +43,10 @@ public sealed class ReviewController(IReviewService svc) : ControllerBase
         => Ok(await svc.CreateAsync(this.UserId(), ReviewTargetType.Provider, providerId, requestId, null, req, ct));
     [HttpPost("center/{centerId:guid}")] public async Task<IActionResult> ForCenter(Guid centerId, [FromQuery] Guid bookingId, [FromBody] CreateReviewRequest req, CancellationToken ct)
         => Ok(await svc.CreateAsync(this.UserId(), ReviewTargetType.Center, centerId, null, bookingId, req, ct));
+    [HttpPost("customer/{customerId:guid}")] [Authorize(Policy = "Provider")] public async Task<IActionResult> ForCustomer(Guid customerId, [FromQuery] Guid requestId, [FromBody] CreateReviewRequest req, CancellationToken ct)
+        => Ok(await svc.CreateAsync(this.UserId(), ReviewTargetType.Customer, customerId, requestId, null, req, ct));
     [HttpGet("provider/{providerId:guid}")] public async Task<IActionResult> ListProvider(Guid providerId, CancellationToken ct) => Ok(await svc.ForProviderAsync(providerId, ct));
     [HttpGet("center/{centerId:guid}")] public async Task<IActionResult> ListCenter(Guid centerId, CancellationToken ct) => Ok(await svc.ForCenterAsync(centerId, ct));
+    [HttpGet("customer/{customerId:guid}")] public async Task<IActionResult> ListCustomer(Guid customerId, CancellationToken ct) => Ok(await svc.ForCustomerAsync(customerId, ct));
     [HttpPost("{id:guid}/report")] public async Task<IActionResult> Report(Guid id, [FromBody] ReportReviewRequest req, CancellationToken ct) { await svc.ReportAsync(id, req, ct); return NoContent(); }
 }

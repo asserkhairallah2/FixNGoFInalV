@@ -121,7 +121,8 @@ public sealed class PaymentService(
         else
         {
             total = r.QuoteMinor ?? r.EstimateMinor ?? 0;
-            fee = total <= 0 ? 0 : total >= 25_000 ? s.ServiceFeeMinor : (long)Math.Round(total / 1.10 * 0.10);
+            var fullFeeThreshold = s.MechanicBaseMinor + s.ServiceFeeMinor;
+            fee = total <= 0 ? 0 : total >= fullFeeThreshold ? s.ServiceFeeMinor : (long)Math.Round(total / 1.10 * 0.10);
             subtotal = Math.Max(0, total - fee);
             linesJson = JsonSerializer.Serialize(new[] { new { label = "Service", amountMinor = subtotal } });
         }

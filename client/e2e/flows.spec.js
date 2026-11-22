@@ -130,6 +130,14 @@ test('F02 vehicle add (C05 empty-by-default + 2022/Silver persistence) + request
 
     const after = ok(await api('/requests', { token }), 'list requests after');
     const pass = after.length > before.length;
+    const createdReqId = await page.evaluate(() => window.__fixngoRoute?.params?.id || '');
+    if (createdReqId) {
+      await api(`/requests/${createdReqId}/cancel`, {
+        method: 'POST',
+        token,
+        body: { reasonKey: 'resolved', note: 'F02 cleanup' }
+      });
+    }
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     recordFlow('F02 vehicle + request wizard (UI)', pass ? 'PASS' : 'FAIL', { before: before.length, after: after.length, console: clean });
     expect(pass).toBeTruthy();
@@ -378,6 +386,11 @@ test('F05 card add via C33 UI form (with Luhn validation) + card payment', async
     body: { method: 'Card', paymentMethodId: card.id, idempotencyKey: `e2e-pay-${invoice.id}` }
   }), 'pay invoice');
   expect(payment.status).toBe('Succeeded');
+  await api(`/requests/${req.id}/cancel`, {
+    method: 'POST',
+    token: owner.token,
+    body: { reasonKey: 'resolved', note: 'F05 cleanup' }
+  });
 });
 
 test('F06 chat send via UI (SH01)', async ({ browser }) => {
@@ -717,6 +730,11 @@ test('F12 expired/declined offer re-dispatch to same provider returns 200 OK ins
   expect(secondRes.status).toBe(200);
   expect(secondRes.data.id).toBe(firstOffer.id);
   expect(secondRes.data.status).toBe('Pending');
+  await api(`/requests/${req.id}/cancel`, {
+    method: 'POST',
+    token: owner.token,
+    body: { reasonKey: 'resolved', note: 'F12 cleanup' }
+  });
   recordFlow('F12 expired/declined offer re-dispatch (200 OK)', 'PASS', { requestId: req.id, offerId: secondRes.data.id });
 });
 
@@ -788,6 +806,11 @@ test('F13 live SignalR tracking on C11 updates status without reload + retains c
     await page.reload();
     await expect(page.locator('[data-testid="tracking-request-code"]')).toHaveText(created.code, { timeout: 15_000 });
     await expect(page.locator('[data-testid="tracking-provider-name"]')).toContainText('Gate Two TowCaptain');
+
+    // Finish trip so vehicle is free for subsequent tests
+    for (const st of ['Working', 'Completed']) {
+      await api(`/requests/${created.id}/status`, { method: 'POST', token: captain.token, body: { status: st } });
+    }
 
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);
@@ -996,12 +1019,14 @@ test('F16 iPhone frame, touch-dot cursor, drag-scroll (including on input fields
     await page.mouse.down();
     await page.mouse.move(emailBox.x + emailBox.width / 2, emailBox.y - 120, { steps: 10 });
     await page.mouse.up();
+    await page.waitForTimeout(300);
     const afterDrag = await page.evaluate(() => document.querySelector('[data-testid="screen-container"]').scrollTop);
     expect(afterDrag).toBeGreaterThan(beforeDrag + 50);
 
     // 4. Mouse-wheel scroll works smoothly
-    await page.mouse.wheel(0, -80);
-    await page.waitForTimeout(100);
+    await page.mouse.move(emailBox.x + emailBox.width / 2, emailBox.y + emailBox.height / 2);
+    await page.mouse.wheel(0, -120);
+    await page.waitForTimeout(200);
     const afterWheel = await page.evaluate(() => document.querySelector('[data-testid="screen-container"]').scrollTop);
     expect(afterWheel).toBeLessThan(afterDrag);
 
@@ -1098,15 +1123,21 @@ test('F17 two-browser live dispatch: Customer creates Mechanic request -> Offlin
     await expect(liveCard).toBeVisible({ timeout: 12_000 });
     await expect(liveCard).toContainText(/Nasr City/i);
 
-    // 4. Mechanic clicks the incoming request card (M03) and clicks Accept -> lands on M04
+    // 4. Mechanic inspects Customer Profile & Rating on M03, then clicks Accept -> waits for customer confirmation
     await liveCard.click();
     await mechPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/M03'), null, { timeout: 15_000 });
-    await mechPage.locator('[data-testid="screen-primary"]').click();
-    await mechPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/M04'), null, { timeout: 15_000 });
+    await mechPage.locator('[data-testid="inspect-customer-btn"]').click();
+    await expect(mechPage.locator('[data-testid="customer-profile-sheet"]')).toBeVisible({ timeout: 10_000 });
+    await mechPage.locator('[data-testid="customer-sheet-accept"]').click();
+    await expect(mechPage.locator('[data-testid="awaiting-customer-confirm-card"]')).toBeVisible({ timeout: 10_000 });
 
-    // 5. Browser 1 (Customer sitting on C09): MUST automatically transition to C12 (Mechanic Live Tracking) without manual reload!
+    // 5. Browser 1 (Customer sitting on C09): sees live Provider Match Card + countdown timer -> clicks Confirm & Dispatch -> BOTH browsers auto-advance!
+    await expect(ownerPage.locator('[data-testid="provider-ready-card"]')).toBeVisible({ timeout: 12_000 });
+    await expect(ownerPage.locator('[data-testid="confirm-countdown"]')).toBeVisible();
+    await ownerPage.locator('[data-testid="confirm-provider-btn"]').click();
     await ownerPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/C12'), null, { timeout: 12_000 });
     await expect(ownerPage.locator('[data-testid="tracking-provider-name"]')).toContainText('Gate Two Mechanic', { timeout: 10_000 });
+    await mechPage.waitForFunction(() => (window.__fixngoRoute?.path || '').includes('#/M04'), null, { timeout: 12_000 });
 
     // Cleanup: cancel the active test request so subsequent runs stay clean
     const ownerAuth = await apiLogin('owner');
@@ -1236,6 +1267,175 @@ test('F18 Landing Page + Mobile button -> A02 hero image + Tow/Mechanic filterin
     const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
     expect(clean).toEqual([]);
     recordFlow('F18 Landing + Mobile + Filtering + Shortcuts + Photos + SOS + Profiles', 'PASS', {});
+  } finally {
+    await context.close();
+  }
+});
+
+test('F19 Round-7: Nearest default filter, Cohesive 200 EGP pricing, 3-strike auto-cancel, Duplicate guard, Past-slot guard, Chat isolation, Provider reviews & Role topbars', async ({ browser }) => {
+  const seeded = readSeeded();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const logs = attachConsoleWatch(page);
+  try {
+    const owner = await apiLogin('owner');
+    const mechanic = await apiLogin('mechanic');
+    const captain = await apiLogin('captain');
+
+    // Ensure mechanic & captain are online
+    ok(await api('/providers/online', {
+      method: 'POST', token: mechanic.token, body: { isOnline: true, latitude: 30.045, longitude: 31.236 }
+    }), 'mechanic online');
+    ok(await api('/providers/online', {
+      method: 'POST', token: captain.token, body: { isOnline: true, latitude: 30.046, longitude: 31.237 }
+    }), 'captain online');
+
+    // 1. Past Service Center Slot Guard (API + UI)
+    const pastSlot = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+    const pastRes = await api('/centers/bookings', {
+      method: 'POST',
+      token: owner.token,
+      body: {
+        centerId: seeded.ids.centerId,
+        serviceId: seeded.ids.centerServiceId,
+        slotStart: pastSlot,
+        vehicleId: seeded.ids.vehicleId
+      }
+    });
+    expect(pastRes.status).toBe(409);
+    expect(pastRes.data?.code).toBe('booking.past_slot');
+
+    // 2. Create Mechanic broadcast request -> verify Cohesive 200 EGP pricing & Duplicate Active Request Guard
+    const req = ok(await api('/requests', {
+      method: 'POST',
+      token: owner.token,
+      body: {
+        vehicleId: seeded.ids.vehicleId,
+        serviceTypeId: seeded.ids.mechanicServiceTypeId,
+        pickupLatitude: 30.0444,
+        pickupLongitude: 31.2357,
+        pickupAddress: 'Maadi Degla Square, Cairo',
+        distanceKm: 0,
+        problem: 'Battery check Round 7',
+        answersJson: '{}'
+      }
+    }), 'create mechanic request');
+    expect(req.estimateMinor).toBe(20000);
+
+    // Duplicate guard via API
+    const dupRes = await api('/requests', {
+      method: 'POST',
+      token: owner.token,
+      body: {
+        vehicleId: seeded.ids.vehicleId,
+        serviceTypeId: seeded.ids.mechanicServiceTypeId,
+        pickupLatitude: 30.0444,
+        pickupLongitude: 31.2357,
+        pickupAddress: 'Duplicate attempt',
+        distanceKm: 0,
+        problem: 'Duplicate',
+        answersJson: '{}'
+      }
+    });
+    expect(dupRes.status).toBe(409);
+    expect(dupRes.data?.code).toBe('request.duplicate_active');
+
+    // 3. Verify Nearest-First Default Filter & Cohesive EGP 200.00 (never 340.00) on C27
+    await loginUI(page, 'owner');
+    const origin = await page.evaluate(() => location.origin);
+    await page.goto(`${origin}/#/C27?id=${req.id}`);
+    const firstChip = page.locator('[data-testid="provider-filter-chips"] button').first();
+    await expect(firstChip).toContainText(/Nearest/i);
+    await expect(page.getByText(/EGP\s*200\.00|200\.00\s*EGP/).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/340\.00/)).toHaveCount(0);
+
+    // 4. Verify Duplicate Banner in UI on C26
+    await page.goto(`${origin}/#/C26?serviceTypeId=${seeded.ids.mechanicServiceTypeId}`);
+    await expect(page.locator('[data-testid="duplicate-active-request-banner"]')).toBeVisible({ timeout: 10_000 });
+
+    // 5. Verify 3-Strike Auto-Cancel on C09 with 3 distinct online mechanics
+    const admin = await apiLogin('admin');
+    const createOnlineMech = async (idx) => {
+      const email = `strike.mech.${idx}.${Date.now()}@example.com`;
+      const phone = `+2012${idx}${String(Date.now()).slice(-7)}`;
+      ok(await api('/auth/signup', {
+        method: 'POST',
+        body: { fullName: `Strike Mech ${idx}`, email, phone, password: DEFAULT_PASSWORD, role: 'Mechanic' }
+      }), `signup mech ${idx}`);
+      const otps = ok(await api('/sim/otps'), 'sim otps');
+      const code = (Array.isArray(otps) ? otps : []).find((o) => String(o.target || '').toLowerCase() === email.toLowerCase())?.code;
+      ok(await api('/auth/verify-otp', { method: 'POST', body: { target: email, code, purpose: 'Signup' } }), `verify mech ${idx}`);
+      const mLogin = await loginApi(email, DEFAULT_PASSWORD);
+      const kycApp = ok(await api('/providers/kyc', {
+        method: 'POST',
+        token: mLogin.accessToken,
+        body: { applicantType: 'Mechanic', address: 'Cairo', latitude: 30.045, longitude: 31.236, services: [], documents: [] }
+      }), `kyc mech ${idx}`);
+      ok(await api(`/admin/kyc/${kycApp.id}/review`, {
+        method: 'POST',
+        token: admin.token,
+        body: { decision: 'Approved', note: 'E2E approve' }
+      }), `approve mech ${idx}`);
+      ok(await api('/providers/online', {
+        method: 'POST',
+        token: mLogin.accessToken,
+        body: { isOnline: true, latitude: 30.045 + idx * 0.002, longitude: 31.236 }
+      }), `online mech ${idx}`);
+      return { token: mLogin.accessToken, user: mLogin.user };
+    };
+
+    const mech2 = await createOnlineMech(2);
+    const mech3 = await createOnlineMech(3);
+    const strikeMechs = [mechanic, mech2, mech3];
+
+    await page.goto(`${origin}/#/C09?id=${req.id}`);
+    for (let i = 0; i < 3; i++) {
+      const m = strikeMechs[i];
+      const offers = ok(await api('/offers', { token: m.token }), `offers strike ${i + 1}`);
+      const targetOffer = (Array.isArray(offers) ? offers : []).find((o) => o.requestId === req.id);
+      expect(targetOffer).toBeTruthy();
+      ok(await api(`/offers/${targetOffer.id}/accept`, { method: 'POST', token: m.token }), `accept strike ${i + 1}`);
+      await expect(page.locator('[data-testid="provider-ready-card"]')).toBeVisible({ timeout: 10_000 });
+      await page.locator('[data-testid="pass-provider-btn"]').click();
+      if (i < 2) {
+        await expect(page.locator('[data-testid="provider-ready-card"]')).toHaveCount(0, { timeout: 10_000 });
+      }
+    }
+    await expect(page.locator('[data-testid="request-auto-cancelled-card"]')).toBeVisible({ timeout: 10_000 });
+
+    // 6. Verify Chat Isolation (no "#1" label, real counterpart name)
+    await page.goto(`${origin}/#/SH01`);
+    await expect(page.locator('[data-testid="data-row"]').first()).toBeVisible({ timeout: 10_000 });
+    const rowText = await page.locator('[data-testid="data-row"]').first().innerText();
+    expect(rowText).not.toContain('#1');
+    expect(rowText).toContain('Gate Two');
+
+    // 7. Verify Top-Right Bell + Profile Avatar & Provider Reviews Sheet across Mechanic, Captain, Center & Admin
+    await loginUI(page, 'mechanic');
+    await expect(page.locator('[data-testid="topbar-notifications"]')).toBeVisible();
+    await expect(page.locator('[data-testid="topbar-profile-avatar"]')).toBeVisible();
+    await page.goto(`${origin}/#/M09`);
+    await page.locator('[data-testid="mechanic-reviews-link"]').click();
+    await expect(page.locator('[data-testid="provider-my-reviews-sheet"]')).toBeVisible();
+
+    await loginUI(page, 'captain');
+    await expect(page.locator('[data-testid="topbar-notifications"]')).toBeVisible();
+    await expect(page.locator('[data-testid="topbar-profile-avatar"]')).toBeVisible();
+    await page.goto(`${origin}/#/T10`);
+    await page.locator('[data-testid="captain-reviews-link"]').click();
+    await expect(page.locator('[data-testid="provider-my-reviews-sheet"]')).toBeVisible();
+
+    await loginUI(page, 'center');
+    await expect(page.locator('[data-testid="topbar-notifications"]')).toBeVisible();
+    await expect(page.locator('[data-testid="topbar-profile-avatar"]')).toBeVisible();
+
+    await loginUI(page, 'admin');
+    await expect(page.locator('[data-testid="topbar-notifications"]')).toBeVisible();
+    await expect(page.locator('[data-testid="topbar-profile-avatar"]')).toBeVisible();
+
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F19 Round-7 Uber timer + 3-strike cancel + Nearest + Cohesive pricing + Guards + Chat + Reviews + Topbars', 'PASS', {});
   } finally {
     await context.close();
   }

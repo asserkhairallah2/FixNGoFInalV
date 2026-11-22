@@ -32,6 +32,7 @@ import {
   useBootstrap, useVehicles, useVehicle, useSaveVehicle, useDeleteVehicle,
   useRequests, useRequest, useTimeline, useCandidates, useQuotes,
   useEstimate, useCreateRequest, useCancelRequest, useSelectProvider,
+  useConfirmProvider, usePassProvider,
   useApproveQuote, useDispute, useMethods, useInvoiceForRequest,
   useAddCard, usePay, useConfirmCash, useBookings, useUnreadCount, useSos, useReviews, k
 } from '../../api/hooks.js';
@@ -49,6 +50,192 @@ function useActiveRequest(params) {
   const req = single.data || requests.find((r) => r.id === targetId) || (!explicitId ? requests[0] : null) || null;
   const isLoading = (Boolean(targetId) && single.isLoading && !req) || (!targetId && listLoading);
   return { req, reqId: req?.id || targetId, isLoading, refetch: single.refetch, requests };
+}
+
+function findDuplicateActiveRequest(requests, vehicleId, serviceTypeId) {
+  if (!Array.isArray(requests) || !serviceTypeId) return null;
+  return requests.find((r) => {
+    if (['Completed', 'Cancelled', 'NoProviders'].includes(String(r.status || ''))) return false;
+    if (r.serviceTypeId !== serviceTypeId) return false;
+    if (vehicleId) return r.vehicleId === vehicleId;
+    return !r.vehicleId;
+  }) || null;
+}
+
+function useCountdownSeconds(isoDeadline, onZero) {
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    if (!isoDeadline) return 0;
+    return Math.max(0, Math.ceil((new Date(isoDeadline).getTime() - Date.now()) / 1000));
+  });
+
+  useEffect(() => {
+    if (!isoDeadline) {
+      setSecondsLeft(0);
+      return undefined;
+    }
+    let firedZero = false;
+    const tick = () => {
+      const rem = Math.max(0, Math.ceil((new Date(isoDeadline).getTime() - Date.now()) / 1000));
+      setSecondsLeft(rem);
+      if (rem === 0 && !firedZero) {
+        firedZero = true;
+        onZero?.();
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isoDeadline]);
+
+  const mins = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+  const secs = String(secondsLeft % 60).padStart(2, '0');
+  return { secondsLeft, formatted: `${mins}:${secs}` };
+}
+
+function PendingProviderMatchCard({ req, onConfirmed, onInspectProvider, onError }) {
+  const { t, isAr } = usePrefs();
+  const c = useColors();
+  const confirmMut = useConfirmProvider(req?.id);
+  const passMut = usePassProvider(req?.id);
+  const qc = useQueryClient();
+
+  const { secondsLeft, formatted } = useCountdownSeconds(req?.customerConfirmDeadlineAt, () => {
+    if (req?.id) {
+      qc.invalidateQueries({ queryKey: k.request(req.id) });
+      qc.invalidateQueries({ queryKey: k.requests });
+      qc.invalidateQueries({ queryKey: ['candidates', req.id] });
+    }
+  });
+
+  if (!req?.pendingProviderId || !req?.customerConfirmDeadlineAt || req?.providerId) return null;
+
+  const attemptNum = Math.min(3, Number(req.customerRejectionCount ?? 0) + 1);
+  const pct = Math.min(100, Math.max(0, Math.round((secondsLeft / 60) * 100)));
+  const isMechanic = req.kind === 'Mechanic';
+
+  const handleConfirm = async () => {
+    onError?.('');
+    try {
+      const updated = await confirmMut.mutateAsync();
+      onConfirmed?.(updated);
+    } catch (ex) {
+      onError?.(ex.message || t('Offer expired before confirmation. Searching again...', 'انتهت مهلة التأكيد. جارٍ البحث من جديد...'));
+    }
+  };
+
+  const handlePass = async () => {
+    onError?.('');
+    try {
+      await passMut.mutateAsync(null);
+    } catch (ex) {
+      onError?.(ex.message || t('Could not skip provider', 'تعذر تخطي العرض'));
+    }
+  };
+
+  return (
+    <div
+      data-testid="provider-ready-card"
+      className="rounded-2xl p-4 space-y-3 shadow-lg border-2"
+      style={{ backgroundColor: c.surface, borderColor: c.accent }}
+    >
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: c.success }} />
+          <span className="text-xs font-extrabold" style={{ color: c.success }}>
+            {t('Specialist Accepted Your Request!', 'فني معتمد وافق على طلبك وجاهز للتحرك!')}
+          </span>
+        </div>
+        <span
+          data-testid="confirm-countdown"
+          className="px-2.5 py-1 rounded-full text-xs font-mono font-extrabold text-white"
+          style={{ backgroundColor: secondsLeft <= 15 ? c.danger : c.accent }}
+        >
+          ⏱ {formatted}
+        </span>
+      </div>
+
+      <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: c.surface2 }}>
+        <div
+          className="h-full transition-all duration-700"
+          style={{ width: `${pct}%`, backgroundColor: secondsLeft <= 15 ? c.danger : c.accent }}
+        />
+      </div>
+
+      <div
+        role={onInspectProvider ? 'button' : undefined}
+        tabIndex={onInspectProvider ? 0 : undefined}
+        onClick={() => onInspectProvider?.({
+          providerId: req.pendingProviderId,
+          name: req.pendingProviderName,
+          rating: req.pendingProviderRating,
+          ratingCount: req.pendingProviderRatingCount,
+          distanceKm: req.pendingProviderDistanceKm,
+          etaMinutes: req.pendingProviderEtaMinutes,
+          priceMinor: req.pendingProviderPriceMinor,
+        })}
+        className={`p-3 rounded-xl border flex items-center justify-between gap-2 ${onInspectProvider ? 'cursor-pointer hover:opacity-90' : ''}`}
+        style={{ backgroundColor: c.surface2, borderColor: c.border }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar name={req.pendingProviderName || 'P'} size={44} />
+          <div className="min-w-0">
+            <div className="text-sm font-extrabold truncate underline decoration-dotted" style={{ color: c.text }}>
+              {req.pendingProviderName || t('Verified Specialist', 'فني معتمد')}
+            </div>
+            <div className="text-xs mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: c.text2 }}>
+              <span className="font-bold" style={{ color: c.accent }}>
+                ⭐ {Number(req.pendingProviderRating ?? 4.8).toFixed(1)}
+              </span>
+              <span>({req.pendingProviderRatingCount ?? 0})</span>
+              {req.pendingProviderDistanceKm != null && (
+                <span>• 📍 {Number(req.pendingProviderDistanceKm).toFixed(1)} km</span>
+              )}
+              {req.pendingProviderEtaMinutes != null && (
+                <span>• ⏱ {req.pendingProviderEtaMinutes} {t('min', 'دقيقة')}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="text-end shrink-0">
+          <div className="text-sm font-extrabold" style={{ color: c.accent }}>
+            {egp(req.pendingProviderPriceMinor ?? req.estimateMinor ?? 0, isAr)}
+          </div>
+          <div className="text-[10px]" style={{ color: c.text3 }}>
+            {isMechanic ? t('Callout Visit', 'رسوم الانتقال والفحص') : t('Fixed Tow Fare', 'تكلفة السحب الثابتة')}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-[11px]" style={{ color: c.text2 }}>
+        <span>
+          {t('Confirm within timer to dispatch immediately', 'أكد خلال المهلة لبدء تحرك الفني فوراً')}
+        </span>
+        <span className="font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
+          {t(`Offer ${attemptNum} of 3`, `المحاولة ${attemptNum} من ٣`)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <SecondaryButton
+          onClick={handlePass}
+          disabled={passMut.isPending || confirmMut.isPending}
+        >
+          <span data-testid="pass-provider-btn">
+            {passMut.isPending ? '...' : t('Skip / Decline', 'تخطي / رفض')}
+          </span>
+        </SecondaryButton>
+        <PrimaryButton
+          testId="confirm-provider-btn"
+          onClick={handleConfirm}
+          disabled={confirmMut.isPending || passMut.isPending}
+        >
+          {confirmMut.isPending
+            ? t('Confirming...', 'جارٍ التأكيد...')
+            : t('Confirm & Dispatch', 'تأكيد وإرسال الفني')}
+        </PrimaryButton>
+      </div>
+    </div>
+  );
 }
 
 function luhnCheck(numStr) {
@@ -214,6 +401,8 @@ function HomeScreen() {
             <div className="text-sm font-bold mb-1">
               {activeReq.providerName
                 ? t(`${activeReq.providerName} is assigned`, `تم تعيين ${activeReq.providerName}`)
+                : activeReq.pendingProviderName
+                ? t(`⚡ ${activeReq.pendingProviderName} accepted — confirm now!`, `⚡ قبل ${activeReq.pendingProviderName} طلبك — أكد الآن!`)
                 : t('Matching nearby verified providers...', 'جارٍ مطابقة مقدمي الخدمة القريبين...')}
             </div>
             <div className="text-xs text-slate-300 mb-3">
@@ -222,19 +411,32 @@ function HomeScreen() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => go(activeReq.kind === 'Mechanic' ? 'C12' : 'C11', { id: activeReq.id })}
+                onClick={() =>
+                  go(
+                    activeReq.providerId
+                      ? (activeReq.kind === 'Mechanic' ? 'C12' : 'C11')
+                      : 'C09',
+                    { id: activeReq.id }
+                  )
+                }
                 className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white"
                 style={{ backgroundColor: c.accent }}
               >
-                {t('Track Live →', 'تتبع مباشر ←')}
+                {activeReq.pendingProviderId && !activeReq.providerId
+                  ? t('Confirm Provider Now →', 'تأكيد الفني الآن ←')
+                  : activeReq.providerId
+                  ? t('Track Live →', 'تتبع مباشر ←')
+                  : t('View Matched Providers →', 'عرض مقدمي الخدمة ←')}
               </button>
-              <button
-                type="button"
-                onClick={() => go('SH01', { requestId: activeReq.id })}
-                className="py-2 px-3 rounded-xl text-xs font-semibold bg-slate-800 text-slate-100 border border-slate-700"
-              >
-                {t('Chat', 'محادثة')}
-              </button>
+              {activeReq.providerId && (
+                <button
+                  type="button"
+                  onClick={() => go('SH01', { requestId: activeReq.id })}
+                  className="py-2 px-3 rounded-xl text-xs font-semibold bg-slate-800 text-slate-100 border border-slate-700"
+                >
+                  {t('Chat', 'محادثة')}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -999,8 +1201,12 @@ export function C06({ params }) {
   const { go, back, flow, updateFlow, clearFlow } = useNav();
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
+  const { data: vehicles = [] } = useVehicles();
+  const { data: requests = [] } = useRequests();
 
   const serviceTypes = bootstrap?.serviceTypes || [];
+  const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
+  const currentVehicleId = flow?.vehicleId || primaryVehicle?.id || null;
   const category = params?.category || params?.kind || flow?.category || '';
   const visibleTypes = useMemo(() => {
     const towKeys = ['flatbed_tow', 'wheel_lift'];
@@ -1024,10 +1230,22 @@ export function C06({ params }) {
     || serviceTypes.find((s) => s.key === selectedKey || s.id === selectedKey)
     || null;
 
+  const duplicateReq = useMemo(
+    () => findDuplicateActiveRequest(requests, currentVehicleId, chosenType?.id),
+    [requests, currentVehicleId, chosenType?.id]
+  );
+
   const handleContinue = () => {
     setErr('');
     if (!chosenType) {
       setErr(t('Please select a service or breakdown type first.', 'يرجى اختيار نوع العطل أو الخدمة أولاً.'));
+      return;
+    }
+    if (duplicateReq && vehicles.length <= 1) {
+      setErr(t(
+        `You already have an active request (${duplicateReq.code}) for this service on your vehicle. Track or cancel it before creating another.`,
+        `لديك طلب نشط بالفعل (${duplicateReq.code}) لنفس الخدمة وعلى نفس السيارة. يمكنك تتبعه أو إلغاؤه أولاً.`
+      ));
       return;
     }
     if (chosenType.key === 'other' && !customProblem.trim()) {
@@ -1163,7 +1381,31 @@ export function C06({ params }) {
             </div>
           </Card>
 
-          <PrimaryButton testId="screen-primary" onClick={handleContinue} disabled={!chosenType}>
+          {duplicateReq && (
+            <div
+              data-testid="duplicate-active-request-banner"
+              className="rounded-2xl p-3.5 border space-y-2"
+              style={{ backgroundColor: c.dangerBg, borderColor: c.danger }}
+            >
+              <div className="text-xs font-extrabold" style={{ color: c.danger }}>
+                ⚠️ {t(`Active Request Already Open (${duplicateReq.code})`, `يوجد طلب نشط بالفعل لنفس الخدمة (${duplicateReq.code})`)}
+              </div>
+              <p className="text-[11px]" style={{ color: c.text }}>
+                {vehicles.length > 1
+                  ? t('This service is already active on your primary vehicle. You can select another vehicle in the next step or track your active request.', 'هذه الخدمة قيد التنفيذ بالفعل على سيارتك الأساسية. يمكنك اختيار مركبة أخرى في الخطوة التالية أو تتبع الطلب الحالي.')
+                  : t('You cannot submit two active requests for the same service on the same vehicle at the same time.', 'لا يمكن إرسال طلبين نشطين لنفس الخدمة وعلى نفس السيارة في نفس الوقت.')}
+              </p>
+              <SecondaryButton
+                onClick={() =>
+                  go(duplicateReq.providerId ? (duplicateReq.kind === 'Mechanic' ? 'C12' : 'C11') : 'C09', { id: duplicateReq.id })
+                }
+              >
+                {t('Track Active Request →', 'تتبع الطلب النشط ←')}
+              </SecondaryButton>
+            </div>
+          )}
+
+          <PrimaryButton testId="screen-primary" onClick={handleContinue} disabled={!chosenType || Boolean(duplicateReq && vehicles.length <= 1)}>
             {t('Continue to Details →', 'المتابعة للتفاصيل ←')}
           </PrimaryButton>
         </div>
@@ -1181,6 +1423,7 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
   const { data: vehicles = [] } = useVehicles();
+  const { data: requests = [] } = useRequests();
   const estimateMut = useEstimate();
   const createMut = useCreateRequest();
 
@@ -1215,6 +1458,10 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const isTowKind = (chosenType?.kind || defaultKind) === 'Tow';
   const isAccidentMode = params?.accident === '1' || params?.priority === 'P0' || flow?.isAccident || flow?.priority === 'P0';
+  const duplicateReq = useMemo(
+    () => findDuplicateActiveRequest(requests, vehicleId || primaryVehicle?.id || null, chosenType?.id),
+    [requests, vehicleId, primaryVehicle?.id, chosenType?.id]
+  );
 
   useEffect(() => {
     if (!vehicleId && primaryVehicle?.id) setVehicleId(primaryVehicle.id);
@@ -1394,6 +1641,13 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const handleReviewEstimate = () => {
     setErr('');
+    if (duplicateReq) {
+      setErr(t(
+        `An active request (${duplicateReq.code}) is already open for this service on the selected vehicle.`,
+        `يوجد طلب نشط بالفعل (${duplicateReq.code}) لنفس الخدمة وعلى نفس السيارة المختارة.`
+      ));
+      return;
+    }
     if (!validateDetails()) return;
     saveDraftToFlow();
     go('C08');
@@ -1401,6 +1655,13 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
 
   const handleDirectSubmit = async () => {
     setErr('');
+    if (duplicateReq) {
+      setErr(t(
+        `An active request (${duplicateReq.code}) is already open for this service on the selected vehicle.`,
+        `يوجد طلب نشط بالفعل (${duplicateReq.code}) لنفس الخدمة وعلى نفس السيارة المختارة.`
+      ));
+      return;
+    }
     if (!validateDetails()) return;
     const draft = saveDraftToFlow();
     if (!draft.serviceTypeId) {
@@ -1429,7 +1690,14 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
       updateFlow({ requestId: created.id });
       go('C09', { id: created.id });
     } catch (ex) {
-      setErr(ex.message || t('Could not create request', 'تعذر إنشاء الطلب'));
+      if (ex?.code === 'request.duplicate_active') {
+        setErr(t(
+          'You already have an active request for this service on this vehicle. Please complete or cancel it first.',
+          'لديك طلب نشط بالفعل لنفس الخدمة وعلى نفس السيارة. يرجى استكماله أو إلغاؤه أولاً.'
+        ));
+      } else {
+        setErr(ex.message || t('Could not create request', 'تعذر إنشاء الطلب'));
+      }
     }
   };
 
@@ -1677,28 +1945,66 @@ function RequestDetailsScreen({ defaultKind = 'Tow', params }) {
           </div>
         </Card>
 
-        {/* Live Estimate Preview Card */}
+        {/* Duplicate Active Request Guard */}
+        {duplicateReq && (
+          <div
+            data-testid="duplicate-active-request-banner"
+            className="rounded-2xl p-3.5 border space-y-2"
+            style={{ backgroundColor: c.dangerBg, borderColor: c.danger }}
+          >
+            <div className="text-xs font-extrabold" style={{ color: c.danger }}>
+              ⚠️ {t(`Active Request In Progress (${duplicateReq.code})`, `يوجد طلب نشط قيد التنفيذ (${duplicateReq.code})`)}
+            </div>
+            <p className="text-[11px]" style={{ color: c.text }}>
+              {t(
+                'You already have an active request for this service on this vehicle. Switch vehicle above or track your active request.',
+                'يوجد طلب نشط بالفعل لنفس الخدمة وعلى هذه السيارة. يمكنك اختيار مركبة أخرى بالأعلى أو تتبع الطلب الحالي.'
+              )}
+            </p>
+            <SecondaryButton
+              onClick={() =>
+                go(duplicateReq.providerId ? (duplicateReq.kind === 'Mechanic' ? 'C12' : 'C11') : 'C09', { id: duplicateReq.id })
+              }
+            >
+              {t('Track Active Request →', 'تتبع الطلب النشط ←')}
+            </SecondaryButton>
+          </div>
+        )}
+
+        {/* Live Cohesive Estimate Preview Card */}
         {estimate && (
           <Card>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <div className="text-xs font-semibold" style={{ color: c.text2 }}>{t('Estimated Price Range', 'التكلفة التقديرية المتوقعة')}</div>
+                <div className="text-xs font-semibold" style={{ color: c.text2 }}>
+                  {isTowKind
+                    ? t('Upfront Fixed Tow Fare', 'تكلفة السحب الثابتة والموحدة')
+                    : t('Fixed Callout & Diagnostic Visit', 'رسوم الانتقال والفحص الميداني الثابتة')}
+                </div>
                 <div className="text-base font-extrabold mt-0.5" style={{ color: c.accent }}>
-                  {egp(estimate.lowMinor, isAr)} – {egp(estimate.highMinor, isAr)}
+                  {egp(estimate.totalMinor ?? estimate.lowMinor, isAr)}
                 </div>
               </div>
-              <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold" style={{ backgroundColor: c.surface2, color: c.text2 }}>
-                {t('Transparent Fare', 'تسعير شفاف')}
+              <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold shrink-0" style={{ backgroundColor: c.surface2, color: c.text2 }}>
+                {isTowKind ? t('All-Inclusive', 'شاملة المسافة') : t('Fixed Visit', 'سعر موحد')}
               </span>
             </div>
+            {!isTowKind && (
+              <p className="text-[11px] mt-1.5" style={{ color: c.text3 }}>
+                {t(
+                  'Covers mechanic dispatch & on-site inspection. Any extra repair labor or parts require your quote approval first.',
+                  'تشمل انتقال الميكانيكي والفحص في موقعك. أي مصنعية إصلاح إضافية أو قطع غيار تتطلب موافقتك أولاً.'
+                )}
+              </p>
+            )}
           </Card>
         )}
 
         <div className="space-y-2 pt-1">
-          <PrimaryButton testId="screen-primary" onClick={handleReviewEstimate}>
+          <PrimaryButton testId="screen-primary" onClick={handleReviewEstimate} disabled={Boolean(duplicateReq)}>
             {t('Review Fare & Confirm →', 'مراجعة التسعيرة والتأكيد ←')}
           </PrimaryButton>
-          <SecondaryButton onClick={handleDirectSubmit} disabled={createMut.isPending}>
+          <SecondaryButton onClick={handleDirectSubmit} disabled={createMut.isPending || Boolean(duplicateReq)}>
             {createMut.isPending ? t('Dispatching...', 'جارٍ الإرسال...') : t('Dispatch Immediately', 'إرسال الطلب فوراً')}
           </SecondaryButton>
         </div>
@@ -1914,6 +2220,7 @@ export function C08() {
   const c = useColors();
   const { data: bootstrap } = useBootstrap();
   const { data: vehicles = [] } = useVehicles();
+  const { data: requests = [] } = useRequests();
   const estimateMut = useEstimate();
   const createMut = useCreateRequest();
   const [estimate, setEstimate] = useState(flow?.estimate || null);
@@ -1927,6 +2234,10 @@ export function C08() {
   const chosenType = serviceTypes.find((s) => s.id === flow?.serviceTypeId || s.key === flow?.serviceTypeKey) || serviceTypes[0] || null;
   const vehicle = vehicles.find((v) => v.id === flow?.vehicleId) || vehicles.find((v) => v.isPrimary) || vehicles[0] || null;
   const isTowKind = chosenType?.kind === 'Tow';
+  const duplicateReq = useMemo(
+    () => findDuplicateActiveRequest(requests, vehicle?.id || null, chosenType?.id),
+    [requests, vehicle?.id, chosenType?.id]
+  );
 
   useEffect(() => {
     if (!estimate && chosenType?.id) {
@@ -1942,6 +2253,13 @@ export function C08() {
     setErr('');
     if (!chosenType?.id) {
       setErr(t('Service configuration still loading', 'جارٍ تحميل إعدادات الخدمة'));
+      return;
+    }
+    if (duplicateReq) {
+      setErr(t(
+        `An active request (${duplicateReq.code}) is already open for this service on this vehicle.`,
+        `يوجد طلب نشط بالفعل (${duplicateReq.code}) لنفس الخدمة وعلى نفس السيارة.`
+      ));
       return;
     }
     if (!flow?.pickupAddress?.trim()) {
@@ -1971,7 +2289,14 @@ export function C08() {
       updateFlow({ requestId: created.id });
       go('C09', { id: created.id });
     } catch (ex) {
-      setErr(ex.message || t('Failed to submit request', 'تعذر إرسال الطلب'));
+      if (ex?.code === 'request.duplicate_active') {
+        setErr(t(
+          'You already have an active request for this service on this vehicle. Please complete or cancel it first.',
+          'لديك طلب نشط بالفعل لنفس الخدمة وعلى نفس السيارة. يرجى استكماله أو إلغاؤه أولاً.'
+        ));
+      } else {
+        setErr(ex.message || t('Failed to submit request', 'تعذر إرسال الطلب'));
+      }
     }
   };
 
@@ -1981,17 +2306,60 @@ export function C08() {
       <div className="px-4 pt-4 space-y-4">
         {err && <Banner tone="danger" title={err} />}
 
+        {duplicateReq && (
+          <div
+            data-testid="duplicate-active-request-banner"
+            className="rounded-2xl p-3.5 border space-y-2"
+            style={{ backgroundColor: c.dangerBg, borderColor: c.danger }}
+          >
+            <div className="text-xs font-extrabold" style={{ color: c.danger }}>
+              ⚠️ {t(`Active Request Already Open (${duplicateReq.code})`, `يوجد طلب نشط بالفعل (${duplicateReq.code})`)}
+            </div>
+            <SecondaryButton
+              onClick={() =>
+                go(duplicateReq.providerId ? (duplicateReq.kind === 'Mechanic' ? 'C12' : 'C11') : 'C09', { id: duplicateReq.id })
+              }
+            >
+              {t('Track Active Request →', 'تتبع الطلب النشط ←')}
+            </SecondaryButton>
+          </div>
+        )}
+
         <Card>
           <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: c.text3 }}>
-            {t('Upfront Fare Estimate', 'التكلفة التقديرية المبدئية')}
+            {isTowKind
+              ? t('Upfront Fixed Tow Fare', 'تكلفة السحب الثابتة والمحددة مسبقاً')
+              : t('Fixed Callout & Diagnostic Visit', 'رسوم الانتقال والفحص الميداني الثابتة')}
           </div>
           <div className="text-2xl font-extrabold" style={{ color: c.accent }}>
             {estimate
-              ? `${egp(estimate.lowMinor, isAr)} – ${egp(estimate.highMinor, isAr)}`
+              ? egp(estimate.totalMinor ?? estimate.lowMinor, isAr)
               : t('Calculating fare...', 'جارٍ حساب التكلفة...')}
           </div>
-          <p className="text-xs mt-1" style={{ color: c.text2 }}>
-            {t('Includes callout base fare, distance calculation and platform safety guarantee.', 'تشمل رسوم الانتقال الأساسية وحساب المسافة وضمان أمان المنصة.')}
+          {estimate && (
+            <div className="mt-2 pt-2 border-t space-y-1 text-xs" style={{ borderColor: c.border }}>
+              <div className="flex justify-between">
+                <span style={{ color: c.text2 }}>
+                  {isTowKind ? t('Base Tow Dispatch', 'رسوم فتح العداد والانتقال') : t('Specialist Callout & Inspection', 'رسوم انتقال وفحص الفني')}
+                </span>
+                <span className="font-semibold" style={{ color: c.text }}>{egp(estimate.baseMinor ?? 0, isAr)}</span>
+              </div>
+              {isTowKind && (estimate.distanceMinor ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span style={{ color: c.text2 }}>{t('Route Distance Fare', 'تكلفة مسافة السحب')}</span>
+                  <span className="font-semibold" style={{ color: c.text }}>{egp(estimate.distanceMinor, isAr)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span style={{ color: c.text2 }}>{t('Platform Service & Safety Fee', 'رسوم خدمة وأمان المنصة')}</span>
+                <span className="font-semibold" style={{ color: c.text }}>{egp(estimate.serviceFeeMinor ?? 0, isAr)}</span>
+              </div>
+            </div>
+          )}
+          <p className="text-xs mt-2" style={{ color: c.text2 }}>
+            {isTowKind
+              ? t('Exact upfront fare matching available tow captains — no hidden approach charges.', 'سعر موحد وثابت شامل المسافة — مطابق تماماً للسعر الظاهر لدى كباتن الونش المتاحين.')
+              : t('Covers dispatch & diagnosis. Any on-site repair labor or spare parts are itemized by the mechanic and require your approval before work starts.', 'تشمل الانتقال والفحص. أي مصنعية إصلاح إضافية أو قطع غيار يحددها الميكانيكي في موقعك ولا تبدأ إلا بعد موافقتك.')}
           </p>
         </Card>
 
@@ -2033,7 +2401,7 @@ export function C08() {
           </div>
         </Card>
 
-        <PrimaryButton testId="screen-primary" onClick={handleConfirmRequest} disabled={createMut.isPending}>
+        <PrimaryButton testId="screen-primary" onClick={handleConfirmRequest} disabled={createMut.isPending || Boolean(duplicateReq)}>
           {createMut.isPending ? t('Sending Request...', 'جارٍ إرسال الطلب...') : t('Send Request Now', 'إرسال الطلب الآن')}
         </PrimaryButton>
       </div>
@@ -2048,8 +2416,15 @@ export function C09({ params }) {
   const { t } = usePrefs();
   const { go, replace, back } = useNav();
   const c = useColors();
-  const { req, reqId } = useActiveRequest(params);
-  const { data: candidates = [] } = useCandidates(reqId);
+  const qc = useQueryClient();
+  const { req, reqId, refetch } = useActiveRequest(params);
+  const { data: candidates = [] } = useCandidates(reqId, 'nearest');
+  const [err, setErr] = useState('');
+
+  const { secondsLeft: searchSeconds, formatted: searchTimer } = useCountdownSeconds(req?.searchExpiresAt, () => {
+    refetch?.();
+    if (reqId) qc.invalidateQueries({ queryKey: k.requests });
+  });
 
   useEffect(() => {
     if (!req?.id) return;
@@ -2058,45 +2433,102 @@ export function C09({ params }) {
     }
   }, [req?.id, req?.status, req?.kind, replace]);
 
+  const isCancelled = req?.status === 'Cancelled';
+  const hasPendingProvider = Boolean(req?.pendingProviderId && req?.customerConfirmDeadlineAt && !req?.providerId);
+
   return (
     <div className="flex flex-col min-h-full pb-24" style={{ backgroundColor: c.bg }}>
-      <AppTopBar title={t('Searching Nearby Providers', 'البحث عن مقدمي الخدمة')} onBack={() => back('C08')} />
+      <AppTopBar title={t('Searching Nearby Providers', 'البحث عن مقدمي الخدمة')} onBack={() => back('C01')} />
       <div className="px-4 pt-4 space-y-4">
+        {err && <Banner tone="danger" title={err} />}
+
         <MapView
-          height={200}
+          height={185}
           pin={req?.pickupLatitude && req?.pickupLongitude ? { lat: req.pickupLatitude, lng: req.pickupLongitude } : null}
           mode="pin"
           label={req?.pickupAddress || undefined}
         />
 
-        <Card className="text-center py-5">
-          <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl animate-pulse" style={{ backgroundColor: c.accentBg, color: c.accent }}>
-            📡
-          </div>
-          <div className="text-base font-extrabold" style={{ color: c.text }}>
-            {candidates.length > 0
-              ? t('Verified Specialists Ready Nearby!', 'يوجد مقدمو خدمة معتمدون متصلون بالقرب منك!')
-              : t('Waiting for Online Providers Nearby...', 'بانتظار اتصال مقدمي الخدمة بالقرب منك...')}
-          </div>
-          <div className="text-xs mt-1" style={{ color: c.text2 }}>
-            {req?.code ? `${t('Request', 'طلب')} ${req.code} • ` : ''}
-            {candidates.length > 0
-              ? t(`${candidates.length} online provider${candidates.length === 1 ? '' : 's'} matched`, `تم العثور على ${candidates.length} مقدم خدمة متصل الآن`)
-              : t('0 providers online right now — live updates automatically when a specialist goes online', '٠ مقدم خدمة متصل حالياً — يتم التحديث تلقائياً فور اتصال أي فني')}
-          </div>
-        </Card>
+        {isCancelled ? (
+          <Card className="text-center py-6" style={{ borderColor: c.danger }}>
+            <div data-testid="request-auto-cancelled-card" className="space-y-2.5">
+              <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl" style={{ backgroundColor: c.dangerBg, color: c.danger }}>
+                ⏱️
+              </div>
+              <div className="text-base font-extrabold" style={{ color: c.danger }}>
+                {t('Request Automatically Cancelled', 'تم إلغاء الطلب تلقائياً')}
+              </div>
+              <p className="text-xs px-2" style={{ color: c.text2 }}>
+                {Number(req?.customerRejectionCount ?? 0) >= 3
+                  ? t(
+                      'You skipped or did not confirm 3 provider offers in a row, so this request was automatically cancelled.',
+                      'تم تخطي أو انتهاء مهلة التأكيد لـ ٣ مقدمي خدمة متتاليين، لذلك تم إلغاء الطلب تلقائياً.'
+                    )
+                  : t(
+                      'This request expired without confirmation and has been cancelled.',
+                      'انتهت مهلة البحث والتأكيد لهذا الطلب وتم إلغاؤه تلقائياً.'
+                    )}
+              </p>
+              <div className="pt-2 space-y-2">
+                <PrimaryButton onClick={() => go('C01')}>
+                  {t('Back to Home & New Request', 'العودة للرئيسية وطلب جديد')}
+                </PrimaryButton>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {hasPendingProvider && (
+              <PendingProviderMatchCard
+                req={req}
+                onError={setErr}
+                onConfirmed={(updated) => replace((updated?.kind || req?.kind) === 'Mechanic' ? 'C12' : 'C11', { id: reqId })}
+              />
+            )}
 
-        <div className="space-y-2">
-          <PrimaryButton
-            testId="view-matched-providers-btn"
-            onClick={() => go(req?.kind === 'Mechanic' ? 'C27' : 'C10', { id: reqId })}
-          >
-            {t(`View Matched Providers (${candidates.length}) →`, `عرض مقدمي الخدمة المتاحين (${candidates.length}) ←`)}
-          </PrimaryButton>
-          <SecondaryButton onClick={() => go('C29', { id: reqId })}>
-            {t('Cancel Request', 'إلغاء الطلب')}
-          </SecondaryButton>
-        </div>
+            <Card className="text-center py-5">
+              <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl animate-pulse" style={{ backgroundColor: c.accentBg, color: c.accent }}>
+                📡
+              </div>
+              <div className="text-base font-extrabold" style={{ color: c.text }}>
+                {candidates.length > 0
+                  ? t('Verified Specialists Ready Nearby!', 'يوجد مقدمو خدمة معتمدون متصلون بالقرب منك!')
+                  : t('Broadcasting to Nearby Specialists...', 'جارٍ بث الطلب لمقدمي الخدمة القريبين...')}
+              </div>
+              <div className="text-xs mt-1" style={{ color: c.text2 }}>
+                {req?.code ? `${t('Request', 'طلب')} ${req.code} • ` : ''}
+                {candidates.length > 0
+                  ? t(`${candidates.length} online provider${candidates.length === 1 ? '' : 's'} matched — pick anyone or wait for instant accept`, `تم العثور على ${candidates.length} مقدم خدمة متصل — يمكنك اختيار أي منهم فوراً أو انتظار القبول المباشر`)
+                  : t('0 providers online right now — live updates automatically when a specialist goes online', '٠ مقدم خدمة متصل حالياً — يتم التحديث تلقائياً فور اتصال أي فني')}
+              </div>
+              {req?.searchExpiresAt && searchSeconds > 0 && !hasPendingProvider && (
+                <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold" style={{ backgroundColor: c.surface2, color: c.text2 }}>
+                  <span>⏳</span>
+                  <span>
+                    {t(`Auto-cancels if unmatched in ${searchTimer}`, `يُلغى تلقائياً إذا لم يكتمل خلال ${searchTimer}`)}
+                  </span>
+                </div>
+              )}
+              {Number(req?.customerRejectionCount ?? 0) > 0 && !hasPendingProvider && (
+                <div className="mt-2 text-[11px] font-bold" style={{ color: c.accent }}>
+                  {t(`Skipped offers: ${req.customerRejectionCount}/3`, `العروض المتخطاة: ${req.customerRejectionCount} من ٣`)}
+                </div>
+              )}
+            </Card>
+
+            <div className="space-y-2">
+              <PrimaryButton
+                testId="view-matched-providers-btn"
+                onClick={() => go(req?.kind === 'Mechanic' ? 'C27' : 'C10', { id: reqId })}
+              >
+                {t(`Choose Provider Yourself (${candidates.length}) →`, `اختر مقدم الخدمة بنفسك (${candidates.length}) ←`)}
+              </PrimaryButton>
+              <SecondaryButton onClick={() => go('C29', { id: reqId })}>
+                {t('Cancel Request', 'إلغاء الطلب')}
+              </SecondaryButton>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -2148,9 +2580,9 @@ function OffersListScreen({ isMechanic = false, params }) {
   const { go, replace, back } = useNav();
   const c = useColors();
   const { req, reqId } = useActiveRequest(params);
-  const { data: candidates = [], isLoading } = useCandidates(reqId);
+  const [sortBy, setSortBy] = useState('nearest');
+  const { data: candidates = [], isLoading } = useCandidates(reqId, sortBy);
   const selectMut = useSelectProvider(reqId);
-  const [sortBy, setSortBy] = useState('recommended');
   const [reviewCand, setReviewCand] = useState(null);
   const [pubProfile, setPubProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -2186,6 +2618,13 @@ function OffersListScreen({ isMechanic = false, params }) {
 
   const sorted = useMemo(() => {
     const copy = [...candidates];
+    if (sortBy === 'nearest') {
+      return copy.sort((a, b) =>
+        Number(a.distanceKm ?? 0) - Number(b.distanceKm ?? 0) ||
+        a.etaMinutes - b.etaMinutes ||
+        Number(b.rating ?? 0) - Number(a.rating ?? 0)
+      );
+    }
     if (sortBy === 'top') {
       return copy
         .filter((x) => Number(x.ratingCount ?? 0) > 0 && Number(x.rating ?? 0) >= 4.4)
@@ -2224,107 +2663,135 @@ function OffersListScreen({ isMechanic = false, params }) {
       <div className="px-4 pt-3 space-y-3">
         {err && <Banner tone="danger" title={err} />}
 
-        {/* Sort & Filter Chips */}
-        <div className="flex items-center gap-1.5 flex-wrap pb-0.5">
-          {[
-            { id: 'recommended', en: 'Recommended', ar: 'الموصى به' },
-            { id: 'top', en: 'Top Rated ⭐', ar: 'الأعلى تقييماً ⭐' },
-            { id: 'fastest', en: 'Fastest ETA', ar: 'الأسرع وصولاً' },
-            { id: 'lowest', en: 'Lowest Fare', ar: 'الأقل سعراً' },
-          ].map((tab) => (
-            <Chip
-              key={tab.id}
-              active={sortBy === tab.id}
-              onClick={() => setSortBy(tab.id)}
-            >
-              {t(tab.en, tab.ar)}
-            </Chip>
-          ))}
-        </div>
-
-        {!isLoading && sorted.length === 0 ? (
-          <EmptyState
-            icon="🛻"
-            title={t('No Providers Match This Filter', 'لا يوجد مقدمو خدمة مطابقون')}
-            subtitle={t('Switch back to Recommended or expand search radius to match online providers.', 'انتقل إلى الموصى به أو وسّع نطاق البحث للعثور على مقدمي خدمة متصلين.')}
-            action={<PrimaryButton onClick={() => (sortBy !== 'recommended' ? setSortBy('recommended') : go('C28', { id: reqId }))}>{sortBy !== 'recommended' ? t('Show All Online Providers', 'عرض جميع المتصلين') : t('Expand Search Radius', 'توسيع نطاق البحث')}</PrimaryButton>}
-          />
+        {req?.status === 'Cancelled' ? (
+          <Card className="text-center py-6" style={{ borderColor: c.danger }}>
+            <div data-testid="request-auto-cancelled-card" className="space-y-2.5">
+              <div className="text-base font-extrabold" style={{ color: c.danger }}>
+                {t('Request Automatically Cancelled', 'تم إلغاء الطلب تلقائياً')}
+              </div>
+              <p className="text-xs" style={{ color: c.text2 }}>
+                {t('This request expired or exceeded 3 skipped offers.', 'انتهت مهلة الطلب أو تجاوز عدد مرات التخطي المسموحة (٣ مرات).')}
+              </p>
+              <PrimaryButton onClick={() => go('C01')}>
+                {t('Back to Home', 'العودة للرئيسية')}
+              </PrimaryButton>
+            </div>
+          </Card>
         ) : (
-          sorted.map((cand, idx) => {
-            const revCount = Number(cand.ratingCount ?? 0);
-            const ratingVal = Number(cand.rating ?? 0);
-            const recPct = Number(cand.recommendPercent ?? 0);
-            const jobsCount = Number(cand.completedJobs ?? 0);
+          <>
+            {req?.pendingProviderId && req?.customerConfirmDeadlineAt && !req?.providerId && (
+              <PendingProviderMatchCard
+                req={req}
+                onError={setErr}
+                onInspectProvider={(cand) => setReviewCand(cand)}
+                onConfirmed={(updated) => replace((updated?.kind || req?.kind) === 'Mechanic' ? 'C12' : 'C11', { id: reqId })}
+              />
+            )}
 
-            return (
-              <Card key={cand.providerId}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  data-testid={`provider-card-${cand.providerId}`}
-                  onClick={() => setReviewCand(cand)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setReviewCand(cand); }}
-                  className="flex items-start justify-between gap-2 cursor-pointer"
+            {/* Sort & Filter Chips — Nearest Location First by Default */}
+            <div className="flex items-center gap-1.5 flex-wrap pb-0.5" data-testid="provider-filter-chips">
+              {[
+                { id: 'nearest', en: 'Nearest 📍', ar: 'الأقرب موقعاً 📍' },
+                { id: 'recommended', en: 'Recommended', ar: 'الموصى به' },
+                { id: 'top', en: 'Top Rated ⭐', ar: 'الأعلى تقييماً ⭐' },
+                { id: 'fastest', en: 'Fastest ETA', ar: 'الأسرع وصولاً' },
+                { id: 'lowest', en: 'Lowest Fare', ar: 'الأقل سعراً' },
+              ].map((tab) => (
+                <Chip
+                  key={tab.id}
+                  active={sortBy === tab.id}
+                  onClick={() => setSortBy(tab.id)}
                 >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <Avatar name={cand.name} size={44} />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold truncate underline decoration-dotted underline-offset-2" style={{ color: c.text }}>{cand.name}</span>
-                        {idx === 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
-                            {sortBy === 'fastest'
-                              ? t('Closest', 'الأقرب')
-                              : sortBy === 'lowest'
-                              ? t('Best Fare', 'أفضل سعر')
-                              : sortBy === 'top'
-                              ? t('Highest Rated', 'الأعلى تقييماً')
-                              : t('Top Match', 'الأفضل')}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs flex items-center flex-wrap gap-1.5 mt-1" style={{ color: c.text2 }}>
-                        {revCount > 0 ? (
-                          <span className="inline-flex items-center gap-1">
-                            <StarRating value={ratingVal} size={11} />
-                            <span className="font-bold" style={{ color: c.accent }}>{ratingVal.toFixed(1)}</span>
-                            <span>({revCount})</span>
-                            <span>• 👍 {recPct}%</span>
-                          </span>
-                        ) : (
-                          <span>{t('New specialist · Tap to view profile', 'مختص جديد · اضغط لعرض الملف')}</span>
-                        )}
-                      </div>
-                      <div className="text-[11px] flex items-center flex-wrap gap-1.5 mt-0.5" style={{ color: c.text3 }}>
-                        <span>📍 {Number(cand.distanceKm ?? 0).toFixed(1)} km</span>
-                        <span>• ⏱ {cand.etaMinutes} {t('min', 'دقيقة')}</span>
-                        {jobsCount > 0 && <span>• ✓ {jobsCount} {t('jobs', 'مهمة')}</span>}
-                      </div>
-                      {cand.truckMake && (
-                        <div className="text-[11px] mt-0.5" style={{ color: c.text3 }}>
-                          🛻 {cand.truckMake} • {cand.areaLabel || t('Greater Cairo', 'القاهرة الكبرى')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-end shrink-0">
-                    <div className="text-sm font-extrabold" style={{ color: c.accent }}>
-                      {egp(cand.priceMinor, isAr)}
-                    </div>
-                    <div className="text-[10px]" style={{ color: c.text3 }}>
-                      {isMechanic ? t('Callout Fee', 'رسوم الفحص') : t('Est. Total', 'الإجمالي التقديري')}
-                    </div>
-                  </div>
-                </div>
+                  {t(tab.en, tab.ar)}
+                </Chip>
+              ))}
+            </div>
 
-                <div className="mt-3 flex items-center gap-2">
-                  <PrimaryButton testId="screen-primary" onClick={() => handleSelect(cand)} disabled={selectMut.isPending}>
-                    {t('Select & Dispatch', 'اختيار وإرسال الطلب')}
-                  </PrimaryButton>
-                </div>
-              </Card>
-            );
-          })
+            {!isLoading && sorted.length === 0 ? (
+              <EmptyState
+                icon="🛻"
+                title={t('No Providers Match This Filter', 'لا يوجد مقدمو خدمة مطابقون')}
+                subtitle={t('Switch back to Nearest or expand search radius to match online providers.', 'انتقل إلى الأقرب موقعاً أو وسّع نطاق البحث للعثور على مقدمي خدمة متصلين.')}
+                action={<PrimaryButton onClick={() => (sortBy !== 'nearest' ? setSortBy('nearest') : go('C28', { id: reqId }))}>{sortBy !== 'nearest' ? t('Show Nearest Online Providers', 'عرض الأقرب إليك') : t('Expand Search Radius', 'توسيع نطاق البحث')}</PrimaryButton>}
+              />
+            ) : (
+              sorted.map((cand, idx) => {
+                const revCount = Number(cand.ratingCount ?? 0);
+                const ratingVal = Number(cand.rating ?? 0);
+                const recPct = Number(cand.recommendPercent ?? 0);
+                const jobsCount = Number(cand.completedJobs ?? 0);
+
+                return (
+                  <Card key={cand.providerId}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      data-testid={`provider-card-${cand.providerId}`}
+                      onClick={() => setReviewCand(cand)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setReviewCand(cand); }}
+                      className="flex items-start justify-between gap-2 cursor-pointer"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        <Avatar name={cand.name} size={44} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-bold truncate underline decoration-dotted underline-offset-2" style={{ color: c.text }}>{cand.name}</span>
+                            {idx === 0 && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: c.accentBg, color: c.accent }}>
+                                {sortBy === 'nearest' || sortBy === 'fastest'
+                                  ? t('Closest to You', 'الأقرب إليك')
+                                  : sortBy === 'lowest'
+                                  ? t('Best Fare', 'أفضل سعر')
+                                  : sortBy === 'top'
+                                  ? t('Highest Rated', 'الأعلى تقييماً')
+                                  : t('Top Match', 'الأفضل')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs flex items-center flex-wrap gap-1.5 mt-1" style={{ color: c.text2 }}>
+                            {revCount > 0 ? (
+                              <span className="inline-flex items-center gap-1">
+                                <StarRating value={ratingVal} size={11} />
+                                <span className="font-bold" style={{ color: c.accent }}>{ratingVal.toFixed(1)}</span>
+                                <span>({revCount})</span>
+                                <span>• 👍 {recPct}%</span>
+                              </span>
+                            ) : (
+                              <span>{t('New specialist · Tap to view profile', 'مختص جديد · اضغط لعرض الملف')}</span>
+                            )}
+                          </div>
+                          <div className="text-[11px] flex items-center flex-wrap gap-1.5 mt-0.5" style={{ color: c.text3 }}>
+                            <span>📍 {Number(cand.distanceKm ?? 0).toFixed(1)} km</span>
+                            <span>• ⏱ {cand.etaMinutes} {t('min', 'دقيقة')}</span>
+                            {jobsCount > 0 && <span>• ✓ {jobsCount} {t('jobs', 'مهمة')}</span>}
+                          </div>
+                          {cand.truckMake && (
+                            <div className="text-[11px] mt-0.5" style={{ color: c.text3 }}>
+                              🛻 {cand.truckMake} • {cand.areaLabel || t('Greater Cairo', 'القاهرة الكبرى')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-end shrink-0">
+                        <div className="text-sm font-extrabold" style={{ color: c.accent }}>
+                          {egp(cand.priceMinor, isAr)}
+                        </div>
+                        <div className="text-[10px]" style={{ color: c.text3 }}>
+                          {isMechanic ? t('Callout Visit', 'رسوم الفحص') : t('Fixed Tow Fare', 'تكلفة السحب')}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <PrimaryButton testId="screen-primary" onClick={() => handleSelect(cand)} disabled={selectMut.isPending}>
+                        {t('Select & Dispatch Now', 'اختيار وإرسال فوراً')}
+                      </PrimaryButton>
+                    </div>
+                  </Card>
+                );
+              })
+            )}
+          </>
         )}
 
         <BottomSheet

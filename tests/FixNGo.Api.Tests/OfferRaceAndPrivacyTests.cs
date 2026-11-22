@@ -157,11 +157,18 @@ public sealed class OfferRaceAndPrivacyTests(ApiTestHost host)
             "newly-online mechanic must immediately receive open Searching mechanic requests");
 
         var offerId = matchedOffer.GuidOf("id");
-        var (accCode, _) = await Http.Post(mechanic, $"/api/v1/offers/{offerId}/accept", new { });
+        var (accCode, accBody) = await Http.Post(mechanic, $"/api/v1/offers/{offerId}/accept", new { });
         accCode.Should().Be(HttpStatusCode.OK);
+        accBody.GetProperty("awaitingCustomerConfirm").GetBoolean().Should().BeTrue();
 
-        var (getCode, updatedReq) = await Http.Get(owner, $"/api/v1/requests/{requestId}");
+        var (getCode, pendingReq) = await Http.Get(owner, $"/api/v1/requests/{requestId}");
         getCode.Should().Be(HttpStatusCode.OK);
+        pendingReq.Text("status").Should().Be(nameof(RequestStatus.Offered));
+        pendingReq.GuidOf("pendingProviderId").Should().Be(host.Id(ApiTestHost.Mechanic));
+        pendingReq.TryGetProperty("customerConfirmDeadlineAt", out _).Should().BeTrue();
+
+        var (confCode, updatedReq) = await Http.Post(owner, $"/api/v1/requests/{requestId}/confirm-provider", new { });
+        confCode.Should().Be(HttpStatusCode.OK);
         updatedReq.Text("status").Should().Be(nameof(RequestStatus.Accepted));
         updatedReq.GuidOf("assignedProviderId").Should().Be(host.Id(ApiTestHost.Mechanic));
     }

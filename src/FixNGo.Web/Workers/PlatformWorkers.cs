@@ -11,19 +11,22 @@ public sealed class OfferExpiryWorker(IServiceScopeFactory scopes, ILogger<Offer
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
                 using var scope = scopes.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
+                var notifier = scope.ServiceProvider.GetService<INotifier>();
+                await FixNGo.Application.Services.RequestTimeoutEvaluator.EvaluateAsync(db, clock, notifier, null, stoppingToken);
+
                 var now = clock.UtcNow;
                 var expired = await db.Offers.CountAsync(o => o.Status == OfferStatus.Pending && o.ExpiresAt <= now, stoppingToken);
                 if (expired == 0) continue;
                 foreach (var o in db.Offers.Where(o => o.Status == OfferStatus.Pending && o.ExpiresAt <= now))
                     o.Status = OfferStatus.Expired;
-                var stale = await db.ServiceRequests.Where(r => r.Status == RequestStatus.Offered).ToListAsync(stoppingToken);
+                var stale = await db.ServiceRequests.Where(r => r.Status == RequestStatus.Offered && r.PendingProviderId == null).ToListAsync(stoppingToken);
                 foreach (var r in stale)
                 {
                     var any = await db.Offers.AnyAsync(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending, stoppingToken);

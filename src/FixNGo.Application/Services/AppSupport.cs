@@ -60,7 +60,10 @@ public static class Mappings
         r.Vehicle?.Make, r.Vehicle?.Model, r.Vehicle?.Year, r.Vehicle?.Color, r.Vehicle?.Plate,
         r.DestinationAddress, r.Problem, r.Note,
         r.Photos?.Select(p => p.FileId).ToList(),
-        r.AcceptedAt, r.CompletedAt);
+        r.AcceptedAt, r.CompletedAt,
+        null, null, null, null,
+        r.PendingProviderId, null, null, null, null, null, null, null,
+        r.CustomerConfirmDeadlineAt, r.CustomerRejectionCount, r.SearchExpiresAt, r.ServiceTypeId, null);
 
     public static RequestEventDto Event(RequestEvent e) => new(e.Status, e.Note, e.At);
 
@@ -171,14 +174,158 @@ public static class Mappings
 
     public static NotificationDto Notification(Notification n) => new(n.Id, n.Type, n.Title, n.Body, n.DeepLink, n.IsRead, n.CreatedAt);
 
-    public static ChatMessageDto ChatMessage(ChatMessage m) => new(m.Id, m.ThreadId, m.SenderId, m.MessageType, m.Text, m.SentAt, m.ReadAt);
+    public static ChatMessageDto ChatMessage(ChatMessage m) => new(m.Id, m.ThreadId, m.SenderId, m.MessageType, m.Text, m.SentAt, m.ReadAt, m.Latitude, m.Longitude);
 
     public static ReviewDto Review(Review r) => Review(r, null, null);
 
     public static ReviewDto Review(Review r, string? authorName, string? contextLabel) =>
-        new(r.Id, r.ProviderId, r.CenterId, r.Stars, r.Text, r.Recommend, r.CreatedAt, authorName, contextLabel);
+        new(r.Id, r.ProviderId, r.CenterId, r.Stars, r.Text, r.Recommend, r.CreatedAt, authorName, contextLabel, r.CustomerId);
 
     public static TicketDto Ticket(SupportTicket t) => new(t.Id, t.Code, t.Category, t.Subject, t.Status, t.CreatedAt);
 
     public static AuditLogDto Audit(AuditLog a) => new(a.Id, a.ActorId, a.Action, a.EntityType, a.EntityId, a.Reason, a.CreatedAt);
+}
+
+/// <summary>Evaluates customer confirmation countdown expiry (3-strike auto-cancel) and overall search timeout.</summary>
+public static class RequestTimeoutEvaluator
+{
+    public const int MaxCustomerRejections = 3;
+    public const int CustomerConfirmSeconds = 60;
+    public const int DefaultSearchTimeoutSeconds = 600;
+
+    public static async Task<bool> EvaluateAsync(
+        IAppDbContext db,
+        IClock clock,
+        INotifier? notifier,
+        Guid? singleRequestId = null,
+        CancellationToken ct = default)
+    {
+        var now = clock.UtcNow;
+        var q = db.ServiceRequests.Where(r =>
+            r.AssignedProviderId == null &&
+            (r.Status == RequestStatus.Searching || r.Status == RequestStatus.Offered || r.Status == RequestStatus.NoProviders));
+        if (singleRequestId.HasValue)
+            q = q.Where(r => r.Id == singleRequestId.Value);
+        else
+            q = q.Where(r =>
+                (r.CustomerConfirmDeadlineAt != null && r.CustomerConfirmDeadlineAt <= now) ||
+                (r.SearchExpiresAt != null && r.SearchExpiresAt <= now));
+
+        var candidates = await q.ToListAsync(ct);
+        if (candidates.Count == 0) return false;
+
+        var changed = false;
+        var notifyActions = new List<Func<Task>>();
+
+        foreach (var r in candidates)
+        {
+            if (r.PendingProviderId != null && r.CustomerConfirmDeadlineAt != null && r.CustomerConfirmDeadlineAt <= now)
+            {
+                var prevPendingProvider = r.PendingProviderId.Value;
+                if (r.PendingOfferId != null)
+                {
+                    var pendingOffer = await db.Offers.FirstOrDefaultAsync(o => o.Id == r.PendingOfferId.Value, ct);
+                    if (pendingOffer is not null && pendingOffer.Status is OfferStatus.Pending or OfferStatus.Accepted)
+                        pendingOffer.Status = OfferStatus.Expired;
+                }
+
+                r.CustomerRejectionCount++;
+                r.PendingProviderId = null;
+                r.PendingOfferId = null;
+                r.CustomerConfirmDeadlineAt = null;
+                changed = true;
+
+                if (r.CustomerRejectionCount >= MaxCustomerRejections)
+                {
+                    r.Status = RequestStatus.Cancelled;
+                    r.CancellationReason = "Auto-cancelled: 3 provider matches were not confirmed.";
+                    foreach (var o in db.Offers.Where(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending))
+                        o.Status = OfferStatus.Withdrawn;
+                    db.RequestEvents.Add(new RequestEvent
+                    {
+                        RequestId = r.Id,
+                        Status = RequestStatus.Cancelled,
+                        Note = "auto_cancelled.max_rejections",
+                        At = now
+                    });
+                    if (notifier is not null)
+                    {
+                        var rId = r.Id; var custId = r.CustomerId; var rCode = r.Code;
+                        notifyActions.Add(async () =>
+                        {
+                            await notifier.NotifyUserAsync(custId, NotificationType.StatusCompleted,
+                                "Request auto-cancelled",
+                                $"Request {rCode} was automatically cancelled after 3 unconfirmed specialist matches.",
+                                $"request:{rId}", ct);
+                            await notifier.BroadcastUserEventAsync(custId, "request.updated", new { requestId = rId, status = nameof(RequestStatus.Cancelled) }, ct);
+                            await notifier.BroadcastUserEventAsync(prevPendingProvider, "request.updated", new { requestId = rId, status = nameof(RequestStatus.Cancelled) }, ct);
+                        });
+                    }
+                    continue;
+                }
+                else
+                {
+                    r.Status = RequestStatus.Searching;
+                    db.RequestEvents.Add(new RequestEvent
+                    {
+                        RequestId = r.Id,
+                        Status = RequestStatus.Searching,
+                        Note = $"customer_confirm.expired.{r.CustomerRejectionCount}_of_{MaxCustomerRejections}",
+                        At = now
+                    });
+                    if (notifier is not null)
+                    {
+                        var rId = r.Id; var custId = r.CustomerId;
+                        notifyActions.Add(async () =>
+                        {
+                            await notifier.BroadcastUserEventAsync(custId, "request.updated", new { requestId = rId, status = nameof(RequestStatus.Searching) }, ct);
+                            await notifier.BroadcastUserEventAsync(prevPendingProvider, "request.updated", new { requestId = rId, status = nameof(RequestStatus.Searching) }, ct);
+                        });
+                    }
+                }
+            }
+
+            if (r.Status != RequestStatus.Cancelled && r.SearchExpiresAt != null && r.SearchExpiresAt <= now)
+            {
+                r.Status = RequestStatus.Cancelled;
+                r.CancellationReason = "Auto-cancelled: search window expired with no confirmed provider.";
+                r.PendingProviderId = null;
+                r.PendingOfferId = null;
+                r.CustomerConfirmDeadlineAt = null;
+                foreach (var o in db.Offers.Where(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending))
+                    o.Status = OfferStatus.Expired;
+                db.RequestEvents.Add(new RequestEvent
+                {
+                    RequestId = r.Id,
+                    Status = RequestStatus.Cancelled,
+                    Note = "auto_cancelled.search_timeout",
+                    At = now
+                });
+                changed = true;
+                if (notifier is not null)
+                {
+                    var rId = r.Id; var custId = r.CustomerId; var rCode = r.Code;
+                    notifyActions.Add(async () =>
+                    {
+                        await notifier.NotifyUserAsync(custId, NotificationType.StatusCompleted,
+                            "Request timed out",
+                            $"Request {rCode} was automatically cancelled because the search window expired.",
+                            $"request:{rId}", ct);
+                        await notifier.BroadcastUserEventAsync(custId, "request.updated", new { requestId = rId, status = nameof(RequestStatus.Cancelled) }, ct);
+                    });
+                }
+            }
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync(ct);
+            foreach (var fn in notifyActions)
+            {
+                try { await fn(); } catch { /* best-effort notification */ }
+            }
+        }
+
+        return changed;
+    }
 }

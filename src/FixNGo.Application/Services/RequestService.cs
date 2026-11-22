@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FixNGo.Application.Services;
 
-/// <summary>Customer roadside request lifecycle: estimate, create, timeline, cancel, status.</summary>
+/// <summary>Customer roadside request lifecycle: estimate, create, duplicate-guard, timeline, cancel, status.</summary>
 public sealed class RequestService(
     IAppDbContext db, IClock clock, SettingsService settings, INotifier notifier) : IRequestService
 {
@@ -20,12 +20,14 @@ public sealed class RequestService(
         var total = st.Kind == RequestKind.Tow
             ? Pricing.TowTotalMinor(req.DistanceKm, s)
             : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s);
-        var (low, high) = Pricing.EstimateRange(total);
-        return new EstimateDto(low, high, total, version);
+        // Cohesive exact upfront pricing: Low == High == Total for fixed tow routes & upfront mechanic callouts
+        return new EstimateDto(total, total, total, version);
     }
 
     public async Task<RequestDto> CreateAsync(Guid customerId, CreateRequestRequest req, CancellationToken ct = default)
     {
+        await RequestTimeoutEvaluator.EvaluateAsync(db, clock, notifier, null, ct);
+
         var st = await db.ServiceTypes.FirstOrDefaultAsync(s => s.Id == req.ServiceTypeId, ct)
             ?? throw new DomainException("request.service_type_invalid", "Unknown service type.");
         if (req.VehicleId is not null &&
@@ -35,6 +37,25 @@ public sealed class RequestService(
             throw new DomainException("request.distance_invalid", "Invalid distance.");
         if (string.IsNullOrWhiteSpace(req.PickupAddress))
             throw new DomainException("request.address_required", "Pickup address is required.");
+
+        // Guard: prevent duplicate simultaneous active request for the same vehicle + same service type.
+        if (req.VehicleId is Guid vid && vid != Guid.Empty)
+        {
+            var existingActive = await db.ServiceRequests.FirstOrDefaultAsync(x =>
+                x.CustomerId == customerId &&
+                x.VehicleId == vid &&
+                x.ServiceTypeId == st.Id &&
+                x.Status != RequestStatus.Completed &&
+                x.Status != RequestStatus.Cancelled &&
+                x.Status != RequestStatus.NoProviders, ct);
+
+            if (existingActive is not null)
+            {
+                throw new DomainException(
+                    "request.duplicate_active",
+                    $"An active request ({existingActive.Code}) for {st.NameEn} on this vehicle is already running.");
+            }
+        }
 
         var (s, version) = await settings.CurrentAsync(ct);
         var (pickLat, pickLon) = Geo.InferEgyptianCoordinates(req.PickupAddress, req.PickupLatitude, req.PickupLongitude);
@@ -59,6 +80,7 @@ public sealed class RequestService(
         var priority = req.Priority;
         if (priority == RequestPriority.Normal && await EscalatesAsync(req, ct)) priority = RequestPriority.P0;
 
+        var now = clock.UtcNow;
         var r = new ServiceRequest
         {
             Code = await Codes.NextAsync(db, st.Kind == RequestKind.Tow ? "FG" : "MR", ct),
@@ -69,10 +91,11 @@ public sealed class RequestService(
             PickupAddress = req.PickupAddress.Trim(), DestinationLatitude = destLat,
             DestinationLongitude = destLon, DestinationAddress = req.DestinationAddress,
             DistanceKm = distKm, RadiusKm = s.SearchRadiusKm, SettingsVersion = version,
-            EstimateMinor = total
+            EstimateMinor = total,
+            SearchExpiresAt = now.AddSeconds(RequestTimeoutEvaluator.DefaultSearchTimeoutSeconds)
         };
         db.ServiceRequests.Add(r);
-        db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = "created", ActorId = customerId, At = clock.UtcNow });
+        db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = "created", ActorId = customerId, At = now });
         if (req.PhotoFileIds is not null)
         {
             foreach (var fid in req.PhotoFileIds.Take(5))
@@ -85,7 +108,7 @@ public sealed class RequestService(
 
         // Auto-broadcast offers to currently online approved providers of matching role (keeping Status = Searching).
         var targetRole = st.Kind == RequestKind.Tow ? Role.TowCaptain : Role.Mechanic;
-        var activeCutoff = clock.UtcNow.AddMinutes(-30);
+        var activeCutoff = now.AddMinutes(-30);
         var onlineProviders = await (from p in db.ProviderProfiles
                                      join u in db.Users on p.UserId equals u.Id
                                      where u.Role == targetRole && p.IsOnline
@@ -116,11 +139,12 @@ public sealed class RequestService(
                     RequestId = r.Id,
                     ProviderId = rec.UserId,
                     Status = OfferStatus.Pending,
-                    ExpiresAt = clock.UtcNow.AddSeconds(ttlSeconds),
+                    ExpiresAt = now.AddSeconds(ttlSeconds),
                     PriceMinor = total,
                     DistanceKm = rec.RoadKm,
                     EtaMinutes = Geo.EtaMinutes(rec.RoadKm),
-                    IsP0 = priority == RequestPriority.P0
+                    IsP0 = priority == RequestPriority.P0,
+                    CustomerSelected = false
                 };
                 db.Offers.Add(offer);
                 createdOffers.Add(offer);
@@ -169,7 +193,6 @@ public sealed class RequestService(
         return await GetAsync(callerId, isAdmin, id, ct);
     }
 
-    /// <summary>Any escalates-to-P0 answer of "yes" turns the request into an accident priority.</summary>
     private async Task<bool> EscalatesAsync(CreateRequestRequest req, CancellationToken ct)
     {
         if (req.ServiceTypeId == Guid.Empty || string.IsNullOrWhiteSpace(req.AnswersJson)) return false;
@@ -190,27 +213,46 @@ public sealed class RequestService(
 
     public async Task<RequestDto> GetAsync(Guid callerId, bool isAdmin, Guid id, CancellationToken ct = default)
     {
+        await RequestTimeoutEvaluator.EvaluateAsync(db, clock, notifier, id, ct);
         var r = await Visible(callerId, isAdmin, id, ct);
         return await EnrichAsync(r, ct);
     }
 
     public async Task<IReadOnlyList<RequestDto>> ListAsync(Guid callerId, bool isAdmin, CancellationToken ct = default)
     {
+        await RequestTimeoutEvaluator.EvaluateAsync(db, clock, notifier, null, ct);
+
         var q = db.ServiceRequests
             .Include(r => r.Customer)
             .Include(r => r.AssignedProvider)
             .Include(r => r.Vehicle)
             .Include(r => r.Photos)
             .AsQueryable();
-        if (!isAdmin) q = q.Where(r => r.CustomerId == callerId || r.AssignedProviderId == callerId);
+        if (!isAdmin)
+            q = q.Where(r => r.CustomerId == callerId || r.AssignedProviderId == callerId || r.PendingProviderId == callerId);
+
         var list = await q.OrderByDescending(r => r.CreatedAt).Take(200).ToListAsync(ct);
-        var providerIds = list.Where(r => r.AssignedProviderId is not null).Select(r => r.AssignedProviderId!.Value).Distinct().ToList();
+        var providerIds = list
+            .SelectMany(r => new[] { r.AssignedProviderId, r.PendingProviderId })
+            .Where(x => x.HasValue)
+            .Select(x => x!.Value)
+            .Distinct()
+            .ToList();
+
         var profiles = providerIds.Count == 0
             ? new Dictionary<Guid, ProviderProfile>()
             : await db.ProviderProfiles.Where(p => providerIds.Contains(p.UserId)).ToDictionaryAsync(p => p.UserId, ct);
+        var pendingUsers = providerIds.Count == 0
+            ? new Dictionary<Guid, User>()
+            : await db.Users.Where(u => providerIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, ct);
+        var serviceTypeKeys = await db.ServiceTypes.ToDictionaryAsync(s => s.Id, s => s.Key, ct);
+
         return list.Select(r =>
         {
             var dto = Mappings.Request(r);
+            if (r.ServiceTypeId is Guid stId && serviceTypeKeys.TryGetValue(stId, out var stKey))
+                dto = dto with { ServiceTypeKey = stKey };
+
             if (r.AssignedProviderId is not null && profiles.TryGetValue(r.AssignedProviderId.Value, out var prof))
             {
                 var pLat = prof.Latitude ?? r.AssignedProvider?.Latitude;
@@ -220,7 +262,7 @@ public sealed class RequestService(
                     : (double?)null;
                 dto = dto with
                 {
-                    ProviderRating = prof.Rating,
+                    ProviderRating = prof.RatingCount > 0 ? prof.Rating : 0m,
                     ProviderJobs = prof.CompletedJobs,
                     ProviderTruckMake = prof.TruckMake,
                     ProviderTruckPlate = prof.TruckPlate,
@@ -228,6 +270,25 @@ public sealed class RequestService(
                     ProviderLatitude = pLat,
                     ProviderLongitude = pLon,
                     PickupDistanceKm = pickupKm
+                };
+            }
+            if (r.PendingProviderId is Guid pendId && pendingUsers.TryGetValue(pendId, out var pendUser))
+            {
+                profiles.TryGetValue(pendId, out var pendProf);
+                var pLat = pendProf?.Latitude ?? pendUser.Latitude;
+                var pLon = pendProf?.Longitude ?? pendUser.Longitude;
+                var road = pLat.HasValue && pLon.HasValue
+                    ? Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, pLat.Value, pLon.Value), 1))
+                    : 2.0;
+                dto = dto with
+                {
+                    PendingProviderName = pendUser.FullName,
+                    PendingProviderRating = pendProf is { RatingCount: > 0 } ? pendProf.Rating : 0m,
+                    PendingProviderRatingCount = pendProf?.RatingCount ?? 0,
+                    PendingProviderJobs = pendProf?.CompletedJobs ?? 0,
+                    PendingProviderDistanceKm = road,
+                    PendingProviderEtaMinutes = Geo.EtaMinutes(road),
+                    PendingProviderPriceMinor = r.EstimateMinor
                 };
             }
             return dto;
@@ -247,6 +308,7 @@ public sealed class RequestService(
         if (!isAdmin && r.CustomerId != callerId)
             throw new DomainException("auth.forbidden", "Only the customer may cancel this request.");
         var assignedId = r.AssignedProviderId;
+        var pendingProvId = r.PendingProviderId;
         var pendingProviderIds = await db.Offers
             .Where(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending)
             .Select(o => o.ProviderId)
@@ -254,6 +316,9 @@ public sealed class RequestService(
             .ToListAsync(ct);
         r.Status = StateMachines.Request.Transition(r.Status, RequestStatus.Cancelled);
         r.CancellationReason = req.ReasonKey;
+        r.PendingProviderId = null;
+        r.PendingOfferId = null;
+        r.CustomerConfirmDeadlineAt = null;
         db.RequestEvents.Add(new RequestEvent { RequestId = r.Id, Status = r.Status, Note = req.ReasonKey ?? req.Note, ActorId = callerId, At = clock.UtcNow });
         foreach (var o in db.Offers.Where(o => o.RequestId == r.Id && o.Status == OfferStatus.Pending))
             o.Status = OfferStatus.Withdrawn;
@@ -261,12 +326,13 @@ public sealed class RequestService(
         await notifier.NotifyUserAsync(r.CustomerId, NotificationType.StatusCompleted, "Request cancelled", $"Request {r.Code} was cancelled.", $"request:{r.Id}", ct);
         if (assignedId is not null)
             await notifier.NotifyUserAsync(assignedId.Value, NotificationType.OfferWithdrawn, "Request cancelled", $"Request {r.Code} was cancelled by the customer.", $"request:{r.Id}", ct);
+        if (pendingProvId is not null && pendingProvId != assignedId)
+            await notifier.BroadcastUserEventAsync(pendingProvId.Value, "request.updated", new { requestId = r.Id, status = nameof(RequestStatus.Cancelled) }, ct);
         foreach (var pid in pendingProviderIds.Where(pid => pid != assignedId))
             await notifier.BroadcastUserEventAsync(pid, "request.updated", new { requestId = r.Id, status = nameof(RequestStatus.Cancelled) }, ct);
         return Mappings.Request(r);
     }
 
-    /// <summary>Provider advances an assigned request through the legal state machine.</summary>
     public async Task<RequestDto> AdvanceAsync(Guid providerId, Guid id, StatusRequest req, CancellationToken ct = default)
     {
         var r = await db.ServiceRequests.FirstOrDefaultAsync(x => x.Id == id, ct)
@@ -289,7 +355,8 @@ public sealed class RequestService(
                 .ThenByDescending(q => q.Version)
                 .FirstOrDefaultAsync(ct);
             var total = latestQuote?.TotalMinor ?? r.QuoteMinor ?? r.EstimateMinor ?? 0;
-            var fee = latestQuote?.ServiceFeeMinor ?? (total <= 0 ? 0 : total >= 25_000 ? s.ServiceFeeMinor : (long)Math.Round(total / 1.10 * 0.10));
+            var fullFeeThreshold = s.MechanicBaseMinor + s.ServiceFeeMinor;
+            var fee = latestQuote?.ServiceFeeMinor ?? (total <= 0 ? 0 : total >= fullFeeThreshold ? s.ServiceFeeMinor : (long)Math.Round(total / 1.10 * 0.10));
             var subtotal = latestQuote?.ProviderNetMinor ?? Math.Max(0, total - fee);
             var inv = await db.Invoices.FirstOrDefaultAsync(i => i.RequestId == r.Id, ct);
             if (inv is null)
@@ -351,6 +418,7 @@ public sealed class RequestService(
         };
         if (map.TryGetValue(req.Status, out var nt))
             await notifier.NotifyUserAsync(r.CustomerId, nt, "Request update", $"{r.Code}: {req.Status}", $"request:{r.Id}", ct);
+        await notifier.BroadcastUserEventAsync(r.CustomerId, "request.updated", new { requestId = r.Id, status = r.Status.ToString() }, ct);
         return Mappings.Request(r);
     }
 
@@ -363,14 +431,23 @@ public sealed class RequestService(
             .Include(x => x.Photos)
             .FirstOrDefaultAsync(x => x.Id == id, ct)
             ?? throw new DomainException("request.not_found", "Request not found.");
-        if (!isAdmin && r.CustomerId != callerId && r.AssignedProviderId != callerId)
-            throw new DomainException("auth.forbidden", "You cannot view this request.");
+        if (!isAdmin && r.CustomerId != callerId && r.AssignedProviderId != callerId && r.PendingProviderId != callerId)
+        {
+            var hasOffer = await db.Offers.AnyAsync(o => o.RequestId == id && o.ProviderId == callerId && o.Status == OfferStatus.Pending, ct);
+            if (!hasOffer)
+                throw new DomainException("auth.forbidden", "You cannot view this request.");
+        }
         return r;
     }
 
     private async Task<RequestDto> EnrichAsync(ServiceRequest r, CancellationToken ct)
     {
         var dto = Mappings.Request(r);
+        if (r.ServiceTypeId is Guid stId)
+        {
+            var stKey = await db.ServiceTypes.Where(s => s.Id == stId).Select(s => s.Key).FirstOrDefaultAsync(ct);
+            if (stKey is not null) dto = dto with { ServiceTypeKey = stKey };
+        }
         if (r.AssignedProviderId is not null)
         {
             var prof = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == r.AssignedProviderId, ct);
@@ -383,7 +460,7 @@ public sealed class RequestService(
                     : (double?)null;
                 dto = dto with
                 {
-                    ProviderRating = prof.Rating,
+                    ProviderRating = prof.RatingCount > 0 ? prof.Rating : 0m,
                     ProviderJobs = prof.CompletedJobs,
                     ProviderTruckMake = prof.TruckMake,
                     ProviderTruckPlate = prof.TruckPlate,
@@ -391,6 +468,34 @@ public sealed class RequestService(
                     ProviderLatitude = pLat,
                     ProviderLongitude = pLon,
                     PickupDistanceKm = pickupKm
+                };
+            }
+        }
+        if (r.PendingProviderId is Guid pendId)
+        {
+            var pendUser = await db.Users.FirstOrDefaultAsync(u => u.Id == pendId, ct);
+            var pendProf = await db.ProviderProfiles.FirstOrDefaultAsync(p => p.UserId == pendId, ct);
+            if (pendUser is not null)
+            {
+                var pLat = pendProf?.Latitude ?? pendUser.Latitude;
+                var pLon = pendProf?.Longitude ?? pendUser.Longitude;
+                var road = pLat.HasValue && pLon.HasValue
+                    ? Math.Max(0.5, Math.Round(Geo.RoadDistanceKm(r.PickupLatitude, r.PickupLongitude, pLat.Value, pLon.Value), 1))
+                    : 2.0;
+                long? offerPrice = null;
+                if (r.PendingOfferId is Guid poid)
+                {
+                    offerPrice = await db.Offers.Where(o => o.Id == poid).Select(o => (long?)o.PriceMinor).FirstOrDefaultAsync(ct);
+                }
+                dto = dto with
+                {
+                    PendingProviderName = pendUser.FullName,
+                    PendingProviderRating = pendProf is { RatingCount: > 0 } ? pendProf.Rating : 0m,
+                    PendingProviderRatingCount = pendProf?.RatingCount ?? 0,
+                    PendingProviderJobs = pendProf?.CompletedJobs ?? 0,
+                    PendingProviderDistanceKm = road,
+                    PendingProviderEtaMinutes = Geo.EtaMinutes(road),
+                    PendingProviderPriceMinor = offerPrice ?? r.EstimateMinor
                 };
             }
         }

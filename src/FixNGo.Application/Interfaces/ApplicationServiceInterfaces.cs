@@ -78,10 +78,12 @@ public interface IRequestService
 
 public interface IOfferService
 {
-    Task<IReadOnlyList<CandidateDto>> CandidatesAsync(Guid callerId, bool isAdmin, Guid requestId, string sort = "recommended", CancellationToken ct = default);
+    Task<IReadOnlyList<CandidateDto>> CandidatesAsync(Guid callerId, bool isAdmin, Guid requestId, string sort = "nearest", CancellationToken ct = default);
     Task<OfferDto> SendAsync(Guid customerId, Guid requestId, SelectProviderRequest req, CancellationToken ct = default);
     Task<OfferDto> AcceptAsync(Guid providerId, Guid offerId, CancellationToken ct = default);
     Task<OfferDto> DeclineAsync(Guid providerId, Guid offerId, DeclineOfferRequest req, CancellationToken ct = default);
+    Task<RequestDto> ConfirmPendingProviderAsync(Guid customerId, Guid requestId, CancellationToken ct = default);
+    Task<RequestDto> PassPendingProviderAsync(Guid customerId, Guid requestId, string? reason = null, CancellationToken ct = default);
     Task<IReadOnlyList<OfferDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default);
     Task<IReadOnlyList<OfferDto>> ForRequestAsync(Guid callerId, bool isAdmin, Guid requestId, CancellationToken ct = default);
 }
@@ -161,6 +163,7 @@ public interface IProviderService
     Task<object> DocumentsAsync(Guid appId, CancellationToken ct = default);
     Task<IReadOnlyList<ProviderDto>> NearbyAsync(double lat, double lng, string role, CancellationToken ct = default);
     Task<ProviderPublicProfileDto> PublicProfileAsync(Guid providerId, CancellationToken ct = default);
+    Task<CustomerPublicProfileDto> CustomerPublicProfileAsync(Guid customerId, CancellationToken ct = default);
 }
 
 public interface INotificationService
@@ -180,6 +183,7 @@ public interface IReviewService
     Task<ReviewDto> CreateAsync(Guid authorId, ReviewTargetType target, Guid targetId, Guid? requestId, Guid? bookingId, CreateReviewRequest req, CancellationToken ct = default);
     Task<IReadOnlyList<ReviewDto>> ForProviderAsync(Guid providerId, CancellationToken ct = default);
     Task<IReadOnlyList<ReviewDto>> ForCenterAsync(Guid centerId, CancellationToken ct = default);
+    Task<IReadOnlyList<ReviewDto>> ForCustomerAsync(Guid customerId, CancellationToken ct = default);
     Task ReportAsync(Guid reviewId, ReportReviewRequest req, CancellationToken ct = default);
     Task ModerateAsync(Guid reviewId, bool hide, CancellationToken ct = default);
 }

@@ -8,6 +8,10 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 15_000 } }
 });
 
+if (typeof window !== 'undefined') {
+  window.__fixngoClearQueryCache = () => queryClient.clear();
+}
+
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

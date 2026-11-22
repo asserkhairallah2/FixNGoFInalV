@@ -29,12 +29,22 @@ public sealed class RequestController(IRequestService requests, IOfferService of
     public async Task<IActionResult> Advance(Guid id, [FromBody] StatusRequest req, CancellationToken ct) => Ok(await requests.AdvanceAsync(this.UserId(), id, req, ct));
 
     [HttpGet("{id:guid}/candidates")]
-    public async Task<IActionResult> Candidates(Guid id, [FromQuery] string sort = "recommended", CancellationToken ct = default)
+    public async Task<IActionResult> Candidates(Guid id, [FromQuery] string sort = "nearest", CancellationToken ct = default)
         => Ok(await offers.CandidatesAsync(this.UserId(), this.IsAdmin(), id, sort, ct));
 
     [HttpPost("{id:guid}/offers")]
     [Authorize(Roles = nameof(Role.CarOwner))]
     public async Task<IActionResult> SendOffer(Guid id, [FromBody] SelectProviderRequest req, CancellationToken ct) => Ok(await offers.SendAsync(this.UserId(), id, req, ct));
+
+    [HttpPost("{id:guid}/confirm-provider")]
+    [Authorize(Roles = nameof(Role.CarOwner))]
+    public async Task<IActionResult> ConfirmProvider(Guid id, CancellationToken ct)
+        => Ok(await offers.ConfirmPendingProviderAsync(this.UserId(), id, ct));
+
+    [HttpPost("{id:guid}/pass-provider")]
+    [Authorize(Roles = nameof(Role.CarOwner))]
+    public async Task<IActionResult> PassProvider(Guid id, [FromBody] PassProviderRequest? req, CancellationToken ct)
+        => Ok(await offers.PassPendingProviderAsync(this.UserId(), id, req?.Reason, ct));
 
     [HttpGet("{id:guid}/offers")] public async Task<IActionResult> Offers(Guid id, CancellationToken ct) => Ok(await offers.ForRequestAsync(this.UserId(), this.IsAdmin(), id, ct));
 

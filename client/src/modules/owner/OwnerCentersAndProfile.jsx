@@ -93,6 +93,12 @@ function formatSlotTime(isoStr, isAr = false) {
   return fmtTime12(isoStr, isAr ? 'ar' : 'en');
 }
 
+function isFutureSlot(isoStr) {
+  if (!isoStr) return false;
+  const ts = new Date(isoStr).getTime();
+  return Number.isFinite(ts) && ts > Date.now() + 60_000;
+}
+
 function matchesCenterCategory(center, cat) {
   const svcs = Array.isArray(center?.services) ? center.services : [];
   const hay = `${svcs.join(' ')} ${center?.description ?? ''}`.toLowerCase();
@@ -445,7 +451,12 @@ export function C19({ params }) {
     if (!vehicleId && vehicles[0]?.id) setVehicleId(vehicles[0].id);
   }, [vehicles, vehicleId]);
 
-  const { data: slots = [], isLoading: slotsLoading } = useAvailability(centerId, selectedServiceId, selectedDay);
+  const { data: rawSlots = [], isLoading: slotsLoading } = useAvailability(centerId, selectedServiceId, selectedDay);
+  const slots = useMemo(
+    () => (Array.isArray(rawSlots) ? rawSlots.filter((s) => isFutureSlot(s.slotStart)) : []),
+    [rawSlots]
+  );
+  const isTodaySelected = selectedDay === days[0]?.iso;
 
   useEffect(() => {
     const firstAvail = slots.find((s) => s.available);
@@ -461,6 +472,10 @@ export function C19({ params }) {
       setErr(t('Please select a service and available time slot.', 'يرجى اختيار الخدمة والموعد المتاح.'));
       return;
     }
+    if (!isFutureSlot(selectedSlot)) {
+      setErr(t('Cannot book a date or time slot that has already passed. Please choose an upcoming time.', 'لا يمكن اختيار يوم أو موعد قد مضى. يرجى اختيار موعد قادم.'));
+      return;
+    }
     try {
       const created = await createBookingMut.mutateAsync({
         centerId,
@@ -471,7 +486,11 @@ export function C19({ params }) {
       });
       go('C36', { id: created.id });
     } catch (ex) {
-      setErr(ex.message || t('Could not create booking for this slot', 'تعذر تأكيد الحجز لهذا الموعد'));
+      if (ex?.code === 'booking.past_slot') {
+        setErr(t('Cannot book a date or time slot that has already passed.', 'لا يمكن حجز يوم أو موعد قد مضى بالفعل.'));
+      } else {
+        setErr(ex.message || t('Could not create booking for this slot', 'تعذر تأكيد الحجز لهذا الموعد'));
+      }
     }
   };
 
@@ -540,7 +559,9 @@ export function C19({ params }) {
                 style={{ backgroundColor: c.surface2, borderColor: c.border, color: c.text2 }}
               >
                 {slots.length === 0
-                  ? t('Closed on this day — no available slots', 'المركز مغلق في هذا اليوم — لا توجد مواعيد متاحة')
+                  ? (isTodaySelected
+                      ? t('Today’s remaining time slots have already passed — please pick Tomorrow or an upcoming day', 'انتهت المواعيد المتبقية لهذا اليوم — يرجى اختيار الغد أو يوم قادم')
+                      : t('Closed on this day — no available slots', 'المركز مغلق في هذا اليوم — لا توجد مواعيد متاحة'))
                   : t('All slots are fully booked on this day', 'جميع المواعيد محجوزة في هذا اليوم')}
               </div>
             ) : (
@@ -875,7 +896,12 @@ export function C39({ params }) {
   const [selectedDay, setSelectedDay] = useState(defaultOpenDay);
   const centerId = params?.centerId || booking?.centerId;
   const serviceId = params?.serviceId || booking?.serviceId;
-  const { data: slots = [], isLoading: slotsLoading } = useAvailability(centerId, serviceId, selectedDay);
+  const { data: rawSlots = [], isLoading: slotsLoading } = useAvailability(centerId, serviceId, selectedDay);
+  const slots = useMemo(
+    () => (Array.isArray(rawSlots) ? rawSlots.filter((s) => isFutureSlot(s.slotStart)) : []),
+    [rawSlots]
+  );
+  const isTodaySelected = selectedDay === days[0]?.iso;
 
   const [selectedSlot, setSelectedSlot] = useState('');
   const [saving, setSaving] = useState(false);
@@ -889,13 +915,21 @@ export function C39({ params }) {
   const handleReschedule = async () => {
     setErr('');
     if (!booking?.id || !selectedSlot) return;
+    if (!isFutureSlot(selectedSlot)) {
+      setErr(t('Cannot select a date or time slot that has already passed.', 'لا يمكن اختيار يوم أو موعد قد مضى بالفعل.'));
+      return;
+    }
     setSaving(true);
     try {
       await post(`/centers/bookings/${booking.id}/reschedule`, { slotStart: selectedSlot });
       qc.invalidateQueries({ queryKey: k.bookings });
       go('C38', { id: booking.id });
     } catch (ex) {
-      setErr(ex.message || t('Could not reschedule booking', 'تعذر تعديل موعد الحجز'));
+      if (ex?.code === 'booking.past_slot') {
+        setErr(t('Cannot select a date or time slot that has already passed.', 'لا يمكن اختيار يوم أو موعد قد مضى بالفعل.'));
+      } else {
+        setErr(ex.message || t('Could not reschedule booking', 'تعذر تعديل موعد الحجز'));
+      }
     } finally {
       setSaving(false);
     }
@@ -925,7 +959,9 @@ export function C39({ params }) {
             <Skeleton rows={2} />
           ) : slots.length === 0 || !slots.some((s) => s.available) ? (
             <div className="rounded-xl p-4 text-center text-xs font-semibold border" style={{ backgroundColor: c.surface2, borderColor: c.border, color: c.text2 }}>
-              {t('Closed on this day — no available slots', 'المركز مغلق في هذا اليوم — لا توجد مواعيد متاحة')}
+              {isTodaySelected && slots.length === 0
+                ? t('Today’s remaining time slots have already passed — please pick Tomorrow or an upcoming day', 'انتهت المواعيد المتبقية لهذا اليوم — يرجى اختيار الغد أو يوم قادم')
+                : t('Closed on this day — no available slots', 'المركز مغلق في هذا اليوم — لا توجد مواعيد متاحة')}
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">

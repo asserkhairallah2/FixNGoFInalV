@@ -43,6 +43,9 @@ import {
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
+  StarRating,
+  CustomerProfileSheet,
+  ProviderReviewsSheet,
   MapView,
   EmergencySOSBar,
   Toast,
@@ -237,12 +240,14 @@ export function M01Screen() {
   const { data: earnings } = useEarnings();
   const goOnline = useGoOnline();
   const [error, setError] = useState('');
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const firstName = getFirstName(user, provider, isAr);
   const area = getArea(provider, user, isAr);
   const requests = Array.isArray(requestsData) ? requestsData : requestsData?.items || [];
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayJobs = requests.filter((r) => String(r.createdAt || '').slice(0, 10) === todayStr).length;
+  const ratingCount = Number(provider?.ratingCount ?? 0);
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
   const todayEarningsMinor = earnings?.availableMinor ?? 0;
 
@@ -333,12 +338,21 @@ export function M01Screen() {
             {isAr ? 'مهام اليوم' : "Today's jobs"}
           </p>
         </div>
-        <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
-          <p className={`text-sm font-extrabold ${colors.text}`}>{rating}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'التقييم' : 'Rating'}
+        <button
+          type="button"
+          data-testid="open-my-reviews-btn"
+          onClick={() => setReviewsOpen(true)}
+          className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface} hover:border-[#E51C23]/50 transition`}
+        >
+          <p className="text-sm font-extrabold text-[#E51C23]">
+            {ratingCount > 0 ? `⭐ ${rating}` : rating}
           </p>
-        </div>
+          <p className={`text-[10px] underline ${colors.secondaryText}`}>
+            {ratingCount > 0
+              ? (isAr ? `التقييم (${ratingCount})` : `Reviews (${ratingCount})`)
+              : (isAr ? 'التقييمات' : 'Reviews')}
+          </p>
+        </button>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(todayEarningsMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
@@ -366,6 +380,13 @@ export function M01Screen() {
       <PrimaryButton onClick={handleGoOnline} disabled={goOnline.isPending} testId="screen-primary">
         {isAr ? 'الاتصال الآن (متاح)' : 'Go Online'}
       </PrimaryButton>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
     </MechanicShell>
   );
 }
@@ -383,8 +404,13 @@ export function M02Screen() {
   const { data: requestsData } = useRequests();
   const { data: earnings } = useEarnings();
   const goOnline = useGoOnline();
+  const acceptOffer = useAcceptOffer();
+  const declineOffer = useDeclineOffer();
   const heartbeat = useHeartbeat();
   const [, setTick] = useState(0);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [inspectOffer, setInspectOffer] = useState(null);
+  const [offerErr, setOfferErr] = useState('');
 
   useEffect(() => {
     const tickTimer = setInterval(() => setTick((v) => v + 1), 1000);
@@ -406,8 +432,9 @@ export function M02Screen() {
   const radius = provider?.coverageRadiusKm ?? 15;
   const offers = Array.isArray(offersData) ? offersData : offersData?.items || [];
   const requests = Array.isArray(requestsData) ? requestsData : requestsData?.items || [];
-  const pendingOffers = offers.filter((o) => !o.status || o.status === 'Pending');
-  const liveOffer = pendingOffers[0] || offers[0] || null;
+  const awaitingConfirmOffer = offers.find((o) => o.awaitingCustomerConfirm) || null;
+  const pendingOffers = offers.filter((o) => (!o.status || o.status === 'Pending') && !o.awaitingCustomerConfirm);
+  const liveOffer = pendingOffers[0] || null;
   const extraOffers = pendingOffers.slice(1, 5);
   const activeJob =
     requests.find(
@@ -418,8 +445,34 @@ export function M02Screen() {
     ) || null;
 
   const completedJobs = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
+  const ratingCount = Number(provider?.ratingCount ?? 0);
   const rating = Number(provider?.rating ?? earnings?.rating ?? 0).toFixed(1);
   const availableMinor = earnings?.availableMinor ?? 0;
+
+  const handleQuickAccept = async (targetOffer, e) => {
+    e?.stopPropagation?.();
+    if (!targetOffer?.id) return;
+    setOfferErr('');
+    try {
+      const res = await acceptOffer.mutateAsync(targetOffer.id);
+      setInspectOffer(null);
+      if (res && !res.awaitingCustomerConfirm) {
+        nav.go('M04', { id: res.requestId || targetOffer.requestId });
+      }
+    } catch (err) {
+      setOfferErr(err?.message || (isAr ? 'تعذر قبول الطلب.' : 'Could not accept request.'));
+    }
+  };
+
+  const handleQuickIgnore = async (targetOffer, e) => {
+    e?.stopPropagation?.();
+    if (!targetOffer?.id) return;
+    setOfferErr('');
+    try {
+      await declineOffer.mutateAsync({ id: targetOffer.id, reason: 'ignored' });
+      setInspectOffer(null);
+    } catch {}
+  };
 
   const handleGoOffline = async () => {
     try {
@@ -434,14 +487,17 @@ export function M02Screen() {
     nav.go('M01');
   };
 
-  const remainingLabel = (() => {
-    if (!liveOffer?.expiresAt) return '05:00';
-    const diff = Math.max(0, Math.round((new Date(liveOffer.expiresAt).getTime() - Date.now()) / 1000));
-    const capped = Math.min(diff, 600);
+  const formatCountdown = (isoStr, capSec = 600) => {
+    if (!isoStr) return '01:00';
+    const diff = Math.max(0, Math.ceil((new Date(isoStr).getTime() - Date.now()) / 1000));
+    const capped = Math.min(diff, capSec);
     const mins = String(Math.floor(capped / 60)).padStart(2, '0');
     const secs = String(capped % 60).padStart(2, '0');
     return `${mins}:${secs}`;
-  })();
+  };
+
+  const remainingLabel = formatCountdown(liveOffer?.expiresAt, 600);
+  const confirmWaitLabel = formatCountdown(awaitingConfirmOffer?.customerConfirmDeadlineAt, 60);
 
   return (
     <MechanicShell code="M02">
@@ -479,12 +535,21 @@ export function M02Screen() {
             {isAr ? 'مهام مكتملة' : 'Completed jobs'}
           </p>
         </div>
-        <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
-          <p className={`text-sm font-extrabold ${colors.text}`}>{rating}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'التقييم' : 'Rating'}
+        <button
+          type="button"
+          data-testid="open-my-reviews-btn"
+          onClick={() => setReviewsOpen(true)}
+          className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface} hover:border-[#E51C23]/50 transition`}
+        >
+          <p className="text-sm font-extrabold text-[#E51C23]">
+            {ratingCount > 0 ? `⭐ ${rating}` : rating}
           </p>
-        </div>
+          <p className={`text-[10px] underline ${colors.secondaryText}`}>
+            {ratingCount > 0
+              ? (isAr ? `التقييم (${ratingCount})` : `Reviews (${ratingCount})`)
+              : (isAr ? 'التقييمات' : 'Reviews')}
+          </p>
+        </button>
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className={`text-sm font-extrabold ${colors.text}`}>{fmtMoney(availableMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
@@ -493,27 +558,100 @@ export function M02Screen() {
         </div>
       </div>
 
+      {offerErr && (
+        <div role="alert" className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-500">
+          {offerErr}
+        </div>
+      )}
+
+      {awaitingConfirmOffer && !activeJob && (
+        <div
+          data-testid="awaiting-customer-confirm-card"
+          className="p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-500/10 space-y-1.5 text-xs"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+              {isAr
+                ? `⏳ بانتظار تأكيد ${awaitingConfirmOffer.customerName || awaitingConfirmOffer.customerFirstName || 'العميل'}`
+                : `⏳ Waiting for ${awaitingConfirmOffer.customerName || awaitingConfirmOffer.customerFirstName || 'Customer'} to confirm`}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-mono font-extrabold text-[11px]" dir="ltr">
+              {confirmWaitLabel}
+            </span>
+          </div>
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {isAr
+              ? 'قبلت هذا الطلب — سيتم توجيهك تلقائياً لموقع العميل فور ضغطه على تأكيد.'
+              : 'You accepted this broadcast request — dispatching automatically as soon as the customer confirms.'}
+          </p>
+        </div>
+      )}
+
       {liveOffer && (
         <div
           role="button"
           tabIndex={0}
           data-testid="live-offer-card"
           onClick={() => nav.go('M03', { id: liveOffer.id })}
-          className="p-3.5 rounded-2xl bg-[#E51C23] text-white space-y-1.5 cursor-pointer shadow-md"
+          className="p-3.5 rounded-2xl bg-[#E51C23] text-white space-y-2 cursor-pointer shadow-md"
         >
-          <div className="flex justify-between text-[10px] opacity-90 font-semibold">
-            <span>{`${isAr ? 'طلب قريب جديد' : 'New nearby request'}${liveOffer.requestCode ? ` · ${liveOffer.requestCode}` : ''}`}</span>
+          <div className="flex justify-between text-[10px] opacity-95 font-semibold">
+            <span>
+              {liveOffer.customerSelected
+                ? (isAr ? `طلب موجه لك مباشرة · ${liveOffer.requestCode || ''}` : `Direct request for you · ${liveOffer.requestCode || ''}`)
+                : `${isAr ? 'طلب قريب جديد' : 'New nearby request'}${liveOffer.requestCode ? ` · ${liveOffer.requestCode}` : ''}`}
+            </span>
             <span dir="ltr">{remainingLabel}</span>
           </div>
-          <p className="text-xs font-extrabold">
-            {`${getServiceLabel(liveOffer, isAr)}${liveOffer.customerFirstName ? ` · ${liveOffer.customerFirstName}` : ''}`}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-extrabold truncate">
+                {`${liveOffer.customerName || liveOffer.customerFirstName || (isAr ? 'عميل' : 'Customer')} · ⭐ ${Number(liveOffer.customerRating ?? 5.0).toFixed(1)}`}
+              </p>
+              <p className="text-[11px] opacity-95 truncate">
+                {`${getServiceLabel(liveOffer, isAr)}${liveOffer.vehicleSummary ? ` · ${liveOffer.vehicleSummary}` : ''}`}
+              </p>
+            </div>
+            <button
+              type="button"
+              data-testid="inspect-customer-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setInspectOffer(liveOffer);
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-[10.5px] font-extrabold shrink-0"
+            >
+              {isAr ? 'ملف العميل' : 'View Profile'}
+            </button>
+          </div>
           <p className="text-[11px] opacity-90">
-            {`${liveOffer.pickupArea || area} · ${fmtDistance(liveOffer.distanceKm, lang)} · ${liveOffer.etaMinutes ?? 6} ${isAr ? 'دقائق' : 'min away'}`}
+            {`📍 ${liveOffer.pickupArea || area} · ${fmtDistance(liveOffer.distanceKm, lang)} · ⏱ ${liveOffer.etaMinutes ?? 6} ${isAr ? 'دقيقة' : 'min'}`}
           </p>
           <div className="flex justify-between pt-1 border-t border-white/20 text-xs font-bold">
-            <span>{isAr ? 'أرباحك المقدرة' : 'Your estimated earnings'}</span>
-            <span>{`${fmtMoney(liveOffer.priceMinor, lang)} →`}</span>
+            <span>{isAr ? 'صافي أرباحك من الزيارة' : 'Your net callout earnings'}</span>
+            <span>
+              {`${fmtMoney(liveOffer.providerNetMinor ?? Math.max(0, (liveOffer.priceMinor ?? 0) - 5000), lang)} (${isAr ? 'إجمالي العميل' : 'Fare'}: ${fmtMoney(liveOffer.priceMinor, lang)})`}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              data-testid="live-offer-ignore-btn"
+              onClick={(e) => handleQuickIgnore(liveOffer, e)}
+              disabled={declineOffer.isPending || acceptOffer.isPending}
+              className="py-2 rounded-xl bg-black/25 hover:bg-black/35 text-white text-xs font-bold"
+            >
+              {isAr ? 'تجاهل' : 'Ignore'}
+            </button>
+            <button
+              type="button"
+              data-testid="live-offer-accept-btn"
+              onClick={(e) => handleQuickAccept(liveOffer, e)}
+              disabled={acceptOffer.isPending || declineOffer.isPending}
+              className="py-2 rounded-xl bg-white text-[#E51C23] hover:bg-white/90 text-xs font-extrabold shadow"
+            >
+              {isAr ? 'قبول الطلب' : 'Accept'}
+            </button>
           </div>
         </div>
       )}
@@ -531,23 +669,23 @@ export function M02Screen() {
               onClick={() => nav.go('M03', { id: item.id })}
               className={`p-3 rounded-2xl border border-[#E51C23]/30 ${colors.surface} flex items-center justify-between cursor-pointer text-xs`}
             >
-              <div>
-                <p className={`font-bold ${colors.text}`}>
-                  {`${getServiceLabel(item, isAr)}${item.requestCode ? ` · ${item.requestCode}` : ''}`}
+              <div className="min-w-0">
+                <p className={`font-bold truncate ${colors.text}`}>
+                  {`${item.customerName || item.customerFirstName || (isAr ? 'عميل' : 'Customer')} · ${getServiceLabel(item, isAr)}`}
                 </p>
-                <p className={`text-[11px] ${colors.secondaryText}`}>
-                  {`${item.pickupArea || area} · ${fmtDistance(item.distanceKm, lang)}`}
+                <p className={`text-[11px] truncate ${colors.secondaryText}`}>
+                  {`⭐ ${Number(item.customerRating ?? 5.0).toFixed(1)} · ${item.pickupArea || area} · ${fmtDistance(item.distanceKm, lang)}`}
                 </p>
               </div>
               <span className="font-extrabold text-[#E51C23] shrink-0">
-                {`${fmtMoney(item.priceMinor, lang)} →`}
+                {`${fmtMoney(item.providerNetMinor ?? Math.max(0, (item.priceMinor ?? 0) - 5000), lang)} →`}
               </span>
             </div>
           ))}
         </div>
       )}
 
-      {!liveOffer && !activeJob && (
+      {!liveOffer && !awaitingConfirmOffer && !activeJob && (
         <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} flex items-center justify-between text-xs`}>
           <div>
             <p className={`font-bold ${colors.text}`}>
@@ -592,6 +730,24 @@ export function M02Screen() {
       <SecondaryButton onClick={handleGoOffline} disabled={goOnline.isPending}>
         {isAr ? 'إيقاف التواجد (غير متصل)' : 'Go Offline'}
       </SecondaryButton>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
+
+      <CustomerProfileSheet
+        open={Boolean(inspectOffer)}
+        customerId={inspectOffer?.customerId}
+        fallbackName={inspectOffer?.customerName || inspectOffer?.customerFirstName}
+        vehicleSummary={inspectOffer?.vehicleSummary}
+        busy={acceptOffer.isPending || declineOffer.isPending}
+        onClose={() => setInspectOffer(null)}
+        onAccept={inspectOffer ? () => handleQuickAccept(inspectOffer) : undefined}
+        onIgnore={inspectOffer ? () => handleQuickIgnore(inspectOffer) : undefined}
+      />
     </MechanicShell>
   );
 }
@@ -603,11 +759,21 @@ export function M03Screen({ id }) {
   const colors = useColors();
   const { isAr, lang } = usePrefs();
   const nav = useNav();
+  const { user } = useSession();
+  const boot = useBootstrap();
   const { data: offersData } = useOffers();
   const { data: requestsData } = useRequests();
   const acceptOffer = useAcceptOffer();
   const declineOffer = useDeclineOffer();
   const [error, setError] = useState('');
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+  const [acceptedPending, setAcceptedPending] = useState(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const tId = setInterval(() => setTick((v) => v + 1), 1000);
+    return () => clearInterval(tId);
+  }, []);
 
   const offers = Array.isArray(offersData) ? offersData : offersData?.items || [];
   const requests = Array.isArray(requestsData) ? requestsData : requestsData?.items || [];
@@ -619,29 +785,63 @@ export function M03Screen({ id }) {
     return offers[0] || null;
   }, [id, offers]);
 
+  const targetRequestId = acceptedPending?.requestId || offer?.requestId || id || null;
+  const assignedRequest = useMemo(() => {
+    if (!targetRequestId) return null;
+    return requests.find(
+      (r) =>
+        String(r.id) === String(targetRequestId) &&
+        String(r.assignedProviderId) === String(user?.id) &&
+        !['Searching', 'Offered', 'Cancelled', 'NoProviders'].includes(String(r.status))
+    ) || null;
+  }, [requests, targetRequestId, user?.id]);
+
+  // Auto-navigate to M04 as soon as customer confirms!
+  useEffect(() => {
+    if (assignedRequest?.id) {
+      nav.go('M04', { id: assignedRequest.id });
+    }
+  }, [assignedRequest?.id]);
+
   const fallbackRequest = useMemo(() => {
     if (offer) return null;
     if (id) return requests.find((r) => String(r.id) === String(id)) || requests[0] || null;
     return requests[0] || null;
   }, [offer, id, requests]);
 
-  const priceMinor = offer?.priceMinor ?? fallbackRequest?.estimateMinor ?? 40000;
-  const feeMinor = 5000;
-  const netMinor = Math.max(0, priceMinor - feeMinor);
+  const feeMinor = boot.data?.pricing?.serviceFeeMinor ?? 5000;
+  const priceMinor = offer?.priceMinor ?? fallbackRequest?.estimateMinor ?? 20000;
+  const netMinor = offer?.providerNetMinor ?? Math.max(0, priceMinor - feeMinor);
   const distanceKm = offer?.distanceKm ?? fallbackRequest?.distanceKm ?? 2.4;
   const etaMinutes = offer?.etaMinutes ?? 6;
   const code = offer?.requestCode || offer?.code || fallbackRequest?.code || '—';
-  const customerFirstName =
+  const customerFullName =
+    offer?.customerName ||
     offer?.customerFirstName ||
-    (fallbackRequest ? getCustomerName(fallbackRequest, isAr).split(' ')[0] : isAr ? 'العميل' : 'Customer');
+    (fallbackRequest ? getCustomerName(fallbackRequest, isAr) : isAr ? 'العميل' : 'Customer');
+  const customerRating = Number(offer?.customerRating ?? 5.0).toFixed(1);
+  const customerTrips = Number(offer?.customerCompletedTrips ?? 0);
+  const vehicleSummary = offer?.vehicleSummary || (fallbackRequest ? getVehicleSummary(fallbackRequest, isAr) : '');
   const pickupArea = offer?.pickupArea || fallbackRequest?.pickupAddress || (isAr ? 'موقع العميل' : 'Customer area');
   const problem = offer?.problem || fallbackRequest?.problem || (isAr ? 'طلب مساعدة وإصلاح على الطريق' : 'Roadside assistance and repair request');
+
+  const isAwaitingCustomer = Boolean(offer?.awaitingCustomerConfirm || acceptedPending?.awaitingCustomerConfirm);
+  const confirmDeadlineIso = offer?.customerConfirmDeadlineAt || acceptedPending?.customerConfirmDeadlineAt;
+  const confirmRemSec = confirmDeadlineIso
+    ? Math.max(0, Math.ceil((new Date(confirmDeadlineIso).getTime() - Date.now()) / 1000))
+    : 0;
+  const confirmCountdown = `${String(Math.floor(confirmRemSec / 60)).padStart(2, '0')}:${String(confirmRemSec % 60).padStart(2, '0')}`;
 
   const handleAccept = async () => {
     setError('');
     if (offer?.id) {
       try {
         const res = await acceptOffer.mutateAsync(offer.id);
+        setCustomerSheetOpen(false);
+        if (res?.awaitingCustomerConfirm) {
+          setAcceptedPending(res);
+          return;
+        }
         nav.go('M04', { id: res?.requestId || offer.requestId });
         return;
       } catch (err) {
@@ -658,9 +858,10 @@ export function M03Screen({ id }) {
 
   const handleDecline = async () => {
     setError('');
+    setCustomerSheetOpen(false);
     if (offer?.id) {
       try {
-        await declineOffer.mutateAsync({ id: offer.id, reason: 'unavailable' });
+        await declineOffer.mutateAsync({ id: offer.id, reason: 'ignored' });
       } catch {
         // Proceed back to console
       }
@@ -672,26 +873,53 @@ export function M03Screen({ id }) {
     <MechanicShell code="M03">
       <div>
         <h1 className={`text-lg font-bold ${colors.text}`}>
-          {isAr ? 'طلب وارد' : 'Incoming request'}
+          {isAr ? 'طلب وارد من عميل' : 'Incoming customer request'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
           {isAr ? `طلب إصلاح · ${code}` : `Repair request · ${code}`}
         </p>
-        <div className="pt-1">
-          <StatusBadge status="Pending" text={isAr ? 'بانتظار الرد الفوري' : 'Awaiting your response'} />
+        <div className="pt-1 flex items-center gap-2 flex-wrap">
+          <StatusBadge
+            status={isAwaitingCustomer ? 'Offered' : 'Pending'}
+            text={
+              isAwaitingCustomer
+                ? (isAr ? 'بانتظار تأكيد العميل' : 'Waiting for customer confirmation')
+                : offer?.customerSelected
+                ? (isAr ? 'اختارك العميل بالاسم' : 'Customer selected you directly')
+                : (isAr ? 'بانتظار الرد الفوري' : 'Awaiting your response')
+            }
+          />
         </div>
       </div>
 
-      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2`}>
-        <div className="flex items-center gap-2.5">
-          <AvatarBadge name={customerFirstName} />
-          <div>
-            <p className={`text-xs font-bold ${colors.text}`}>{customerFirstName}</p>
-            <p className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'مالك سيارة' : 'Car Owner'}
-            </p>
+      <div
+        role="button"
+        tabIndex={0}
+        data-testid="inspect-customer-btn"
+        onClick={() => setCustomerSheetOpen(true)}
+        className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 cursor-pointer hover:border-[#E51C23]/50 transition`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <AvatarBadge name={customerFullName} />
+            <div className="min-w-0">
+              <p className={`text-xs font-extrabold truncate underline decoration-dotted ${colors.text}`}>
+                {customerFullName}
+              </p>
+              <p className={`text-[10.5px] ${colors.secondaryText}`}>
+                {`⭐ ${customerRating}`}
+                {customerTrips > 0 ? ` · ✓ ${customerTrips} ${isAr ? 'رحلة' : 'trips'}` : ''}
+                {` · ${isAr ? 'اضغط لعرض الملف والتقييمات' : 'Tap to view profile & reviews'}`}
+              </p>
+            </div>
           </div>
+          <span className="text-[11px] font-bold text-[#E51C23] shrink-0">
+            {isAr ? 'الملف ←' : 'Profile →'}
+          </span>
         </div>
+        {vehicleSummary && (
+          <p className={`text-[11px] font-semibold ${colors.text}`}>🚗 {vehicleSummary}</p>
+        )}
         <p className={`text-xs font-bold ${colors.text}`}>
           {getServiceLabel(offer || fallbackRequest, isAr)}
         </p>
@@ -716,7 +944,7 @@ export function M03Screen({ id }) {
         <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
           <p className="text-xs font-extrabold text-emerald-500">{fmtMoney(netMinor, lang)}</p>
           <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'ربحك' : 'Earn'}
+            {isAr ? 'ربح الزيارة' : 'Visit Net'}
           </p>
         </div>
       </div>
@@ -731,7 +959,7 @@ export function M03Screen({ id }) {
       <div className={`p-3 rounded-2xl border ${colors.border} ${colors.surface} text-xs space-y-1`}>
         <div className="flex justify-between">
           <span className={colors.secondaryText}>
-            {isAr ? 'التكلفة التقديرية للعميل' : 'Customer estimate'}
+            {isAr ? 'رسوم الزيارة والفحص المبدئي للعميل' : 'Upfront callout & inspection fare'}
           </span>
           <span className={`font-bold ${colors.text}`}>{fmtMoney(priceMinor, lang)}</span>
         </div>
@@ -741,16 +969,61 @@ export function M03Screen({ id }) {
           </span>
           <span className={`font-bold ${colors.text}`}>{fmtMoney(feeMinor, lang)}</span>
         </div>
+        <p className={`text-[10px] pt-1 ${colors.secondaryText}`}>
+          {isAr
+            ? 'تحدد مصنعية الإصلاح وقطع الغيار الإضافية في موقع العميل بعد الفحص.'
+            : 'Any extra repair labor or spare parts are quoted by you on-site after inspection.'}
+        </p>
       </div>
 
       {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
 
-      <PrimaryButton onClick={handleAccept} disabled={acceptOffer.isPending} testId="screen-primary">
-        {isAr ? 'قبول الطلب' : 'Accept Request'}
-      </PrimaryButton>
-      <SecondaryButton onClick={handleDecline} disabled={declineOffer.isPending}>
-        {isAr ? 'رفض' : 'Decline'}
-      </SecondaryButton>
+      {isAwaitingCustomer ? (
+        <div
+          data-testid="awaiting-customer-confirm-card"
+          className="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-500/10 space-y-2 text-center"
+        >
+          <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+            {isAr
+              ? `✓ تم القبول! بانتظار تأكيد ${customerFullName} (${confirmCountdown})`
+              : `✓ Accepted! Waiting for ${customerFullName} to confirm (${confirmCountdown})`}
+          </p>
+          <p className={`text-[11px] ${colors.secondaryText}`}>
+            {confirmRemSec > 0
+              ? (isAr
+                  ? 'سيتم فتح شاشة التحرك لموقع العميل تلقائياً فور تأكيده.'
+                  : 'Navigation will open automatically the moment the customer confirms.')
+              : (isAr
+                  ? 'انتهت مهلة تأكيد العميل لهذا العرض.'
+                  : 'Customer confirmation window ended.')}
+          </p>
+          <SecondaryButton onClick={() => nav.go('M02')}>
+            {isAr ? 'العودة للوحة الميكانيكي' : 'Back to Console'}
+          </SecondaryButton>
+        </div>
+      ) : (
+        <>
+          <PrimaryButton onClick={handleAccept} disabled={acceptOffer.isPending} testId="screen-primary">
+            {isAr ? 'قبول الطلب' : 'Accept Request'}
+          </PrimaryButton>
+          <SecondaryButton onClick={handleDecline} disabled={declineOffer.isPending}>
+            <span data-testid="ignore-offer-btn">
+              {isAr ? 'تجاهل / اعتذار' : 'Ignore / Decline'}
+            </span>
+          </SecondaryButton>
+        </>
+      )}
+
+      <CustomerProfileSheet
+        open={customerSheetOpen}
+        customerId={offer?.customerId || fallbackRequest?.customerId}
+        fallbackName={customerFullName}
+        vehicleSummary={vehicleSummary}
+        busy={acceptOffer.isPending || declineOffer.isPending}
+        onClose={() => setCustomerSheetOpen(false)}
+        onAccept={!isAwaitingCustomer ? handleAccept : undefined}
+        onIgnore={!isAwaitingCustomer ? handleDecline : undefined}
+      />
     </MechanicShell>
   );
 }
@@ -1007,9 +1280,18 @@ export function M11Screen({ id }) {
   const [error, setError] = useState('');
 
   const defaultServiceFeeMinor = boot.data?.pricing?.serviceFeeMinor ?? 5000;
+  const minFullFeeNetMinor = boot.data?.pricing?.mechanicBaseMinor ?? 15000;
   const baseHintEgp = boot.data?.pricing?.mechanicBaseMinor
     ? String(Math.round(boot.data.pricing.mechanicBaseMinor / 100))
-    : '0';
+    : '150';
+  const [calloutInitialized, setCalloutInitialized] = useState(false);
+
+  useEffect(() => {
+    if (!calloutInitialized && boot.data?.pricing?.mechanicBaseMinor) {
+      setCalloutInitialized(true);
+      setCalloutEgp((prev) => (prev === '' ? String(Math.round(boot.data.pricing.mechanicBaseMinor / 100)) : prev));
+    }
+  }, [boot.data?.pricing?.mechanicBaseMinor, calloutInitialized]);
 
   const cVal = calloutEgp === '' ? 0 : Number(calloutEgp);
   const lVal = laborEgp === '' ? 0 : Number(laborEgp);
@@ -1019,7 +1301,7 @@ export function M11Screen({ id }) {
     (Number.isFinite(lVal) && lVal >= 0 ? lVal : 0) +
     (Number.isFinite(pVal) && pVal >= 0 ? pVal : 0);
   const netMinor = Math.round(netEgp * 100);
-  const serviceFeeMinor = netMinor <= 0 ? 0 : netMinor >= 25000 ? defaultServiceFeeMinor : Math.round(netMinor * 0.10);
+  const serviceFeeMinor = netMinor <= 0 ? 0 : netMinor >= minFullFeeNetMinor ? defaultServiceFeeMinor : Math.round(netMinor * 0.10);
   const totalMinor = netMinor > 0 ? netMinor + serviceFeeMinor : 0;
 
   const handleSendQuote = async () => {
@@ -1194,7 +1476,7 @@ export function M06Screen({ id }) {
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
   const latestQuote = quotes[quotes.length - 1] || null;
   const fallbackTotal = req?.quoteMinor ?? req?.estimateMinor ?? 0;
-  const fallbackFee = fallbackTotal <= 0 ? 0 : fallbackTotal >= 25000 ? 5000 : Math.round((fallbackTotal / 1.10) * 0.10);
+  const fallbackFee = fallbackTotal <= 0 ? 0 : fallbackTotal >= 20000 ? 5000 : Math.round((fallbackTotal / 1.10) * 0.10);
   const calloutMinor = latestQuote?.calloutMinor ?? Math.max(0, fallbackTotal - fallbackFee);
   const laborMinor = latestQuote?.laborMinor ?? 0;
   const partsMinor = latestQuote?.partsMinor ?? 0;
@@ -1466,8 +1748,29 @@ export function M13Screen({ id }) {
   const quotes = Array.isArray(quotesData) ? quotesData : quotesData?.items || [];
   const latestQuote = quotes[quotes.length - 1] || null;
   const totalMinor = latestQuote?.totalMinor ?? invoice?.totalMinor ?? req?.quoteMinor ?? req?.estimateMinor ?? 0;
-  const feeMinor = latestQuote?.serviceFeeMinor ?? invoice?.serviceFeeMinor ?? (totalMinor <= 0 ? 0 : totalMinor >= 25000 ? 5000 : Math.round((totalMinor / 1.10) * 0.10));
+  const feeMinor = latestQuote?.serviceFeeMinor ?? invoice?.serviceFeeMinor ?? (totalMinor <= 0 ? 0 : totalMinor >= 20000 ? 5000 : Math.round((totalMinor / 1.10) * 0.10));
   const netMinor = latestQuote?.providerNetMinor ?? invoice?.subtotalMinor ?? Math.max(0, totalMinor - feeMinor);
+  const [custStars, setCustStars] = useState(0);
+  const [custComment, setCustComment] = useState('');
+  const [custRated, setCustRated] = useState(false);
+  const [rateBusy, setRateBusy] = useState(false);
+
+  const handleRateCustomer = async () => {
+    if (!req?.customerId || !req?.id || rateBusy || custStars < 1) return;
+    setRateBusy(true);
+    try {
+      await post(`/reviews/customer/${req.customerId}?requestId=${req.id}`, {
+        stars: custStars,
+        text: custComment.trim() || null,
+        recommend: custStars >= 4
+      });
+      setCustRated(true);
+    } catch {
+      setCustRated(true);
+    } finally {
+      setRateBusy(false);
+    }
+  };
 
   return (
     <MechanicShell code="M13">
@@ -1528,6 +1831,32 @@ export function M13Screen({ id }) {
         )}
       </div>
 
+      {req?.status === 'Completed' && req?.customerId && (
+        <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
+          <p className={`font-bold ${colors.text}`}>
+            {isAr ? `قيّم تعامل العميل (${getCustomerName(req, isAr)})` : `Rate Car Owner (${getCustomerName(req, isAr)})`}
+          </p>
+          {custRated ? (
+            <p className="text-emerald-500 font-bold">
+              {isAr ? '✓ شكراً! تم تسجيل تقييمك للعميل.' : '✓ Thank you! Customer rating submitted.'}
+            </p>
+          ) : (
+            <>
+              <StarRating value={custStars} size={18} onChange={setCustStars} />
+              <input
+                value={custComment}
+                onChange={(e) => setCustComment(e.target.value)}
+                placeholder={isAr ? 'ملاحظة اختيارية عن العميل...' : 'Optional feedback about the customer...'}
+                className={`w-full px-3 h-9 rounded-xl border ${colors.border} ${colors.inputBg} text-xs ${colors.text}`}
+              />
+              <PrimaryButton onClick={handleRateCustomer} disabled={rateBusy || custStars < 1}>
+                {isAr ? 'إرسال تقييم العميل' : 'Submit Customer Rating'}
+              </PrimaryButton>
+            </>
+          )}
+        </div>
+      )}
+
       <SecondaryButton onClick={() => nav.go('M07')}>
         {isAr ? 'عرض الأرباح' : 'View Earnings'}
       </SecondaryButton>
@@ -1547,11 +1876,13 @@ export function M07Screen() {
   const { data: earnings } = useEarnings();
   const { data: wallet } = useWallet();
   const [earningsPeriod, setEarningsPeriod] = useState('week');
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const fullName = getFullName(user, provider, isAr);
   const availableMinor = earnings?.availableMinor ?? wallet?.balanceMinor ?? 0;
   const lifetimeMinor = earnings?.lifetimeMinor ?? availableMinor;
   const completedJobs = earnings?.completedJobs ?? provider?.completedJobs ?? 0;
+  const ratingCount = Number(provider?.ratingCount ?? 0);
   const rating = Number(earnings?.rating ?? provider?.rating ?? 0).toFixed(1);
   const allEntries = Array.isArray(wallet?.entries) ? wallet.entries : [];
 
@@ -1622,12 +1953,21 @@ export function M07Screen() {
             {isAr ? 'الإجمالي' : 'Lifetime'}
           </p>
         </div>
-        <div className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface}`}>
-          <p className={`text-sm font-extrabold ${colors.text}`}>{rating}</p>
-          <p className={`text-[10px] ${colors.secondaryText}`}>
-            {isAr ? 'التقييم' : 'Rating'}
+        <button
+          type="button"
+          data-testid="open-my-reviews-btn"
+          onClick={() => setReviewsOpen(true)}
+          className={`p-2.5 rounded-xl border ${colors.border} ${colors.surface} hover:border-[#E51C23]/50 transition`}
+        >
+          <p className="text-sm font-extrabold text-[#E51C23]">
+            {ratingCount > 0 ? `⭐ ${rating}` : rating}
           </p>
-        </div>
+          <p className={`text-[10px] underline ${colors.secondaryText}`}>
+            {ratingCount > 0
+              ? (isAr ? `التقييم (${ratingCount})` : `Reviews (${ratingCount})`)
+              : (isAr ? 'التقييمات' : 'Reviews')}
+          </p>
+        </button>
       </div>
 
       <div className="space-y-1.5">
@@ -1667,6 +2007,13 @@ export function M07Screen() {
       <SecondaryButton onClick={() => nav.go('SH14')}>
         {isAr ? 'الحسابات البنكية' : 'Bank Accounts'}
       </SecondaryButton>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
     </MechanicShell>
   );
 }
@@ -1777,6 +2124,7 @@ export function M09Screen() {
   const { user } = useSession();
   const { data: provider } = useProvider();
   const { data: kyc } = useKyc();
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const fullName = getFullName(user, provider, isAr);
   const area = getArea(provider, user, isAr);
@@ -1790,6 +2138,7 @@ export function M09Screen() {
 
   const links = [
     { code: 'M14', icon: '🔧', en: 'Edit Professional Profile', ar: 'تعديل الملف المهني', primary: true },
+    { code: 'REVIEWS', action: () => setReviewsOpen(true), icon: '⭐', en: `Customer Ratings & Reviews (${ratingCount})`, ar: `تقييمات وآراء العملاء (${ratingCount})`, testId: 'mechanic-reviews-link' },
     { code: 'SH12', icon: '👤', en: 'Edit Account Details', ar: 'تعديل بيانات الحساب' },
     { code: 'SH01', icon: '💬', en: 'Messages & Customer Chats', ar: 'المحادثات مع العملاء' },
     { code: 'M15', icon: '📍', en: 'Coverage Area & Availability', ar: 'نطاق التغطية والتواجد' },
@@ -1843,14 +2192,18 @@ export function M09Screen() {
         </div>
 
         <div className={`grid grid-cols-3 gap-2 pt-2 border-t ${colors.border} text-center text-xs`}>
-          <div>
-            <div className={`font-extrabold ${colors.text}`}>
+          <button
+            type="button"
+            onClick={() => setReviewsOpen(true)}
+            className="hover:opacity-80 transition"
+          >
+            <div className="font-extrabold text-[#E51C23]">
               {ratingCount > 0 ? `⭐ ${rating}` : '—'}
             </div>
-            <div className={`text-[10px] ${colors.secondaryText}`}>
-              {ratingCount > 0 ? `${ratingCount} · 👍 ${recommendPercent}%` : (isAr ? 'التقييم' : 'Rating')}
+            <div className={`text-[10px] underline ${colors.secondaryText}`}>
+              {ratingCount > 0 ? `${ratingCount} · 👍 ${recommendPercent}%` : (isAr ? 'التقييمات' : 'Reviews')}
             </div>
-          </div>
+          </button>
           <div>
             <div className={`font-extrabold ${colors.text}`}>{completedJobs}</div>
             <div className={`text-[10px] ${colors.secondaryText}`}>
@@ -1873,8 +2226,8 @@ export function M09Screen() {
           <button
             key={item.code}
             type="button"
-            data-testid={item.primary ? 'screen-primary' : undefined}
-            onClick={() => nav.go(item.code)}
+            data-testid={item.primary ? 'screen-primary' : item.testId}
+            onClick={() => (item.action ? item.action() : nav.go(item.code))}
             className={`w-full px-4 py-3 text-start flex items-center justify-between text-xs font-bold transition-all ${
               item.danger ? 'text-rose-500' : colors.text
             } ${idx < links.length - 1 ? `border-b ${colors.border}` : ''}`}
@@ -1887,6 +2240,13 @@ export function M09Screen() {
           </button>
         ))}
       </div>
+
+      <ProviderReviewsSheet
+        open={reviewsOpen}
+        providerId={user?.id}
+        provider={provider}
+        onClose={() => setReviewsOpen(false)}
+      />
     </MechanicShell>
   );
 }

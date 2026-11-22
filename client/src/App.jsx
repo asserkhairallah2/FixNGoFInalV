@@ -29,28 +29,28 @@ const ROLE_TABS = {
     { id: 'profile', code: 'C23', en: 'Profile', ar: 'حسابي', icon: User, match: ['C23'] }
   ],
   Mechanic: [
-    { id: 'console', code: 'M01', en: 'Console', ar: 'الرئيسية', icon: Home, match: ['M01', 'M02', 'SH03', 'SH19'] },
+    { id: 'console', code: 'M01', en: 'Console', ar: 'الرئيسية', icon: Home, match: ['M01', 'M02', 'C22', 'SH03', 'SH19'] },
     { id: 'jobs', code: 'M10', en: 'Jobs', ar: 'المهام', icon: Wrench, match: ['M03', 'M04', 'M05', 'M06', 'M10', 'M11', 'M12', 'SH01'] },
     { id: 'earnings', code: 'M07', en: 'Earnings', ar: 'الأرباح', icon: CreditCard, match: ['M07', 'SH14', 'SH15', 'SH16', 'SH20'] },
     { id: 'history', code: 'M08', en: 'History', ar: 'السجل', icon: FileText, match: ['M08', 'M13'] },
     { id: 'profile', code: 'M09', en: 'Profile', ar: 'حسابي', icon: User, match: ['M09', 'M14', 'M15'] }
   ],
   TowCaptain: [
-    { id: 'dashboard', code: 'T01', en: 'Dashboard', ar: 'الرئيسية', icon: Home, match: ['T01', 'T02', 'SH03', 'SH19'] },
+    { id: 'dashboard', code: 'T01', en: 'Dashboard', ar: 'الرئيسية', icon: Home, match: ['T01', 'T02', 'C22', 'SH03', 'SH19'] },
     { id: 'trips', code: 'T11', en: 'Trips', ar: 'الرحلات', icon: Truck, match: ['T03', 'T04', 'T05', 'T06', 'T07', 'T08', 'T11', 'T14', 'SH01'] },
     { id: 'earnings', code: 'T09', en: 'Earnings', ar: 'الأرباح', icon: CreditCard, match: ['T09', 'SH14', 'SH15', 'SH16', 'SH20'] },
     { id: 'history', code: 'T12', en: 'History', ar: 'السجل', icon: FileText, match: ['T12', 'T13'] },
     { id: 'profile', code: 'T10', en: 'Profile', ar: 'حسابي', icon: User, match: ['T10', 'T15'] }
   ],
   ServiceCenter: [
-    { id: 'overview', code: 'SC01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['SC01', 'SC06', 'SC07', 'SC13', 'SC14', 'SH03', 'SH19'] },
+    { id: 'overview', code: 'SC01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['SC01', 'SC06', 'SC07', 'SC13', 'SC14', 'C22', 'SH03', 'SH19'] },
     { id: 'bookings', code: 'SC02', en: 'Bookings', ar: 'الحجوزات', icon: Calendar, match: ['SC02', 'SC03', 'SC10', 'SC11', 'SC12', 'SC16', 'SH01'] },
     { id: 'catalog', code: 'SC04', en: 'Catalog', ar: 'الخدمات', icon: Wrench, match: ['SC04', 'SC05', 'SC17'] },
     { id: 'reports', code: 'SC08', en: 'Reports', ar: 'التقارير', icon: FileText, match: ['SC08'] },
     { id: 'profile', code: 'SC09', en: 'Profile', ar: 'حسابي', icon: User, match: ['SC09', 'SC15', 'SH14', 'SH15', 'SH16', 'SH20'] }
   ],
   Admin: [
-    { id: 'overview', code: 'AD01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['AD01', 'AD07', 'AD08', 'AD09', 'AD10', 'AD16', 'AD17', 'AD18', 'SH03', 'SH19'] },
+    { id: 'overview', code: 'AD01', en: 'Overview', ar: 'نظرة عامة', icon: Home, match: ['AD01', 'AD07', 'AD08', 'AD09', 'AD10', 'AD16', 'AD17', 'AD18', 'C22', 'SH03', 'SH19'] },
     { id: 'verify', code: 'AD02', en: 'Verify', ar: 'التوثيق', icon: Car, match: ['AD02', 'AD03', 'AD15', 'SH17'] },
     { id: 'users', code: 'AD04', en: 'Users', ar: 'المستخدمين', icon: FileText, match: ['AD04', 'AD11', 'AD12'] },
     { id: 'pricing', code: 'AD05', en: 'Pricing', ar: 'التسعير', icon: Building2, match: ['AD05'] },

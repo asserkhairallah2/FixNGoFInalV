@@ -24,7 +24,7 @@ public sealed class QuoteService(IAppDbContext db, IClock clock, INotifier notif
         var subtotal = req.CalloutMinor + req.LaborMinor + req.PartsMinor;
         var fee = subtotal <= 0
             ? 0L
-            : subtotal >= 25_000L
+            : subtotal >= s.MechanicBaseMinor
                 ? s.ServiceFeeMinor
                 : (long)Math.Round(subtotal * 0.10);
         var quote = new Quote

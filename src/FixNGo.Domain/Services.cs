@@ -159,10 +159,11 @@ public static class Matching
         }
         return sort switch
         {
+            "nearest" or "distance" => list.OrderBy(c => c.DistanceKm).ThenBy(c => c.EtaMinutes).ThenByDescending(c => c.Rating).ToList(),
             "fastest" => list.OrderBy(c => c.EtaMinutes).ThenBy(c => c.DistanceKm).ThenBy(c => c.Score).ToList(),
             "price" or "lowest" => list.OrderBy(c => c.PriceMinor).ThenBy(c => c.EtaMinutes).ThenBy(c => c.Score).ToList(),
             "top_rated" or "rating" or "top" => list.OrderByDescending(c => c.Rating).ThenBy(c => c.EtaMinutes).ThenBy(c => c.Score).ToList(),
-            _ => list.OrderBy(c => c.Score).ThenByDescending(c => c.Rating).ToList()
+            _ => list.OrderBy(c => c.DistanceKm).ThenBy(c => c.Score).ThenByDescending(c => c.Rating).ToList()
         };
     }
 

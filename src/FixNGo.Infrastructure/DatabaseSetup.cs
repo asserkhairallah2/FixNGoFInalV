@@ -23,6 +23,7 @@ public static class DatabaseSetup
         ApplyPragmas(conn);
 
         var created = await db.Database.EnsureCreatedAsync(ct);
+        await EnsureSchemaUpgradesAsync(conn, ct);
         if (created) await ReferenceSeeder.SeedAsync(db, ct);
         // If the DB existed but has no reference data yet, seed it anyway.
         else if (!await db.ServiceTypes.AnyAsync(ct)) await ReferenceSeeder.SeedAsync(db, ct);
@@ -31,6 +32,44 @@ public static class DatabaseSetup
 
         var count = await db.Users.CountAsync(ct);
         return (created, count);
+    }
+
+    private static async Task EnsureSchemaUpgradesAsync(SqliteConnection conn, CancellationToken ct)
+    {
+        var upgrades = new (string Table, string Column, string Definition)[]
+        {
+            ("Reviews", "CustomerId", "TEXT NULL"),
+            ("Offers", "CustomerSelected", "INTEGER NOT NULL DEFAULT 0"),
+            ("ServiceRequests", "PendingProviderId", "TEXT NULL"),
+            ("ServiceRequests", "PendingOfferId", "TEXT NULL"),
+            ("ServiceRequests", "CustomerConfirmDeadlineAt", "TEXT NULL"),
+            ("ServiceRequests", "CustomerRejectionCount", "INTEGER NOT NULL DEFAULT 0"),
+            ("ServiceRequests", "SearchExpiresAt", "TEXT NULL")
+        };
+
+        foreach (var (table, column, def) in upgrades)
+        {
+            var exists = false;
+            await using (var checkCmd = conn.CreateCommand())
+            {
+                checkCmd.CommandText = $"PRAGMA table_info(\"{table}\");";
+                await using var reader = await checkCmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                {
+                    if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+            }
+            if (!exists)
+            {
+                await using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = $"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {def};";
+                await alterCmd.ExecuteNonQueryAsync(ct);
+            }
+        }
     }
 
     /// <summary>Apply required SQLite PRAGMAs on a connection (03 §3).</summary>

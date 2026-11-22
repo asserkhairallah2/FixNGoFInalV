@@ -66,7 +66,7 @@ public enum NotificationType
 }
 
 /// <summary>What a review applies to.</summary>
-public enum ReviewTargetType { Provider, Center }
+public enum ReviewTargetType { Provider, Center, Customer }
 
 /// <summary>Safety report / emergency escalation state.</summary>
 public enum SafetyReportStatus { Open, Escalated, Closed }
