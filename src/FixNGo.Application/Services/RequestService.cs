@@ -17,11 +17,23 @@ public sealed class RequestService(
         if (req.DistanceKm < 0 || req.DistanceKm > 2000)
             throw new DomainException("request.distance_invalid", "Invalid distance.");
         var (s, version) = await settings.CurrentAsync(ct);
-        var total = st.Kind == RequestKind.Tow
-            ? Pricing.TowTotalMinor(req.DistanceKm, s)
-            : Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s);
+        long baseMinor, distanceMinor, serviceFeeMinor, total;
+        if (st.Kind == RequestKind.Tow)
+        {
+            total = Pricing.TowTotalMinor(req.DistanceKm, s);
+            serviceFeeMinor = s.ServiceFeeMinor;
+            baseMinor = decimal.ToInt64(decimal.Round(s.TowBaseMinor * s.Surge, 0, MidpointRounding.AwayFromZero));
+            distanceMinor = Math.Max(0, total - serviceFeeMinor - baseMinor);
+        }
+        else
+        {
+            total = Pricing.MechanicTotalMinor(s.MechanicBaseMinor, 0, 0, s);
+            serviceFeeMinor = s.ServiceFeeMinor;
+            baseMinor = Math.Max(0, total - serviceFeeMinor);
+            distanceMinor = 0;
+        }
         // Cohesive exact upfront pricing: Low == High == Total for fixed tow routes & upfront mechanic callouts
-        return new EstimateDto(total, total, total, version);
+        return new EstimateDto(total, total, total, version, baseMinor, distanceMinor, serviceFeeMinor);
     }
 
     public async Task<RequestDto> CreateAsync(Guid customerId, CreateRequestRequest req, CancellationToken ct = default)

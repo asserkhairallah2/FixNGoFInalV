@@ -19,7 +19,8 @@ public sealed record CreateRequestRequest(
     string? Note, RequestPriority Priority = RequestPriority.Normal,
     IReadOnlyList<Guid>? PhotoFileIds = null);
 public sealed record EstimateRequest(Guid ServiceTypeId, double DistanceKm);
-public sealed record EstimateDto(long LowMinor, long HighMinor, long TotalMinor, int SettingsVersion);
+public sealed record EstimateDto(long LowMinor, long HighMinor, long TotalMinor, int SettingsVersion,
+    long BaseMinor = 0, long DistanceMinor = 0, long ServiceFeeMinor = 0);
 public sealed record RequestDto(
     Guid Id, string Code, RequestKind Kind, RequestPriority Priority, RequestStatus Status,
     Guid CustomerId, Guid? VehicleId, double PickupLatitude, double PickupLongitude,
