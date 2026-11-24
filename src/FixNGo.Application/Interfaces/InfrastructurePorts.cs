@@ -27,6 +27,7 @@ public interface ITokenService
 public interface IOtpSender
 {
     Task SendAsync(string recipient, string? recipientName, SimChannel channel, string code, string purpose, CancellationToken ct = default);
+    Task SendSecurityAlertAsync(string recipient, string? recipientName, string subject, string heading, string message, CancellationToken ct = default) => Task.CompletedTask;
 }
 
 /// <summary>Fake payment gateway (test cards) / routing / push. Config-switchable to real stubs.</summary>

@@ -78,7 +78,7 @@ public enum TicketStatus { Open, AwaitingSupport, Answered, Closed }
 public enum DocumentStatus { Pending, Approved, Rejected, Replaced }
 
 /// <summary>One-time password purpose.</summary>
-public enum OtpPurpose { Signup, Login, Forgot, ContactChange, TwoFactor }
+public enum OtpPurpose { Signup, Login, Forgot, ContactChange, TwoFactor, InAppReset, TwoFactorSmsSetup }
 
 /// <summary>Simulated external channel.</summary>
 public enum SimChannel { Sms, Email }

@@ -1440,3 +1440,158 @@ test('F19 Round-7: Nearest default filter, Cohesive 200 EGP pricing, 3-strike au
     await context.close();
   }
 });
+
+test('F20 Round-8 Google-grade 2FA (TOTP + Mobile SMS dual options, AD13 gate, Login 2FA, In-App Reset via Email OTP + 2FA) + Hero eyebrow removed', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const logs = attachConsoleWatch(page);
+
+  try {
+    // 1. Verify Landing Page hero eyebrow ("24/7 Roadside Assistance & Car Care Across Egypt") is removed
+    await page.goto('/');
+    await expect(page.locator('.fn-hero-title')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.fn-eyebrow')).toHaveCount(0);
+    const bodyText = await page.locator('body').innerText();
+    expect(bodyText).not.toContain('24/7 Roadside Assistance & Car Care Across Egypt');
+
+    // 2. Create a fresh verified CarOwner (proving 2FA is NOT forced at signup)
+    const origin = await page.evaluate(() => location.origin);
+    const suffix = Date.now().toString().slice(-7);
+    const email = `r8.e2e.${suffix}@fixngo.test`;
+    const phone = `+20111${suffix}`;
+    ok(await api('/auth/signup', {
+      method: 'POST',
+      body: { fullName: 'R8 Security Tester', email, phone, password: DEFAULT_PASSWORD, role: 'CarOwner' }
+    }), 'signup r8');
+    const signupOtps = ok(await api('/sim/otps'), 'sim otps signup');
+    const signupCode = (Array.isArray(signupOtps) ? signupOtps : []).find(
+      (o) => String(o.target || '').toLowerCase() === email.toLowerCase()
+    )?.code;
+    expect(signupCode).toBeTruthy();
+    ok(await api('/auth/verify-otp', {
+      method: 'POST',
+      body: { target: email, code: signupCode, purpose: 'Signup' }
+    }), 'verify r8');
+
+    // Sign in normally (no 2FA yet)
+    await page.goto(`${origin}/#/A03`);
+    await expect(page.locator('[data-testid="login-email"]')).toBeVisible({ timeout: 10_000 });
+    await page.locator('[data-testid="login-email"]').fill(email);
+    await page.locator('[data-testid="login-password"]').fill(DEFAULT_PASSWORD);
+    await page.locator('[data-testid="login-submit"]').click();
+    await expect(page.locator('[data-testid="screen"]')).toBeVisible({ timeout: 10_000 });
+
+    // 3. Navigate from Account Settings -> AD13 and enable BOTH Authenticator App (TOTP) AND Mobile SMS 2FA
+    await page.goto(`${origin}/#/AD13`);
+    await expect(page.locator('[data-testid="totp-setup-btn"]')).toBeVisible({ timeout: 10_000 });
+    await page.locator('[data-testid="totp-setup-btn"]').click();
+    await expect(page.locator('[data-testid="totp-qr"]')).toBeVisible({ timeout: 10_000 });
+    await page.locator('[data-testid="totp-autofill-btn"]').click();
+    await page.locator('[data-testid="totp-enable-btn"]').click();
+    await expect(page.locator('[data-testid="totp-recovery-codes"]')).toBeVisible({ timeout: 10_000 });
+
+    // Enable Mobile SMS 2FA as second method while AD13 is unlocked
+    await page.locator('[data-testid="sms-2fa-setup-btn"]').click();
+    await expect(page.locator('[data-testid="field-sms2faCode"]')).toBeVisible({ timeout: 10_000 });
+    const smsSetupOtps = ok(await api('/sim/otps'), 'sim otps sms setup');
+    const smsSetupCode = (Array.isArray(smsSetupOtps) ? smsSetupOtps : []).find(
+      (o) => String(o.target || '') === phone && o.purpose === 'TwoFactorSmsSetup'
+    )?.code;
+    expect(smsSetupCode).toBeTruthy();
+    await page.locator('[data-testid="field-sms2faCode"]').fill(smsSetupCode);
+    await page.locator('[data-testid="sms-2fa-enable-btn"]').click();
+    await expect(page.locator('[data-testid="sms-2fa-disable-btn"]')).toBeVisible({ timeout: 10_000 });
+
+    // 4. Re-enter AD13 fresh -> verify AD13 Entry Gate locks settings and shows BOTH options (TOTP & Mobile SMS)
+    await page.goto(`${origin}/#/C23`);
+    await page.goto(`${origin}/#/AD13`);
+    await expect(page.locator('[data-testid="ad13-2fa-gate"]')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="2fa-method-totp"]')).toBeVisible();
+    await expect(page.locator('[data-testid="2fa-method-sms"]')).toBeVisible();
+    // Unlock AD13 using Mobile SMS option!
+    await page.locator('[data-testid="2fa-method-sms"]').click();
+    await page.waitForTimeout(400);
+    const gateOtps = ok(await api('/sim/otps'), 'sim otps gate');
+    const gateSmsCode = (Array.isArray(gateOtps) ? gateOtps : []).find(
+      (o) => String(o.target || '') === phone && o.purpose === 'TwoFactor' && !o.consumed
+    )?.code;
+    expect(gateSmsCode).toBeTruthy();
+    await page.locator('[data-testid="field-twoFactorCode"]').fill(gateSmsCode);
+    await page.locator('[data-testid="2fa-verify-submit"]').click();
+    await expect(page.locator('[data-testid="ad13-2fa-gate"]')).toHaveCount(0, { timeout: 10_000 });
+    await expect(page.locator('[data-testid="card-2fa-totp"]')).toBeVisible();
+
+    // 5. In-App Password Reset while signed in (SH02?mode=reset): sends mandatory Email OTP + requires 2FA (showing both options!)
+    await page.locator('[data-testid="ad13-goto-inapp-reset"]').click();
+    await expect(page.locator('[data-testid="inapp-reset-send-btn"]')).toBeVisible({ timeout: 10_000 });
+    await page.locator('[data-testid="inapp-reset-send-btn"]').click();
+    await expect(page.locator('[data-testid="field-inappEmailCode"]')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="inapp-reset-2fa-section"] [data-testid="2fa-method-totp"]')).toBeVisible();
+    await expect(page.locator('[data-testid="inapp-reset-2fa-section"] [data-testid="2fa-method-sms"]')).toBeVisible();
+
+    const resetOtps = ok(await api('/sim/otps'), 'sim otps inapp reset');
+    const inAppEmailOtp = (Array.isArray(resetOtps) ? resetOtps : []).find(
+      (o) => String(o.target || '').toLowerCase() === email.toLowerCase() && o.purpose === 'InAppReset' && !o.consumed
+    )?.code;
+    expect(inAppEmailOtp).toBeTruthy();
+    await page.locator('[data-testid="field-inappEmailCode"]').fill(inAppEmailOtp);
+
+    // Select SMS 2FA inside In-App Reset
+    await page.locator('[data-testid="inapp-reset-2fa-section"] [data-testid="2fa-method-sms"]').click();
+    await page.waitForTimeout(400);
+    const resetSmsOtps = ok(await api('/sim/otps'), 'sim otps inapp sms');
+    const inAppSmsCode = (Array.isArray(resetSmsOtps) ? resetSmsOtps : []).find(
+      (o) => String(o.target || '') === phone && o.purpose === 'TwoFactor' && !o.consumed
+    )?.code;
+    expect(inAppSmsCode).toBeTruthy();
+    await page.locator('[data-testid="inapp-reset-2fa-section"] [data-testid="field-twoFactorCode"]').fill(inAppSmsCode);
+
+    const newPass = 'NewR8Secure@2026!';
+    await page.locator('[data-testid="field-inappNewPassword"]').fill(newPass);
+    await page.locator('[data-testid="field-inappConfirmPassword"]').fill(newPass);
+    await page.locator('[data-testid="inapp-reset-submit-btn"]').click();
+    await expect(page.getByText(/Password reset successfully|تمت إعادة التعيين بنجاح/i).first()).toBeVisible({ timeout: 10_000 });
+
+    // 6. Sign in from a fresh browser session with the new password -> Login 2FA Challenge shows BOTH options -> complete sign-in!
+    const loginCtx = await browser.newContext();
+    try {
+      const loginPage = await loginCtx.newPage();
+      const loginLogs = attachConsoleWatch(loginPage);
+      await loginPage.goto(`${origin}/#/A03`);
+      await expect(loginPage.locator('[data-testid="login-email"]')).toBeVisible({ timeout: 10_000 });
+      await loginPage.locator('[data-testid="login-email"]').fill(email);
+      await loginPage.locator('[data-testid="login-password"]').fill(newPass);
+      await loginPage.locator('[data-testid="login-submit"]').click();
+
+      await expect(loginPage.locator('[data-testid="login-2fa-step"]')).toBeVisible({ timeout: 10_000 });
+      await expect(loginPage.locator('[data-testid="2fa-method-totp"]')).toBeVisible();
+      await expect(loginPage.locator('[data-testid="2fa-method-sms"]')).toBeVisible();
+
+      await loginPage.locator('[data-testid="2fa-method-sms"]').click();
+      await loginPage.waitForTimeout(400);
+      const loginOtps = ok(await api('/sim/otps'), 'sim otps login 2fa');
+      const loginSmsCode = (Array.isArray(loginOtps) ? loginOtps : []).find(
+        (o) => String(o.target || '') === phone && o.purpose === 'TwoFactor' && !o.consumed
+      )?.code;
+      expect(loginSmsCode).toBeTruthy();
+      await loginPage.locator('[data-testid="field-twoFactorCode"]').fill(loginSmsCode);
+      await loginPage.locator('[data-testid="2fa-verify-submit"]').click();
+
+      await expect(loginPage.locator('[data-testid="login-2fa-step"]')).toHaveCount(0, { timeout: 10_000 });
+      await expect(loginPage.locator('[data-testid="screen-container"]')).toBeVisible({ timeout: 10_000 });
+      const authedRole = await loginPage.evaluate(() => sessionStorage.getItem('fixngo.role'));
+      expect(authedRole).toBe('CarOwner');
+
+      const loginClean = loginLogs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+      expect(loginClean).toEqual([]);
+    } finally {
+      await loginCtx.close();
+    }
+
+    const clean = logs.filter((l) => ['error', 'warning', 'pageerror'].includes(l.type));
+    expect(clean).toEqual([]);
+    recordFlow('F20 Round-8 Google-grade 2FA + In-App Email Reset + Hero Eyebrow Removal', 'PASS', {});
+  } finally {
+    await context.close();
+  }
+});

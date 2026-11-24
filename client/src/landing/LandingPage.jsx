@@ -279,15 +279,6 @@ export default function LandingPage({ onOpenMobile }) {
               <section className="fn-hero">
                 <div className="fn-container fn-hero-grid">
                   <div>
-                    <div className="fn-eyebrow">
-                      <span className="fn-eyebrow-dot" />
-                      <span>
-                        {isAr
-                          ? 'مساعدة فورية على الطريق ٢٤/٧ في جميع أنحاء مصر'
-                          : '24/7 Roadside Assistance & Car Care Across Egypt'}
-                      </span>
-                    </div>
-
                     <h1 className="fn-hero-title">
                       {isAr
                         ? 'مساعدة فورية على الطريق، أينما كنت.'

@@ -14,8 +14,13 @@ public class User : BaseEntity
     public bool PhoneVerified { get; set; }
     public bool OtpOnLogin { get; set; }
     public bool TwoFactorEnabled { get; set; }
+    public bool TotpEnabled { get; set; }
     public string? TwoFactorSecret { get; set; }
+    public string? PendingTotpSecret { get; set; }
+    public bool SmsTwoFactorEnabled { get; set; }
     public string? TwoFactorRecoveryHashes { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public bool HasAnyTwoFactor => TotpEnabled || SmsTwoFactorEnabled || TwoFactorEnabled;
     public bool IsSuperAdmin { get; set; }
     public string Language { get; set; } = "en";
     public string Theme { get; set; } = "light";

@@ -26,7 +26,9 @@ import {
   Check,
   UserCheck,
   KeyRound,
-  Smartphone
+  Smartphone,
+  ShieldCheck,
+  Mail
 } from 'lucide-react';
 import { usePrefs, useNav, useSession } from '../../app/stores.jsx';
 import { get, post, put, del, fileUrl } from '../../api/http.js';
@@ -54,7 +56,8 @@ import {
   ErrorState,
   EmptyState,
   Toast,
-  inputClass
+  inputClass,
+  TwoFactorChallengeCard
 } from '../../ui/kit.jsx';
 import { fmtMoney, fmtNumber, fmtDate, fmtDateTime } from '../../i18n/format.js';
 
@@ -2204,75 +2207,274 @@ export function AD12Screen({ id, params }) {
 }
 
 /* =====================================================================
- * AD13: Security & two-factor (FIX B7 TOTP)
+ * AD13: Google-Grade Security & 2-Step Verification (All 5 Roles)
  * ===================================================================== */
+const ROLE_PROFILE_FALLBACK = {
+  CarOwner: 'C23',
+  Mechanic: 'M09',
+  TowCaptain: 'T10',
+  ServiceCenter: 'SC09',
+  Admin: 'AD06'
+};
+
 export function AD13Screen() {
   const colors = useColors();
   const { isAr } = usePrefs();
   const { user, loadMe } = useSession();
   const nav = useNav();
   const ForwardChevron = isAr ? ChevronLeft : ChevronRight;
+  const roleFallback = ROLE_PROFILE_FALLBACK[user?.role] || 'A02';
+
+  const [unlockedStepUpToken, setUnlockedStepUpToken] = useState('');
+  const [gateBusy, setGateBusy] = useState(false);
+  const [gateError, setGateError] = useState('');
 
   const [setupData, setSetupData] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [totpCode, setTotpCode] = useState('');
+  const [smsSetupInfo, setSmsSetupInfo] = useState(null);
+  const [smsCode, setSmsCode] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedFlag, setCopiedFlag] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
 
-  const handleSetup = async () => {
+  const statusQuery = useQuery({
+    queryKey: ['auth', '2fa-status', user?.id],
+    queryFn: () => get('/auth/2fa/status'),
+    staleTime: 0,
+    refetchOnMount: 'always'
+  });
+
+  const statusData = statusQuery.data;
+  const totpEnabled = Boolean(statusData ? statusData.totpEnabled : user?.totpEnabled);
+  const smsEnabled = Boolean(statusData ? statusData.smsEnabled : user?.smsTwoFactorEnabled);
+  const any2FaEnabled = Boolean(statusData ? statusData.twoFactorEnabled : (totpEnabled || smsEnabled || user?.twoFactorEnabled));
+  const stepUpHeaders = unlockedStepUpToken ? { headers: { 'X-StepUp-Token': unlockedStepUpToken } } : {};
+
+  // Simulator 1-click Autofill for SMS 2FA setup verification
+  useEffect(() => {
+    if (!smsSetupInfo) return undefined;
+    const onFill = (e) => {
+      const digits = String(e.detail ?? '').replace(/\D/g, '').slice(0, 6);
+      if (digits) setSmsCode(digits);
+    };
+    window.addEventListener('fixngo:otp-autofill', onFill);
+    return () => window.removeEventListener('fixngo:otp-autofill', onFill);
+  }, [smsSetupInfo]);
+
+  const handleUnlockGate = async ({ method, code }) => {
+    setGateBusy(true);
+    setGateError('');
+    try {
+      const res = await post('/auth/2fa/step-up', { method, code });
+      if (res?.stepUpToken) {
+        setUnlockedStepUpToken(res.stepUpToken);
+      }
+    } catch (err) {
+      setGateError(err.message || (isAr ? 'رمز التحقق غير صحيح.' : 'Invalid verification code.'));
+    } finally {
+      setGateBusy(false);
+    }
+  };
+
+  const handleExpiredStepUp = (err) => {
+    if (err?.code === 'auth.2fa_required') {
+      setUnlockedStepUpToken('');
+      setGateError(isAr ? 'انتهت جلسة الأمان، يرجى تأكيد هويتك مجدداً.' : 'Security session expired. Please verify again.');
+      return true;
+    }
+    return false;
+  };
+
+  const handleSetupTotp = async () => {
     setBusy(true);
     setError('');
     setStatusMsg('');
     try {
-      const data = await post('/auth/2fa/setup', {});
+      const data = await post('/auth/2fa/totp/setup', {}, stepUpHeaders);
       setSetupData(data);
       setRecoveryCodes(null);
+      setTotpCode('');
       if (data?.otpauthUri) {
         const url = await QRCode.toDataURL(data.otpauthUri, { width: 180, margin: 1 });
         setQrDataUrl(url);
       }
-      if (data?.currentCode) {
-        setTotpCode(data.currentCode);
-      }
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر بدء إعداد المصادقة' : 'Could not start 2FA setup'));
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'تعذر بدء إعداد تطبيق المصادقة' : 'Could not start authenticator setup'));
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  const handleEnable = async (e) => {
+  const handleEnableTotp = async (e) => {
     if (e) e.preventDefault();
     setBusy(true);
     setError('');
     try {
-      const res = await post('/auth/2fa/enable', { code: totpCode.trim() });
-      setRecoveryCodes(res?.recoveryCodes || []);
-      setStatusMsg(isAr ? 'تم تفعيل المصادقة الثنائية' : 'Two-factor authentication enabled');
+      const res = await post(
+        '/auth/2fa/totp/enable',
+        { code: totpCode.trim(), stepUpToken: unlockedStepUpToken || null },
+        stepUpHeaders
+      );
+      if (res?.stepUpToken) setUnlockedStepUpToken(res.stepUpToken);
+      setSetupData(null);
+      setQrDataUrl('');
+      setTotpCode('');
+      if (res?.recoveryCodes?.length) setRecoveryCodes(res.recoveryCodes);
+      setStatusMsg(isAr ? 'تم تفعيل تطبيق المصادقة (Google Authenticator) بنجاح' : 'Authenticator app (TOTP) enabled');
+      await statusQuery.refetch();
       await loadMe();
     } catch (err) {
-      setError(err.message || (isAr ? 'رمز المصادقة غير صحيح' : 'Invalid authenticator code'));
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'رمز المصادقة غير صحيح' : 'Invalid authenticator code'));
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  const handleDisable = async () => {
+  const handleDisableTotp = async () => {
     setBusy(true);
     setError('');
     try {
-      await post('/auth/2fa/disable', {});
+      const res = await post(
+        '/auth/2fa/totp/disable',
+        { stepUpToken: unlockedStepUpToken || null },
+        stepUpHeaders
+      );
       setSetupData(null);
       setQrDataUrl('');
-      setRecoveryCodes(null);
       setTotpCode('');
-      setStatusMsg(isAr ? 'تم إيقاف المصادقة الثنائية' : 'Two-factor authentication disabled');
+      if (!res?.enabled) {
+        setRecoveryCodes(null);
+        setUnlockedStepUpToken('');
+      }
+      setStatusMsg(isAr ? 'تم إيقاف تطبيق المصادقة' : 'Authenticator app disabled');
+      await statusQuery.refetch();
       await loadMe();
     } catch (err) {
-      setError(err.message || (isAr ? 'تعذر إيقاف المصادقة' : 'Could not disable 2FA'));
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'تعذر إيقاف تطبيق المصادقة' : 'Could not disable authenticator app'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSetupSms = async () => {
+    setBusy(true);
+    setError('');
+    setStatusMsg('');
+    try {
+      const data = await post('/auth/2fa/sms/setup', {}, stepUpHeaders);
+      setSmsSetupInfo(data);
+      setSmsCode('');
+    } catch (err) {
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'تعذر إرسال رمز التحقق للهاتف' : 'Could not send SMS verification code'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleEnableSms = async (e) => {
+    if (e) e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const res = await post(
+        '/auth/2fa/sms/enable',
+        { code: smsCode.trim(), stepUpToken: unlockedStepUpToken || null },
+        stepUpHeaders
+      );
+      if (res?.stepUpToken) setUnlockedStepUpToken(res.stepUpToken);
+      setSmsSetupInfo(null);
+      setSmsCode('');
+      if (res?.recoveryCodes?.length) setRecoveryCodes(res.recoveryCodes);
+      setStatusMsg(isAr ? 'تم تفعيل التحقق بخطوتين عبر رقم الهاتف بنجاح' : 'Mobile SMS 2-Step Verification enabled');
+      await statusQuery.refetch();
+      await loadMe();
+    } catch (err) {
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'رمز الرسالة النصية غير صحيح' : 'Invalid SMS verification code'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDisableSms = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await post(
+        '/auth/2fa/sms/disable',
+        { stepUpToken: unlockedStepUpToken || null },
+        stepUpHeaders
+      );
+      setSmsSetupInfo(null);
+      setSmsCode('');
+      if (!res?.enabled) {
+        setRecoveryCodes(null);
+        setUnlockedStepUpToken('');
+      }
+      setStatusMsg(isAr ? 'تم إيقاف التحقق عبر الرسائل النصية' : 'Mobile SMS 2FA disabled');
+      await statusQuery.refetch();
+      await loadMe();
+    } catch (err) {
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'تعذر إيقاف التحقق عبر الهاتف' : 'Could not disable SMS 2FA'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRegenerateRecovery = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await post('/auth/2fa/recovery-codes/regenerate', {}, stepUpHeaders);
+      setRecoveryCodes(res?.recoveryCodes || []);
+      setStatusMsg(isAr ? 'تم إنشاء ٨ رموز استرداد احتياطية جديدة' : 'Generated 8 new backup recovery codes');
+      await statusQuery.refetch();
+    } catch (err) {
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'تعذر إنشاء رموز استرداد جديدة' : 'Could not regenerate recovery codes'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDisableAll = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      await post(
+        '/auth/2fa/disable',
+        { stepUpToken: unlockedStepUpToken || null },
+        stepUpHeaders
+      );
+      setSetupData(null);
+      setQrDataUrl('');
+      setSmsSetupInfo(null);
+      setRecoveryCodes(null);
+      setTotpCode('');
+      setSmsCode('');
+      setUnlockedStepUpToken('');
+      setStatusMsg(isAr ? 'تم إيقاف جميع وسائل التحقق بخطوتين' : 'All two-factor authentication methods disabled');
+      await statusQuery.refetch();
+      await loadMe();
+    } catch (err) {
+      if (!handleExpiredStepUp(err)) {
+        setError(err.message || (isAr ? 'تعذر إيقاف المصادقة الثنائية' : 'Could not disable 2FA'));
+      }
     } finally {
       setBusy(false);
     }
@@ -2281,18 +2483,66 @@ export function AD13Screen() {
   const copySecret = () => {
     if (!setupData?.secret) return;
     navigator.clipboard?.writeText(setupData.secret).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setCopiedFlag(true);
+    setTimeout(() => setCopiedFlag(false), 1500);
   };
 
+  // Loading gate check when user has 2FA enabled
+  if (statusQuery.isLoading && user?.twoFactorEnabled && !unlockedStepUpToken) {
+    return (
+      <AdminShell code="AD13" onBack={() => nav.back(roleFallback)}>
+        <Skeleton rows={3} />
+      </AdminShell>
+    );
+  }
+
+  // Google-Style Entry Gate: Accessing 2FA Settings itself requires 2FA when enabled!
+  if (any2FaEnabled && !unlockedStepUpToken) {
+    const gateMethods = statusData?.availableMethods?.length
+      ? statusData.availableMethods
+      : [
+          ...(totpEnabled ? ['totp'] : []),
+          ...(smsEnabled ? ['sms'] : [])
+        ];
+    return (
+      <AdminShell code="AD13" onBack={() => nav.back(roleFallback)}>
+        <div className="space-y-3.5" data-testid="ad13-2fa-gate">
+          <div>
+            <h1 className={`text-lg font-extrabold ${colors.text}`}>
+              {isAr ? 'تأكيد هويتك' : "Verify it's you"}
+            </h1>
+            <p className={`text-xs ${colors.secondaryText}`}>
+              {isAr
+                ? 'لحماية إعدادات الأمان الخاصة بك، يرجى تأكيد هويتك عبر التحقق بخطوتين قبل الدخول إلى إعدادات 2FA.'
+                : 'To protect your account security settings, complete 2-Step Verification to access Two-Factor settings.'}
+            </p>
+          </div>
+
+          <TwoFactorChallengeCard
+            availableMethods={gateMethods.length ? gateMethods : ['totp']}
+            maskedPhone={statusData?.maskedPhone || user?.maskedPhone || ''}
+            defaultMethod={gateMethods[0] || 'totp'}
+            busy={gateBusy}
+            error={gateError}
+            submitLabel={isAr ? 'فتح إعدادات التحقق بخطوتين' : 'Unlock 2FA Settings'}
+            onSubmitCode={handleUnlockGate}
+            onCancel={() => nav.back(roleFallback)}
+          />
+        </div>
+      </AdminShell>
+    );
+  }
+
+  const displayPhone = statusData?.phone || user?.phone || statusData?.maskedPhone || '';
+
   return (
-    <AdminShell code="AD13">
+    <AdminShell code="AD13" onBack={() => nav.back(roleFallback)}>
       <div>
         <h1 className={`text-lg font-extrabold ${colors.text}`}>
-          {isAr ? 'الأمان والمصادقة الثنائية' : 'Security & two-factor'}
+          {isAr ? 'الأمان والتحقق بخطوتين (2FA)' : 'Security & 2-Step Verification'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {user?.fullName || (isAr ? 'المشرف' : 'Administrator')}
+          {user?.fullName || formatLabel(user?.role || 'CarOwner', isAr)}
           {user?.email ? (
             <>
               {' · '}
@@ -2302,58 +2552,51 @@ export function AD13Screen() {
         </p>
       </div>
 
-      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2.5 text-xs`}>
-        <button
-          type="button"
-          onClick={() => nav.go('SH02')}
-          className="w-full flex justify-between items-center text-start"
-        >
+      {/* Overall Protection Summary Banner */}
+      <div className={`p-3.5 rounded-2xl border ${any2FaEnabled ? 'border-emerald-500/35 bg-emerald-500/10' : `${colors.border} ${colors.surface}`} flex items-center justify-between gap-3 text-xs`}>
+        <div className="flex items-center gap-2.5">
+          <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${any2FaEnabled ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/15 text-amber-500'}`}>
+            <ShieldCheck size={17} />
+          </span>
           <div>
             <p className={`font-extrabold ${colors.text}`}>
-              {isAr ? 'تغيير كلمة المرور' : 'Change password'}
+              {any2FaEnabled
+                ? (isAr ? 'التحقق بخطوتين مفعّل على حسابك' : '2-Step Verification is ON')
+                : (isAr ? 'التحقق بخطوتين غير مفعّل بعد' : '2-Step Verification is OFF')}
             </p>
             <p className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'تحديث كلمة مرور المشرف' : 'Update your administrator password'}
+              {totpEnabled && smsEnabled
+                ? (isAr ? 'مفعّل عبر تطبيق المصادقة + رسائل الهاتف (يظهر الخياران معاً عند التحقق)' : 'Active via Authenticator App + Mobile SMS (both options offered at verification)')
+                : totpEnabled
+                  ? (isAr ? 'مفعّل عبر تطبيق المصادقة — يمكنك تفعيل رقم الهاتف أيضاً كخيار ثانٍ' : 'Active via Authenticator App — you can also add Mobile SMS as a second option')
+                  : smsEnabled
+                    ? (isAr ? 'مفعّل عبر رسائل الهاتف — يمكنك إضافة تطبيق المصادقة كخيار ثانٍ' : 'Active via Mobile SMS — you can also add Authenticator App as a second option')
+                    : (isAr ? 'فعّل تطبيق المصادقة أو رقم الهاتف أو كليهما لحماية تسجيل الدخول والبيانات الحساسة' : 'Enable Authenticator App, Mobile SMS, or both to protect sign-in and sensitive actions')}
             </p>
           </div>
-          <Lock size={14} className={colors.secondaryText} />
-        </button>
-        <button
-          type="button"
-          onClick={() => nav.go('AD14')}
-          className="w-full flex justify-between items-center text-start pt-2 border-t border-slate-500/10"
-        >
-          <div>
-            <p className={`font-extrabold ${colors.text}`}>
-              {isAr ? 'الجلسات النشطة' : 'Active sessions'}
-            </p>
-            <p className={`text-[10px] ${colors.secondaryText}`}>
-              {isAr ? 'مراجعة الأجهزة وإلغاء الوصول' : 'Review devices and revoke access'}
-            </p>
-          </div>
-          <ForwardChevron size={14} className={colors.secondaryText} />
-        </button>
+        </div>
       </div>
 
-      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2.5 text-xs`}>
-        <div className="flex items-center justify-between">
-          <p className={`font-extrabold ${colors.text}`}>
-            {isAr ? 'تطبيق المصادقة (TOTP)' : 'Authenticator app (TOTP)'}
-          </p>
+      {/* Method 1: Authenticator App (Google Authenticator / TOTP) */}
+      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2.5 text-xs`} data-testid="card-2fa-totp">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <KeyRound size={15} className="text-[#E51C23]" />
+            <div>
+              <p className={`font-extrabold ${colors.text}`}>
+                {isAr ? 'تطبيق المصادقة (Google Authenticator)' : 'Authenticator App (TOTP)'}
+              </p>
+              <p className={`text-[10px] ${colors.secondaryText}`}>
+                {isAr ? 'رمز متغير من ٦ أرقام يتجدد كل ٣٠ ثانية' : 'Time-based 6-digit code refreshing every 30 seconds'}
+              </p>
+            </div>
+          </div>
           <span
-            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              user?.twoFactorEnabled || recoveryCodes
-                ? 'bg-emerald-500/15 text-emerald-500'
-                : 'bg-amber-500/15 text-amber-500'
+            className={`inline-block shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              totpEnabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
             }`}
           >
-            {user?.twoFactorEnabled || recoveryCodes
-              ? isAr
-                ? '• مفعّل'
-                : '• Enabled'
-              : isAr
-              ? '• غير مفعّل'
-              : '• Not enabled'}
+            {totpEnabled ? (isAr ? '• مفعّل' : '• Enabled') : (isAr ? '• غير مفعّل' : '• Not enabled')}
           </span>
         </div>
 
@@ -2361,19 +2604,21 @@ export function AD13Screen() {
           type="button"
           data-testid="totp-setup-btn"
           disabled={busy}
-          onClick={handleSetup}
+          onClick={handleSetupTotp}
           className={`w-full py-2.5 px-3 rounded-xl border ${colors.border} ${colors.elevated} font-bold text-xs ${colors.text} flex items-center justify-center gap-2`}
         >
           <KeyRound size={14} />
-          {isAr ? 'إعداد تطبيق المصادقة (TOTP)' : 'Set Up Authenticator (TOTP)'}
+          {totpEnabled
+            ? (isAr ? 'إعادة ربط تطبيق المصادقة (QR جديد)' : 'Reconfigure Authenticator App')
+            : (isAr ? 'إعداد تطبيق المصادقة (TOTP)' : 'Set Up Authenticator (TOTP)')}
         </button>
 
         {setupData && (
-          <div className="space-y-2.5 pt-2 border-t border-slate-500/10">
+          <form onSubmit={handleEnableTotp} className="space-y-2.5 pt-2 border-t border-slate-500/10">
             <p className={`text-[11px] ${colors.secondaryText}`}>
               {isAr
-                ? '١. امسح رمز QR أو أدخل مفتاح الإعداد في تطبيق المصادقة.'
-                : '1. Scan the QR code or enter your setup key in your authenticator app.'}
+                ? '١. امسح رمز QR بتطبيق Google Authenticator أو أدخل المفتاح يدوياً:'
+                : '1. Scan this QR code in Google Authenticator or enter the setup key manually:'}
             </p>
             {qrDataUrl && (
               <div className="flex justify-center">
@@ -2386,7 +2631,7 @@ export function AD13Screen() {
               </div>
             )}
             <div className={`p-2.5 rounded-xl border ${colors.border} flex justify-between items-center gap-2`}>
-              <span data-testid="totp-secret" className={`font-mono text-[11px] font-bold break-all ${colors.text}`}>
+              <span data-testid="totp-secret" className={`font-mono text-[11px] font-bold break-all ${colors.text}`} dir="ltr">
                 {setupData.secret}
               </span>
               <button
@@ -2396,14 +2641,14 @@ export function AD13Screen() {
                 className="shrink-0 px-2 py-1 rounded-lg bg-slate-500/15 text-[10px] font-bold flex items-center gap-1"
               >
                 <Copy size={12} />
-                {copied ? (isAr ? 'تم النسخ' : 'Copied') : isAr ? 'نسخ' : 'Copy'}
+                {copiedFlag ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}
               </button>
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <label className={`text-[10px] ${colors.secondaryText}`}>
-                  {isAr ? 'رمز التحقق المكون من ٦ أرقام' : 'Six-digit verification code'}
+                  {isAr ? '٢. أدخل الرمز المكون من ٦ أرقام من التطبيق' : '2. Enter the 6-digit code from the app'}
                 </label>
                 {setupData.currentCode && (
                   <button
@@ -2418,49 +2663,244 @@ export function AD13Screen() {
               </div>
               <input
                 type="text"
+                dir="ltr"
                 inputMode="numeric"
                 maxLength={6}
                 data-testid="field-totpCode"
                 value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value)}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="000000"
                 className={inputClass()}
               />
             </div>
 
             <PrimaryButton
+              type="submit"
               testId="totp-enable-btn"
               disabled={busy || totpCode.trim().length !== 6}
-              onClick={handleEnable}
             >
-              {isAr ? 'تحقق وفعل المصادقة الثنائية' : 'Verify & Enable 2FA'}
+              {isAr ? 'تحقق وفعل تطبيق المصادقة' : 'Verify & Enable Authenticator'}
             </PrimaryButton>
-          </div>
+          </form>
         )}
 
-        {recoveryCodes && recoveryCodes.length > 0 && (
-          <div
-            data-testid="totp-recovery-codes"
-            className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 space-y-2"
-          >
-            <p className="font-bold text-emerald-500">
-              {isAr ? 'رموز الاسترداد لمرة واحدة (احفظها بأمان)' : 'One-time recovery codes (save securely)'}
-            </p>
-            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-              {recoveryCodes.map((c) => (
-                <div key={c} className={`p-1.5 rounded-lg border ${colors.border} ${colors.surface} text-center font-bold ${colors.text}`}>
-                  {c}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(user?.twoFactorEnabled || recoveryCodes) && (
-          <SecondaryButton onClick={handleDisable} disabled={busy}>
-            {isAr ? 'إيقاف المصادقة الثنائية' : 'Disable 2FA'}
+        {totpEnabled && (
+          <SecondaryButton onClick={handleDisableTotp} disabled={busy}>
+            <span data-testid="totp-disable-btn">
+              {isAr ? 'إيقاف تطبيق المصادقة' : 'Turn Off Authenticator App'}
+            </span>
           </SecondaryButton>
         )}
+      </div>
+
+      {/* Method 2: Mobile Phone Number (SMS 2-Step Verification via Simulator) */}
+      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2.5 text-xs`} data-testid="card-2fa-sms">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Smartphone size={15} className="text-[#E51C23]" />
+            <div>
+              <p className={`font-extrabold ${colors.text}`}>
+                {isAr ? 'رسائل الهاتف النصية (SMS)' : 'Mobile Phone Number (SMS)'}
+              </p>
+              <p className={`text-[10px] ${colors.secondaryText}`}>
+                {displayPhone
+                  ? (
+                      <>
+                        {isAr ? 'الرقم المسجل: ' : 'Phone: '}
+                        <span className={`font-mono font-bold ${colors.text}`} dir="ltr">{displayPhone}</span>
+                      </>
+                    )
+                  : (isAr ? 'أضف رقم هاتف في تعديل الحساب أولاً' : 'Add a phone number in Edit Account first')}
+              </p>
+            </div>
+          </div>
+          <span
+            className={`inline-block shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              smsEnabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
+            }`}
+          >
+            {smsEnabled ? (isAr ? '• مفعّل' : '• Enabled') : (isAr ? '• غير مفعّل' : '• Not enabled')}
+          </span>
+        </div>
+
+        {!smsEnabled && (
+          <button
+            type="button"
+            data-testid="sms-2fa-setup-btn"
+            disabled={busy || !displayPhone}
+            onClick={handleSetupSms}
+            className={`w-full py-2.5 px-3 rounded-xl border ${colors.border} ${colors.elevated} font-bold text-xs ${colors.text} flex items-center justify-center gap-2 disabled:opacity-50`}
+          >
+            <Smartphone size={14} />
+            {smsSetupInfo
+              ? (isAr ? 'إعادة إرسال رمز التفعيل للهاتف' : 'Resend SMS Setup Code')
+              : (isAr ? 'إرسال رمز تفعيل لرقم الهاتف (SMS)' : 'Send Verification SMS to Enable')}
+          </button>
+        )}
+
+        {smsSetupInfo && !smsEnabled && (
+          <form onSubmit={handleEnableSms} className="space-y-2.5 pt-2 border-t border-slate-500/10">
+            <p className="text-[11px] text-emerald-500 font-semibold">
+              {isAr
+                ? `✓ تم إرسال رمز من ٦ أرقام إلى ${smsSetupInfo.maskedPhone || displayPhone} (افتح Simulator لمشاهدة الرسالة أو الملء التلقائي)`
+                : `✓ Sent a 6-digit SMS code to ${smsSetupInfo.maskedPhone || displayPhone} (check Simulator SMS / OTP panel)`}
+            </p>
+            <div className="space-y-1">
+              <label className={`text-[10px] ${colors.secondaryText}`}>
+                {isAr ? 'رمز الرسالة النصية المكون من ٦ أرقام' : '6-digit SMS verification code'}
+              </label>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={6}
+                data-testid="field-sms2faCode"
+                value={smsCode}
+                onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                className={inputClass()}
+              />
+            </div>
+            <PrimaryButton
+              type="submit"
+              testId="sms-2fa-enable-btn"
+              disabled={busy || smsCode.trim().length !== 6}
+            >
+              {isAr ? 'تحقق وفعل رسائل الهاتف (SMS)' : 'Verify & Enable Mobile SMS 2FA'}
+            </PrimaryButton>
+          </form>
+        )}
+
+        {smsEnabled && (
+          <SecondaryButton onClick={handleDisableSms} disabled={busy}>
+            <span data-testid="sms-2fa-disable-btn">
+              {isAr ? 'إيقاف التحقق عبر رسائل الهاتف' : 'Turn Off Mobile SMS 2FA'}
+            </span>
+          </SecondaryButton>
+        )}
+      </div>
+
+      {/* Backup Recovery Codes + Disable All */}
+      {(any2FaEnabled || (recoveryCodes && recoveryCodes.length > 0)) && (
+        <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2.5 text-xs`}>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className={`font-extrabold ${colors.text}`}>
+                {isAr ? 'رموز الاسترداد الاحتياطية (Backup Codes)' : 'Backup Recovery Codes'}
+              </p>
+              <p className={`text-[10px] ${colors.secondaryText}`}>
+                {isAr
+                  ? '٨ رموز لمرة واحدة للدخول في حال فقدان الهاتف أو التطبيق'
+                  : '8 one-time codes to access your account if you lose your phone'}
+              </p>
+            </div>
+            <button
+              type="button"
+              data-testid="regen-recovery-btn"
+              disabled={busy || !any2FaEnabled}
+              onClick={handleRegenerateRecovery}
+              className="shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-500/15 font-bold text-[10px] flex items-center gap-1"
+            >
+              <RefreshCw size={11} />
+              {isAr ? 'توليد رموز جديدة' : 'Regenerate'}
+            </button>
+          </div>
+
+          {recoveryCodes && recoveryCodes.length > 0 && (
+            <div
+              data-testid="totp-recovery-codes"
+              className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 space-y-2"
+            >
+              <p className="font-bold text-emerald-500">
+                {isAr ? 'رموز الاسترداد لمرة واحدة (احفظها في مكان آمن)' : 'One-time recovery codes (save securely)'}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]" dir="ltr">
+                {recoveryCodes.map((c) => (
+                  <div key={c} className={`p-1.5 rounded-lg border ${colors.border} ${colors.surface} text-center font-bold ${colors.text}`}>
+                    {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {any2FaEnabled && (
+            <SecondaryButton onClick={handleDisableAll} disabled={busy}>
+              <span data-testid="disable-all-2fa-btn" className="text-rose-500">
+                {isAr ? 'إيقاف جميع وسائل التحقق بخطوتين' : 'Turn Off All 2-Step Verification'}
+              </span>
+            </SecondaryButton>
+          )}
+        </div>
+      )}
+
+      {/* Password, Core Account Details & Active Sessions Shortcuts */}
+      <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2.5 text-xs`}>
+        <button
+          type="button"
+          onClick={() => nav.go('SH02')}
+          className="w-full flex justify-between items-center text-start"
+        >
+          <div>
+            <p className={`font-extrabold ${colors.text}`}>
+              {isAr ? 'تغيير كلمة المرور' : 'Change password'}
+            </p>
+            <p className={`text-[10px] ${colors.secondaryText}`}>
+              {isAr ? 'تحديث كلمة مرور حسابك الحالية' : 'Update your account password'}
+            </p>
+          </div>
+          <Lock size={14} className={colors.secondaryText} />
+        </button>
+
+        <button
+          type="button"
+          data-testid="ad13-goto-inapp-reset"
+          onClick={() => nav.go('SH02', { mode: 'reset' })}
+          className="w-full flex justify-between items-center text-start pt-2 border-t border-slate-500/10"
+        >
+          <div>
+            <p className={`font-extrabold ${colors.text}`}>
+              {isAr ? 'إعادة تعيين كلمة المرور عبر البريد' : 'Reset password via email code'}
+            </p>
+            <p className={`text-[10px] ${colors.secondaryText}`}>
+              {isAr ? 'تعيين كلمة مرور جديدة عبر رمز بريد إلكتروني دون كلمة المرور القديمة' : 'Reset without your old password using a mandatory email code'}
+            </p>
+          </div>
+          <Mail size={14} className={colors.secondaryText} />
+        </button>
+
+        <button
+          type="button"
+          data-testid="ad13-goto-sh12"
+          onClick={() => nav.go('SH12')}
+          className="w-full flex justify-between items-center text-start pt-2 border-t border-slate-500/10"
+        >
+          <div>
+            <p className={`font-extrabold ${colors.text}`}>
+              {isAr ? 'البيانات الأساسية للحساب' : 'Core account details'}
+            </p>
+            <p className={`text-[10px] ${colors.secondaryText}`}>
+              {isAr ? 'الاسم والبريد الإلكتروني ورقم الهاتف' : 'Full name, email address, and mobile number'}
+            </p>
+          </div>
+          <ForwardChevron size={14} className={colors.secondaryText} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => nav.go('AD14')}
+          className="w-full flex justify-between items-center text-start pt-2 border-t border-slate-500/10"
+        >
+          <div>
+            <p className={`font-extrabold ${colors.text}`}>
+              {isAr ? 'الجلسات النشطة' : 'Active sessions'}
+            </p>
+            <p className={`text-[10px] ${colors.secondaryText}`}>
+              {isAr ? 'مراجعة الأجهزة المتصلة وإلغاء الجلسات' : 'Review signed-in devices and revoke access'}
+            </p>
+          </div>
+          <ForwardChevron size={14} className={colors.secondaryText} />
+        </button>
       </div>
 
       {error && <p role="alert" className="text-xs text-rose-500 font-bold">{error}</p>}
@@ -2525,7 +2965,7 @@ export function AD14Screen({ id, params }) {
           {isAr ? 'الجلسات النشطة' : 'Active sessions'}
         </h1>
         <p className={`text-xs ${colors.secondaryText}`}>
-          {user?.fullName || (isAr ? 'المشرف' : 'Administrator')} · {isAr ? 'أمان الحساب' : 'Account security'}
+          {user?.fullName || formatLabel(user?.role || 'CarOwner', isAr)} · {isAr ? 'أمان الحساب' : 'Account security'}
         </p>
       </div>
 

@@ -104,11 +104,28 @@ public sealed class FakeOtpSender(IServiceScopeFactory scopes, ILogger<FakeOtpSe
         db.SimMessages.Add(new Domain.Entities.SimMessage
         {
             Channel = channel, Recipient = recipient, RecipientName = recipientName,
-            Body = channel == SimChannel.Sms ? $"FixNGo code: {code}" : $"Your FixNGo {purpose} code is {code}",
+            Body = channel == SimChannel.Sms ? $"FixNGo security code: {code}" : $"Your FixNGo {purpose} code is {code}",
             OtpCode = code, Purpose = purpose
         });
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Fake {Channel} message queued for {Recipient}", channel, recipient);
+    }
+
+    public async Task SendSecurityAlertAsync(string recipient, string? recipientName, string subject, string heading, string message, CancellationToken ct = default)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
+        db.SimMessages.Add(new Domain.Entities.SimMessage
+        {
+            Channel = SimChannel.Email,
+            Recipient = recipient,
+            RecipientName = recipientName,
+            Body = $"{subject} — {message}",
+            OtpCode = null,
+            Purpose = "security-alert"
+        });
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("Fake security alert email queued for {Recipient}: {Subject}", recipient, subject);
     }
 }
 

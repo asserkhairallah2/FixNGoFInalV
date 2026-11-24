@@ -44,7 +44,11 @@ public static class DatabaseSetup
             ("ServiceRequests", "PendingOfferId", "TEXT NULL"),
             ("ServiceRequests", "CustomerConfirmDeadlineAt", "TEXT NULL"),
             ("ServiceRequests", "CustomerRejectionCount", "INTEGER NOT NULL DEFAULT 0"),
-            ("ServiceRequests", "SearchExpiresAt", "TEXT NULL")
+            ("ServiceRequests", "SearchExpiresAt", "TEXT NULL"),
+            ("Users", "TotpEnabled", "INTEGER NOT NULL DEFAULT 0"),
+            ("Users", "PendingTotpSecret", "TEXT NULL"),
+            ("Users", "SmsTwoFactorEnabled", "INTEGER NOT NULL DEFAULT 0"),
+            ("PasswordResetTokens", "Purpose", "TEXT NOT NULL DEFAULT 'Reset'")
         };
 
         foreach (var (table, column, def) in upgrades)
@@ -69,6 +73,12 @@ public static class DatabaseSetup
                 alterCmd.CommandText = $"ALTER TABLE \"{table}\" ADD COLUMN \"{column}\" {def};";
                 await alterCmd.ExecuteNonQueryAsync(ct);
             }
+        }
+
+        await using (var backfillCmd = conn.CreateCommand())
+        {
+            backfillCmd.CommandText = "UPDATE \"Users\" SET \"TotpEnabled\" = 1 WHERE \"TwoFactorEnabled\" = 1 AND \"TwoFactorSecret\" IS NOT NULL AND \"TotpEnabled\" = 0;";
+            await backfillCmd.ExecuteNonQueryAsync(ct);
         }
     }
 

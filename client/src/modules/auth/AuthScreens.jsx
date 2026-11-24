@@ -8,7 +8,7 @@ import { post, put, uploadFile } from '../../api/http.js';
 import { useBootstrap, useKyc, useSubmitKyc } from '../../api/hooks.js';
 import {
   useColors, AppTopBar, PrimaryButton, SecondaryButton, StatusBadge,
-  ShieldLogo, MapView, Toast, formatLabel, PasswordChecklist
+  ShieldLogo, MapView, Toast, formatLabel, PasswordChecklist, TwoFactorChallengeCard
 } from '../../ui/kit.jsx';
 import {
   describePasswordIssues, validateEmailField, validateEgyptPhoneField
@@ -123,7 +123,7 @@ export function A03Screen() {
   const c = useColors();
   const { isAr } = usePrefs();
   const nav = useNav();
-  const { login } = useSession();
+  const { login, applyAuth } = useSession();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -131,6 +131,8 @@ export function A03Screen() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
+  const [twoFactorChallenge, setTwoFactorChallenge] = useState(null);
+  const [twoFactorError, setTwoFactorError] = useState('');
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
@@ -147,8 +149,13 @@ export function A03Screen() {
     setFieldErrors({});
     setBusy(true);
     try {
-      const user = await login(email.trim(), password);
-      nav.replace(homeForUser(user));
+      const result = await login(email.trim(), password);
+      if (result?.requiresTwoFactor) {
+        setTwoFactorError('');
+        setTwoFactorChallenge(result);
+        return;
+      }
+      nav.replace(homeForUser(result));
     } catch (err) {
       if (err.code === 'auth.otp_required') {
         sessionStorage.setItem('fixngo.otpTarget', email.trim().toLowerCase());
@@ -171,6 +178,65 @@ export function A03Screen() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleVerifyLogin2Fa({ method, code }) {
+    if (!twoFactorChallenge?.challengeToken) return;
+    setTwoFactorError('');
+    setBusy(true);
+    try {
+      const verified = await post('/auth/login/verify-2fa', {
+        challengeToken: twoFactorChallenge.challengeToken,
+        method,
+        code
+      });
+      const authedUser = applyAuth(verified);
+      nav.replace(homeForUser(authedUser));
+    } catch (err) {
+      setTwoFactorError(err.message || (isAr ? 'رمز التحقق بخطوتين غير صحيح.' : 'Invalid two-factor verification code.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (twoFactorChallenge) {
+    return (
+      <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="view-login">
+        <AppTopBar
+          showBack={true}
+          onBack={() => {
+            setTwoFactorChallenge(null);
+            setTwoFactorError('');
+          }}
+        />
+        <div className="p-5 pb-7 space-y-4 flex-1" data-testid="login-2fa-step">
+          <div>
+            <h1 className={`text-xl font-bold ${c.text}`}>
+              {isAr ? 'التحقق بخطوتين' : '2-Step Verification'}
+            </h1>
+            <p className={`text-xs ${c.secondaryText}`}>
+              {isAr ? 'تأكيد تسجيل الدخول إلى ' : 'Confirm sign-in for '}
+              <span className={`font-bold ${c.text}`} dir="ltr">{email.trim().toLowerCase()}</span>
+            </p>
+          </div>
+          <TwoFactorChallengeCard
+            availableMethods={twoFactorChallenge.availableMethods}
+            maskedPhone={twoFactorChallenge.maskedPhone}
+            defaultMethod={twoFactorChallenge.defaultMethod}
+            initialSmsSent={twoFactorChallenge.smsSent}
+            challengeToken={twoFactorChallenge.challengeToken}
+            busy={busy}
+            error={twoFactorError}
+            submitLabel={isAr ? 'تأكيد وتسجيل الدخول' : 'Verify & Sign In'}
+            onSubmitCode={handleVerifyLogin2Fa}
+            onCancel={() => {
+              setTwoFactorChallenge(null);
+              setTwoFactorError('');
+            }}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -542,6 +608,8 @@ export function A05Screen() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
+  const [forgotTwoFactor, setForgotTwoFactor] = useState(null);
+  const [forgotTwoFactorError, setForgotTwoFactorError] = useState('');
   const boxes = useRef([]);
 
   const target = sessionStorage.getItem('fixngo.otpTarget') || nav.flow?.signupEmail || user?.email || '';
@@ -558,13 +626,14 @@ export function A05Screen() {
   }, []);
 
   useEffect(() => {
+    if (forgotTwoFactor) return undefined;
     const onFill = (e) => {
       const chars = String(e.detail || '').replace(/\D/g, '').slice(0, 6).split('');
       setDigits(Array.from({ length: 6 }, (_, i) => chars[i] || ''));
     };
     window.addEventListener('fixngo:otp-autofill', onFill);
     return () => window.removeEventListener('fixngo:otp-autofill', onFill);
-  }, []);
+  }, [forgotTwoFactor]);
 
   const setDigit = (idx, raw) => {
     const cleaned = raw.replace(/\D/g, '');
@@ -612,6 +681,11 @@ export function A05Screen() {
     try {
       if (purpose === 'Forgot') {
         const data = await post('/auth/reset-otp', { target, code, purpose: 'Forgot' });
+        if (data?.requiresTwoFactor) {
+          setForgotTwoFactorError('');
+          setForgotTwoFactor(data);
+          return;
+        }
         sessionStorage.setItem('fixngo.resetToken', typeof data === 'string' ? data : data.resetToken);
         nav.go('A07');
       } else if (purpose === 'Login') {
@@ -637,6 +711,63 @@ export function A05Screen() {
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
   const ss = String(secondsLeft % 60).padStart(2, '0');
   const backTarget = purpose === 'Forgot' ? 'A06' : purpose === 'Signup' ? 'A04' : 'A03';
+
+  async function handleVerifyForgot2Fa({ method, code: twoFactorCode }) {
+    if (!forgotTwoFactor?.challengeToken) return;
+    setForgotTwoFactorError('');
+    setBusy(true);
+    try {
+      const res = await post('/auth/reset-otp/verify-2fa', {
+        challengeToken: forgotTwoFactor.challengeToken,
+        method,
+        code: twoFactorCode
+      });
+      sessionStorage.setItem('fixngo.resetToken', res.resetToken);
+      nav.go('A07');
+    } catch (err) {
+      setForgotTwoFactorError(err.message || (isAr ? 'رمز التحقق بخطوتين غير صحيح.' : 'Invalid two-factor verification code.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (forgotTwoFactor) {
+    return (
+      <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="screen">
+        <AppTopBar
+          showBack={true}
+          onBack={() => {
+            setForgotTwoFactor(null);
+            setForgotTwoFactorError('');
+          }}
+        />
+        <div className="p-5 space-y-4 flex-1" data-testid="forgot-2fa-step">
+          <div>
+            <h1 className={`text-xl font-bold ${c.text}`}>
+              {isAr ? 'الخطوة ٢: التحقق بخطوتين' : 'Step 2: 2-Step Verification'}
+            </h1>
+            <p className={`text-xs ${c.secondaryText}`}>
+              {isAr
+                ? 'تم تأكيد بريدك الإلكتروني. أكمل التحقق بخطوتين للمتابعة إلى تعيين كلمة المرور الجديدة.'
+                : 'Email verified. Complete 2-Step Verification to continue resetting your password.'}
+            </p>
+          </div>
+          <TwoFactorChallengeCard
+            availableMethods={forgotTwoFactor.availableMethods}
+            maskedPhone={forgotTwoFactor.maskedPhone}
+            defaultMethod={forgotTwoFactor.defaultMethod}
+            initialSmsSent={forgotTwoFactor.smsSent}
+            challengeToken={forgotTwoFactor.challengeToken}
+            busy={busy}
+            error={forgotTwoFactorError}
+            submitLabel={isAr ? 'تحقق ومتابعة' : 'Verify & Reset Password'}
+            onSubmitCode={handleVerifyForgot2Fa}
+            onCancel={() => nav.back(backTarget)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-full flex flex-col ${c.bg}`} data-testid="screen">

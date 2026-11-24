@@ -92,8 +92,8 @@ export async function refreshAccessToken() {
 }
 
 export async function api(path, options = {}) {
-  const { method = 'GET', body, idempotencyKey, _retried = false, ...rest } = options;
-  const headers = { ...(rest.headers || {}) };
+  const { method = 'GET', body, idempotencyKey, headers: extraHeaders, _retried = false, ...rest } = options;
+  const headers = { ...(extraHeaders || {}) };
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;

@@ -387,6 +387,9 @@ export function SessionProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const data = await post('/auth/login', { email, password });
+    if (data?.requiresTwoFactor) {
+      return data;
+    }
     setTokens(data.accessToken, data.refreshToken);
     updateUser(data.user);
     return data.user;

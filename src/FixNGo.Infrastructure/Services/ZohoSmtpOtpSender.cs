@@ -84,7 +84,9 @@ public sealed class ZohoSmtpOtpSender(
 
         try
         {
-            await SendSmtpEmailAsync(normalized, recipientName, code, purpose, ct);
+            var fromAddr = string.IsNullOrWhiteSpace(options.FromEmail) ? options.Username : options.FromEmail.Trim();
+            var mime = BuildMimeMessage(fromAddr, options.FromName, normalized, recipientName, code, purpose);
+            await SendRawMimeAsync(normalized, mime, ct);
             logger.LogInformation("Delivered {Purpose} OTP email via Zoho Mail ({FromEmail}) to {Recipient}", purpose, options.FromEmail, normalized);
         }
         catch (Exception ex)
@@ -94,7 +96,54 @@ public sealed class ZohoSmtpOtpSender(
         }
     }
 
-    private async Task SendSmtpEmailAsync(string toEmail, string? toName, string code, string purpose, CancellationToken ct)
+    public async Task SendSecurityAlertAsync(
+        string recipient,
+        string? recipientName,
+        string subject,
+        string heading,
+        string message,
+        CancellationToken ct = default)
+    {
+        if (options.RecordSimMessages && !string.IsNullOrWhiteSpace(recipient))
+        {
+            using var scope = scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
+            db.SimMessages.Add(new SimMessage
+            {
+                Channel = SimChannel.Email,
+                Recipient = recipient.Trim(),
+                RecipientName = recipientName,
+                Body = $"{subject} — {message}",
+                OtpCode = null,
+                Purpose = "security-alert"
+            });
+            await db.SaveChangesAsync(ct);
+        }
+
+        if (!options.IsConfigured || string.IsNullOrWhiteSpace(recipient) || !recipient.Contains('@'))
+            return;
+
+        var normalized = recipient.Trim().ToLowerInvariant();
+        if (SyntheticDomains.Any(d => normalized.EndsWith(d, StringComparison.OrdinalIgnoreCase)))
+        {
+            logger.LogInformation("Skipping external security alert SMTP for synthetic test recipient {Recipient}", normalized);
+            return;
+        }
+
+        try
+        {
+            var fromAddr = string.IsNullOrWhiteSpace(options.FromEmail) ? options.Username : options.FromEmail.Trim();
+            var mime = BuildSecurityAlertMimeMessage(fromAddr, options.FromName, normalized, recipientName, subject, heading, message);
+            await SendRawMimeAsync(normalized, mime, ct);
+            logger.LogInformation("Delivered security alert email ({Subject}) via Zoho Mail to {Recipient}", subject, normalized);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Non-fatal Zoho SMTP failure while sending security alert ({Subject}) to {Recipient}", subject, normalized);
+        }
+    }
+
+    private async Task SendRawMimeAsync(string toEmail, string mime, CancellationToken ct)
     {
         using var tcp = new TcpClient();
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -149,7 +198,6 @@ public sealed class ZohoSmtpOtpSender(
             await SendCommandAsync(writer, reader, $"RCPT TO:<{toEmail}>", 250, token);
             await SendCommandAsync(writer, reader, "DATA", 354, token);
 
-            var mime = BuildMimeMessage(fromAddr, options.FromName, toEmail, toName, code, purpose);
             await writer.WriteAsync(mime.AsMemory(), token);
             await writer.WriteAsync("\r\n.\r\n".AsMemory(), token);
             await ExpectCodeAsync(reader, 250, "DATA end", token);
@@ -203,7 +251,7 @@ public sealed class ZohoSmtpOtpSender(
         {
             "signup" => ($"FixNGo — Verify your account ({code})", "Verify your FixNGo account", "Enter this 6-digit verification code in the app to activate your account."),
             "login" => ($"FixNGo — Sign-in security code ({code})", "Confirm your sign-in", "Use this one-time security code to finish signing in to FixNGo."),
-            "reset" or "forgot" => ($"FixNGo — Password reset code ({code})", "Reset your FixNGo password", "Enter this 6-digit code in the app to set a new password."),
+            "reset" or "forgot" or "inappreset" => ($"FixNGo — Password reset code ({code})", "Reset your FixNGo password", "Enter this 6-digit code in the app to set a new password."),
             _ => ($"FixNGo — Verification code ({code})", "Your FixNGo verification code", "Use the 6-digit security code below to continue.")
         };
 
@@ -237,6 +285,75 @@ public sealed class ZohoSmtpOtpSender(
         <div style=""font-size:34px;font-weight:900;letter-spacing:0.24em;color:#E51C23;font-family:'Courier New',monospace;"">{code}</div>
       </div>
       <p style=""margin:0;font-size:12px;line-height:1.6;color:#64748B;"">Valid for <strong>5 minutes</strong>. If you did not request this code, you can safely ignore this email.</p>
+    </div>
+    <div style=""padding:14px 28px;background:#F8FAFC;border-top:1px solid #E2E8F0;font-size:11px;color:#94A3B8;text-align:center;"">
+      Sent securely by FixNGo &bull; noreply-fixngo@nerot.me
+    </div>
+  </div>
+</body>
+</html>";
+
+        var sb = new StringBuilder();
+        sb.Append($"From: {encodedFromName} <{fromEmail}>\r\n");
+        sb.Append($"To: <{toEmail}>\r\n");
+        sb.Append($"Subject: {encodedSubject}\r\n");
+        sb.Append($"Date: {dateHeader}\r\n");
+        sb.Append($"Message-ID: {messageId}\r\n");
+        sb.Append("MIME-Version: 1.0\r\n");
+        sb.Append($"Content-Type: multipart/alternative; boundary=\"{boundary}\"\r\n\r\n");
+
+        sb.Append($"--{boundary}\r\n");
+        sb.Append("Content-Type: text/plain; charset=UTF-8\r\n");
+        sb.Append("Content-Transfer-Encoding: base64\r\n\r\n");
+        sb.Append(WrapBase64(Encoding.UTF8.GetBytes(plainText)));
+        sb.Append("\r\n");
+
+        sb.Append($"--{boundary}\r\n");
+        sb.Append("Content-Type: text/html; charset=UTF-8\r\n");
+        sb.Append("Content-Transfer-Encoding: base64\r\n\r\n");
+        sb.Append(WrapBase64(Encoding.UTF8.GetBytes(html)));
+        sb.Append("\r\n");
+
+        sb.Append($"--{boundary}--");
+        return DotStuff(sb.ToString());
+    }
+
+    private static string BuildSecurityAlertMimeMessage(string fromEmail, string fromName, string toEmail, string? toName, string subject, string heading, string message)
+    {
+        var safeName = string.IsNullOrWhiteSpace(toName) ? "there" : System.Net.WebUtility.HtmlEncode(toName.Trim());
+        var safeHeading = System.Net.WebUtility.HtmlEncode(heading);
+        var safeMessage = System.Net.WebUtility.HtmlEncode(message);
+        var encodedSubject = $"=?UTF-8?B?{Convert.ToBase64String(Encoding.UTF8.GetBytes(subject))}?=";
+        var encodedFromName = $"=?UTF-8?B?{Convert.ToBase64String(Encoding.UTF8.GetBytes(string.IsNullOrWhiteSpace(fromName) ? "FixNGo" : fromName))}?=";
+        var boundary = $"fixngo_sec_{Guid.NewGuid():N}";
+        var messageId = $"<{Guid.NewGuid():N}@nerot.me>";
+        var dateHeader = DateTimeOffset.UtcNow.ToString("R");
+        var utcLabel = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm 'UTC'");
+
+        var plainText =
+            $"Hello {(string.IsNullOrWhiteSpace(toName) ? "there" : toName.Trim())},\r\n\r\n" +
+            $"{heading}\r\n\r\n" +
+            $"{message}\r\n\r\n" +
+            $"Time: {utcLabel}\r\n" +
+            "If you recognized this activity, no further action is needed. If you did not perform this change, please reset your FixNGo password immediately.\r\n" +
+            "— FixNGo Account Security (noreply-fixngo@nerot.me)";
+
+        var html = $@"<!DOCTYPE html>
+<html lang=""en"">
+<body style=""margin:0;padding:24px;background:#0F172A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#0F172A;"">
+  <div style=""max-width:480px;margin:0 auto;background:#FFFFFF;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.35);"">
+    <div style=""background:linear-gradient(135deg,#E51C23,#B91C1C);padding:24px 28px;color:#FFFFFF;"">
+      <div style=""font-size:22px;font-weight:900;letter-spacing:-0.02em;"">FixNGo Security</div>
+      <div style=""font-size:12px;opacity:0.9;margin-top:4px;"">Official Account Security Notification</div>
+    </div>
+    <div style=""padding:28px;"">
+      <h2 style=""margin:0 0 10px;font-size:20px;color:#0F172A;"">{safeHeading}</h2>
+      <p style=""margin:0 0 16px;font-size:14px;line-height:1.6;color:#475569;"">Hello {safeName},</p>
+      <div style=""background:#F8FAFC;border-left:4px solid #E51C23;border-radius:12px;padding:16px;margin:16px 0;font-size:14px;line-height:1.6;color:#0F172A;"">
+        {safeMessage}
+        <div style=""font-size:11px;color:#64748B;margin-top:8px;"">Recorded at {utcLabel}</div>
+      </div>
+      <p style=""margin:0;font-size:12px;line-height:1.6;color:#64748B;"">If this was you, you don't need to do anything. If you don't recognize this activity, please secure your account immediately.</p>
     </div>
     <div style=""padding:14px 28px;background:#F8FAFC;border-top:1px solid #E2E8F0;font-size:11px;color:#94A3B8;text-align:center;"">
       Sent securely by FixNGo &bull; noreply-fixngo@nerot.me

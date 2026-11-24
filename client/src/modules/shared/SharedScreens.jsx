@@ -25,6 +25,8 @@ import {
   Lock,
   ShieldCheck,
   MessageSquare,
+  Mail,
+  KeyRound,
   X
 } from 'lucide-react';
 import { usePrefs, useNav, useSession, homeForUser, resolveDeepLink } from '../../app/stores.jsx';
@@ -58,7 +60,9 @@ import {
   Toast,
   formatLabel,
   pluralCount,
-  PasswordChecklist
+  PasswordChecklist,
+  TwoFactorChallengeCard,
+  TwoFactorStepUpSheet
 } from '../../ui/kit.jsx';
 import {
   describePasswordIssues,
@@ -576,14 +580,15 @@ export function SH01Screen({ id, params }) {
 }
 
 /* =====================================================================
- * SH02: Change password
+ * SH02: Change password & In-App Password Reset (Mandatory Email OTP + 2FA)
  * ===================================================================== */
-export function SH02Screen() {
+export function SH02Screen({ params } = {}) {
   const colors = useColors();
   const { isAr } = usePrefs();
   const nav = useNav();
-  const { user } = useSession();
+  const { user, applyAuth } = useSession();
 
+  const [activeMode, setActiveMode] = useState(() => (params?.mode === 'reset' ? 'reset' : 'change'));
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -595,6 +600,41 @@ export function SH02Screen() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [done, setDone] = useState(false);
   const [toast, setToast] = useState('');
+  const [stepUpSheetOpen, setStepUpSheetOpen] = useState(false);
+
+  // In-app password reset state (always sends Email OTP, + 2FA if enabled)
+  const [resetChallenge, setResetChallenge] = useState(null);
+  const [resetEmailCode, setResetEmailCode] = useState('');
+  const [reset2faMode, setReset2faMode] = useState('');
+  const [reset2faCode, setReset2faCode] = useState('');
+  const [resetCooldownTimer, setResetCooldownTimer] = useState(0);
+  const [autofillTargetMode, setAutofillTargetMode] = useState('email');
+
+  useEffect(() => {
+    if (params?.mode === 'reset') setActiveMode('reset');
+  }, [params?.mode]);
+
+  useEffect(() => {
+    if (resetCooldownTimer <= 0) return undefined;
+    const id = setInterval(() => setResetCooldownTimer((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [resetCooldownTimer]);
+
+  useEffect(() => {
+    if (activeMode !== 'reset' || !resetChallenge) return undefined;
+    const onFill = (e) => {
+      const digits = String(e.detail ?? '').replace(/\D/g, '').slice(0, 6);
+      if (!digits) return;
+      if (autofillTargetMode === 'email' || resetEmailCode.length < 6) {
+        setResetEmailCode(digits);
+        if (resetChallenge.requiresTwoFactor) setAutofillTargetMode('2fa');
+      } else if (resetChallenge.requiresTwoFactor) {
+        setReset2faCode(digits);
+      }
+    };
+    window.addEventListener('fixngo:otp-autofill', onFill);
+    return () => window.removeEventListener('fixngo:otp-autofill', onFill);
+  }, [activeMode, resetChallenge, autofillTargetMode, resetEmailCode.length]);
 
   const hasLen = newPassword.length >= 8;
   const hasCase = /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword);
@@ -609,6 +649,32 @@ export function SH02Screen() {
     : newPassword.length > 0
     ? (isAr ? 'ضعيفة' : 'Weak')
     : (isAr ? 'أدخل كلمة المرور' : 'Enter password');
+
+  async function executeChangePassword(stepUpToken = null) {
+    setBusy(true);
+    setError('');
+    try {
+      await post(
+        '/auth/change-password',
+        { currentPassword, newPassword, stepUpToken },
+        stepUpToken ? { headers: { 'X-StepUp-Token': stepUpToken } } : {}
+      );
+      setStepUpSheetOpen(false);
+      setDone(true);
+      setToast(isAr ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully');
+      setTimeout(() => nav.back(), 450);
+    } catch (err) {
+      if (err.code === 'auth.2fa_required') {
+        setStepUpSheetOpen(true);
+        return;
+      }
+      setStepUpSheetOpen(false);
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
+      setError(err.message || (isAr ? 'تعذر تحديث كلمة المرور' : 'Could not update password'));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
@@ -628,15 +694,82 @@ export function SH02Screen() {
       return;
     }
     setFieldErrors({});
+    if (user?.twoFactorEnabled) {
+      setStepUpSheetOpen(true);
+      return;
+    }
+    await executeChangePassword(null);
+  }
+
+  async function handleStartInAppReset() {
+    if (busy || resetCooldownTimer > 0) return;
+    setError('');
+    setFieldErrors({});
     setBusy(true);
     try {
-      await post('/auth/change-password', { currentPassword, newPassword });
+      const data = await post('/auth/in-app-reset/start', {});
+      setResetChallenge(data);
+      const firstMethod = data?.availableMethods?.[0] || 'totp';
+      setReset2faMode(firstMethod);
+      setResetEmailCode('');
+      setReset2faCode('');
+      setAutofillTargetMode('email');
+      setResetCooldownTimer(25);
+      setToast(
+        isAr
+          ? `تم إرسال رمز تحقق من ٦ أرقام إلى ${data.target || user?.email || 'بريدك الإلكتروني'}`
+          : `Sent a 6-digit verification code to ${data.target || user?.email || 'your email'}`
+      );
+    } catch (err) {
+      setError(err.message || (isAr ? 'تعذر إرسال رمز إعادة التعيين.' : 'Could not send reset verification code.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCompleteInAppReset(e) {
+    if (e) e.preventDefault();
+    setError('');
+    const nextErrors = {};
+    if (resetEmailCode.replace(/\D/g, '').length !== 6) {
+      nextErrors.emailCode = isAr ? 'أدخل رمز البريد الإلكتروني المكون من ٦ أرقام.' : 'Enter the 6-digit email verification code.';
+    }
+    if (resetChallenge?.requiresTwoFactor) {
+      const isRec = reset2faMode === 'recovery';
+      const cleaned2fa = isRec ? reset2faCode.replace(/[^A-Za-z0-9]/g, '') : reset2faCode.replace(/\D/g, '');
+      if ((isRec && cleaned2fa.length < 8) || (!isRec && cleaned2fa.length !== 6)) {
+        nextErrors.twoFactorCode = isAr ? 'يرجى إدخال رمز التحقق بخطوتين.' : 'Please enter your two-factor verification code.';
+      }
+    }
+    const passErr = describePasswordIssues(newPassword, isAr);
+    if (passErr) nextErrors.newPassword = passErr;
+    if (!confirmPassword || confirmPassword !== newPassword) {
+      nextErrors.confirmPassword = isAr ? 'كلمتا المرور غير متطابقتين.' : 'New passwords do not match.';
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(Object.values(nextErrors)[0]);
+      return;
+    }
+    setFieldErrors({});
+    setBusy(true);
+    try {
+      const effectiveMethod = reset2faMode || resetChallenge?.availableMethods?.[0] || 'totp';
+      const res = await post('/auth/in-app-reset/complete', {
+        emailCode: resetEmailCode.replace(/\D/g, ''),
+        newPassword,
+        twoFactorMethod: resetChallenge?.requiresTwoFactor ? effectiveMethod : null,
+        twoFactorCode: resetChallenge?.requiresTwoFactor ? reset2faCode.trim() : null
+      });
+      if (res?.accessToken) {
+        applyAuth(res);
+      }
       setDone(true);
-      setToast(isAr ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully');
-      setTimeout(() => nav.back(), 450);
+      setToast(isAr ? 'تمت إعادة تعيين كلمة المرور بنجاح' : 'Password reset successfully');
+      setTimeout(() => nav.back(), 500);
     } catch (err) {
       if (err.fieldErrors) setFieldErrors(err.fieldErrors);
-      setError(err.message || (isAr ? 'تعذر تحديث كلمة المرور' : 'Could not update password'));
+      setError(err.message || (isAr ? 'تعذر إتمام إعادة تعيين كلمة المرور.' : 'Could not complete password reset.'));
     } finally {
       setBusy(false);
     }
@@ -647,10 +780,19 @@ export function SH02Screen() {
       <AppTopBar showBack={true} onBack={() => nav.back()} />
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
 
-      <form noValidate onSubmit={handleSubmit} className="p-4 pb-8 space-y-3.5">
+      <TwoFactorStepUpSheet
+        open={stepUpSheetOpen}
+        onClose={() => setStepUpSheetOpen(false)}
+        actionTitle={isAr ? 'تأكيد تغيير كلمة المرور' : 'Verify password change'}
+        onVerified={executeChangePassword}
+      />
+
+      <div className="px-4 pt-4 space-y-3">
         <div>
           <h1 className={`text-lg font-extrabold ${colors.text}`}>
-            {isAr ? 'تغيير كلمة المرور' : 'Change password'}
+            {activeMode === 'reset'
+              ? (isAr ? 'إعادة تعيين كلمة المرور' : 'Reset password')
+              : (isAr ? 'تغيير كلمة المرور' : 'Change password')}
           </h1>
           <p className={`text-xs ${colors.secondaryText}`}>
             {user?.fullName ? `${user.fullName} · ` : ''}
@@ -658,120 +800,337 @@ export function SH02Screen() {
           </p>
         </div>
 
-        <div className="space-y-1">
-          <label className={`text-[10px] font-medium ${fieldErrors.currentPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
-            {isAr ? 'كلمة المرور الحالية' : 'Current password'}
-          </label>
-          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
-            fieldErrors.currentPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
-          }`}>
-            <input
-              type={showCurrent ? 'text' : 'password'}
-              value={currentPassword}
-              onChange={(e) => {
-                setCurrentPassword(e.target.value);
-                if (fieldErrors.currentPassword) setFieldErrors((p) => ({ ...p, currentPassword: '' }));
-              }}
-              data-testid="field-currentPassword"
-              placeholder="••••••••••••"
-              className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
-            />
-            <button type="button" onClick={() => setShowCurrent((v) => !v)} aria-label="Toggle current password">
-              {showCurrent ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
-            </button>
-          </div>
-          {fieldErrors.currentPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.currentPassword}</p>}
+        {/* Mode Switcher: Standard Change vs In-App Reset via Mandatory Email OTP */}
+        <div className={`grid grid-cols-2 gap-1.5 p-1 rounded-2xl border ${colors.border} ${colors.surface}`}>
+          <button
+            type="button"
+            data-testid="tab-change-password"
+            onClick={() => {
+              setActiveMode('change');
+              setError('');
+              setFieldErrors({});
+            }}
+            className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition ${
+              activeMode === 'change'
+                ? 'bg-[#E51C23] text-white shadow-sm'
+                : colors.secondaryText
+            }`}
+          >
+            {isAr ? 'بكلمة المرور الحالية' : 'Current Password'}
+          </button>
+          <button
+            type="button"
+            data-testid="tab-inapp-reset"
+            onClick={() => {
+              setActiveMode('reset');
+              setError('');
+              setFieldErrors({});
+            }}
+            className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition ${
+              activeMode === 'reset'
+                ? 'bg-[#E51C23] text-white shadow-sm'
+                : colors.secondaryText
+            }`}
+          >
+            {isAr ? 'إعادة تعيين عبر البريد' : 'Reset via Email Code'}
+          </button>
         </div>
+      </div>
 
-        <div className="space-y-1.5">
-          <label className={`text-[10px] font-medium ${fieldErrors.newPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
-            {isAr ? 'كلمة المرور الجديدة' : 'New password'}
-          </label>
-          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
-            fieldErrors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
-          }`}>
-            <input
-              type={showNew ? 'text' : 'password'}
-              value={newPassword}
-              onChange={(e) => {
-                setNewPassword(e.target.value);
-                if (fieldErrors.newPassword) setFieldErrors((p) => ({ ...p, newPassword: '' }));
-              }}
-              data-testid="field-newPassword"
-              placeholder="••••••••••••"
-              className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
-            />
-            <button type="button" onClick={() => setShowNew((v) => !v)} aria-label="Toggle new password">
-              {showNew ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
-            </button>
-          </div>
-          {fieldErrors.newPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.newPassword}</p>}
-          <PasswordChecklist password={newPassword} showInvalid={Boolean(fieldErrors.newPassword)} />
-          <div className="grid grid-cols-4 gap-1.5 pt-1">
-            {[1, 2, 3, 4].map((bar) => (
-              <div
-                key={bar}
-                className={`h-1 rounded-full ${
-                  score >= bar ? 'bg-emerald-500' : 'bg-slate-500/25'
-                }`}
+      {activeMode === 'change' ? (
+        <form noValidate onSubmit={handleSubmit} className="p-4 pb-8 space-y-3.5">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <label className={`text-[10px] font-medium ${fieldErrors.currentPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
+                {isAr ? 'كلمة المرور الحالية' : 'Current password'}
+              </label>
+              <button
+                type="button"
+                data-testid="switch-to-inapp-reset"
+                onClick={() => {
+                  setActiveMode('reset');
+                  setError('');
+                  setFieldErrors({});
+                }}
+                className="text-[10px] font-bold text-[#E51C23] hover:underline"
+              >
+                {isAr ? 'نسيت الحالية؟ أعد التعيين بالبريد' : 'Forgot current? Reset via email'}
+              </button>
+            </div>
+            <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+              fieldErrors.currentPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}>
+              <input
+                type={showCurrent ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => {
+                  setCurrentPassword(e.target.value);
+                  if (fieldErrors.currentPassword) setFieldErrors((p) => ({ ...p, currentPassword: '' }));
+                }}
+                data-testid="field-currentPassword"
+                placeholder="••••••••••••"
+                className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
               />
-            ))}
+              <button type="button" onClick={() => setShowCurrent((v) => !v)} aria-label="Toggle current password">
+                {showCurrent ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
+              </button>
+            </div>
+            {fieldErrors.currentPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.currentPassword}</p>}
           </div>
-          <div className="flex justify-between text-[10px]">
-            <span className={colors.secondaryText}>{isAr ? 'قوة كلمة المرور' : 'Password strength'}</span>
-            <span className={`font-bold ${score >= 4 ? 'text-emerald-500' : score >= 2 ? 'text-amber-500' : colors.secondaryText}`}>
-              {strengthLabel}
-            </span>
-          </div>
-        </div>
 
-        <div className="space-y-1">
-          <label className={`text-[10px] font-medium ${fieldErrors.confirmPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
-            {isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm new password'}
-          </label>
-          <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
-            fieldErrors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
-          }`}>
-            <input
-              type={showConfirm ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (fieldErrors.confirmPassword) setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
-              }}
-              data-testid="field-confirmPassword"
-              placeholder="••••••••••••"
-              className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
-            />
-            <button type="button" onClick={() => setShowConfirm((v) => !v)} aria-label="Toggle confirm password">
-              {showConfirm ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
+          <div className="space-y-1.5">
+            <label className={`text-[10px] font-medium ${fieldErrors.newPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
+              {isAr ? 'كلمة المرور الجديدة' : 'New password'}
+            </label>
+            <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+              fieldErrors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}>
+              <input
+                type={showNew ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  if (fieldErrors.newPassword) setFieldErrors((p) => ({ ...p, newPassword: '' }));
+                }}
+                data-testid="field-newPassword"
+                placeholder="••••••••••••"
+                className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
+              />
+              <button type="button" onClick={() => setShowNew((v) => !v)} aria-label="Toggle new password">
+                {showNew ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
+              </button>
+            </div>
+            {fieldErrors.newPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.newPassword}</p>}
+            <PasswordChecklist password={newPassword} showInvalid={Boolean(fieldErrors.newPassword)} />
+            <div className="grid grid-cols-4 gap-1.5 pt-1">
+              {[1, 2, 3, 4].map((bar) => (
+                <div
+                  key={bar}
+                  className={`h-1 rounded-full ${
+                    score >= bar ? 'bg-emerald-500' : 'bg-slate-500/25'
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between text-[10px]">
+              <span className={colors.secondaryText}>{isAr ? 'قوة كلمة المرور' : 'Password strength'}</span>
+              <span className={`font-bold ${score >= 4 ? 'text-emerald-500' : score >= 2 ? 'text-amber-500' : colors.secondaryText}`}>
+                {strengthLabel}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className={`text-[10px] font-medium ${fieldErrors.confirmPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
+              {isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm new password'}
+            </label>
+            <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+              fieldErrors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+            }`}>
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (fieldErrors.confirmPassword) setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+                }}
+                data-testid="field-confirmPassword"
+                placeholder="••••••••••••"
+                className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
+              />
+              <button type="button" onClick={() => setShowConfirm((v) => !v)} aria-label="Toggle confirm password">
+                {showConfirm ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
+              </button>
+            </div>
+            {fieldErrors.confirmPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.confirmPassword}</p>}
+          </div>
+
+          <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-[11px] ${colors.secondaryText}`}>
+            <p className={hasLen ? 'text-emerald-500 font-semibold' : colors.text}>
+              {isAr ? '✓ ٨ أحرف على الأقل' : '✓ At least 8 characters'}
+            </p>
+            <p className={hasCase ? 'text-emerald-500 font-semibold' : colors.text}>
+              {isAr ? '✓ أحرف كبيرة وصغيرة' : '✓ Uppercase and lowercase letters'}
+            </p>
+            <p className={hasNum && hasSpec ? 'text-emerald-500 font-semibold' : colors.text}>
+              {isAr ? '✓ رقم ورمز خاص' : '✓ A number and a special character'}
+            </p>
+            <p className="pt-1">
+              {user?.twoFactorEnabled
+                ? (isAr ? 'سيُطلب التحقق بخطوتين عند حفظ كلمة المرور الجديدة.' : '2-Step Verification will be requested to confirm your password update.')
+                : (isAr ? 'ستظل قيد تسجيل الدخول على هذا الجهاز.' : "You'll stay signed in on this device.")}
+            </p>
+          </div>
+
+          {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
+          {done && <p role="status" className="text-xs text-emerald-500">{isAr ? 'تم الحفظ بنجاح' : 'Saved successfully'}</p>}
+
+          <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
+            {isAr ? 'تحديث كلمة المرور' : 'Update Password'}
+          </PrimaryButton>
+        </form>
+      ) : (
+        <form noValidate onSubmit={handleCompleteInAppReset} className="p-4 pb-8 space-y-3.5" data-testid="inapp-reset-form">
+          <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-2 text-xs`}>
+            <div className="flex items-start gap-2.5">
+              <Mail size={16} className="text-[#E51C23] shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className={`font-extrabold ${colors.text}`}>
+                  {isAr ? 'إعادة تعيين رسمية عبر البريد الإلكتروني' : 'Official Email-Verified Password Reset'}
+                </p>
+                <p className={`text-[11px] leading-relaxed ${colors.secondaryText}`}>
+                  {isAr
+                    ? 'سواء كان التحقق بخطوتين مفعّلاً أم لا، نرسل دائماً رمز تحقق إلزامياً من ٦ أرقام إلى بريدك الإلكتروني لتعيين كلمة مرور جديدة دون الحاجة لكلمة المرور الحالية.'
+                    : 'Whether 2FA is enabled or not, we always email a mandatory 6-digit verification code so you can set a new password without entering your old one.'}
+                </p>
+                {user?.email && (
+                  <p className={`font-mono font-bold text-[11px] ${colors.text}`} dir="ltr">{user.email}</p>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-testid="inapp-reset-send-btn"
+              disabled={busy || resetCooldownTimer > 0}
+              onClick={handleStartInAppReset}
+              className="w-full py-2.5 px-3 rounded-xl bg-[#E51C23] text-white font-bold text-xs disabled:opacity-50"
+            >
+              {busy && !resetChallenge
+                ? (isAr ? 'جارٍ إرسال الرمز…' : 'Sending code…')
+                : resetCooldownTimer > 0
+                  ? (isAr ? `إعادة إرسال رمز البريد (${resetCooldownTimer}ث)` : `Resend email code (${resetCooldownTimer}s)`)
+                  : resetChallenge
+                    ? (isAr ? 'إعادة إرسال الرمز للبريد الإلكتروني' : 'Resend Email Verification Code')
+                    : (isAr ? 'إرسال رمز التحقق إلى بريدي الإلكتروني' : 'Send Verification Code to My Email')}
             </button>
           </div>
-          {fieldErrors.confirmPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.confirmPassword}</p>}
-        </div>
 
-        <div className={`p-3.5 rounded-2xl border ${colors.border} ${colors.surface} space-y-1 text-[11px] ${colors.secondaryText}`}>
-          <p className={hasLen ? 'text-emerald-500 font-semibold' : colors.text}>
-            {isAr ? '✓ ٨ أحرف على الأقل' : '✓ At least 8 characters'}
-          </p>
-          <p className={hasCase ? 'text-emerald-500 font-semibold' : colors.text}>
-            {isAr ? '✓ أحرف كبيرة وصغيرة' : '✓ Uppercase and lowercase letters'}
-          </p>
-          <p className={hasNum && hasSpec ? 'text-emerald-500 font-semibold' : colors.text}>
-            {isAr ? '✓ رقم ورمز خاص' : '✓ A number and a special character'}
-          </p>
-          <p className="pt-1">
-            {isAr ? 'ستظل قيد تسجيل الدخول على هذا الجهاز.' : "You'll stay signed in on this device."}
-          </p>
-        </div>
+          {resetChallenge && (
+            <>
+              <div className="space-y-1">
+                <label className={`text-[11px] font-semibold ${fieldErrors.emailCode ? 'text-rose-500' : colors.secondaryText}`}>
+                  {isAr ? '١. رمز التحقق المرسل للبريد الإلكتروني (٦ أرقام)' : '1. Email verification code (6 digits)'}
+                </label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  inputMode="numeric"
+                  maxLength={6}
+                  data-testid="field-inappEmailCode"
+                  value={resetEmailCode}
+                  onFocus={() => setAutofillTargetMode('email')}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setResetEmailCode(v);
+                    if (v.length === 6 && resetChallenge.requiresTwoFactor) setAutofillTargetMode('2fa');
+                    if (fieldErrors.emailCode) setFieldErrors((p) => ({ ...p, emailCode: '' }));
+                  }}
+                  placeholder="000000"
+                  className={`w-full px-3.5 h-11 rounded-xl border transition font-mono tracking-widest text-center text-sm font-extrabold ${colors.text} focus:outline-none ${
+                    fieldErrors.emailCode ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+                  }`}
+                />
+                {fieldErrors.emailCode && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.emailCode}</p>}
+              </div>
 
-        {error && <p role="alert" className="text-xs text-rose-500">{error}</p>}
-        {done && <p role="status" className="text-xs text-emerald-500">{isAr ? 'تم الحفظ بنجاح' : 'Saved successfully'}</p>}
+              {resetChallenge.requiresTwoFactor && (
+                <div
+                  className="space-y-1.5"
+                  onFocusCapture={() => setAutofillTargetMode('2fa')}
+                  data-testid="inapp-reset-2fa-section"
+                >
+                  <p className={`text-[11px] font-semibold ${colors.secondaryText}`}>
+                    {isAr ? '٢. التحقق بخطوتين لحسابك' : '2. Account 2-Step Verification'}
+                  </p>
+                  <TwoFactorChallengeCard
+                    inline={true}
+                    listenAutofill={false}
+                    autoSendSms={false}
+                    availableMethods={resetChallenge.availableMethods}
+                    maskedPhone={resetChallenge.maskedPhone}
+                    selectedMethod={reset2faMode || resetChallenge.availableMethods?.[0] || 'totp'}
+                    onMethodChange={(m) => {
+                      setReset2faMode(m);
+                      setAutofillTargetMode('2fa');
+                    }}
+                    codeValue={reset2faCode}
+                    onCodeChange={(v) => {
+                      setReset2faCode(v);
+                      if (fieldErrors.twoFactorCode) setFieldErrors((p) => ({ ...p, twoFactorCode: '' }));
+                    }}
+                    error={fieldErrors.twoFactorCode || ''}
+                  />
+                </div>
+              )}
 
-        <PrimaryButton type="submit" disabled={busy} testId="screen-primary">
-          {isAr ? 'تحديث كلمة المرور' : 'Update Password'}
-        </PrimaryButton>
-      </form>
+              <div className="space-y-1.5">
+                <label className={`text-[10px] font-medium ${fieldErrors.newPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
+                  {isAr ? 'كلمة المرور الجديدة' : 'New password'}
+                </label>
+                <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+                  fieldErrors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+                }`}>
+                  <input
+                    type={showNew ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      if (fieldErrors.newPassword) setFieldErrors((p) => ({ ...p, newPassword: '' }));
+                    }}
+                    data-testid="field-inappNewPassword"
+                    placeholder="••••••••••••"
+                    className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
+                  />
+                  <button type="button" onClick={() => setShowNew((v) => !v)} aria-label="Toggle new password">
+                    {showNew ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
+                  </button>
+                </div>
+                {fieldErrors.newPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.newPassword}</p>}
+                <PasswordChecklist password={newPassword} showInvalid={Boolean(fieldErrors.newPassword)} />
+              </div>
+
+              <div className="space-y-1">
+                <label className={`text-[10px] font-medium ${fieldErrors.confirmPassword ? 'text-rose-500 font-semibold' : colors.secondaryText}`}>
+                  {isAr ? 'تأكيد كلمة المرور الجديدة' : 'Confirm new password'}
+                </label>
+                <div className={`px-3 h-11 rounded-xl border transition flex justify-between items-center text-xs ${colors.text} ${
+                  fieldErrors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${colors.border} ${colors.surface}`
+                }`}>
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (fieldErrors.confirmPassword) setFieldErrors((p) => ({ ...p, confirmPassword: '' }));
+                    }}
+                    data-testid="field-inappConfirmPassword"
+                    placeholder="••••••••••••"
+                    className={`bg-transparent w-full outline-none text-xs ${colors.text}`}
+                  />
+                  <button type="button" onClick={() => setShowConfirm((v) => !v)} aria-label="Toggle confirm password">
+                    {showConfirm ? <EyeOff size={14} className={colors.secondaryText} /> : <Eye size={14} className={colors.secondaryText} />}
+                  </button>
+                </div>
+                {fieldErrors.confirmPassword && <p className="text-[11px] font-semibold text-rose-500">{fieldErrors.confirmPassword}</p>}
+              </div>
+
+              {error && <p role="alert" className="text-xs text-rose-500 font-semibold">{error}</p>}
+              {done && <p role="status" className="text-xs text-emerald-500">{isAr ? 'تمت إعادة التعيين بنجاح' : 'Password reset successfully'}</p>}
+
+              <PrimaryButton type="submit" disabled={busy} testId="inapp-reset-submit-btn">
+                {busy
+                  ? (isAr ? 'جارٍ الحفظ…' : 'Resetting…')
+                  : (isAr ? 'تأكيد وتعيين كلمة المرور الجديدة' : 'Verify & Set New Password')}
+              </PrimaryButton>
+            </>
+          )}
+
+          {!resetChallenge && error && (
+            <p role="alert" className="text-xs text-rose-500 font-semibold">{error}</p>
+          )}
+        </form>
+      )}
     </div>
   );
 }
@@ -2153,6 +2512,7 @@ export function SH12Screen() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [done, setDone] = useState(false);
   const [toast, setToast] = useState('');
+  const [stepUpSheetOpen, setStepUpSheetOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -2161,6 +2521,45 @@ export function SH12Screen() {
       setPhone(user.phone || '');
     }
   }, [user]);
+
+  const hasCoreChanges = Boolean(
+    user && (
+      fullName.trim() !== (user.fullName || '').trim() ||
+      email.trim().toLowerCase() !== (user.email || '').trim().toLowerCase() ||
+      phone.trim() !== (user.phone || '').trim()
+    )
+  );
+
+  async function executeSaveMe(stepUpToken = null) {
+    setBusy(true);
+    setError('');
+    try {
+      await put(
+        '/auth/me',
+        {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          stepUpToken
+        },
+        stepUpToken ? { headers: { 'X-StepUp-Token': stepUpToken } } : {}
+      );
+      setStepUpSheetOpen(false);
+      await loadMe();
+      setDone(true);
+      setToast(isAr ? 'تم حفظ تغييرات الحساب' : 'Account changes saved');
+    } catch (err) {
+      if (err.code === 'auth.2fa_required') {
+        setStepUpSheetOpen(true);
+        return;
+      }
+      setStepUpSheetOpen(false);
+      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
+      setError(friendlyError(err, isAr, 'Could not save account changes', 'تعذر حفظ التغييرات'));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleSave(e) {
     if (e) e.preventDefault();
@@ -2179,28 +2578,24 @@ export function SH12Screen() {
       return;
     }
     setFieldErrors({});
-    setBusy(true);
-    try {
-      await put('/auth/me', {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim()
-      });
-      await loadMe();
-      setDone(true);
-      setToast(isAr ? 'تم حفظ تغييرات الحساب' : 'Account changes saved');
-    } catch (err) {
-      if (err.fieldErrors) setFieldErrors(err.fieldErrors);
-      setError(friendlyError(err, isAr, 'Could not save account changes', 'تعذر حفظ التغييرات'));
-    } finally {
-      setBusy(false);
+    if (user?.twoFactorEnabled && hasCoreChanges) {
+      setStepUpSheetOpen(true);
+      return;
     }
+    await executeSaveMe(null);
   }
 
   return (
     <div className={`min-h-full flex flex-col ${colors.bg}`} data-testid="screen">
       <AppTopBar showBack={true} onBack={() => nav.back()} />
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
+
+      <TwoFactorStepUpSheet
+        open={stepUpSheetOpen}
+        onClose={() => setStepUpSheetOpen(false)}
+        actionTitle={isAr ? 'تأكيد تعديل البيانات الأساسية' : 'Verify core account changes'}
+        onVerified={executeSaveMe}
+      />
 
       <form noValidate onSubmit={handleSave} className="p-4 space-y-3.5">
         <div>
@@ -2288,6 +2683,28 @@ export function SH12Screen() {
           >
             <span className={`font-bold ${colors.text}`}>
               {isAr ? 'تغيير كلمة المرور' : 'Change Password'}
+            </span>
+            <ForwardChevron size={14} className={colors.secondaryText} />
+          </button>
+          <button
+            type="button"
+            data-testid="sh12-goto-inapp-reset"
+            onClick={() => nav.go('SH02', { mode: 'reset' })}
+            className="w-full pt-2 border-t border-slate-500/10 flex justify-between items-center text-start"
+          >
+            <span className={`font-bold ${colors.text}`}>
+              {isAr ? 'إعادة تعيين كلمة المرور عبر البريد' : 'Reset Password via Email Code'}
+            </span>
+            <ForwardChevron size={14} className={colors.secondaryText} />
+          </button>
+          <button
+            type="button"
+            data-testid="sh12-goto-2fa"
+            onClick={() => nav.go('AD13')}
+            className="w-full pt-2 border-t border-slate-500/10 flex justify-between items-center text-start"
+          >
+            <span className={`font-bold ${colors.text}`}>
+              {isAr ? 'التحقق بخطوتين (2FA)' : 'Two-Factor Authentication (2FA)'}
             </span>
             <ForwardChevron size={14} className={colors.secondaryText} />
           </button>

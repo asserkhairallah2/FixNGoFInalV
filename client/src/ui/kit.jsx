@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
 import {
   ChevronLeft, ChevronRight, AlertTriangle, Phone, Navigation, Check,
-  MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck, LocateFixed
+  MapPin, Star, Loader2, AlertCircle, RefreshCw, X, Upload, ShieldCheck, LocateFixed,
+  KeyRound, Smartphone, Lock
 } from 'lucide-react';
 import { usePrefs, useNav, useSession, useNavigate } from '../app/stores.jsx';
-import { get as apiGet } from '../api/http.js';
+import { get as apiGet, post as apiPost } from '../api/http.js';
 import { useUnreadCount, useReviews, useCustomerPublicProfile } from '../api/hooks.js';
 import { fmtMoney, fmtDate } from '../i18n/format.js';
 import { checkPasswordRules } from './validation.js';
@@ -1270,5 +1271,382 @@ export function Page({ children, title, showBack = true, onBack }) {
       <AppTopBar showBack={showBack} onBack={onBack} title={title} />
       <div className="flex-1 pb-6">{children}</div>
     </div>
+  );
+}
+
+// ---- Google-Grade 2-Step Verification (TOTP + Mobile SMS + Recovery Codes) ----
+export function TwoFactorChallengeCard({
+  availableMethods = [],
+  maskedPhone = '',
+  defaultMethod = '',
+  initialSmsSent = false,
+  challengeToken = null,
+  stepUpToken = null,
+  allowRecovery = true,
+  autoSendSms = true,
+  listenAutofill = true,
+  inline = false,
+  selectedMethod: controlledMethod,
+  onMethodChange,
+  codeValue: controlledCode,
+  onCodeChange,
+  title = '',
+  subtitle = '',
+  submitLabel = '',
+  busy = false,
+  error = '',
+  onSubmitCode,
+  onCancel
+}) {
+  const c = useColors();
+  const { isAr } = usePrefs();
+  const methods = Array.isArray(availableMethods) && availableMethods.length > 0 ? availableMethods : ['totp'];
+  const hasTotp = methods.includes('totp');
+  const hasSms = methods.includes('sms');
+  const resolvedDefault = defaultMethod && methods.includes(defaultMethod) ? defaultMethod : methods[0];
+
+  const [internalMode, setInternalMode] = useState('');
+  const [internalCode, setInternalCode] = useState('');
+  const [smsSentFlag, setSmsSentFlag] = useState(Boolean(initialSmsSent));
+  const [smsDispatchBusy, setSmsDispatchBusy] = useState(false);
+  const [smsCooldownTimer, setSmsCooldownTimer] = useState(0);
+  const [localError, setLocalError] = useState('');
+  const autoDispatchedRef = useRef(false);
+
+  const activeMethod = controlledMethod || internalMode || resolvedDefault || 'totp';
+  const codeVal = controlledCode !== undefined ? controlledCode : internalCode;
+
+  const updateMethod = (nextMethod) => {
+    setLocalError('');
+    if (onMethodChange) onMethodChange(nextMethod);
+    else setInternalMode(nextMethod);
+    if (onCodeChange) onCodeChange('');
+    else setInternalCode('');
+  };
+
+  const updateCode = (val) => {
+    setLocalError('');
+    if (onCodeChange) onCodeChange(val);
+    else setInternalCode(val);
+  };
+
+  useEffect(() => {
+    if (smsCooldownTimer <= 0) return undefined;
+    const id = setInterval(() => setSmsCooldownTimer((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [smsCooldownTimer]);
+
+  const sendSmsCode = async (force = false) => {
+    if (smsDispatchBusy) return;
+    if (!force && smsCooldownTimer > 0) return;
+    setSmsDispatchBusy(true);
+    setLocalError('');
+    try {
+      await apiPost('/auth/2fa/send-sms', {
+        challengeToken: challengeToken || null,
+        stepUpToken: stepUpToken || null
+      });
+      setSmsSentFlag(true);
+      setSmsCooldownTimer(25);
+    } catch (err) {
+      setLocalError(err?.message || (isAr ? 'تعذر إرسال رسالة التحقق النصية.' : 'Could not send SMS verification code.'));
+    } finally {
+      setSmsDispatchBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hasSms && activeMethod === 'sms' && !initialSmsSent && autoSendSms && !autoDispatchedRef.current) {
+      autoDispatchedRef.current = true;
+      sendSmsCode(true);
+    }
+  }, [hasSms, activeMethod, initialSmsSent, autoSendSms]);
+
+  useEffect(() => {
+    if (!listenAutofill) return undefined;
+    const onFill = (e) => {
+      const digits = String(e.detail ?? '').replace(/\D/g, '').slice(0, 6);
+      if (digits) updateCode(digits);
+    };
+    window.addEventListener('fixngo:otp-autofill', onFill);
+    return () => window.removeEventListener('fixngo:otp-autofill', onFill);
+  }, [listenAutofill]);
+
+  const handleSelectSms = () => {
+    updateMethod('sms');
+    if (!smsSentFlag) {
+      autoDispatchedRef.current = true;
+      sendSmsCode(true);
+    }
+  };
+
+  const isRecovery = activeMethod === 'recovery';
+  const cleanCode = isRecovery
+    ? String(codeVal ?? '').trim().toUpperCase()
+    : String(codeVal ?? '').replace(/\D/g, '').slice(0, 6);
+  const canSubmit = isRecovery ? cleanCode.replace(/[^A-Z0-9]/g, '').length >= 8 : cleanCode.length === 6;
+
+  const handleFormSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!canSubmit || busy) return;
+    setLocalError('');
+    await onSubmitCode?.({ method: activeMethod, code: cleanCode });
+  };
+
+  const bodyContent = (
+    <div className="space-y-3" data-testid="two-factor-challenge">
+      {(title || subtitle || !inline) && (
+        <div className={`p-3.5 rounded-2xl border ${c.border} ${c.surface} space-y-1.5`}>
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-xl bg-[#E51C23]/15 text-[#E51C23] flex items-center justify-center shrink-0">
+              <ShieldCheck size={16} />
+            </span>
+            <div>
+              <p className={`text-xs font-extrabold ${c.text}`}>
+                {title || (isAr ? 'التحقق بخطوتين (2-Step Verification)' : '2-Step Verification')}
+              </p>
+              <p className={`text-[11px] ${c.secondaryText}`}>
+                {subtitle || (hasTotp && hasSms
+                  ? (isAr ? 'اختر وسيلة التحقق المفضلة لديك لإثبات هويتك.' : 'Choose how you want to verify your identity.')
+                  : (isAr ? 'أكمل خطوة الأمان الإضافية لحماية حسابك.' : 'Complete this extra security step to protect your account.'))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Method Selector Cards — shows BOTH options clearly when both TOTP & SMS are enabled */}
+      <div className={`grid ${hasTotp && hasSms ? 'grid-cols-2' : 'grid-cols-1'} gap-2`} data-testid="2fa-methods-grid">
+        {hasTotp && (
+          <button
+            type="button"
+            data-testid="2fa-method-totp"
+            onClick={() => updateMethod('totp')}
+            className={`p-3 rounded-2xl border text-start transition space-y-1 ${
+              activeMethod === 'totp'
+                ? 'border-[#E51C23] bg-[#E51C23]/10 ring-1 ring-[#E51C23]/30'
+                : `${c.border} ${c.surface} hover:opacity-90`
+            }`}
+          >
+            <div className="flex items-center justify-between gap-1.5">
+              <KeyRound size={15} className={activeMethod === 'totp' ? 'text-[#E51C23]' : c.secondaryText} />
+              {activeMethod === 'totp' && (
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#E51C23] text-white">
+                  {isAr ? 'محدد' : 'Active'}
+                </span>
+              )}
+            </div>
+            <p className={`text-xs font-extrabold ${c.text}`}>
+              {isAr ? 'تطبيق المصادقة' : 'Authenticator App'}
+            </p>
+            <p className={`text-[10px] leading-snug ${c.secondaryText}`}>
+              {isAr ? 'رمز متغير من ٦ أرقام (Google Authenticator)' : '6-digit rolling code (Google Authenticator)'}
+            </p>
+          </button>
+        )}
+
+        {hasSms && (
+          <button
+            type="button"
+            data-testid="2fa-method-sms"
+            onClick={handleSelectSms}
+            className={`p-3 rounded-2xl border text-start transition space-y-1 ${
+              activeMethod === 'sms'
+                ? 'border-[#E51C23] bg-[#E51C23]/10 ring-1 ring-[#E51C23]/30'
+                : `${c.border} ${c.surface} hover:opacity-90`
+            }`}
+          >
+            <div className="flex items-center justify-between gap-1.5">
+              <Smartphone size={15} className={activeMethod === 'sms' ? 'text-[#E51C23]' : c.secondaryText} />
+              {activeMethod === 'sms' && (
+                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-[#E51C23] text-white">
+                  {isAr ? 'محدد' : 'Active'}
+                </span>
+              )}
+            </div>
+            <p className={`text-xs font-extrabold ${c.text}`}>
+              {isAr ? 'رسالة للهاتف (SMS)' : 'Mobile SMS Code'}
+            </p>
+            <p className={`text-[10px] leading-snug ${c.secondaryText}`} dir="ltr">
+              {maskedPhone || (isAr ? 'الرقم المسجل' : 'Registered phone')}
+            </p>
+          </button>
+        )}
+      </div>
+
+      {activeMethod === 'sms' && (
+        <div className={`p-2.5 rounded-xl border ${c.border} ${c.elevated} flex items-center justify-between gap-2 text-[11px]`}>
+          <span className={smsSentFlag ? 'text-emerald-500 font-semibold' : c.secondaryText}>
+            {smsSentFlag
+              ? (isAr
+                  ? `✓ تم إرسال رمز SMS إلى ${maskedPhone || 'هاتفك'} (متاح في Simulator)`
+                  : `✓ SMS code sent to ${maskedPhone || 'your phone'} (check Simulator)`)
+              : (isAr ? 'أرسل رمز تحقق من ٦ أرقام إلى هاتفك.' : 'Send a 6-digit SMS code to your phone.')}
+          </span>
+          <button
+            type="button"
+            data-testid="2fa-send-sms-btn"
+            disabled={smsDispatchBusy || smsCooldownTimer > 0}
+            onClick={() => sendSmsCode(false)}
+            className="shrink-0 px-2.5 py-1 rounded-lg bg-[#E51C23]/15 text-[#E51C23] font-bold text-[10px] disabled:opacity-50"
+          >
+            {smsDispatchBusy
+              ? '…'
+              : smsCooldownTimer > 0
+                ? (isAr ? `إعادة (${smsCooldownTimer}ث)` : `Resend (${smsCooldownTimer}s)`)
+                : smsSentFlag
+                  ? (isAr ? 'إعادة الإرسال' : 'Resend SMS')
+                  : (isAr ? 'إرسال الرمز' : 'Send SMS')}
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          <label className={`text-[11px] font-semibold ${c.secondaryText}`}>
+            {isRecovery
+              ? (isAr ? 'رمز الاسترداد الاحتياطي (XXXX-XXXX)' : 'Backup recovery code (XXXX-XXXX)')
+              : activeMethod === 'sms'
+                ? (isAr ? 'رمز الرسالة النصية (٦ أرقام)' : '6-digit SMS verification code')
+                : (isAr ? 'رمز تطبيق المصادقة (٦ أرقام)' : '6-digit authenticator code')}
+          </label>
+          {allowRecovery && (
+            <button
+              type="button"
+              data-testid="2fa-method-recovery"
+              onClick={() => updateMethod(isRecovery ? (resolvedDefault || 'totp') : 'recovery')}
+              className="text-[10px] font-bold text-[#E51C23] hover:underline"
+            >
+              {isRecovery
+                ? (isAr ? 'العودة لرمز ٦ أرقام' : 'Use 6-digit code instead')
+                : (isAr ? 'استخدام رمز استرداد' : 'Use recovery code')}
+            </button>
+          )}
+        </div>
+        <input
+          type="text"
+          dir="ltr"
+          inputMode={isRecovery ? 'text' : 'numeric'}
+          maxLength={isRecovery ? 12 : 6}
+          data-testid="field-twoFactorCode"
+          value={codeVal}
+          onChange={(e) => {
+            const raw = e.target.value;
+            updateCode(isRecovery ? raw.toUpperCase() : raw.replace(/\D/g, '').slice(0, 6));
+          }}
+          placeholder={isRecovery ? 'ABCD-1234' : '000000'}
+          className={`w-full px-3.5 h-11 rounded-xl border transition font-mono tracking-widest text-center text-sm font-extrabold ${c.text} focus:outline-none ${
+            (error || localError) ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-500/5' : `${c.border} ${c.inputBg}`
+          }`}
+        />
+      </div>
+
+      {(error || localError) && (
+        <p role="alert" data-testid="2fa-error" className="text-xs font-semibold text-rose-500">
+          {error || localError}
+        </p>
+      )}
+
+      {!inline && (
+        <div className="space-y-2 pt-1">
+          <PrimaryButton
+            type={onSubmitCode ? 'submit' : 'button'}
+            disabled={busy || !canSubmit}
+            testId="2fa-verify-submit"
+            onClick={!onSubmitCode ? undefined : undefined}
+          >
+            {busy
+              ? (isAr ? 'جارٍ التحقق…' : 'Verifying…')
+              : (submitLabel || (isAr ? 'تأكيد رمز التحقق' : 'Verify & Continue'))}
+          </PrimaryButton>
+          {onCancel && (
+            <SecondaryButton onClick={onCancel} disabled={busy}>
+              {isAr ? 'رجوع' : 'Back'}
+            </SecondaryButton>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  if (inline) return bodyContent;
+  return (
+    <form noValidate onSubmit={handleFormSubmit}>
+      {bodyContent}
+    </form>
+  );
+}
+
+export function TwoFactorStepUpSheet({ open, onClose, onVerified, actionTitle = '' }) {
+  const { isAr } = usePrefs();
+  const { user } = useSession();
+  const [statusInfo, setStatusInfo] = useState(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setVerifyError('');
+      return;
+    }
+    let cancelled = false;
+    setLoadingStatus(true);
+    apiGet('/auth/2fa/status')
+      .then((res) => {
+        if (!cancelled) setStatusInfo(res);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          const fallbackMethods = [];
+          if (user?.totpEnabled) fallbackMethods.push('totp');
+          if (user?.smsTwoFactorEnabled) fallbackMethods.push('sms');
+          setStatusInfo({
+            availableMethods: fallbackMethods.length ? fallbackMethods : ['totp'],
+            maskedPhone: user?.maskedPhone || user?.phone || ''
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingStatus(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, user?.totpEnabled, user?.smsTwoFactorEnabled, user?.maskedPhone, user?.phone]);
+
+  const handleVerify = async ({ method, code }) => {
+    setVerifyBusy(true);
+    setVerifyError('');
+    try {
+      const res = await apiPost('/auth/2fa/step-up', { method, code });
+      if (res?.stepUpToken) {
+        await onVerified?.(res.stepUpToken);
+      }
+    } catch (err) {
+      setVerifyError(err?.message || (isAr ? 'رمز التحقق غير صحيح.' : 'Invalid verification code.'));
+    } finally {
+      setVerifyBusy(false);
+    }
+  };
+
+  return (
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={actionTitle || (isAr ? 'تأكيد هويتك (التحقق بخطوتين)' : "Verify it's you")}
+    >
+      {loadingStatus ? (
+        <Skeleton rows={2} />
+      ) : (
+        <TwoFactorChallengeCard
+          availableMethods={statusInfo?.availableMethods || ['totp']}
+          maskedPhone={statusInfo?.maskedPhone || user?.maskedPhone || ''}
+          defaultMethod={statusInfo?.availableMethods?.[0] || 'totp'}
+          busy={verifyBusy}
+          error={verifyError}
+          onSubmitCode={handleVerify}
+          onCancel={onClose}
+        />
+      )}
+    </BottomSheet>
   );
 }

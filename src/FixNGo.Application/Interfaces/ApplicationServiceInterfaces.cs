@@ -35,16 +35,38 @@ public interface IAuthService
     Task<IReadOnlyList<SessionDto>> MySessionsAsync(Guid userId, CancellationToken ct = default);
     Task RevokeMySessionAsync(Guid userId, Guid sessionId, CancellationToken ct = default);
     Task<int> RevokeOtherSessionsAsync(Guid userId, Guid? keepSessionId, CancellationToken ct = default);
+
+    Task<TwoFactorStatusDto> GetTwoFactorStatusAsync(Guid userId, CancellationToken ct = default);
+    Task<StepUpTokenDto> VerifyStepUpAsync(Guid userId, StepUpVerifyRequest req, CancellationToken ct = default);
+    Task<TwoFactorSmsDispatchDto> SendTwoFactorSmsAsync(Guid? callerUserId, SendTwoFactorSmsRequest req, CancellationToken ct = default);
+
     Task<TwoFactorSetupDto> SetupTwoFactorAsync(Guid userId, CancellationToken ct = default);
+    Task<TwoFactorSetupDto> SetupTwoFactorAsync(Guid userId, string? stepUpToken, CancellationToken ct = default);
     Task<TwoFactorEnableDto> EnableTwoFactorAsync(Guid userId, TwoFactorVerifyRequest req, CancellationToken ct = default);
+    Task<TwoFactorStatusDto> DisableTotpTwoFactorAsync(Guid userId, TwoFactorDisableRequest req, CancellationToken ct = default);
+
+    Task<TwoFactorSmsDispatchDto> SetupSmsTwoFactorAsync(Guid userId, string? stepUpToken, CancellationToken ct = default);
+    Task<TwoFactorEnableDto> EnableSmsTwoFactorAsync(Guid userId, TwoFactorVerifyRequest req, CancellationToken ct = default);
+    Task<TwoFactorStatusDto> DisableSmsTwoFactorAsync(Guid userId, TwoFactorDisableRequest req, CancellationToken ct = default);
+
+    Task<TwoFactorEnableDto> RegenerateRecoveryCodesAsync(Guid userId, string? stepUpToken, CancellationToken ct = default);
     Task DisableTwoFactorAsync(Guid userId, TwoFactorDisableRequest req, CancellationToken ct = default);
+
     Task<AuthResponse> LoginAsync(LoginRequest req, string? device, string? ip, CancellationToken ct = default);
+    Task<LoginFlowResult> LoginFlowAsync(LoginRequest req, string? device, string? ip, CancellationToken ct = default);
+    Task<AuthResponse> VerifyLoginTwoFactorAsync(VerifyTwoFactorChallengeRequest req, string? device, string? ip, CancellationToken ct = default);
     Task<AuthResponse> VerifyLoginOtpAsync(VerifyOtpRequest req, string? device, string? ip, CancellationToken ct = default);
     Task<AuthResponse> RefreshAsync(RefreshRequest req, CancellationToken ct = default);
     Task LogoutAsync(string refreshToken, CancellationToken ct = default);
+
     Task<OtpResponse> ForgotPasswordAsync(ForgotPasswordRequest req, CancellationToken ct = default);
     Task<string> ExchangeResetOtpAsync(VerifyOtpRequest req, CancellationToken ct = default);
+    Task<ResetOtpFlowResult> ExchangeResetOtpFlowAsync(VerifyOtpRequest req, CancellationToken ct = default);
+    Task<string> VerifyResetTwoFactorAsync(VerifyTwoFactorChallengeRequest req, CancellationToken ct = default);
     Task ResetPasswordAsync(ResetPasswordRequest req, CancellationToken ct = default);
+
+    Task<InAppResetStartDto> StartInAppPasswordResetAsync(Guid userId, CancellationToken ct = default);
+    Task<AuthResponse> CompleteInAppPasswordResetAsync(Guid userId, InAppResetCompleteRequest req, string? device, string? ip, CancellationToken ct = default);
     Task ChangePasswordAsync(Guid userId, ChangePasswordRequest req, CancellationToken ct = default);
 }
 
